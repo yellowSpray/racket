@@ -1,7 +1,7 @@
 <!-- PROJECT LOGO -->
 <div align="center">
   <a href="#">
-    <img src="./public/vite.svg" alt="Logo" width="80" height="80">
+    <img src="./front/public/vite.svg" alt="Logo" width="80" height="80">
   </a>
 
   <h3 align="center">Racket app</h3>
@@ -9,7 +9,7 @@
   <p align="center">
     A web application to organize, manage, and rank players in round-robin format squash events.
     <br />
-    <a href="https://github.com/othneildrew/racket-app">View Demo</a>
+    <a href="https://github.com/yellowSpray/racket">View Demo</a>
   </p>
 </div>
 
@@ -65,7 +65,7 @@ Key Features (Completed/Planned - originally indicated by ✅ or ❌)
 - [ ] Unit and E2E tests
 - [ ] Technical documentation
 
-See the [open issues](https://github.com/othneildrew/Best-README-Template/issues) for a full list of proposed features (and known issues).
+See the [open issues](https://github.com/yellowSpray/racket/issues) for a full list of proposed features (and known issues).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
