@@ -1,6 +1,7 @@
 <!-- PROJECT LOGO -->
+<a id="readme-top"></a>
 <div align="center">
-  <a href="#readme-top">
+  <a href="#">
     <img src="./front/public/vite.svg" alt="Logo" width="80" height="80">
   </a>
 
