@@ -14,11 +14,63 @@ import {
     FieldLabel,
 } from "@/shared/components/ui/Field";
 import { Input } from "@/shared/components/ui/Input";
+import { useState } from "react";
+import { useNavigate } from "react-router";
+import type { User } from '@/types/auth'
 
 export default function Login({
     className,
     ...props
 }: React.ComponentProps<"div">) {
+
+    const [ email, setEmail ] = useState<string>('')
+    const [ password, setPassword ] = useState<string>('')
+    const [ loading, setLoading ] = useState<boolean>(false)
+    const [ error, setError ] = useState<string>('')
+    const navigate = useNavigate()
+
+    const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+
+        e.preventDefault()
+        setLoading(true)
+        setError('')
+
+        try {
+            // fetch des données via json-server pour test
+            const response = await fetch(`http://localhost:3001/users?email=${encodeURIComponent(email)}`)
+
+            // verif si la reponse est envoyé de json-server
+            if(!response.ok) {
+                throw new Error('Network response was not ok!')
+            }
+
+            // recupere les données users
+            const users: User[] = await response.json()
+
+            // compare email et mdp du user
+            if (users.length === 0 || users[0].password !== password) {
+                setError('Email or password are not correct!')
+                setLoading(false)
+                return
+            }
+
+            // simulation d'un token
+            const token = btoa(Math.random().toString())
+            sessionStorage.setItem('token', token)
+            sessionStorage.setItem('user', JSON.stringify(users[0]))
+
+            // redirection vers le dashboard
+            navigate('/dashboard')
+
+        } catch (error) {
+            setError('Error connection')
+            console.error(error)
+        } finally {
+            setLoading(false)
+        }
+
+    }
+
     return (
         <div className={cn("flex flex-col w-2/9", className)} {...props}>
             <Card className="shadow-none gap-6">
@@ -27,9 +79,15 @@ export default function Login({
                     <CardDescription>
                         Enter your email below to login to your account
                     </CardDescription>
+                    { error && (
+                        <div className="text-red-600 px-4 py-3">
+                            {error}
+                        </div>
+                    )}
+                    
                 </CardHeader>
                 <CardContent>
-                    <form>
+                    <form onSubmit={handleSubmit}>
                         <FieldGroup>
                             <Field>
                                 <FieldLabel htmlFor="email">Email</FieldLabel>
@@ -37,6 +95,9 @@ export default function Login({
                                     id="email"
                                     type="email"
                                     placeholder="email@example.com"
+                                    autoComplete="off"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
                                     required
                                 />
                             </Field>
@@ -50,10 +111,22 @@ export default function Login({
                                         Forgot your password ?
                                     </a>
                                 </div>
-                                <Input id="password" type="password" required />
+                                <Input 
+                                    id="password" 
+                                    type="password"
+                                    autoComplete="off"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)} 
+                                    required 
+                                />
                             </Field>
                             <Field>
-                                <Button type="submit">Login</Button>
+                                <Button 
+                                    type="submit"
+                                    disabled={loading}
+                                >
+                                    Login with Email
+                                </Button>
                                 <Button variant="outline" type="button" className="border-1 border-gray-200">
                                     Login with Google
                                 </Button>
