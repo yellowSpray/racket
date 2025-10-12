@@ -3,13 +3,6 @@ import { useNavigate } from 'react-router'
 import { useEffect, useState } from 'react'
 import { AuthContext } from '@/context/AuthContextInstance'
 
-export interface AuthContextType {
-    user: User | null,
-    loading: boolean,
-    login: (userData: User, token: string) => void,
-    logout: () => void
-}
-
 export const AuthProvider = ({ children }: { children: React.ReactNode}) => {
 
     const [ user, setUser ] = useState<User | null>(null)
@@ -25,16 +18,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode}) => {
             try {
                 const parsedUser: User = JSON.parse(userData)
                 setUser(parsedUser)
-                console.log("[AuthProvider] User loaded from sessionStorage:", parsedUser);
             } catch (error) {
                 console.error('Failed to parse user data:', error)
-            } finally {
-                setLoading(false)
             }
-        } else {
-            console.log("[AuthProvider] No user found in sessionStorage");
-            setLoading(false);
-        }
+        } 
+
+        setLoading(false);
 
     }, [])
 
@@ -46,10 +35,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode}) => {
     }
 
     const logout = (): void => {
-        sessionStorage.removeItem('token');
-        sessionStorage.removeItem('user');
+        sessionStorage.clear()
         setUser(null);
-        navigate('/auth');
+        navigate('/auth', { replace: true });
     };
 
     return (

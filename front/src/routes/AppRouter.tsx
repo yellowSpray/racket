@@ -1,7 +1,7 @@
 import Auth from "@/pages/Auth/Auth"
 import Home from "@/pages/Home"
 import { Route, Routes } from "react-router"
-import ProtectedRoute from "./ProtectedRoute"
+import ProtectedRoute from "@/routes/ProtectedRoute"
 import Dashboard from "@/pages/Dashboard"
 
 export default function AppRouter() {

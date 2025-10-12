@@ -1,7 +1,7 @@
 import Header from '@/shared/components/layout/Header'
 import Footer from '@/shared/components/layout/Footer'
 import AppRouter from '@/routes/AppRouter'
-import { AuthProvider } from './context/AuthContext'
+import { AuthProvider } from '@/context/AuthProvider'
 
 function App() {
 

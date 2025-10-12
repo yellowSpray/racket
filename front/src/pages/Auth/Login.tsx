@@ -15,7 +15,7 @@ import {
 } from "@/shared/components/ui/Field";
 import { Input } from "@/shared/components/ui/Input";
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useAuth } from "@/hooks/useAuth";
 import type { User } from '@/types/auth'
 
 export default function Login({
@@ -27,7 +27,7 @@ export default function Login({
     const [ password, setPassword ] = useState<string>('')
     const [ loading, setLoading ] = useState<boolean>(false)
     const [ error, setError ] = useState<string>('')
-    const navigate = useNavigate()
+    const { login } = useAuth()
 
     const handleSubmit = async (e: React.FormEvent): Promise<void> => {
 
@@ -41,7 +41,7 @@ export default function Login({
 
             // verif si la reponse est envoyé de json-server
             if(!response.ok) {
-                throw new Error('Network response was not ok!')
+                throw new Error(`Server error: ${response.status}`)
             }
 
             // recupere les données users
@@ -56,15 +56,14 @@ export default function Login({
 
             // simulation d'un token
             const token = btoa(Math.random().toString())
-            sessionStorage.setItem('token', token)
-            sessionStorage.setItem('user', JSON.stringify(users[0]))
-
-            // redirection vers le dashboard
-            navigate('/dashboard')
+            login(users[0], token)
 
         } catch (error) {
-            setError('Error connection')
-            console.error(error)
+            if (error instanceof Error) {
+                setError(error.message)
+            } else {
+                setError("Unexpected error")
+            }
         } finally {
             setLoading(false)
         }

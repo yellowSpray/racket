@@ -2,12 +2,11 @@ import Logo from "@/shared/components/ui/Logo"
 import { Button } from "@/shared/components/ui/Button"
 import { Link } from "react-router"
 import { useAuth } from "@/hooks/useAuth"
-import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/Avatar"
 
 export default function Header() {
 
   const { user, logout } = useAuth()
-  console.log("[Header] user: ",user)
 
   return (
     <header className="px-4 md:px-6 border-b-1 border-b-gray-200">

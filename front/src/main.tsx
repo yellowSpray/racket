@@ -5,6 +5,7 @@ import '@/index.css'
 import App from '@/App.tsx'
 
 createRoot(document.getElementById('root')!).render(
+    //TODO ajouter le strict mode
     <BrowserRouter>
       <App />
     </BrowserRouter>
