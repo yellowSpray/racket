@@ -1,31 +1,27 @@
-// import { useAuth } from "@/hooks/useAuth";
+import { AppSideBar } from "@/shared/components/layout/AppSidebar";
+// import { Outlet } from "react-router";
 
 export default function Dashboard() {
-  // const { user, logout } = useAuth();
-
   return (
-    <div className="min-h-screen bg-gray-100">
-      <h1>dashboard</h1>
-      {/* <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-semibold">Dashboard</h1>
-          <button
-            onClick={logout}
-            className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
-          >
-            Déconnexion
-          </button>
-        </div>
-      </nav>
+    <div className="col-span-12 grid grid-cols-12 gap-4 px-4 pl-0 md:px-6 md:pl-0">
+      <AppSideBar />
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <h2 className="text-2xl font-bold mb-4">
-          Bienvenue, {user ? user.name : "invité"}!
-        </h2>
-        <p className="text-gray-600">
-          Vous êtes connecté en tant que {user ? user.role : "invité"}.
-        </p>
-      </main> */}
+      {/* Zone de contenu dynamique */}
+      <div className="col-start-3 col-span-10 flex-1 flex flex-col gap-4 py-4">
+
+        {/* Ici le contenu change selon les routes */}
+        {/* <Outlet /> */}
+
+        {/* OU si tu n'utilises pas de nested routes : */}
+        <div className="grid auto-rows-min gap-4 md:grid-cols-3">
+          <div className="bg-muted/50 aspect-video rounded-xl" />
+          <div className="bg-muted/50 aspect-video rounded-xl" />
+          <div className="bg-muted/50 aspect-video rounded-xl" />
+        </div>
+        <div className="bg-muted/50 flex-1 rounded-xl" />
+
+      </div>
+
     </div>
   );
 }

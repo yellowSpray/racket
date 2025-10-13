@@ -9,7 +9,7 @@ function App() {
     <>
       <AuthProvider>
         <Header />
-        <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-6">
+        <main className="flex-1 grid grid-cols-12 gap-4">
           <AppRouter />
         </main>
         <Footer />

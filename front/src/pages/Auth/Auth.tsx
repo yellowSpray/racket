@@ -3,7 +3,7 @@ import Login from "@/pages/Auth/Login";
 
 export default function Auth() {
     return (
-        <section className="w-full flex-1 flex flex-row items-center justify-center">
+        <section className="col-span-12 flex-1 flex flex-row items-center justify-center px-4 md:px-6">
             <Login />
             {/* //TODO faire le register avec animation */}
             {/* <Register /> */}

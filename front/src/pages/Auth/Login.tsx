@@ -123,10 +123,11 @@ export default function Login({
                                 <Button 
                                     type="submit"
                                     disabled={loading}
+                                    className="border-green-400 border-1"
                                 >
                                     Login with Email
                                 </Button>
-                                <Button variant="outline" type="button" className="border-1 border-gray-200">
+                                <Button variant="outline" type="button" className="border-1 border-border">
                                     Login with Google
                                 </Button>
                             </Field>

@@ -9,7 +9,7 @@ export default function Header() {
   const { user, logout } = useAuth()
 
   return (
-    <header className="px-4 md:px-6 border-b-1 border-b-gray-200">
+    <header className="px-4 md:px-6 border-b-1 border-b-border">
       <div className="flex h-16 items-center justify-between gap-4">
 
         {/* Left side */}
@@ -17,8 +17,9 @@ export default function Header() {
 
           {/* Main nav */}
           <div className="flex items-center gap-6">
-            <Link to="/" className="text-primary hover:text-primary/90">
+            <Link to="/" className="text-primary flex items-center gap-2">
               <Logo />
+              <h1 className="text-foreground">Logo name</h1>
             </Link>
           </div>
 
@@ -27,15 +28,18 @@ export default function Header() {
         {/* Right side */}
 
         {user ? 
-          <div className="flex items-center gap-2">
-            <Avatar>
-              <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-              <AvatarFallback>CN</AvatarFallback>
-            </Avatar>
-            <p>{ user.name }</p>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <Avatar>
+                <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
+                <AvatarFallback>CN</AvatarFallback>
+              </Avatar>
+              <p className="font-bold">{ user.name }</p>
+              <p>({ user.role })</p>
+            </div>
             <Button 
               size="sm" 
-              className="text-sm shadow-none"
+              className="text-sm border-2 border-green-400 shadow-none font-bold"
               onClick={logout}
             >
               Logout
@@ -43,10 +47,10 @@ export default function Header() {
           </div>
         : 
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm" className="text-sm border-1 border-gray-200">
+            <Button asChild variant="ghost" size="sm" className="text-sm border-1 border-border">
               <Link to="/auth">Sign In</Link>
             </Button>
-            <Button asChild size="sm" className="text-sm shadow-none">
+            <Button asChild size="sm" className="text-sm shadow-none border-green-400 border-1 font-bold">
               <Link to="/auth">Get Started</Link>
             </Button>
           </div>
