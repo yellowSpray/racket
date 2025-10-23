@@ -1,26 +1,47 @@
-import type { ReactNode } from "react";
-import { Navigate } from "react-router";
-import { useAuth } from "@/hooks/useAuth";
+import { useSession } from "@/context/SessionContext"
+import { supabase } from "@/lib/supabaseClient"
+import Loading from "@/pages/Loading"
+import { useEffect, useState } from "react"
+import { Navigate, Outlet } from "react-router"
 
-interface ProtectedRouteProps {
-    children: ReactNode
+type ProtectedRouteProps = {
+    allowedRoles?: string[]
 }
 
-export default function ProtectedRoute({children}: ProtectedRouteProps) {
+const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
 
-    const { user, loading } = useAuth()
+    const { session } = useSession()
+    const [userRole, setUserRole] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
 
-    if(loading) {
-        return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
-    }
+    useEffect(() => {
+        const fetchRole = async () => {
+            if(!session) return setLoading(false)
 
-    if (!user) {
-        return <Navigate to="/auth" replace />;
-    }
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', session.user.id)
+                .single()
 
-    return (
-        <>
-            {children}
-        </>
-    )
+            if (error) {
+                console.error('Error fecthing role : ', error)
+            }
+
+            setUserRole(data?.role || null)
+            setLoading(false)
+        }
+
+        fetchRole()
+    }, [session])
+
+    if(loading) return <Loading />   
+    if(!session) return <Navigate to="/auth" replace />
+    if(!userRole) return <Navigate to="/" replace />
+
+    if(allowedRoles && !allowedRoles.includes(userRole)) return <Navigate to="/" replace />
+    
+    return <Outlet />
 }
+
+export default ProtectedRoute

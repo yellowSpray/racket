@@ -1,5 +1,8 @@
 import { Link } from "react-router";
 import { Home, Settings, Users, FileText, SquarePen } from "lucide-react";
+import { Button } from "@/shared/components/ui/Button"
+import { supabase } from "@/lib/supabaseClient"
+
 
 const menuItems = [
   { title: "Accueil", url: "/dashboard", icon: Home },
@@ -45,7 +48,17 @@ export function AppSideBar() {
           })}
         </ul>
       </nav>
-      
+
+      {/* Footer */}
+      <div className="flex items-center gap-2 p-6 border-t border-gray-200">
+          <Button 
+              size="sm" 
+              className="text-sm border-2 border-green-400 shadow-none font-bold"
+              onClick={() => supabase.auth.signOut()}
+            >
+              Sign out
+          </Button>
+      </div>
     </aside>
   );
 }

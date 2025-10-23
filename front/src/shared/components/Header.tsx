@@ -1,12 +1,12 @@
 import Logo from "@/shared/components/ui/Logo"
 import { Button } from "@/shared/components/ui/Button"
 import { Link } from "react-router"
-import { useAuth } from "@/hooks/useAuth"
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/Avatar"
+import { useProfile } from "@/hooks/useProfile"
 
 export default function Header() {
 
-  const { user, logout } = useAuth()
+  const { profile } = useProfile()
 
   return (
     <header className="px-4 md:px-6 border-b-1 border-b-border">
@@ -27,23 +27,16 @@ export default function Header() {
 
         {/* Right side */}
 
-        {user ? 
+        {profile ? 
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <Avatar>
                 <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-                <AvatarFallback>CN</AvatarFallback>
+                <AvatarFallback>Avatar Profile</AvatarFallback>
               </Avatar>
-              <p className="font-bold">{ user.name }</p>
-              <p>({ user.role })</p>
+              <p className="font-bold">{ profile?.full_name }</p>
+              <p>({ profile?.role })</p>
             </div>
-            <Button 
-              size="sm" 
-              className="text-sm border-2 border-green-400 shadow-none font-bold"
-              onClick={logout}
-            >
-              Logout
-            </Button>
           </div>
         : 
           <div className="flex items-center gap-2">

@@ -15,64 +15,48 @@ import {
 } from "@/shared/components/ui/Field";
 import { Input } from "@/shared/components/ui/Input";
 import { useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import type { User } from '@/types/auth'
+import { supabase } from '@/lib/supabaseClient'
+import { useSession } from "@/context/SessionContext";
+import { RedirectByRole } from "@/hooks/RedirectByRole";
+
+type RegisterProps = {
+  className?: string;
+  toggle: () => void; 
+};
 
 export default function Login({
     className,
+    toggle,
     ...props
-}: React.ComponentProps<"div">) {
+}: RegisterProps) {
 
-    const [ email, setEmail ] = useState<string>('')
-    const [ password, setPassword ] = useState<string>('')
-    const [ loading, setLoading ] = useState<boolean>(false)
-    const [ error, setError ] = useState<string>('')
-    const { login } = useAuth()
+    const { session } = useSession()
+
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState("")
+    const [email, setEmail] = useState("")
+    const [password, setPassword] = useState("")
+
+    if ( session ) return <RedirectByRole />
 
     const handleSubmit = async (e: React.FormEvent): Promise<void> => {
-
         e.preventDefault()
         setLoading(true)
-        setError('')
+        const { error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password
+        })
 
-        try {
-            // fetch des données via json-server pour test
-            const response = await fetch(`http://localhost:3001/users?email=${encodeURIComponent(email)}`)
-
-            // verif si la reponse est envoyé de json-server
-            if(!response.ok) {
-                throw new Error(`Server error: ${response.status}`)
-            }
-
-            // recupere les données users
-            const users: User[] = await response.json()
-
-            // compare email et mdp du user
-            if (users.length === 0 || users[0].password !== password) {
-                setError('Email or password are not correct!')
-                setLoading(false)
-                return
-            }
-
-            // simulation d'un token
-            const token = btoa(Math.random().toString())
-            login(users[0], token)
-
-        } catch (error) {
-            if (error instanceof Error) {
-                setError(error.message)
-            } else {
-                setError("Unexpected error")
-            }
-        } finally {
-            setLoading(false)
+        if(error) {
+            setError(error.message)
         }
 
+        setLoading(false)
     }
 
     return (
-        <div className={cn("flex flex-col w-2/9", className)} {...props}>
-            <Card className="shadow-none gap-6">
+        <div className={cn("flex flex-col items-center h-full", className)} {...props}>
+            <Card className="w-1/2 h-full shadow-none gap-6 rounded-[0px] border-none bg(--background) justify-center">
                 <CardHeader>
                     <CardTitle>Login to your account</CardTitle>
                     <CardDescription>
@@ -97,6 +81,7 @@ export default function Login({
                                     autoComplete="off"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
+                                    disabled={loading}
                                     required
                                 />
                             </Field>
@@ -116,7 +101,8 @@ export default function Login({
                                     autoComplete="off"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)} 
-                                    required 
+                                    disabled={loading}
+                                    required
                                 />
                             </Field>
                             <Field>
@@ -125,15 +111,20 @@ export default function Login({
                                     disabled={loading}
                                     className="border-green-400 border-1"
                                 >
-                                    Login with Email
+                                    {loading ? 'Logging in...' : 'Login with Email'}
                                 </Button>
-                                <Button variant="outline" type="button" className="border-1 border-border">
+                                <Button 
+                                    variant="outline" 
+                                    type="button" 
+                                    className="border-1 border-border"
+                                    disabled={loading}
+                                >
                                     Login with Google
                                 </Button>
                             </Field>
                             <Field>
                                 <FieldDescription className="text-center">
-                                    Don&apos;t have an account ? <a href="#">Sign up</a>
+                                    Don&apos;t have an account ? <Button onClick={toggle}>Sign up</Button>
                                 </FieldDescription>
                             </Field>
                         </FieldGroup>

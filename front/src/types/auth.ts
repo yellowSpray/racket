@@ -1,19 +1,12 @@
 export interface User {
-    id: number,
+    id: string,
     email: string,
-    password: string,
-    name: string,
+    full_name: string,
+    phone: string,
     role: string
 }
 
 export interface LoginCredentials {
     email: string,
     password: string
-}
-
-export interface AuthContextType {
-    user: User | null,
-    loading: boolean,
-    login: (userData: User, token: string) => void,
-    logout: () => void
 }

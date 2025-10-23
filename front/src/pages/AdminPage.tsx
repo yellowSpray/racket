@@ -1,7 +1,7 @@
-import { AppSideBar } from "@/shared/components/layout/AppSidebar";
+import { AppSideBar } from "@/shared/components/AppSidebar";
 // import { Outlet } from "react-router";
 
-export default function Dashboard() {
+export default function AdminPage() {
   return (
     <div className="col-span-12 grid grid-cols-12 gap-4 px-4 pl-0 md:px-6 md:pl-0">
       <AppSideBar />
