@@ -1,6 +1,5 @@
 import { useState } from "react"
 import { Button } from "@/shared/components/ui/Button"
-import { Checkbox } from "@/shared/components/ui/Checkbox"
 import { 
     Card, 
     CardContent, 
@@ -13,8 +12,6 @@ import {
     FieldDescription,
     FieldGroup,
     FieldLabel,
-    FieldSet,
-    FieldLegend
 } from "@/shared/components/ui/Field";
 import {
   Select,
@@ -26,6 +23,7 @@ import {
 import { Input } from "@/shared/components/ui/Input";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabaseClient";
+import { useClubs } from "@/hooks/useClub";
 
 type RegisterProps = {
   className?: string;
@@ -38,10 +36,14 @@ export default function Register({
     ...props
 }: RegisterProps) {
 
+    const { clubs , loadingClubs } = useClubs()
+
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
     const [firstName, setFirstName] = useState("")
     const [lastName, setLastName] = useState("")
+    const [phoneNumber, setPhoneNumber] = useState("")
+    const [selectedClub, setSelectedClub] = useState("")
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [confirmPassword, setConfirmPassword] = useState("")
@@ -50,6 +52,8 @@ export default function Register({
         e.preventDefault()
         setLoading(true)
         setError("")
+
+        console.log(firstName, lastName, phoneNumber, selectedClub, email, password)
 
         if(password !== confirmPassword) {
             setError("Password is not matching")
@@ -64,18 +68,21 @@ export default function Register({
                 options: {
                     data: {
                         first_name: firstName,
-                        last_name: lastName
+                        last_name: lastName,
+                        phone: phoneNumber,
+                        club_id: selectedClub
                     }
                 }
             });
 
+            console.log("User registered :", data.user)
+
             if(error){
+                console.log("error sign up user :", error)
                 setError(error.message)
                 setLoading(false)
                 return
             }
-
-            console.log("User registered :", data.user)
             
         } catch (err) {
             console.error(err)
@@ -130,35 +137,44 @@ export default function Register({
                                     />
                                 </Field>
                             </div>
-                            <FieldSet>
-                                <FieldLegend variant="label">
-                                    Which racket sport do you play ?
-                                </FieldLegend>
-                                <div className="grid grid-cols-3 gap-4">
-                                    <Field orientation="horizontal">
-                                        <Checkbox id="squash"/>
-                                        <FieldLabel htmlFor="squash">
-                                            Squash
-                                        </FieldLabel>
-                                    </Field>
-                                </div>
-                            </FieldSet>
+                            <Field>
+                                <FieldLabel htmlFor="last_name">Phone Number</FieldLabel>
+                                <Input 
+                                    id="phone_number"
+                                    type="tel"
+                                    placeholder="+3249XXXXXXX"
+                                    autoComplete="off"
+                                    value={phoneNumber}
+                                    onChange={(e) => setPhoneNumber(e.target.value)}
+                                    disabled={loading}
+                                    required
+                                />
+                            </Field>
                             <Field>
                                 <FieldLabel htmlFor="club">
                                     Which club do you play ?
                                 </FieldLabel>
-                                <Select defaultValue="">
-                                    <SelectTrigger id="club-reprent">
-                                        <SelectValue placeholder="Club name" />
+                                <Select 
+                                    value={selectedClub}
+                                    onValueChange={setSelectedClub}
+                                    disabled={loadingClubs}
+                                >
+                                    <SelectTrigger id="club-select">
+                                        <SelectValue placeholder="Select your club" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="club name">club name 01</SelectItem>
-                                        <SelectItem value="club name">club name 02</SelectItem>
-                                        <SelectItem value="club name">club name 03</SelectItem>
+                                        { clubs.length > 0 ? (
+                                            clubs.map((club) => (
+                                                <SelectItem key={club.id} value={club.id}>
+                                                    {club.club_name}
+                                                </SelectItem>
+                                            ))
+                                        ) : (
+                                            <SelectItem value="none" disabled>No clubs available</SelectItem>
+                                        )}
                                     </SelectContent>
                                 </Select>
                             </Field>
-                            
                             <Field>
                                 <FieldLabel htmlFor="email">Email</FieldLabel>
                                 <Input 

@@ -75,7 +75,7 @@ export default function Login({
                             <Field>
                                 <FieldLabel htmlFor="email">Email</FieldLabel>
                                 <Input 
-                                    id="email"
+                                    id="email_login"
                                     type="email"
                                     placeholder="email@example.com"
                                     autoComplete="off"
@@ -96,7 +96,7 @@ export default function Login({
                                     </a>
                                 </div>
                                 <Input 
-                                    id="password" 
+                                    id="password_login" 
                                     type="password"
                                     autoComplete="off"
                                     value={password}
