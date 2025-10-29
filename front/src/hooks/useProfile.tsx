@@ -1,10 +1,11 @@
 import { useSession } from "@/context/SessionContext"
 import { supabase } from "@/lib/supabaseClient"
 import { useEffect, useState } from "react"
+import type { User } from "@/types/auth"
 
 export const useProfile = () => {
     const { session } = useSession()
-    const [profile, setProfile] = useState<any>(null)
+    const [profile, setProfile] = useState<User | null>(null)
     const [loading, setLoading] = useState<boolean>(true)
     const [error, setError] = useState<string | null>(null)
 
