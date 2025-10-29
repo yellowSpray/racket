@@ -5,11 +5,11 @@ import { supabase } from "@/lib/supabaseClient"
 
 
 const menuItems = [
-  { title: "Accueil", url: "/dashboard", icon: Home },
-  { title: "Tableaux", url: "/dashboard/settings", icon: SquarePen },
-  { title: "Match à jouer", url: "/dashboard/documents", icon: FileText },
-  { title: "Liste Joueurs", url: "/dashboard/users", icon: Users },
-  { title: "Paramètres", url: "/dashboard/settings", icon: Settings },
+  { title: "Accueil", url: "/admin", icon: Home },
+  { title: "Tableaux", url: "/admin", icon: SquarePen },
+  { title: "Match à jouer", url: "/admin", icon: FileText },
+  { title: "Liste Joueurs", url: "/admin/players", icon: Users },
+  { title: "Paramètres", url: "/admin", icon: Settings },
 ];
 
 export function AppSideBar() {

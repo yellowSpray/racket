@@ -5,6 +5,7 @@ import UserPage from "@/pages/UserPage";
 import AdminPage from "@/pages/AdminPage";
 import { createBrowserRouter } from "react-router";
 import ProtectedRoute from "@/routes/ProtectedRoute";
+import ListPlayers from "@/pages/Players/ListPlayers";
 
 const router = createBrowserRouter([
 
@@ -23,7 +24,13 @@ const router = createBrowserRouter([
             { 
                 element: <ProtectedRoute allowedRoles={["admin", "superadmin"]}/>,
                 children: [
-                    { path: "admin", element: <AdminPage /> }
+                    { 
+                        path: "admin", 
+                        element: <AdminPage />,
+                        children: [
+                            { path: "players", element: <ListPlayers />}
+                        ] 
+                    }
                 ]
             }
         ]
