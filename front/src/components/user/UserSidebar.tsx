@@ -1,6 +1,6 @@
 import { Link } from "react-router";
 import { Home, Settings, Users, FileText, SquarePen } from "lucide-react";
-import { Button } from "@/shared/components/ui/Button"
+import { Button } from "@/components/ui/Button"
 import { supabase } from "@/lib/supabaseClient"
 
 
@@ -12,11 +12,11 @@ const menuItems = [
   { title: "Paramètres", url: "/admin", icon: Settings },
 ];
 
-export function AppSideBar() {
+export function UserSideBar() {
   return (
     <aside className="col-span-2 border-r border-gray-200 flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-2 p-6 border-b border-gray-200">
+      <div className="flex items-center gap-2 p-6 border-b border-gray-200 h-18">
           <span className="text-sm font-semibold">Club Name</span>
       </div>
 

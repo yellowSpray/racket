@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { columns } from "./columns";
 import type { PlayerType } from "./columns";
 import { DataTable } from "./data-table";
-import Loading from "../Loading";
+import Loading from "../../../components/shared/Loading";
 
 async function getData(): Promise<PlayerType[]> {
     //TODO fetch data 
@@ -55,7 +55,7 @@ export default function ListPlayers() {
     }
 
     return (
-        <div className="container mx-auto py-10">
+        <div className="">
             <DataTable columns={columns} data={data} />
         </div>
     )

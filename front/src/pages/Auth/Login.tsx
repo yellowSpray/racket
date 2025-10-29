@@ -1,19 +1,19 @@
 import { cn } from "@/lib/utils"
-import { Button } from "@/shared/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { 
     Card, 
     CardContent, 
     CardDescription,  
     CardHeader,
     CardTitle,
-} from "@/shared/components/ui/Card";
+} from "@/components/ui/Card";
 import { 
     Field,
     FieldDescription,
     FieldGroup,
     FieldLabel,
-} from "@/shared/components/ui/Field";
-import { Input } from "@/shared/components/ui/Input";
+} from "@/components/ui/Field";
+import { Input } from "@/components/ui/Input";
 import { useState } from "react";
 import { supabase } from '@/lib/supabaseClient'
 import { useSession } from "@/context/SessionContext";

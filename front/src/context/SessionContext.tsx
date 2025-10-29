@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabaseClient";
 import type { Session } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useState } from "react";
-import Loading from "@/pages/Loading";
+import Loading from "@/components/shared/Loading";
 
 const SessionContext = createContext<{session: Session | null}>({
     session: null

@@ -1,6 +1,6 @@
 import { flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/Table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/Table";
 
 interface DataTableProps<TData, Tvalue> {
     columns: ColumnDef<TData, Tvalue>[]

@@ -1,6 +1,6 @@
 import { useSession } from "@/context/SessionContext"
 import { supabase } from "@/lib/supabaseClient"
-import Loading from "@/pages/Loading"
+import Loading from "@/components/shared/Loading"
 import { useEffect, useState } from "react"
 import { Navigate, Outlet } from "react-router"
 

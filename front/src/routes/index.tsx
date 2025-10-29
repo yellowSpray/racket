@@ -1,11 +1,11 @@
-import Auth from "@/pages/Auth/Auth";
+import Auth from "@/pages/auth/Auth";
 import Home from "@/pages/Home";
-import Rootlayout from "@/shared/layout/RootLayout";
-import UserPage from "@/pages/UserPage";
-import AdminPage from "@/pages/AdminPage";
+import Rootlayout from "@/layout/RootLayout";
+import UserPage from "@/pages/user/UserPage";
+import AdminPage from "@/pages/admin/AdminPage";
 import { createBrowserRouter } from "react-router";
 import ProtectedRoute from "@/routes/ProtectedRoute";
-import ListPlayers from "@/pages/Players/ListPlayers";
+import ListPlayers from "@/pages/admin/Players/ListPlayers";
 
 const router = createBrowserRouter([
 

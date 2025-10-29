@@ -1,5 +1,5 @@
-import Login from "@/pages/Auth/Login";
-import Register from "@/pages/Auth/Register";
+import Login from "@/pages/auth/Login";
+import Register from "@/pages/auth/Register";
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react"
 

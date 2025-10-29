@@ -1,13 +1,13 @@
 import { Outlet } from "react-router";
-import Header from '@/shared/components/Header'
-import Footer from '@/shared/components/Footer'
+import Header from '@/components/shared/Header'
+import Footer from '@/components/shared/Footer'
 
 const Rootlayout = () => {
 
   return (
     <>
       <Header />
-      <main className="flex-1 grid grid-cols-12 gap-4">
+      <main className="flex-1 flex flex-col items-center justify-center">
         <Outlet />
       </main>
       <Footer />
