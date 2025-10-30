@@ -1,6 +1,13 @@
 import { flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef, RowData } from "@tanstack/react-table";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/Table";
+
+//TODO erreur typages non utilisés
+declare module '@tanstack/react-table' {
+    interface ColumnMeta<TData extends RowData, TValue> {
+        className?: string;
+    }
+}
 
 interface DataTableProps<TData, Tvalue> {
     columns: ColumnDef<TData, Tvalue>[]
@@ -27,7 +34,10 @@ export function DataTable<TData, TValue>({
                         <TableRow key={headerGroup.id}>
                             {headerGroup.headers.map((header) => {
                                 return (
-                                    <TableHead key={header.id}>
+                                    <TableHead 
+                                        key={header.id}
+                                        className={header.column.columnDef.meta?.className}
+                                    >
                                         {header.isPlaceholder
                                             ? null
                                             : flexRender(
@@ -49,7 +59,10 @@ export function DataTable<TData, TValue>({
                                 data-state={row.getIsSelected() && "selected"}
                             >
                                 {row.getVisibleCells().map((cell) => (
-                                    <TableCell key={cell.id}>
+                                    <TableCell 
+                                        key={cell.id}
+                                        className={cell.column.columnDef.meta?.className}
+                                    >
                                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                     </TableCell>
                                 ))}
