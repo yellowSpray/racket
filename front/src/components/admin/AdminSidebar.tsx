@@ -7,8 +7,8 @@ import { useEffect } from "react";
 
 const menuItems = [
   { title: "Accueil", url: "/admin", icon: Home, secondTitle: "Accueil" },
-  { title: "Tableaux", url: "/admin/draw", icon: SquarePen, secondTitle: "Tout les tableaux" },
-  { title: "Match", url: "/admin/match", icon: FileText, secondTitle: "Match à jouer" },
+  { title: "Tableaux", url: "/admin/draws", icon: SquarePen, secondTitle: "Tout les tableaux" },
+  { title: "Matchs", url: "/admin/matches", icon: FileText, secondTitle: "Match à jouer" },
   { title: "Joueurs", url: "/admin/players", icon: Users, secondTitle: "Liste des joueurs" },
   { title: "Paramètres", url: "/admin/settings", icon: Settings, secondTitle: "Paramètres" },
 ];

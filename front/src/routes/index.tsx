@@ -33,8 +33,8 @@ const router = createBrowserRouter([
                         element: <AdminPage />,
                         children: [
                             { path: "", element: <DashboardAdmin />},
-                            { path: "draw", element: <DrawAdmin />},
-                            { path: "match", element: <MatchAdmin />},
+                            { path: "draws", element: <DrawAdmin />},
+                            { path: "matches", element: <MatchAdmin />},
                             { path: "players", element: <ListPlayers />},
                             { path: "settings", element: <SettingsAdmin />}
                         ] 
