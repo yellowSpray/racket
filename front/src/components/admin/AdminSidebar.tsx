@@ -1,18 +1,29 @@
-import { Link } from "react-router";
+import { Link, useLocation, matchPath } from "react-router";
 import { Home, Settings, Users, FileText, SquarePen } from "lucide-react";
 import { Button } from "@/components/ui/Button"
 import { supabase } from "@/lib/supabaseClient"
+import { useEffect } from "react";
 
 
 const menuItems = [
-  { title: "Accueil", url: "/admin", icon: Home },
-  { title: "Tableaux", url: "/admin", icon: SquarePen },
-  { title: "Match à jouer", url: "/admin", icon: FileText },
-  { title: "Liste Joueurs", url: "/admin/players", icon: Users },
-  { title: "Paramètres", url: "/admin", icon: Settings },
+  { title: "Accueil", url: "/admin", icon: Home, secondTitle: "Accueil" },
+  { title: "Tableaux", url: "/admin/draw", icon: SquarePen, secondTitle: "Tout les tableaux" },
+  { title: "Match", url: "/admin/match", icon: FileText, secondTitle: "Match à jouer" },
+  { title: "Joueurs", url: "/admin/players", icon: Users, secondTitle: "Liste des joueurs" },
+  { title: "Paramètres", url: "/admin/settings", icon: Settings, secondTitle: "Paramètres" },
 ];
 
-export function AdminSideBar() {
+export function AdminSideBar({ onTitleChange }: { onTitleChange?: (title: string) => void }) {
+
+  const location = useLocation()
+  
+  useEffect(() => {
+    const current = menuItems.find(item => 
+      matchPath({ path: item.url, end: true}, location.pathname)
+    )
+    if (current && onTitleChange) onTitleChange(current.secondTitle)
+  }, [location.pathname])
+
   return (
     <aside className="h-full col-span-2 border-r border-gray-200 flex flex-col">
       {/* Header */}

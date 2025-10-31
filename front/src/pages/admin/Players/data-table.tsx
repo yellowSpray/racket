@@ -2,7 +2,7 @@ import { flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-tabl
 import type { ColumnDef, RowData } from "@tanstack/react-table";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/Table";
 
-//TODO erreur typages non utilisés
+//TODO erreur typages non utilisés à fix
 declare module '@tanstack/react-table' {
     interface ColumnMeta<TData extends RowData, TValue> {
         className?: string;
