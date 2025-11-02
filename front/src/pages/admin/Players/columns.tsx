@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
 import type { ColumnDef } from "@tanstack/react-table";
+import { EditPlayers } from "./EditPlayers";
 
 export type PlayerType = {
     id: string
@@ -76,6 +76,8 @@ export const columns: ColumnDef<PlayerType>[] = [
         id: "actions",
         header: "Edit",
         meta: { className: "text-center" },
-        cell: () => <Button>Edit</Button>
+        cell: () => (
+            <EditPlayers />
+        )
     }
 ]
