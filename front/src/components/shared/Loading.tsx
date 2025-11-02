@@ -1,7 +1,9 @@
+import { Spinner } from "../ui/spinner";
+
 const Loading = () => {
   return (
-    <section>
-        <h1 className="header-text">Loading...</h1>
+    <section className="w-full h-lvh flex flex-col items-center justify-center">
+        <Spinner />
     </section>
   );
 };

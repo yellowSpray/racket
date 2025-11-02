@@ -6,10 +6,10 @@ import AdminPage from "@/pages/admin/AdminPage";
 import { createBrowserRouter } from "react-router";
 import ProtectedRoute from "@/routes/ProtectedRoute";
 import ListPlayers from "@/pages/admin/Players/ListPlayers";
-import { DashboardAdmin } from "@/pages/admin/dashboard";
-import { DrawAdmin } from "@/pages/admin/draw";
-import { MatchAdmin } from "@/pages/admin/match";
-import { SettingsAdmin } from "@/pages/admin/settings";
+import { DashboardAdmin } from "@/pages/admin/Dashboard";
+import { DrawAdmin } from "@/pages/admin/Draw";
+import { MatchAdmin } from "@/pages/admin/Match";
+import { SettingsAdmin } from "@/pages/admin/Settings";
 
 const router = createBrowserRouter([
 
@@ -32,7 +32,7 @@ const router = createBrowserRouter([
                         path: "admin", 
                         element: <AdminPage />,
                         children: [
-                            { path: "", element: <DashboardAdmin />},
+                            { path: "", element: <DashboardAdmin />},           
                             { path: "draws", element: <DrawAdmin />},
                             { path: "matches", element: <MatchAdmin />},
                             { path: "players", element: <ListPlayers />},
