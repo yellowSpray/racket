@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { columns } from "./columns";
-import type { PlayerType } from "./columns";
-import { DataTable } from "./data-table";
+import { columns } from "@/components/admin/players/Columns";
+import type { PlayerType } from "@/components/admin/players/Columns";
+import { DataTable } from "@/components/admin/players/Datatable";
 import Loading from "@/components/shared/Loading";
 
 async function getData(): Promise<PlayerType[]> {
@@ -71,7 +71,7 @@ async function getData(): Promise<PlayerType[]> {
     ]
 }
 
-export default function ListPlayers() {
+export function ListPlayers() {
 
     const [data, setData] = useState<PlayerType[]>([])
     const [loading, setLoading] = useState<boolean>(true)

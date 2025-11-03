@@ -25,19 +25,19 @@ export function EditPlayers () {
                 </DialogTrigger>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Edit Players</DialogTitle>
+                        <DialogTitle>Modification du joueur</DialogTitle>
                         <DialogDescription>
-                            Make some changes on the player and click on save when its done.
+                            Faites toutes les modification du joueur et puis appuyer sur sauvegarder.
                         </DialogDescription>
                     </DialogHeader>
                     <FieldGroup className="my-5">
                         <div className="grid grid-cols-2 gap-4">
                             <Field>
-                                <FieldLabel htmlFor="firstname">First name</FieldLabel>
+                                <FieldLabel htmlFor="firstname">Prénom</FieldLabel>
                                 <Input id="firstname" type="text" name="firstname" placeholder="Jhon" />
                             </Field>
                             <Field>
-                                <FieldLabel htmlFor="lastname">Last name</FieldLabel>
+                                <FieldLabel htmlFor="lastname">Nom</FieldLabel>
                                 <Input id="lastname" type="text" name="lastname" placeholder="Doe" />
                             </Field>
                         </div>
@@ -47,16 +47,16 @@ export function EditPlayers () {
                                 <Input id="email" type="email" name="email" placeholder="Jhon@email.com" />
                             </Field>
                             <Field>
-                                <FieldLabel htmlFor="phone">Phone</FieldLabel>
+                                <FieldLabel htmlFor="phone">Téléphone</FieldLabel>
                                 <Input id="phone" type="tel" name="phone" placeholder="+32454565465" />
                             </Field>
                         </div>
                     </FieldGroup>
                     <DialogFooter>
                         <DialogClose asChild>
-                            <Button variant="outline">Close</Button>
+                            <Button variant="outline">Fermer</Button>
                         </DialogClose>
-                        <Button>Save changes</Button>
+                        <Button>Sauvegarder</Button>
                     </DialogFooter>
                 </DialogContent>
             </form>

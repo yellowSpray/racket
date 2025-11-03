@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/Badge";
 import type { ColumnDef } from "@tanstack/react-table";
-import { EditPlayers } from "./EditPlayers";
+import { EditPlayers } from "@/components/admin/players/EditPlayers";
 
 export type PlayerType = {
     id: string
@@ -18,16 +18,16 @@ export type PlayerType = {
 export const columns: ColumnDef<PlayerType>[] = [
     {
         accessorKey: "box",
-        header: "Box",
+        header: "Boxes",
         meta: { className: "text-center" }
     },
     {
         accessorKey: "full_name",
-        header: "Full Name"
+        header: "Prénom Nom"
     },
     {
         accessorKey: "phone",
-        header: "Phone"
+        header: "Téléphone"
     },
     {
         accessorKey: "email",
@@ -35,17 +35,17 @@ export const columns: ColumnDef<PlayerType>[] = [
     },
     {
         accessorKey: "arrival",
-        header: "Arrival",
+        header: "Arrivée",
         meta: { className: "text-center" }
     },
     {
         accessorKey: "departure",
-        header: "Departure",
+        header: "Départ",
         meta: { className: "text-center" }
     },
     {
         accessorKey: "unavailable",
-        header: "Unavailable",
+        header: "Absence",
         cell: ({ row }) => (
             <div className="flex gap-1">
                 {row.original.unavailable.map((date, i) => (
@@ -69,12 +69,12 @@ export const columns: ColumnDef<PlayerType>[] = [
     },
     {
         accessorKey: "power_ranking",
-        header: "Ranking",
+        header: "Force",
         meta: { className: "text-center" }
     },
     {
         id: "actions",
-        header: "Edit",
+        header: "Modif.",
         meta: { className: "text-center" },
         cell: () => (
             <EditPlayers />

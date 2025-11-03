@@ -1,11 +1,11 @@
-import Auth from "@/pages/auth/Auth";
-import Home from "@/pages/Home";
-import Rootlayout from "@/layout/RootLayout";
-import UserPage from "@/pages/user/UserPage";
-import AdminPage from "@/pages/admin/AdminPage";
 import { createBrowserRouter } from "react-router";
 import ProtectedRoute from "@/routes/ProtectedRoute";
-import ListPlayers from "@/pages/admin/Players/ListPlayers";
+import Rootlayout from "@/layout/RootLayout";
+import Home from "@/pages/Home";
+import Auth from "@/pages/auth/Auth";
+import UserPage from "@/pages/user/UserPage";
+import AdminPage from "@/pages/admin/AdminPage";
+import { ListPlayers } from "@/pages/admin/PlayersPage";
 import { DashboardAdmin } from "@/pages/admin/Dashboard";
 import { DrawAdmin } from "@/pages/admin/Draw";
 import { MatchAdmin } from "@/pages/admin/Match";
