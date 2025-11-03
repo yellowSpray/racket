@@ -7,10 +7,13 @@ export default function AdminPage() {
 
   const [title, setTitle] = useState<string>("")
 
+  //TODO changer le filter true ou false
+
   return (
     <DashboardLayout 
       sidebar={<AdminSideBar onTitleChange={setTitle} />} 
       title={title}
+      filter={true}
     >
       <Outlet />
     </DashboardLayout>

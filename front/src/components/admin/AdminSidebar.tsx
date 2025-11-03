@@ -25,7 +25,7 @@ export function AdminSideBar({ onTitleChange }: { onTitleChange?: (title: string
   }, [location.pathname])
 
   return (
-    <aside className="h-full col-span-2 border-r border-gray-200 flex flex-col">
+    <div className="h-full col-span-2 border-r border-gray-200 flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-2 p-6 border-b border-gray-200 h-18">
           <span className="text-sm font-semibold">Club Name</span>
@@ -70,6 +70,6 @@ export function AdminSideBar({ onTitleChange }: { onTitleChange?: (title: string
               Sign out
           </Button>
       </div>
-    </aside>
+    </div>
   );
 }
