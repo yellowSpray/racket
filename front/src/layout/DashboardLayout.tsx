@@ -6,8 +6,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/Select"
-import { Button } from '@/components/ui/Button';
+} from "@/components/ui/select"
+import { Button } from '@/components/ui/button';
 
 export default function DashboardLayout({ sidebar, title, filter, children }: { sidebar?: ReactNode, children: ReactNode, title: string, filter: boolean }) {
     

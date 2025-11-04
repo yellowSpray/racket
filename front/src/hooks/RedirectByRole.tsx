@@ -11,7 +11,7 @@ export const RedirectByRole = () => {
     const [role, setRole] = useState<string | null>(null)
     const [loading, setLoading] = useState<boolean>(true)
 
-
+    
     useEffect(() => {
         const fetchRole = async () => {
             if (!session) {
@@ -35,6 +35,8 @@ export const RedirectByRole = () => {
 
         fetchRole()
     }, [session])
+
+    //TODO à changer 
 
     if(loading) return <Loading />
     if(!role) return <Navigate to="/" replace />

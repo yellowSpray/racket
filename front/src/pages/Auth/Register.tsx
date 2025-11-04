@@ -1,26 +1,26 @@
 import { useState } from "react"
-import { Button } from "@/components/ui/Button"
+import { Button } from "@/components/ui/button"
 import { 
     Card, 
     CardContent, 
     CardDescription,  
     CardHeader,
     CardTitle,
-} from "@/components/ui/Card";
+} from "@/components/ui/card";
 import { 
     Field,
     FieldDescription,
     FieldGroup,
     FieldLabel,
-} from "@/components/ui/Field";
+} from "@/components/ui/field";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/Select"
-import { Input } from "@/components/ui/Input";
+} from "@/components/ui/select"
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabaseClient";
 import { useClubs } from "@/hooks/useClub";

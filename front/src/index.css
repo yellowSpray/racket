@@ -12,11 +12,11 @@
   --secondary: oklch(0.9940 0 0);
   --secondary-foreground: oklch(0.2046 0 0);
   --muted: oklch(0.9461 0 0);
-  --muted-foreground: oklch(0.2435 0 0);
+  --muted-foreground: oklch(60.999% 0.00007 271.152);
   --accent: oklch(0.9461 0 0);
   --accent-foreground: oklch(0.2435 0 0);
   --border: oklch(0.9037 0 0);
-  --input: oklch(0.9731 0 0);
+  --input: oklch(86.686% 0.0001 271.152);
   --ring: rgb(102, 222, 166);
   --sidebar: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.205 0 0);

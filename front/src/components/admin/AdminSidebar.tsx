@@ -1,6 +1,6 @@
 import { Link, useLocation, matchPath } from "react-router";
 import { Home, Settings, Users, FileText, SquarePen } from "lucide-react";
-import { Button } from "@/components/ui/Button"
+import { Button } from "@/components/ui/button"
 import { supabase } from "@/lib/supabaseClient"
 import { useEffect } from "react";
 

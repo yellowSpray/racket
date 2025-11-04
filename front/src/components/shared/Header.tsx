@@ -1,7 +1,7 @@
 import { Link } from "react-router"
-import Logo from "@/components/ui/Logo"
-import { Button } from "@/components/ui/Button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar"
+import Logo from "@/components/ui/logo"
+import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useProfile } from "@/hooks/useProfile"
 import { Bell } from "lucide-react"
 
