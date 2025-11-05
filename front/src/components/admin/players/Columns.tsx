@@ -1,21 +1,9 @@
 import { Badge } from "@/components/ui/badge";
-import type { ColumnDef } from "@tanstack/react-table";
 import { EditPlayers } from "@/components/admin/players/EditPlayers";
+import type { ColumnDef } from "@tanstack/react-table";
+import type { PlayerType } from "@/types/player";
 
-export type PlayerType = {
-    id: string
-    box: string
-    full_name: string
-    phone: string
-    email: string
-    arrival: string
-    departure: string
-    unavailable: string[]
-    status: ("active" | "inactive" | "member" | "visitor" | "paid" | "unpaid" )[]
-    power_ranking: string
-}
-
-export const columns: ColumnDef<PlayerType>[] = [
+export const columns = (updatePlayer: (id: string, data: Partial<PlayerType>) => Promise<void>): ColumnDef<PlayerType>[] => [
     {
         accessorKey: "box",
         header: "Boxes",
@@ -23,7 +11,8 @@ export const columns: ColumnDef<PlayerType>[] = [
     },
     {
         accessorKey: "full_name",
-        header: "Prénom Nom"
+        header: "Prénom Nom",
+        accessorFn: (row) => `${row.first_name} ${row.last_name}`
     },
     {
         accessorKey: "phone",
@@ -76,8 +65,12 @@ export const columns: ColumnDef<PlayerType>[] = [
         id: "actions",
         header: "Modif.",
         meta: { className: "text-center" },
-        cell: () => (
-            <EditPlayers />
+        cell: ({row}) => (
+            <EditPlayers 
+                mode="edit"
+                playerData={row.original}
+                onSave={(data) => updatePlayer(row.original.id, data)}
+            />
         )
     }
 ]

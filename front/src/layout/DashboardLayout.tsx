@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { EditPlayers } from "@/components/admin/players/EditPlayers";
 import {
   Select,
   SelectContent,
@@ -7,11 +8,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Button } from '@/components/ui/button';
+import type { PlayerType } from '@/types/player';
 
-export default function DashboardLayout({ sidebar, title, filter, children }: { sidebar?: ReactNode, children: ReactNode, title: string, filter: boolean }) {
+export default function DashboardLayout({ 
+    sidebar, 
+    title, 
+    filter,
+    onAddPlayer,
+    children
+}: { 
+    sidebar?: ReactNode, 
+    children: ReactNode, 
+    title: string, 
+    filter: boolean,
+    onAddPlayer?: (data: Partial<PlayerType>) => Promise<void>  
+}) {
     
     return (
+
     <div className="w-full flex-1 grid grid-cols-12">
 
         {sidebar && (
@@ -26,7 +40,10 @@ export default function DashboardLayout({ sidebar, title, filter, children }: { 
                 {title && (<h2>{title}</h2>)}                    
                 {filter && (
                     <div className="flex flex-row gap-4">
-                        <Button variant="ghost" className='border-1'>Ajout de joueur +</Button>
+                        <EditPlayers 
+                            mode="create"
+                            onSave={onAddPlayer}
+                        />
                         <Select name="filterPlayer">
                             <SelectTrigger className="w-[180px]">
                                 <SelectValue placeholder="Filtre" />
