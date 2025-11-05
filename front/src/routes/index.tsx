@@ -2,7 +2,7 @@ import { createBrowserRouter } from "react-router";
 import ProtectedRoute from "@/routes/ProtectedRoute";
 import Rootlayout from "@/layout/RootLayout";
 import Home from "@/pages/Home";
-import Auth from "@/pages/auth/Auth";
+import Auth from "@/pages/auth/AuthPage";
 import UserPage from "@/pages/user/UserPage";
 import AdminPage from "@/pages/admin/AdminPage";
 import { ListPlayers } from "@/pages/admin/PlayersPage";

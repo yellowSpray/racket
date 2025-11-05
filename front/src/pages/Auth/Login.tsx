@@ -16,32 +16,31 @@ import {
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { supabase } from '@/lib/supabaseClient'
-import { useSession } from "@/context/SessionContext";
-import { RedirectByRole } from "@/hooks/RedirectByRole";
+import { RedirectByRole } from "@/components/shared/RedirectByRole";
+import { useAuth } from "@/contexts/AuthContext";
 
 type RegisterProps = {
   className?: string;
   toggle: () => void; 
 };
 
-export default function Login({
-    className,
-    toggle,
-    ...props
-}: RegisterProps) {
+export default function Login({className, toggle, ...props}: RegisterProps) {
+    
+    const { isAuthenticated } = useAuth()
+    const [loading, setLoading] = useState<boolean>(false)
+    const [error, setError] = useState<string>("")
+    const [email, setEmail] = useState<string>("")
+    const [password, setPassword] = useState<string>("")
 
-    const { session } = useSession()
-
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState("")
-    const [email, setEmail] = useState("")
-    const [password, setPassword] = useState("")
-
-    if ( session ) return <RedirectByRole />
+    // si connecté , redirection
+    if ( isAuthenticated ) return <RedirectByRole />
 
     const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+
         e.preventDefault()
         setLoading(true)
+        setError("")
+        
         const { error } = await supabase.auth.signInWithPassword({
             email: email,
             password: password

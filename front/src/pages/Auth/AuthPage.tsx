@@ -9,10 +9,11 @@ export default function Auth() {
     const switchOn = () => setSignIn(!signIn)
     console.log(signIn)
 
+    //TODO changer la taille de la div qui contient les formulaires
     return (
-        <section className="col-span-12 flex flex-row items-center justify-center p-4 md:p-6">
+        <section className="w-full h-full flex flex-col items-center justify-center p-4 md:p-6">
             <AnimatePresence mode="wait">
-                <div className="w-full h-full flex flex-row justify-between items-center relative">
+                <div className="w-full h-[500px] flex flex-row justify-between items-center relative">
                     <Login 
                         toggle={switchOn} 
                         className="w-1/2"

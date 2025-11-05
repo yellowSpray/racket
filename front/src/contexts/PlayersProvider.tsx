@@ -1,9 +1,9 @@
-/* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, type ReactNode } from 'react';
-import { useAdminPlayers } from '@/hooks/useAdminPlayers';
+import type { ReactNode } from 'react';
 import type { PlayerType } from '@/types/player';
+import { useAdminPlayers } from '@/hooks/useAdminPlayers';
+import { PlayersContext } from './PlayersContext';
 
-interface PlayersContextType {
+export interface PlayersContextType {
     players: PlayerType[];
     loading: boolean;
     error: string | null;
@@ -12,7 +12,6 @@ interface PlayersContextType {
     fetchPlayer: () => Promise<void>;
 }
 
-const PlayersContext = createContext<PlayersContextType | undefined>(undefined);
 
 export function PlayersProvider({ children }: { children: ReactNode }) {
     const playersData = useAdminPlayers();
@@ -22,12 +21,4 @@ export function PlayersProvider({ children }: { children: ReactNode }) {
             {children}
         </PlayersContext.Provider>
     );
-}
-
-export function usePlayers(): PlayersContextType {
-    const context = useContext(PlayersContext);
-    if (context === undefined) {
-        throw new Error('usePlayers must be used within a PlayersProvider');
-    }
-    return context;
 }

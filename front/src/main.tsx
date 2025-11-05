@@ -1,14 +1,14 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router'
-import { SessionProvider } from './context/SessionContext'
+import { AuthProvider } from './contexts/AuthContext'
 import '@/index.css'
 import router from './routes'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <SessionProvider>
+    <AuthProvider>
       <RouterProvider router={router} />
-    </SessionProvider>
+    </AuthProvider>
   </StrictMode>
 )

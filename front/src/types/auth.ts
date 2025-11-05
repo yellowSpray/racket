@@ -1,13 +1,21 @@
-export interface User {
+import type { User } from "@supabase/supabase-js";
+import type { SessionData } from "react-router";
+
+export interface UserProfile {
     id: string,
     last_name: string,
     first_name: string,
     email: string,
     phone: string,
-    role: string
+    role: 'user' | 'admin' | 'superadmin';
+    avatar_url?: string;
 }
 
-export interface LoginCredentials {
-    email: string,
-    password: string
+export interface AuthContextType {
+    session: SessionData | null;
+    user: User | null;
+    profile: UserProfile | null;
+    isLoading: boolean;
+    isAuthenticated: boolean;
+    signOut: () => Promise<void>;
 }

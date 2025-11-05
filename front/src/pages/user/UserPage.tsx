@@ -4,7 +4,11 @@ import { Outlet } from "react-router";
 
 export default function UserPage() {
   return (
-    <DashboardLayout sidebar={<UserSideBar/>}>
+    <DashboardLayout 
+      sidebar={<UserSideBar/>}
+      title=""
+      filter={false}
+    >
       <Outlet />
     </DashboardLayout>
   );

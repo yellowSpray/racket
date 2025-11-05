@@ -1,47 +1,32 @@
-import { useSession } from "@/context/SessionContext"
-import { supabase } from "@/lib/supabaseClient"
 import Loading from "@/components/shared/Loading"
-import { useEffect, useState } from "react"
 import { Navigate, Outlet } from "react-router"
+import { useAuth } from "@/contexts/AuthContext"
 
 type ProtectedRouteProps = {
     allowedRoles?: string[]
 }
 
-const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
+export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
 
-    const { session } = useSession()
-    const [userRole, setUserRole] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
+    const { isAuthenticated, profile, isLoading } = useAuth()
 
-    useEffect(() => {
-        const fetchRole = async () => {
-            if(!session) return setLoading(false)
-
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('role')
-                .eq('id', session.user.id)
-                .single()
-
-            if (error) {
-                console.error('Error fecthing role : ', error)
-            }
-
-            setUserRole(data?.role || null)
-            setLoading(false)
-        }
-
-        fetchRole()
-    }, [session])
-
-    if(loading) return <Loading />   
-    if(!session) return <Navigate to="/auth" replace />
-    if(!userRole) return <Navigate to="/" replace />
-
-    if(allowedRoles && !allowedRoles.includes(userRole)) return <Navigate to="/" replace />
+    // chargement , affiche le loading
+    if(isLoading){
+        return <Loading />
+    }
+    // si pas connecté , redirige vers /auth
+    if(!isAuthenticated){
+        return <Navigate to="/auth" replace />
+    }
+    // pas de profil chargé, redirige vers /auth
+    if(!profile){
+        return <Navigate to="/auth" replace />
+    }
+    // verifie si le user a le bon role sinon redirige vers /
+    if(allowedRoles && !allowedRoles.includes(profile.role)){
+        return <Navigate to="/" replace />
+    }
     
+    // si tout ok alors affiche la route protégé
     return <Outlet />
 }
-
-export default ProtectedRoute

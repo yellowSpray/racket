@@ -41,12 +41,9 @@ export function useAdminPlayers() {
 
         const { data, error } = await supabase
             .from("profiles")
-            .select("*, player_status(status), schedule(arrival, departure), absences(date)")
+            .select("*, player_status(status), schedule(arrival, departure), absences(absent_date)")
             .order("created_at", { ascending: false })
         
-        console.log("Supabase response - data:", data)
-        console.log("Supabase response - error:", error)
-
         if(error) {
             console.error("Erreur Supabase:", error.message)
             setError(error.message)
