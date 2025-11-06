@@ -248,6 +248,7 @@ function StepperTrigger({ asChild = false, className, children, tabIndex, ...pro
 
   return (
     <button
+      type="button"
       ref={btnRef}
       role="tab"
       id={id}
