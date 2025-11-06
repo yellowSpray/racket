@@ -62,12 +62,12 @@ export function EditPlayers ({ mode = "edit", playerData, onSave }: EditPlayersP
     const [selected, setSelected] = useState<string[]>([])
 
     // voir si le membre est actif dans l'event
-    // const isMemberActive = selected.includes("member")
     const isVisitor = selected.includes("visitor")
 
     // reset du formulaire quand il  s'ouvre
     useEffect(() => {
         if(open) {
+            setIsSubmitting(false) // reset
             if(mode === "edit" && playerData) {
                 // mode edition donc on charge les données
                 console.log("mode edition on charge les données du joueur:", playerData)
@@ -103,7 +103,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave }: EditPlayersP
 
     // handler pour les status 
     const handleStatusChange = (values: string[]) => {
-        let newSelected = [...values]
+        let newSelected = [...selected]
 
         // gestion status active/inactive
         if(values.includes("active")) {
@@ -156,6 +156,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave }: EditPlayersP
         e.preventDefault()
 
         console.log("=== HANDLE SUBMIT APPELÉ ===");
+        console.trace("Stack trace de l'appel :"); // debug handleSubmit
         console.log("Mode:", mode);
         console.log("Current step:", currentStep);
         console.log("Steps length:", steps.length);
@@ -370,7 +371,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave }: EditPlayersP
                             }
                         }}
                     >
-                        <Stepper value={currentStep} onValueChange={setCurrentStep} className="space-y-6">
+                        <Stepper value={currentStep} className="space-y-6">
 
                             <DialogHeader>
                                 <DialogTitle className="mb-2">
@@ -386,7 +387,9 @@ export function EditPlayers ({ mode = "edit", playerData, onSave }: EditPlayersP
                                     <StepperNav>
                                         {steps.map((step) => (
                                             <StepperItem key={step} step={step}>
-                                                <StepperTrigger disabled>
+                                                {/* TODO bug to fix , je crois que quand on clique dans le formulaire */}
+                                                {/* le trigger s'active et submit le formulaire automatiquement ...   */}
+                                                <StepperTrigger disabled> 
                                                     <StepperIndicator>{step}</StepperIndicator>
                                                 </StepperTrigger>
                                                 {steps.length > step && 
@@ -412,7 +415,6 @@ export function EditPlayers ({ mode = "edit", playerData, onSave }: EditPlayersP
                                     variant="outline" 
                                     disabled={currentStep === 1}
                                     onClick={() => {
-                                        console.log("=== BOUTON PRECEDENT CLIQUÉ ===");
                                         handlePrevious();
                                     }}
                                 >
@@ -422,7 +424,6 @@ export function EditPlayers ({ mode = "edit", playerData, onSave }: EditPlayersP
                                     <Button 
                                         type="submit"
                                         onClick={() => {
-                                            console.log("=== BOUTON SUBMIT CLIQUÉ ===")
                                             setIsSubmitting(true)
                                         }}
                                     >
@@ -433,7 +434,6 @@ export function EditPlayers ({ mode = "edit", playerData, onSave }: EditPlayersP
                                         type="button"
                                         variant="outline"
                                         onClick={() => {
-                                            console.log("=== BOUTON SUIVANT CLIQUÉ ===");
                                             handleNext();
                                         }}
                                     >
