@@ -38,132 +38,193 @@ export function useAdminPlayers() {
     const fetchPlayer = async () => {
 
         setLoading(true)
+        setError(null)
 
-        const { data, error } = await supabase
-            .from("profiles")
-            .select("*, player_status(status), schedule(arrival, departure), absences(absent_date)")
-            .order("created_at", { ascending: false })
-        
-        if(error) {
-            console.error("Erreur Supabase:", error.message)
-            setError(error.message)
+        try {
+
+            const { data, error: fetchError } = await supabase
+                .from("profiles")
+                .select("*, player_status(status), schedule(arrival, departure), absences(absent_date)")
+                .order("created_at", { ascending: false })
+
+            if(fetchError) {
+                console.error("Erreur Supabase:", fetchError.message)
+                setError(fetchError.message)
+                return
+            }
+
+            // Transformation des données pour correspondre au type PlayerType
+            const transformedData: PlayerType[] = (data || []).map((player: SupabasePlayer) => {
+
+                let arrivalTime = ""
+                let departureTime = ""
+
+                if (player.schedule?.[0]?.arrival) {
+                    const arrivalDate = new Date(player.schedule[0].arrival)
+                    arrivalTime = arrivalDate.toLocaleTimeString('fr-FR', { 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        hour12: false 
+                    })
+                }
+
+                if (player.schedule?.[0]?.departure) {
+                    const departureDate = new Date(player.schedule[0].departure)
+                    departureTime = departureDate.toLocaleTimeString('fr-FR', { 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        hour12: false 
+                    })
+                }
+
+                return {
+                    id: player.id,
+                    first_name: player.first_name,
+                    last_name: player.last_name,
+                    full_name: `${player.first_name} ${player.last_name}`,
+                    email: player.email || "",
+                    phone: player.phone || "",
+                    arrival: arrivalTime,
+                    departure: departureTime,
+                    unavailable: player.absences?.map((d: SupabaseAbsence) => d.date) || [],
+                    status: player.player_status?.map((s: SupabasePlayerStatus) => s.status) || [],
+                    power_ranking: player.power_ranking || "",
+                }
+
+            })
+
+            setPlayer(transformedData)
+
+        } catch (err) {
+            console.error("Erreur inattendue:", err)
+            setError(err instanceof Error ? err.message : "Erreur inconnue")
+        } finally {
             setLoading(false)
-            return
         }
-
-        // Transformation des données pour correspondre au type PlayerType
-        const transformedData: PlayerType[] = (data || []).map((player: SupabasePlayer) => ({
-            id: player.id,
-            first_name: player.first_name,
-            last_name: player.last_name,
-            full_name: `${player.first_name} ${player.last_name}`, // Ajout de full_name
-            email: player.email || "",
-            phone: player.phone || "",
-            // Extraction des données imbriquées avec valeurs par défaut
-            arrival: player.schedule?.[0]?.arrival || "",
-            departure: player.schedule?.[0]?.departure || "",
-            unavailable: player.absences?.map((d: SupabaseAbsence) => d.date) || [],
-            status: player.player_status?.map((s: SupabasePlayerStatus) => s.status) || [],
-            power_ranking: player.power_ranking || "",
-        }))
-
-        setPlayer(transformedData)
-        setLoading(false)
+        
     }
 
-    //creation d'un joueur
+    // creation d'un joueur
     const addPlayer = async (player: Partial<PlayerType>) => {
+
         setLoading(true)
-        const { first_name, last_name, email, phone, arrival, departure, status, power_ranking } = player
+        setError(null)
 
-        // creation profile
-        const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .insert([
-                {first_name, last_name, avatar_url: null, role: "user", power_ranking, phone, email}
-            ])
-            .select()
-            .single()
-        
-        if(profileError) {
-            setError(profileError.message)
+        try {
+
+            console.log("Données reçues:", player)
+
+            const { data, error: rpcError } = await supabase.rpc('upsert_player', {
+                p_profile_id: null,
+                p_first_name: player.first_name || '',
+                p_last_name: player.last_name || '',
+                p_phone: player.phone || '',
+                p_email: player.email || '',
+                p_power_ranking: player.power_ranking ? parseInt(player.power_ranking) : 0,
+                p_avatar_url: null,
+                p_club_id: null,
+                p_statuses: player.status || [],
+                p_arrival_time: player.arrival || null,
+                p_departure_time: player.departure || null,
+                p_event_id: null,
+                p_event_date: null,
+                p_payment_amount: 0
+            })
+
+            if (rpcError) {
+                console.error("Erreur RPC:", rpcError)
+                setError(rpcError.message)
+                return
+            }
+
+            console.log("Réponse de upsert_player:", data)
+
+            if (data && typeof data === 'object' && 'success' in data) {
+                if (!data.success) {
+                    console.error("Erreur dans la fonction:", data.error)
+                    setError(data.error as string)
+                    return
+                }
+                console.log("Joueur créé:", data.profile_id)
+            }
+
+            // Rafraîchir la liste
+            await fetchPlayer()
+
+        } catch (err) {
+            console.error("Erreur inattendue:", err)
+            setError(err instanceof Error ? err.message : "Erreur inconnue")
+        } finally {
             setLoading(false)
-            return
         }
 
-        //status joueur
-        if (status && status.length > 0) {
-            const statusInserts = status.map(s => ({
-                profile_id: profile.id,
-                status: s
-            }))
-            await supabase.from("player_status").insert(statusInserts)
-        }
-
-        // horaire joueur
-        if(arrival || departure) {
-            await supabase.from("schedule").insert([
-                { profile_id: profile.id, arrival, departure}
-            ])
-        }
-
-        await fetchPlayer()
-        setLoading(false)
     }
-
+    
     // mise à jour joueur
     const updatePlayer = async (id: string, updates: Partial<PlayerType>) => {
         
         setLoading(true)
-        // Mise à jour du profil principal
-        const profileUpdates: Partial<SupabasePlayer> = {}
-        if (updates.first_name) profileUpdates.first_name = updates.first_name
-        if (updates.last_name) profileUpdates.last_name = updates.last_name
-        if (updates.email) profileUpdates.email = updates.email
-        if (updates.phone) profileUpdates.phone = updates.phone
-        if (updates.power_ranking) profileUpdates.power_ranking = updates.power_ranking
+        setError(null)
 
-        if (Object.keys(profileUpdates).length > 0) {
-            const { error } = await supabase
-                .from("profiles")
-                .update(profileUpdates)
-                .eq("id", id)
+        try {
 
-            if (error) {
-                setError(error.message)
+            console.log("Player ID:", id)
+            console.log("Updates:", updates)
+
+            // Récupérer le joueur actuel
+            const currentPlayer = players.find(p => p.id === id)
+            if (!currentPlayer) {
+                setError("Joueur non trouvé")
+                return
             }
-        }
 
-        // Mise à jour du schedule si nécessaire
-        if (updates.arrival || updates.departure) {
-            await supabase
-                .from("schedule")
-                .upsert({
-                    profile_id: id,
-                    arrival: updates.arrival,
-                    departure: updates.departure
-                })
-        }
+            // Appel de la fonction PostgreSQL upsert_player
+            const { data, error: rpcError } = await supabase.rpc('upsert_player', {
+                p_profile_id: id, 
+                p_first_name: updates.first_name || currentPlayer.first_name,
+                p_last_name: updates.last_name || currentPlayer.last_name,
+                p_phone: updates.phone || currentPlayer.phone,
+                p_email: updates.email || currentPlayer.email,
+                p_power_ranking: updates.power_ranking 
+                    ? parseInt(updates.power_ranking) 
+                    : parseInt(currentPlayer.power_ranking || '0'),
+                p_avatar_url: null,
+                p_club_id: null,
+                p_statuses: updates.status || currentPlayer.status,
+                p_event_id: null,
+                p_arrival_time: null,
+                p_departure_time: null,
+                p_event_date: null,
+                p_payment_amount: 0
+            })
 
-        // Mise à jour des status si nécessaire
-        if (updates.status) {
-            // Supprimer les anciens status
-            await supabase
-                .from("player_status")
-                .delete()
-                .eq("profile_id", id)
-            
-            // Insérer les nouveaux
-            const statusInserts = updates.status.map(s => ({
-                profile_id: id,
-                status: s
-            }))
+            if (rpcError) {
+                console.error("Erreur RPC:", rpcError)
+                setError(rpcError.message)
+                return
+            }
 
-            await supabase.from("player_status").insert(statusInserts)
-        }
+            console.log("Réponse de upsert_player:", data)
 
-        await fetchPlayer()
-        setLoading(false)
+            // Vérifier le succès
+            if (data && typeof data === 'object' && 'success' in data) {
+                if (!data.success) {
+                    console.error("Erreur dans la fonction:", data.error)
+                    setError(data.error as string)
+                    return
+                }
+                console.log("Joueur mis à jour:", data.profile_id)
+            }
+
+            // Rafraîchir la liste
+            await fetchPlayer()
+
+        } catch (err) {
+            console.error("Erreur inattendue:", err)
+            setError(err instanceof Error ? err.message : "Erreur inconnue")
+        } finally {
+            setLoading(false)
+        }        
     }
     
     useEffect(() => {

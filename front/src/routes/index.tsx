@@ -5,7 +5,7 @@ import Home from "@/pages/Home";
 import Auth from "@/pages/auth/AuthPage";
 import UserPage from "@/pages/user/UserPage";
 import AdminPage from "@/pages/admin/AdminPage";
-import { ListPlayers } from "@/pages/admin/PlayersPage";
+import { ListPlayers } from "@/pages/admin/ListPlayerPage";
 import { DashboardAdmin } from "@/pages/admin/Dashboard";
 import { DrawAdmin } from "@/pages/admin/Draw";
 import { MatchAdmin } from "@/pages/admin/Match";

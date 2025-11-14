@@ -7,25 +7,25 @@
 
 CREATE OR REPLACE FUNCTION public.upsert_player(
   -- Donnees du profil
-  p_profile_id uuid,           -- NULL pour creation, UUID pour edition
+  p_profile_id uuid,
   p_first_name text,
   p_last_name text,
   p_phone text,
-  p_email text,                -- Email de l'utilisateur (dans auth.users)
+  p_email text,
   p_power_ranking int4,
   p_avatar_url text DEFAULT NULL,
   p_club_id uuid DEFAULT NULL,
   
-  -- Donnees de statut (array de status)
-  p_statuses text[] DEFAULT NULL,  -- Ex: ['active', 'member'] ou ['inactive', 'visitor', 'unpaid']
+  -- Donnees de statut
+  p_statuses text[] DEFAULT NULL,
   
-  -- Donnees de schedule (optionnel, lie a un evenement)
+  -- Donnees de schedule (horaires generaux, pas lies a un evenement)
+  p_arrival_time time DEFAULT NULL,
+  p_departure_time time DEFAULT NULL,
+  
+  -- Parametres non utilises pour l'instant (compatibilite future)
   p_event_id uuid DEFAULT NULL,
-  p_arrival_time time DEFAULT NULL,    -- Juste l'heure (ex: '19:30')
-  p_departure_time time DEFAULT NULL,  -- Juste l'heure (ex: '22:30')
-  p_event_date date DEFAULT NULL,      -- Date de l'evenement pour construire le timestamp
-  
-  -- Montant du paiement si visitor
+  p_event_date date DEFAULT NULL,
   p_payment_amount numeric(10,2) DEFAULT 0
 )
 RETURNS json
@@ -53,13 +53,13 @@ BEGIN
   IF p_profile_id IS NULL THEN
     -- MODE CREATION : creer un nouvel utilisateur
     
-    -- Verifier si l'email existe deja
+    -- Verifier si l'email existe deja dans auth.users
     SELECT id INTO v_user_id
     FROM auth.users
     WHERE email = p_email;
     
     IF v_user_id IS NOT NULL THEN
-      -- L'utilisateur existe deja, on recupere son profil
+      -- L'utilisateur existe deja dans auth, recuperer son profil
       v_profile_id := v_user_id;
       
       -- Mettre a jour le profil existant
@@ -68,6 +68,7 @@ BEGIN
         first_name = p_first_name,
         last_name = p_last_name,
         phone = p_phone,
+        email = p_email,
         power_ranking = p_power_ranking,
         avatar_url = COALESCE(p_avatar_url, avatar_url),
         club_id = COALESCE(p_club_id, club_id),
@@ -75,23 +76,19 @@ BEGIN
       WHERE id = v_profile_id;
       
     ELSE
-      -- Creer un nouvel utilisateur dans auth.users
-      -- Note: Ceci necessite des privileges speciaux ou l'utilisation de l'API Supabase
-      -- Pour l'instant, on cree juste le profil sans compte auth
-      -- L'utilisateur devra s'inscrire lui-meme plus tard
-      
+      -- Creer un nouveau profil sans compte auth (is_linked = false)
       v_profile_id := gen_random_uuid();
       
       INSERT INTO public.profiles (
-        id, first_name, last_name, phone, power_ranking, 
+        id, first_name, last_name, phone, email, power_ranking, 
         avatar_url, club_id, role, is_linked
       )
       VALUES (
-        v_profile_id, p_first_name, p_last_name, p_phone, p_power_ranking,
+        v_profile_id, p_first_name, p_last_name, p_phone, p_email, p_power_ranking,
         p_avatar_url, p_club_id, 'user', false
       );
     END IF;
-    
+  
   ELSE
     -- MODE EDITION : modifier un profil existant
     v_profile_id := p_profile_id;
@@ -101,6 +98,7 @@ BEGIN
       first_name = p_first_name,
       last_name = p_last_name,
       phone = p_phone,
+      email = p_email,
       power_ranking = p_power_ranking,
       avatar_url = COALESCE(p_avatar_url, avatar_url),
       club_id = COALESCE(p_club_id, club_id),
@@ -137,20 +135,22 @@ BEGIN
   -- ETAPE 3: GESTION DU SCHEDULE
   -- ===================================
   
-  IF p_event_id IS NOT NULL AND p_event_date IS NOT NULL THEN
-    -- Construire les timestamps complets a partir de la date et des heures
+  IF p_arrival_time IS NOT NULL OR p_departure_time IS NOT NULL THEN
+    -- Construire des timestamps pour aujourd'hui avec les heures fournies
+    -- (on utilise CURRENT_DATE comme date de reference)
     IF p_arrival_time IS NOT NULL THEN
-      v_arrival_timestamp := (p_event_date + p_arrival_time)::timestamptz;
+      v_arrival_timestamp := (CURRENT_DATE + p_arrival_time)::timestamptz;
     END IF;
     
     IF p_departure_time IS NOT NULL THEN
-      v_departure_timestamp := (p_event_date + p_departure_time)::timestamptz;
+      v_departure_timestamp := (CURRENT_DATE + p_departure_time)::timestamptz;
     END IF;
     
-    -- Inserer ou mettre a jour le schedule
+    -- Inserer ou mettre a jour le schedule general (sans event_id)
     INSERT INTO public.schedule (profile_id, event_id, arrival, departure)
-    VALUES (v_profile_id, p_event_id, v_arrival_timestamp, v_departure_timestamp)
-    ON CONFLICT (profile_id, event_id) 
+    VALUES (v_profile_id, NULL, v_arrival_timestamp, v_departure_timestamp)
+    ON CONFLICT (profile_id) 
+    WHERE event_id IS NULL
     DO UPDATE SET
       arrival = EXCLUDED.arrival,
       departure = EXCLUDED.departure,
@@ -211,7 +211,7 @@ EXCEPTION
 END;
 $$;
 
--- Accorder les permissions necessaires
+-- Accorder les permissions
 GRANT EXECUTE ON FUNCTION public.upsert_player TO authenticated;
 
 -- ===================================
