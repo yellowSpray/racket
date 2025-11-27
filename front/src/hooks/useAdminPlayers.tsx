@@ -79,6 +79,15 @@ export function useAdminPlayers() {
                     })
                 }
 
+                // trier les status 
+                const statusOrder = ['member', 'visitor', 'active', 'inactive', 'paid', 'unpaid']
+                const sortedStatus = (player.player_status?.map((s: SupabasePlayerStatus) => s.status) || [])
+                    .sort((a, b) => {
+                        const indexA = statusOrder.indexOf(a)
+                        const indexB = statusOrder.indexOf(b)
+                        return indexA - indexB
+                    })
+
                 return {
                     id: player.id,
                     first_name: player.first_name,
@@ -89,7 +98,7 @@ export function useAdminPlayers() {
                     arrival: arrivalTime,
                     departure: departureTime,
                     unavailable: player.absences?.map((d: SupabaseAbsence) => d.date) || [],
-                    status: player.player_status?.map((s: SupabasePlayerStatus) => s.status) || [],
+                    status: sortedStatus,
                     power_ranking: player.power_ranking || "",
                 }
 
