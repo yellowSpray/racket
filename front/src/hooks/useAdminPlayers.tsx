@@ -64,7 +64,8 @@ export function useAdminPlayers() {
                     arrivalTime = arrivalDate.toLocaleTimeString('fr-FR', { 
                         hour: '2-digit', 
                         minute: '2-digit',
-                        hour12: false 
+                        hour12: false,
+                        timeZone: 'UTC' 
                     })
                 }
 
@@ -73,7 +74,8 @@ export function useAdminPlayers() {
                     departureTime = departureDate.toLocaleTimeString('fr-FR', { 
                         hour: '2-digit', 
                         minute: '2-digit',
-                        hour12: false 
+                        hour12: false,
+                        timeZone: 'UTC' 
                     })
                 }
 
@@ -191,9 +193,9 @@ export function useAdminPlayers() {
                 p_avatar_url: null,
                 p_club_id: null,
                 p_statuses: updates.status || currentPlayer.status,
+                p_arrival_time: updates.arrival || currentPlayer.arrival || null,
+                p_departure_time: updates.departure || currentPlayer.departure || null,
                 p_event_id: null,
-                p_arrival_time: null,
-                p_departure_time: null,
                 p_event_date: null,
                 p_payment_amount: 0
             })
