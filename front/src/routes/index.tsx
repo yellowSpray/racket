@@ -9,7 +9,7 @@ import { DashboardAdmin } from "@/pages/admin/Dashboard";
 import { DrawAdmin } from "@/pages/admin/Draw";
 import { MatchAdmin } from "@/pages/admin/Match";
 import { SettingsAdmin } from "@/pages/admin/Settings";
-import { RedirectByRole } from "@/components/shared/RedirectByRole";
+import { RedirectByRole } from "@/routes/RedirectByRole";
 
 const router = createBrowserRouter([
 

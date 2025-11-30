@@ -1,8 +1,15 @@
 import { Link, useLocation, matchPath } from "react-router";
+import { Avatar, AvatarImage } from "@/components/ui/avatar"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Home, Settings, Users, FileText, SquarePen } from "lucide-react";
-import { Button } from "@/components/ui/button"
-import { supabase } from "@/lib/supabaseClient"
 import { useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 
 const menuItems = [
@@ -15,6 +22,7 @@ const menuItems = [
 
 export function AdminSideBar({ onTitleChange }: { onTitleChange?: (title: string) => void }) {
 
+  const { profile } = useAuth()
   const location = useLocation()
   
   useEffect(() => {
@@ -28,7 +36,14 @@ export function AdminSideBar({ onTitleChange }: { onTitleChange?: (title: string
     <div className="h-full col-span-2 border-r border-gray-200 flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-2 p-6 border-b border-gray-200 h-18">
-          <span className="text-sm font-semibold">Club Name</span>
+          <Select>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select event" />
+            </SelectTrigger>
+            <SelectContent className="bg-background">
+              <SelectItem value="event36">Event number 36</SelectItem>
+            </SelectContent>
+          </Select>
       </div>
 
       {/* Navigation */}
@@ -61,14 +76,24 @@ export function AdminSideBar({ onTitleChange }: { onTitleChange?: (title: string
       </nav>
 
       {/* Footer */}
-      <div className="flex items-center gap-2 p-6 border-t border-gray-200">
-          <Button 
-              size="sm" 
-              className="text-sm border-2 border-green-400 shadow-none font-bold"
-              onClick={() => supabase.auth.signOut()}
-            >
-              Sign out
-          </Button>
+      <div className="p-6 border-t border-gray-200">
+          <div className="flex flex-row items-center  gap-2">
+            <Avatar>
+              <AvatarImage 
+                src={profile?.avatar_url || "https://github.com/shadcn.png"} 
+                alt={`${profile?.first_name} ${profile?.last_name}`}  
+              />
+            </Avatar>
+
+            <div className="ml-2">
+              <p className="font-bold">
+                {`${profile?.first_name} ${profile?.last_name}`}
+              </p>
+              <p className="text-gray-400">
+                Admin de {profile?.club || "Club"}
+              </p>
+            </div>
+          </div>
       </div>
     </div>
   );

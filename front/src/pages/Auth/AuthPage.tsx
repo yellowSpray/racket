@@ -7,7 +7,6 @@ export default function Auth() {
 
     const [signIn, setSignIn] = useState(false)
     const switchOn = () => setSignIn(!signIn)
-    console.log(signIn)
 
     //TODO changer la taille de la div qui contient les formulaires
     return (

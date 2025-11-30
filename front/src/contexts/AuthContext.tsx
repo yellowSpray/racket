@@ -61,15 +61,19 @@ export function AuthProvider({ children }: { children: ReactNode}) {
                 }
 
                 // Pour SIGNED_IN et SIGNED_OUT
-                if(mounted) return 
+                if(!mounted) return 
                 setSession(session)
 
                 if (session && event === 'SIGNED_IN') {
                     // Connexion : charge le profil
+                    console.log("SIGNED_IN détecté, chargement du profil...")
+                    isFetchingProfile.current = false
                     await fetchProfile(session.user.id)
                 } else if (!session && event === 'SIGNED_OUT') {
                     // Déconnexion : nettoie le profil
+                    console.log("SIGNED_OUT détecté")
                     setProfile(null)
+                    isFetchingProfile.current = false
                     setIsLoading(false)
                 }
             }
@@ -113,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode}) {
             console.error("Erreur fetchProfile:", error);
             setProfile(null);
         } finally {
+            isFetchingProfile.current = false
             setIsLoading(false);
         }
     };

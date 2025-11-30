@@ -1,13 +1,31 @@
-import { Link } from "react-router"
+import { Link, useNavigate } from "react-router"
 import Logo from "@/components/ui/logo"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/contexts/AuthContext"
-import { Bell } from "lucide-react"
+import { Bell, Moon, Sun, LogOut } from "lucide-react"
+import { useEffect, useState } from "react"
+import { supabase } from "@/lib/supabaseClient"
+
 
 export default function Header() {
 
+  const navigate = useNavigate()
   const { profile, isAuthenticated } = useAuth()
+  const [darkMode, setDarkMode] = useState(false);
+
+  // Toggle Dark Mode
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    navigate('/')
+  }
 
   return (
     <header className="px-4 md:px-6 border-b-1 border-b-border">
@@ -27,34 +45,29 @@ export default function Header() {
         </div>
 
         {/* Right side */}
-
         {isAuthenticated && profile ? (
-          <div className="flex items-center gap-5">
-            <div className="flex items-center gap-2">
-              <p className="font-bold">{profile.first_name} {profile.last_name}</p>
-              <Avatar>
-                <AvatarImage 
-                  src={profile.avatar_url || "https://github.com/shadcn.png"} 
-                  alt={`${profile.first_name} ${profile.last_name}`}  
-                />
-                <AvatarFallback>
-                  {profile.first_name[0]}{profile.last_name[0]}
-                </AvatarFallback>
-              </Avatar>
-            </div>
-            <span className="rounded-full h-8 w-8 bg-gray-300 flex items-center justify-center">
-              <Bell size={18}/>
-            </span>
-            <Button size="sm" className="text-sm shadow-none border-green-400 border-1 font-bold">
-              {profile.role === "admin" || profile.role === "superadmin" ? (
-                <Link to="/admin">Dashboard</Link>
-              ) : (
-                <Link to="/user">Dashboard</Link>
-              )}
+          <div className="flex items-center">
+            <Button variant="ghost" onClick={() => setDarkMode(!darkMode)}>
+              {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+            </Button>
+            <Button variant="ghost" className="relative">
+              <Bell size={20} />
+              <span className="absolute top-2 right-4 w-2 h-2 bg-rose-500 rounded-full border border-white dark:border-slate-900" />
+            </Button>
+            <Button 
+              size="sm"
+              className="ml-5" 
+              onClick={handleLogout}
+            >
+                <p>Log out</p>
+                <LogOut size={20} />
             </Button>
           </div>
         ) : ( 
           <div className="flex items-center gap-2">
+            <Button variant="ghost" onClick={() => setDarkMode(!darkMode)}>
+              {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+            </Button>
             <Button asChild variant="ghost" size="sm" className="text-sm border-1 border-border">
               <Link to="/auth">Sign In</Link>
             </Button>

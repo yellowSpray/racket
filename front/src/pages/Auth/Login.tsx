@@ -14,9 +14,9 @@ import {
     FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from '@/lib/supabaseClient'
-import { RedirectByRole } from "@/components/shared/RedirectByRole";
+import { useNavigate } from "react-router";
 import { useAuth } from "@/contexts/AuthContext";
 
 type RegisterProps = {
@@ -25,18 +25,24 @@ type RegisterProps = {
 };
 
 export default function Login({className, toggle, ...props}: RegisterProps) {
+
+    const navigate = useNavigate()
+    const { profile, isAuthenticated, isLoading } = useAuth()
     
-    const { isAuthenticated } = useAuth()
     const [loading, setLoading] = useState<boolean>(false)
     const [error, setError] = useState<string>("")
     const [email, setEmail] = useState<string>("")
     const [password, setPassword] = useState<string>("")
 
-    // si connecté , redirection
-    if ( isAuthenticated ) return <RedirectByRole />
+    useEffect(() => {
+        if (!isLoading && isAuthenticated && profile) {
+            console.log("Redirection vers:", profile.role === 'admin' ? '/admin' : '/user')
+            navigate(profile.role === 'admin' || profile.role === 'superadmin' ? '/admin' : '/user', { replace: true })
+        }
+    }, [isAuthenticated, profile, isLoading, navigate])
+
 
     const handleSubmit = async (e: React.FormEvent): Promise<void> => {
-
         e.preventDefault()
         setLoading(true)
         setError("")
