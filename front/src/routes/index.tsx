@@ -1,7 +1,6 @@
 import { createBrowserRouter } from "react-router";
 import ProtectedRoute from "@/routes/ProtectedRoute";
 import Rootlayout from "@/layout/RootLayout";
-import Home from "@/pages/Home";
 import Auth from "@/pages/auth/AuthPage";
 import UserPage from "@/pages/user/UserPage";
 import AdminPage from "@/pages/admin/AdminPage";
@@ -10,6 +9,7 @@ import { DashboardAdmin } from "@/pages/admin/Dashboard";
 import { DrawAdmin } from "@/pages/admin/Draw";
 import { MatchAdmin } from "@/pages/admin/Match";
 import { SettingsAdmin } from "@/pages/admin/Settings";
+import { RedirectByRole } from "@/components/shared/RedirectByRole";
 
 const router = createBrowserRouter([
 
@@ -17,14 +17,20 @@ const router = createBrowserRouter([
         path: "/",
         element: <Rootlayout />,
         children: [
-            { index: true, element: <Home /> },
+            // Page d'accueil : redirige automatiquement si connecté
+            { index: true, element: <RedirectByRole /> }, // redirige admin vers /admin, user vers /user
+
+            // Page de connexion
             { path: "auth", element: <Auth /> },
+
+            // Routes pour les utilisateurs
             { 
                 element: <ProtectedRoute allowedRoles={["user", "admin", "superadmin"]}/>,
                 children: [
                     { path: "user", element: <UserPage /> }
                 ]
             },
+            // Routes pour les admins
             { 
                 element: <ProtectedRoute allowedRoles={["admin", "superadmin"]}/>,
                 children: [

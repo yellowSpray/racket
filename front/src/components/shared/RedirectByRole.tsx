@@ -9,10 +9,12 @@ export function RedirectByRole() {
 
     if(isLoading) return <Loading />
     
+    // Si pas connecter alors vers la page home
     if(!isAuthenticated || !profile) {
         return <Navigate to="/" replace />
     }
 
+    // Switch en fonction du role
     switch (profile.role) {
         case "admin":
             return <Navigate to="/admin" replace />
