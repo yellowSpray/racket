@@ -1,22 +1,14 @@
-import { useState } from "react";
 import { Outlet } from "react-router";
 import { AdminSideBar } from "@/components/admin/AdminSidebar";
 import DashboardLayout from "@/layout/DashboardLayout";
-import { PlayersProvider } from "@/contexts/PlayersProvider";
-import { usePlayers } from "@/contexts/usePlayers";
+import { PlayersProvider } from "@/contexts/PlayersContext";
+import { EventProvider } from "@/contexts/EventContext";
 
 export function AdminPageContent() {
-  const { addPlayer } = usePlayers()
-  const [title, setTitle] = useState<string>("")
-
-  //TODO changer le filter true ou false  
 
   return (
     <DashboardLayout 
-      sidebar={<AdminSideBar onTitleChange={setTitle} />} 
-      title={title}
-      filter={true}
-      onAddPlayer={addPlayer}
+      sidebar={<AdminSideBar/>} 
     >
       <Outlet />
     </DashboardLayout>
@@ -26,8 +18,10 @@ export function AdminPageContent() {
 
 export default function AdminPage() {
   return (
-    <PlayersProvider>
-      <AdminPageContent />
-    </PlayersProvider>
+    <EventProvider>
+      <PlayersProvider>
+        <AdminPageContent />
+      </PlayersProvider>
+    </EventProvider>
   );
 }

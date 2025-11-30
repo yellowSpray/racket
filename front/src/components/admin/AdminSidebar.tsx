@@ -1,69 +1,48 @@
-import { Link, useLocation, matchPath } from "react-router";
+import { Link, useLocation } from "react-router";
 import { Avatar, AvatarImage } from "@/components/ui/avatar"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Home, Settings, Users, FileText, SquarePen } from "lucide-react";
-import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 
 const menuItems = [
-  { title: "Accueil", url: "/admin", icon: Home, secondTitle: "Accueil" },
-  { title: "Tableaux", url: "/admin/draws", icon: SquarePen, secondTitle: "Tout les tableaux" },
-  { title: "Matchs", url: "/admin/matches", icon: FileText, secondTitle: "Match à jouer" },
-  { title: "Joueurs", url: "/admin/players", icon: Users, secondTitle: "Liste des joueurs" },
-  { title: "Paramètres", url: "/admin/settings", icon: Settings, secondTitle: "Paramètres" },
+  { title: "Dashboard", url: "/admin", icon: Home},
+  { title: "Tableaux", url: "/admin/draws", icon: SquarePen},
+  { title: "Matchs", url: "/admin/matches", icon: FileText},
+  { title: "Joueurs", url: "/admin/players", icon: Users},
+  { title: "Paramètres", url: "/admin/settings", icon: Settings},
 ];
 
-export function AdminSideBar({ onTitleChange }: { onTitleChange?: (title: string) => void }) {
+export function AdminSideBar() {
 
   const { profile } = useAuth()
   const location = useLocation()
-  
-  useEffect(() => {
-    const current = menuItems.find(item => 
-      matchPath({ path: item.url, end: true}, location.pathname)
-    )
-    if (current && onTitleChange) onTitleChange(current.secondTitle)
-  }, [location.pathname])
 
   return (
     <div className="h-full col-span-2 border-r border-gray-200 flex flex-col">
-      {/* Header */}
-      <div className="flex items-center gap-2 p-6 border-b border-gray-200 h-18">
-          <Select>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select event" />
-            </SelectTrigger>
-            <SelectContent className="bg-background">
-              <SelectItem value="event36">Event number 36</SelectItem>
-            </SelectContent>
-          </Select>
-      </div>
 
       {/* Navigation */}
       <nav className="flex-1 p-6 overflow-y-auto">
+        <h3 className="text-gray-500 uppercase text-xs ml-3 mb-2">Menu</h3>
         <ul className="space-y-2">
-          {menuItems.map((item) => {
+          {menuItems.map((item, index) => {
+
             const Icon = item.icon;
             const isActive = location.pathname === item.url;
+            const isLast = index === menuItems.length - 1;
 
             return (
-              <li key={item.title}>
+              <li 
+                key={item.title}
+                className={`
+                  ${isLast ? "border-t border-gray-300 mt-5" : ""}   
+                `}
+              >
                 <Link
                   to={item.url}
                   className={`
                     flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors
-                    ${
-                      isActive
-                        ? "bg-primary/50 font-[600]"
-                        : "hover:bg-gray-100"
-                    }
+                    ${isActive ? "bg-primary/50 font-[600]" : "hover:bg-gray-100"}
+                    ${isLast ? "mt-4" : ""} 
                   `}
                 >
                   <Icon size={20} />

@@ -10,3 +10,12 @@ export type PlayerType = {
     status: ("active" | "inactive" | "member" | "visitor" | "paid" | "unpaid" )[]
     power_ranking: string
 }
+
+export interface PlayersContextType {
+    players: PlayerType[];
+    loading: boolean;
+    error: string | null;
+    addPlayer: (player: Partial<PlayerType>) => Promise<void>;
+    updatePlayer: (id: string, updates: Partial<PlayerType>) => Promise<void>;
+    fetchPlayer: () => Promise<void>;
+}
