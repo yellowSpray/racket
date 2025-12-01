@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import type { Session } from "@supabase/supabase-js"
@@ -90,6 +89,9 @@ export function AuthProvider({ children }: { children: ReactNode}) {
     // Fonction pour récupérer le profil
     const fetchProfile = async (userId: string) => {
         
+        console.log("Etape Fetch profile", userId)
+        console.log("isFetchingProfile current true or false ?", isFetchingProfile.current)
+
         if(isFetchingProfile.current) {
             console.log("fetch profile déjà en cours, ignoré")
             return
@@ -98,11 +100,15 @@ export function AuthProvider({ children }: { children: ReactNode}) {
         isFetchingProfile.current = true
 
         try {
+            console.log("etape try catch debug")
+
             const { data, error } = await supabase
                 .from("profiles")
                 .select('*')
                 .eq('id', userId)
                 .single();
+
+            console.log("Fetch profile data:", error, data)
 
             if (error) {
                 console.error("Erreur profil:", error.message);
@@ -111,8 +117,10 @@ export function AuthProvider({ children }: { children: ReactNode}) {
                 console.warn("Aucun profil trouvé");
                 setProfile(null);
             } else {
+                console.log("etape try catch debug 2")
                 setProfile(data);
             }
+
         } catch (error) {
             console.error("Erreur fetchProfile:", error);
             setProfile(null);
@@ -153,6 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode}) {
 }
 
 // hook pour utiliser le contexte
+/* eslint-disable react-refresh/only-export-components */
 export function useAuth() {
     const context = useContext(AuthContext)
     if(!context) {

@@ -1,22 +1,37 @@
-import { SettingEvent } from "@/components/admin/SettingEvent"
+import { EventsManager } from "@/components/admin/events/EventsManager"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export function SettingsAdmin () {
     return (
-        <div className="grid grid-cols-10">
-            <div className="flex flex-row items-center col-span-10 my-4">
-                <h4 className="text-sm mr-4">Défault :</h4>
-                <ul className="flex flex-row gap-8">
-                    <li>Heure de début: ...</li>
-                    <li>Heure de fin: ...</li>
-                    <li>Nombre de terrain: ...</li>
-                    <li>Durée d'une partie: ...</li>
-                </ul>
-            </div>
-            <div className="col-span-10 grid grid-cols-10 gap-4">
-                <SettingEvent />
-                <SettingEvent />
-                <SettingEvent />
-            </div>
-        </div>
+        <>
+            <Tabs defaultValue="events">
+                <div className="flex flex-row items-center justify-between mb-4">
+                    <h2>Paramètres</h2>
+                    <TabsList>
+                        <TabsTrigger value="events">Événements</TabsTrigger>
+                        <TabsTrigger value="clubs">Clubs</TabsTrigger>
+                        <TabsTrigger value="users">Utilisateurs</TabsTrigger>
+                        <TabsTrigger value="general">Général</TabsTrigger>
+                    </TabsList>
+                </div>
+                <div className="overflow-hidden rounded-md">
+                    <TabsContent value="events">
+                        <EventsManager />
+                    </TabsContent>
+
+                    <TabsContent value="clubs">
+                        <div className="text-gray-500">Gestion des clubs - À venir</div>
+                    </TabsContent>
+
+                    <TabsContent value="users">
+                        <div className="text-gray-500">Gestion des utilisateurs - À venir</div>
+                    </TabsContent>
+
+                    <TabsContent value="general">
+                        <div className="text-gray-500">Paramètres généraux - À venir</div>
+                    </TabsContent>
+                </div>
+            </Tabs>
+        </>
     )
 }

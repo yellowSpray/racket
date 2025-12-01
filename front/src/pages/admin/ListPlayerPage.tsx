@@ -2,7 +2,7 @@ import Loading from "@/components/shared/Loading";
 import { EditPlayers } from "@/components/admin/players/EditPlayers";
 import { columns as playerColumns } from "@/components/admin/players/Columns";
 import { DataTable } from "@/components/admin/players/Datatable";
-import { EventSelector } from "@/components/admin/EventSelector";
+import { EventSelector } from "@/components/admin/events/EventSelector";
 import { usePlayers } from "@/contexts/PlayersContext";
 import type { PlayerType } from "@/types/player";
 import {
