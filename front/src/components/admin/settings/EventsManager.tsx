@@ -14,11 +14,12 @@ import {
 } from "@/components/ui/table"
 import { Plus, Pencil, Trash2, Calendar } from "lucide-react"
 import { EventDialog } from "./EventDialog"
+import { DeleteEventDialog } from "./DeleteEventDialog"
 
 export function EventsManager() {
     const {events, loading, fetchEvents} = useEvent()
     const [dialogOpen, setDialogOpen] = useState<boolean>(false)
-    // const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false)
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false)
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
 
     // determiner le status de l'event(en cours, terminer, à venir)
@@ -60,15 +61,15 @@ export function EventsManager() {
     }
 
     // delete
-    // const handleDelete = (event: Event) => {
-    //     setSelectedEvent(event)
-    //     setDeleteDialogOpen(true)
-    // }
+    const handleDelete = (event: Event) => {
+        setSelectedEvent(event)
+        setDeleteDialogOpen(true)
+    }
 
     const handleSuccess = async () => {
         await fetchEvents()
         setDialogOpen(false)
-        // setDeleteDialogOpen(false)
+        setDeleteDialogOpen(false)
         setSelectedEvent(null)
     }
 
@@ -142,7 +143,7 @@ export function EventsManager() {
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            // onClick={() => handleDelete(event)}
+                                            onClick={() => handleDelete(event)}
                                         >
                                         <Trash2 className="h-4 w-4 text-red-500" />
                                         </Button>
@@ -160,6 +161,14 @@ export function EventsManager() {
             <EventDialog
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
+                event={selectedEvent}
+                onSuccess={handleSuccess}
+            />
+
+            {/* Dialog de suppression */}
+            <DeleteEventDialog
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
                 event={selectedEvent}
                 onSuccess={handleSuccess}
             />

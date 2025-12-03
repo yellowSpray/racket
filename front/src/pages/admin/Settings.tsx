@@ -1,4 +1,4 @@
-import { EventsManager } from "@/components/admin/events/EventsManager"
+import { EventsManager } from "@/components/admin/settings/EventsManager"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export function SettingsAdmin () {
