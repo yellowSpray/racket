@@ -69,8 +69,8 @@ export function EventDialog({ open, onOpenChange, event, onSuccess}: EventDialog
             const eventData = {
                 event_name: eventName,
                 description: description || null,
-                startDate: startDate,
-                endDate: endDate,
+                start_date: startDate,
+                end_date: endDate,
                 start_time: startTime,
                 end_time: endTime,
                 number_of_courts: numberOfCourts
@@ -89,10 +89,13 @@ export function EventDialog({ open, onOpenChange, event, onSuccess}: EventDialog
                 }
             } else {
                 // creation
-                const { error: insertError } = await supabase
+                const { data, error: insertError } = await supabase
                     .from("events")
                     .insert([eventData])
+                    .select()
                 
+                console.log("Réponse INSERT:", { data, error: insertError })
+
                 if(insertError) {
                     setError(insertError.message)
                     return
