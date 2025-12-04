@@ -129,25 +129,25 @@ export function EventsManager() {
                                     <TableCell>{formatDate(event.end_date)}</TableCell>
                                     <TableCell>{event.number_of_courts}</TableCell>
                                     <TableCell>
-                                    <Badge variant={status.variant}>{status.label}</Badge>
+                                        <Badge variant={status.variant}>{status.label}</Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
-                                    <div className="flex justify-end gap-2">
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => handleEdit(event)}
-                                        >
-                                        <Pencil className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => handleDelete(event)}
-                                        >
-                                        <Trash2 className="h-4 w-4 text-red-500" />
-                                        </Button>
-                                    </div>
+                                        <div className="flex justify-end gap-2">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleEdit(event)}
+                                            >
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleDelete(event)}
+                                            >
+                                                <Trash2 className="h-4 w-4 text-red-500" />
+                                            </Button>
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                                 )

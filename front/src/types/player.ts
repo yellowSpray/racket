@@ -18,4 +18,5 @@ export interface PlayersContextType {
     addPlayer: (player: Partial<PlayerType>) => Promise<void>;
     updatePlayer: (id: string, updates: Partial<PlayerType>) => Promise<void>;
     fetchPlayer: () => Promise<void>;
+    fetchPlayersByEvent: (id: string) => Promise<void>;
 }

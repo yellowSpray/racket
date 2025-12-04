@@ -34,6 +34,57 @@ export function useAdminPlayers() {
     const [loading, setLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
 
+    // transformation commune
+    const transformPlayerData = (data: SupabasePlayer[]): PlayerType[] => {
+        return (data || []).map((player: SupabasePlayer) => {
+            let arrivalTime = ""
+            let departureTime = ""
+
+            if (player.schedule?.[0]?.arrival) {
+                const arrivalDate = new Date(player.schedule[0].arrival)
+                arrivalTime = arrivalDate.toLocaleTimeString('fr-FR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: false,
+                    timeZone: 'UTC' 
+                })
+            }
+
+            if (player.schedule?.[0]?.departure) {
+                const departureDate = new Date(player.schedule[0].departure)
+                departureTime = departureDate.toLocaleTimeString('fr-FR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: false,
+                    timeZone: 'UTC' 
+                })
+            }
+
+            // trier les status 
+            const statusOrder = ['member', 'visitor', 'active', 'inactive', 'paid', 'unpaid']
+            const sortedStatus = (player.player_status?.map((s: SupabasePlayerStatus) => s.status) || [])
+                .sort((a, b) => {
+                    const indexA = statusOrder.indexOf(a)
+                    const indexB = statusOrder.indexOf(b)
+                    return indexA - indexB
+                })
+
+            return {
+                id: player.id,
+                first_name: player.first_name,
+                last_name: player.last_name,
+                full_name: `${player.first_name} ${player.last_name}`,
+                email: player.email || "",
+                phone: player.phone || "",
+                arrival: arrivalTime,
+                departure: departureTime,
+                unavailable: player.absences?.map((d: SupabaseAbsence) => d.date) || [],
+                status: sortedStatus,
+                power_ranking: player.power_ranking || "",
+            }
+        })
+    }
+
     // liste des joueurs
     const fetchPlayer = async () => {
 
@@ -53,57 +104,7 @@ export function useAdminPlayers() {
                 return
             }
 
-            // Transformation des données pour correspondre au type PlayerType
-            const transformedData: PlayerType[] = (data || []).map((player: SupabasePlayer) => {
-
-                let arrivalTime = ""
-                let departureTime = ""
-
-                if (player.schedule?.[0]?.arrival) {
-                    const arrivalDate = new Date(player.schedule[0].arrival)
-                    arrivalTime = arrivalDate.toLocaleTimeString('fr-FR', { 
-                        hour: '2-digit', 
-                        minute: '2-digit',
-                        hour12: false,
-                        timeZone: 'UTC' 
-                    })
-                }
-
-                if (player.schedule?.[0]?.departure) {
-                    const departureDate = new Date(player.schedule[0].departure)
-                    departureTime = departureDate.toLocaleTimeString('fr-FR', { 
-                        hour: '2-digit', 
-                        minute: '2-digit',
-                        hour12: false,
-                        timeZone: 'UTC' 
-                    })
-                }
-
-                // trier les status 
-                const statusOrder = ['member', 'visitor', 'active', 'inactive', 'paid', 'unpaid']
-                const sortedStatus = (player.player_status?.map((s: SupabasePlayerStatus) => s.status) || [])
-                    .sort((a, b) => {
-                        const indexA = statusOrder.indexOf(a)
-                        const indexB = statusOrder.indexOf(b)
-                        return indexA - indexB
-                    })
-
-                return {
-                    id: player.id,
-                    first_name: player.first_name,
-                    last_name: player.last_name,
-                    full_name: `${player.first_name} ${player.last_name}`,
-                    email: player.email || "",
-                    phone: player.phone || "",
-                    arrival: arrivalTime,
-                    departure: departureTime,
-                    unavailable: player.absences?.map((d: SupabaseAbsence) => d.date) || [],
-                    status: sortedStatus,
-                    power_ranking: player.power_ranking || "",
-                }
-
-            })
-
+            const transformedData = transformPlayerData(data as SupabasePlayer[])
             setPlayer(transformedData)
 
         } catch (err) {
@@ -112,6 +113,50 @@ export function useAdminPlayers() {
         } finally {
             setLoading(false)
         }
+        
+    }
+
+    // filtre par event
+    const fetchPlayersByEvent = async (eventId: string | null) => {
+
+        setLoading(true)
+        setError(null)
+
+        try {
+            // si pas d'id, charge tout les joueurs
+            if(!eventId){
+                await fetchPlayer()
+                return 
+            }
+
+            const { data, error: fetchError } = await supabase
+                .from("profiles")
+                .select(`
+                    *,
+                    player_status(status),
+                    schedule(arrival, departure),
+                    absences(absent_date),
+                    event_players!inner(event_id)
+                `)
+                .eq("event_players.event_id", eventId)
+                .order("created_at", { ascending: false })
+            
+            if(fetchError) {
+                console.error("Erreur supabase", fetchError.message)
+                setError(fetchError.message)
+                return
+            }
+
+            const transformedData = transformPlayerData(data as SupabasePlayer[])
+            setPlayer(transformedData)
+
+        } catch (err) {
+            console.error("Erreur inattendue", err)
+            setError(err instanceof Error ? err.message : "Erreur inconnue")
+        } finally {
+            setLoading(false)
+        }
+
         
     }
 
@@ -179,9 +224,6 @@ export function useAdminPlayers() {
 
         try {
 
-            console.log("Player ID:", id)
-            console.log("Updates:", updates)
-
             // Récupérer le joueur actuel
             const currentPlayer = players.find(p => p.id === id)
             if (!currentPlayer) {
@@ -237,7 +279,7 @@ export function useAdminPlayers() {
             setLoading(false)
         }        
     }
-    
+
     useEffect(() => {
         fetchPlayer()
     }, [])
@@ -248,6 +290,7 @@ export function useAdminPlayers() {
         error,
         addPlayer,
         updatePlayer,
-        fetchPlayer
+        fetchPlayer,
+        fetchPlayersByEvent
     }
 }
