@@ -47,7 +47,7 @@ After each tournament, a dynamic ranking system assigns points, allowing the bes
 Key Features (Completed/Planned - originally indicated by ✅ or ❌)
 
 * ✅ Secure interface with roles (user / admin / super admin)
-* ❌ Player registration / unregistration for an event
+* ✅ Player registration / unregistration for an event
 * ❌ Manual validation of registrations by an admin
 * ❌ Automatic generation of round-robin matches with slot management
 * ❌ Result entry and real-time ranking calculation
@@ -60,8 +60,8 @@ Key Features (Completed/Planned - originally indicated by ✅ or ❌)
 
 - [x] Base project structure (React + TypeScript + shadcn/ui)
 - [x] Authentication and role management
-- [ ] Manual registration for new players 
-- [ ] Settings for events 
+- [x] Manual registration for new players 
+- [x] Settings for events 
 - [ ] Round-robin scheduler generator
 - [ ] Ranking and promotion/relegation system
 - [ ] Integration of an email service (e.g., Resend)
