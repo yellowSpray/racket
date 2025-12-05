@@ -20,7 +20,7 @@ export function EventProvider({children}: {children: ReactNode}) {
         try {
             const {data, error: fetchError} = await supabase
                 .from("events")
-                .select("*")
+                .select("*, event_players(count)")
                 .order("start_date", {ascending: false})
 
             if(fetchError) {
@@ -29,11 +29,18 @@ export function EventProvider({children}: {children: ReactNode}) {
                 return
             }
 
-            setEvents(data)
+            const eventsWithCount = (data || []).map(event => ({
+                ...event,
+                player_count: Array.isArray(event.event_players) && event.event_players.length >  0
+                    ? event.event_players[0].count
+                    : 0
+            }))
+
+            setEvents(eventsWithCount)
 
             // si aucun events est selectionné , selectionner le plus récent
-            if(!currentEvent && data && data.length > 0) {
-                const mostRecentEvent = data[0]
+            if(!currentEvent && eventsWithCount && eventsWithCount.length > 0) {
+                const mostRecentEvent = eventsWithCount[0]
                 setCurrentEvent(mostRecentEvent)
                 // sauvegarde dans le localStorage
                 localStorage.setItem("selectedEventId", mostRecentEvent.id)

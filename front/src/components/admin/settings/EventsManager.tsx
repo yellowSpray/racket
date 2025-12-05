@@ -21,7 +21,7 @@ export function EventsManager() {
     const [dialogOpen, setDialogOpen] = useState<boolean>(false)
     const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false)
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
-
+    
     // determiner le status de l'event(en cours, terminer, à venir)
     const getEventStatus = (event: Event) => {
         const today = new Date()
@@ -46,6 +46,14 @@ export function EventsManager() {
             month: "2-digit",
             year: "numeric"
         })
+    }
+
+    // formater les heures
+    const formatTime = (timeString: string | undefined) => {
+        if (!timeString) return "-"
+        const match = timeString.match(/(\d{2}):(\d{2})/)
+        if (match) return `${match[1]}:${match[2]}`
+        return timeString
     }
 
     // create
@@ -109,47 +117,54 @@ export function EventsManager() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Nom</TableHead>
-                                <TableHead>Date de début</TableHead>
-                                <TableHead>Date de fin</TableHead>
-                                <TableHead>Terrains</TableHead>
-                                <TableHead>Statut</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                                <TableHead className="text-center">Nom</TableHead>
+                                <TableHead className="text-center">Date de début</TableHead>
+                                <TableHead className="text-center">Date de fin</TableHead>
+                                <TableHead className="text-center">Heure de debut</TableHead>
+                                <TableHead className="text-center">Heure de fin</TableHead>
+                                <TableHead className="text-center">Terrains</TableHead>
+                                <TableHead className="text-center">Joueurs</TableHead>
+                                <TableHead className="text-center">Statut</TableHead>
+                                <TableHead className="text-center">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {events.map((event) => {
                                 const status = getEventStatus(event)
+                                const playerCount = event.player_count || 0
                                 return (
-                                <TableRow key={event.id}>
-                                    <TableCell className="font-medium">
-                                        {event.event_name}
-                                    </TableCell>
-                                    <TableCell>{formatDate(event.start_date)}</TableCell>
-                                    <TableCell>{formatDate(event.end_date)}</TableCell>
-                                    <TableCell>{event.number_of_courts}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={status.variant}>{status.label}</Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleEdit(event)}
-                                            >
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleDelete(event)}
-                                            >
-                                                <Trash2 className="h-4 w-4 text-red-500" />
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
+                                    <TableRow key={event.id}>
+                                        <TableCell className="font-medium text-center">
+                                            {event.event_name}
+                                        </TableCell>
+                                        <TableCell className="text-center">{formatDate(event.start_date)}</TableCell>
+                                        <TableCell className="text-center">{formatDate(event.end_date)}</TableCell>
+                                        <TableCell className="text-center">{formatTime(event.start_time)}</TableCell>
+                                        <TableCell className="text-center">{formatTime(event.end_time)}</TableCell>
+                                        <TableCell className="text-center">{event.number_of_courts}</TableCell>
+                                        <TableCell className="text-center">{playerCount}</TableCell>
+                                        <TableCell className="text-center">
+                                            <Badge variant={status.variant}>{status.label}</Badge>
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <div className="gap-2">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => handleEdit(event)}
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => handleDelete(event)}
+                                                >
+                                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
                                 )
                             })}
                         </TableBody>
