@@ -27,8 +27,6 @@ export function DataTable<TData, TValue>({
 
     return (
 
-        //TODO sorting function on box number and power ranking + pagination
-
         <div className="overflow-hidden rounded-md border">
             <Table>
 
