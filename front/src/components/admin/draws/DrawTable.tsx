@@ -1,52 +1,90 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import type { Group } from "@/hooks/useGroups";
 
-export function DrawTable() {
+interface DrawTableProps {
+    group: Group
+}
+
+export function DrawTable({ group }: DrawTableProps) {
+
+    const players = group.players || []
+
+    // generer les lettres A,B,C ...
+    const getPlayerLetter = (index: number) => {
+        return String.fromCharCode(65 + index)
+    }
 
     return (
-        <div className="overflow-hidden w-[500px]">
-            <Table className="border">
+        <div className="border rounded-lg overflow-hidden">
+            <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead className="border">Box 1</TableHead>
-                        <TableHead className="border">A</TableHead>
-                        <TableHead className="border">B</TableHead>
-                        <TableHead className="border">C</TableHead>
-                        <TableHead className="border">D</TableHead>
-                        <TableHead className="border">E</TableHead>
-                        <TableHead className="border">F</TableHead>
-                        <TableHead className="border">Total</TableHead>
+                        {/* Titre du tableau */}
+                        <TableHead className="bg-blue-200 font-bold text-center w-32">
+                            {group.group_name}
+                        </TableHead>
+
+                        {/* Colonnes des joueurs */}
+                        {players.map((_, index) => (
+                            <TableHead
+                                key={index}
+                                className="bg-yellow-100 text-center font-bold"
+                            >
+                                {getPlayerLetter(index)}
+                            </TableHead>
+                        ))}
+
+                        {/* Colonne total des points */}
+                        <TableHead className="bg-green-200 text-center font-bold">Total</TableHead>
                     </TableRow>
                 </TableHeader>
 
                 <TableBody>
-                    <TableRow>
-                        <TableCell>
-                            <TableCell className="border-r">A</TableCell>
-                            <TableCell>Nom Prenom <br /> numero</TableCell>
-                        </TableCell>
-                        <TableCell className="border">bye</TableCell>
-                        <TableCell className="border">
-                            <TableCell>date 1 <br /> heure</TableCell>
-                            <TableCell>1</TableCell>
-                        </TableCell>
-                        <TableCell className="border">
-                            <TableCell>date 2 <br /> heure</TableCell>
-                            <TableCell>1</TableCell>
-                        </TableCell>
-                        <TableCell className="border">
-                            <TableCell>date 3 <br /> heure</TableCell>
-                            <TableCell>1</TableCell>
-                        </TableCell>
-                        <TableCell className="border">
-                            <TableCell>date 4 <br /> heure</TableCell>
-                            <TableCell>1</TableCell>
-                        </TableCell>
-                        <TableCell className="border">
-                            <TableCell>date 5 <br /> heure</TableCell>
-                            <TableCell>1</TableCell>
-                        </TableCell>
-                        <TableCell>Total Points</TableCell>
-                    </TableRow>
+                    {players.map((player, rowIndex) => (
+                        <TableRow key={player.id}>
+                            {/* Cellule joueur ( lettre + nom + tel) */}
+                            <TableCell className="bg-yellow-100 font-medium">
+                                <div className="flex flex-col">
+                                    <span className="font-bold">{getPlayerLetter(rowIndex)}</span>
+                                    <span className="text-sm">{player.first_name} {player.last_name}</span>
+                                    <span className="text-xs text-gray-500">{player.phone}</span>
+                                </div>
+                            </TableCell>
+
+                            {/* Cellule des matchs */}
+                            {players.map((opponent, colIndex) => {
+                                // les bye
+                                if(rowIndex === colIndex) {
+                                    return (
+                                        <TableCell 
+                                            key={colIndex}
+                                            className="bg-gray-400"
+                                        />
+                                    )
+                                }
+
+                                // case de match
+                                //TODO afficher la date + heure depuis la table des matchs
+                                return (
+                                    <TableCell
+                                        key={colIndex}
+                                        className="text-center text-xs p-2"
+                                    >
+                                        {/* TODO recuperer les matchs depuis la table */}
+                                        <div className="text-gray-400">
+                                            <div>-</div>
+                                            <div>--</div>
+                                        </div>
+                                    </TableCell>
+                                )
+                            })}
+
+                            {/* Cellule Total */}
+                            <TableCell className="bg-green-100 text-center font-bold">
+                                0
+                            </TableCell>
+                        </TableRow>
+                    ))}
                 </TableBody>
             </Table>
         </div>

@@ -6,7 +6,7 @@ import UserPage from "@/pages/user/UserPage";
 import AdminPage from "@/pages/admin/AdminPage";
 import { ListPlayers } from "@/pages/admin/ListPlayerPage";
 import { DashboardAdmin } from "@/pages/admin/Dashboard";
-import { DrawAdmin } from "@/pages/admin/Draw";
+import { DrawAdmin } from "@/pages/admin/DrawPage";
 import { MatchAdmin } from "@/pages/admin/Match";
 import { SettingsAdmin } from "@/pages/admin/Settings";
 import { RedirectByRole } from "@/routes/RedirectByRole";

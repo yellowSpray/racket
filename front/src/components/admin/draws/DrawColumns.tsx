@@ -3,8 +3,11 @@ import type { ColumnDef } from "@tanstack/react-table";
 
 export const columns = (): ColumnDef<DrawType>[] => [
     {
-        accessorKey: "numberBox",
+        accessorKey: "players",
         header: "Boxes 1",
+        cell: ({ cell, row }) => {
+            return <div></div>
+        }
     },
     {
         accessorKey: "a",
