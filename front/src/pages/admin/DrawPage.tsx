@@ -5,19 +5,20 @@ import { useGroups } from "@/hooks/useGroups"
 import { useEffect, useState } from "react"
 import { Plus, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DrawTable } from "@/components/admin/draws/DrawTable"
+import { CreateGroupsDialog } from "@/components/admin/draws/CreateGroupsDialog"
 
 export function DrawAdmin () {
 
     const { currentEvent } = useEvent()
-    const { groups, loading, fetchGroupsByEvents } = useGroups()
+    const { groups, loading, fetchGroupsByEvent } = useGroups()
     const [selectedGroupId, setSelectedGroupsId] = useState<string | null>(null)
+    const [createDialogOpen, setCreateDialogOpen] = useState(false)
 
     // charger les groups quand l'event change
     useEffect(() => {
         if(currentEvent) {
-            fetchGroupsByEvents(currentEvent.id)
+            fetchGroupsByEvent(currentEvent.id)
         }
     }, [currentEvent])
 
@@ -57,7 +58,7 @@ export function DrawAdmin () {
                         <Settings className="mr-2 h-4 w-4" />
                         Gérer les groupes
                     </Button>
-                    <Button size="sm">
+                    <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
                         <Plus className="mr-2 h-4 w-4" />
                         Créer les tableaux
                     </Button>
@@ -71,28 +72,26 @@ export function DrawAdmin () {
                     <p className="text-gray-500 mt-2">
                         Créez des tableaux pour organiser les matchs en round-robin
                     </p>
-                    <Button className="mt-4">
+                    <Button className="mt-4" onClick={() => setCreateDialogOpen(true)}>
                         <Plus className="mr-2 h-4 w-4" />
                         Créer les tableaux
                     </Button>
                 </div>
             ) : (
-                <Tabs value={selectedGroupId || groups[0]?.id} onValueChange={setSelectedGroupsId}>
-                    <TabsList>
-                        {groups.map(group => (
-                            <TabsTrigger key={group.id} value={group.id}>
-                                {group.group_name} ({group.players?.length || 0}/{group.max_players})
-                            </TabsTrigger>
-                        ))}
-                    </TabsList>
-
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {groups.map(group => (
-                        <TabsContent key={group.id} value={group.id} className="mt-6">
+                        <div key={group.id}>
                             <DrawTable group={group} />
-                        </TabsContent>
+                        </div>
                     ))}
-                </Tabs>
+                </div>
             )}
+
+            {/* dialog de creation */}
+            <CreateGroupsDialog
+                open={createDialogOpen}
+                onOpenChange={setCreateDialogOpen}
+            />
         </>
     )
 }

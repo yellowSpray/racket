@@ -1,45 +1,6 @@
 import { supabase } from "@/lib/supabaseClient"
-import { useState } from "react"
-
-export type GroupPlayer = {
-    id: string
-    first_name: string
-    last_name: string
-    phone: string
-    power_ranking: string
-}
-
-
-export type Group = {
-    id: string
-    event_id: string
-    group_name: string
-    max_players: number
-    created_at: string
-    players?: GroupPlayer[]
-}
-
-type SupabaseProfile = {
-    id: string
-    first_name: string
-    last_name: string
-    phone: string
-    power_ranking: string
-}
-
-type SupabaseGroupPlayer = {
-    profiles_id: string
-    profiles: SupabaseProfile
-}
-
-type SupabaseGroup = {
-    id: string
-    event_id: string
-    group_name: string
-    max_players: number
-    created_at: string
-    group_players?: SupabaseGroupPlayer[]
-}
+import type { Group, SupabaseGroup, SupabaseGroupPlayer } from "@/types/draw"
+import { useCallback, useState } from "react"
 
 export function useGroups() {
 
@@ -48,7 +9,7 @@ export function useGroups() {
     const [error, setError] = useState<string | null>(null)
 
     // fetch les groupes
-    const fetchGroupsByEvents = async (eventId: string | null) => {
+    const fetchGroupsByEvent = useCallback(async (eventId: string | null) => {
         
         if(!eventId) {
             setGroups([])
@@ -64,7 +25,7 @@ export function useGroups() {
                 .select(`
                     *,
                     group_players(
-                        profiles_id,
+                        profile_id,
                         profiles(
                             id,
                             first_name,
@@ -107,7 +68,7 @@ export function useGroups() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [])
 
     // creation des groupes vides
     const createGroups = async (eventId: string, numberOfGroups: number, maxPlayersPerGroup: number) => {
@@ -134,7 +95,7 @@ export function useGroups() {
             }
 
             // rafraichir la liste
-            await fetchGroupsByEvents(eventId)
+            await fetchGroupsByEvent(eventId)
 
         } catch (err) {
             console.error("Erreur inattendue:", err)
@@ -164,7 +125,7 @@ export function useGroups() {
             }
 
             // Rafraîchir la liste
-            await fetchGroupsByEvents(eventId)
+            await fetchGroupsByEvent(eventId)
 
         } catch (err) {
             console.error("Erreur inattendue:", err)
@@ -198,7 +159,7 @@ export function useGroups() {
             }
 
             // Rafraîchir la liste
-            await fetchGroupsByEvents(eventId)
+            await fetchGroupsByEvent(eventId)
 
         } catch (err) {
             console.error("Erreur inattendue:", err)
@@ -228,7 +189,7 @@ export function useGroups() {
             }
 
             // Rafraîchir la liste
-            await fetchGroupsByEvents(eventId)
+            await fetchGroupsByEvent(eventId)
 
         } catch (err) {
             console.error("Erreur inattendue:", err)
@@ -242,7 +203,7 @@ export function useGroups() {
         groups,
         loading,
         error,
-        fetchGroupsByEvents,
+        fetchGroupsByEvent,
         createGroups,
         deleteGroup,
         assignPlayersToGroup,

@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabaseClient"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import type { PlayerType } from "@/types/player"
 
 // Types pour les données Supabase
@@ -33,9 +33,10 @@ export function useAdminPlayers() {
     const [players, setPlayer] = useState<PlayerType[]>([])
     const [loading, setLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
+    const [currentEventId, setCurrentEventId] = useState<string | null>(null)
 
     // transformation commune
-    const transformPlayerData = (data: SupabasePlayer[]): PlayerType[] => {
+    const transformPlayerData = useCallback((data: SupabasePlayer[]): PlayerType[] => {
         return (data || []).map((player: SupabasePlayer) => {
             let arrivalTime = ""
             let departureTime = ""
@@ -83,13 +84,14 @@ export function useAdminPlayers() {
                 power_ranking: player.power_ranking || "",
             }
         })
-    }
+    }, [])
 
     // liste des joueurs
-    const fetchPlayer = async () => {
+    const fetchPlayer = useCallback(async () => {
 
         setLoading(true)
         setError(null)
+        setCurrentEventId(null)
 
         try {
 
@@ -114,13 +116,14 @@ export function useAdminPlayers() {
             setLoading(false)
         }
         
-    }
+    }, [transformPlayerData])
 
     // filtre par event
-    const fetchPlayersByEvent = async (eventId: string | null) => {
+    const fetchPlayersByEvent = useCallback(async (eventId: string | null) => {
 
         setLoading(true)
         setError(null)
+        setCurrentEventId(eventId)
 
         try {
             // si pas d'id, charge tout les joueurs
@@ -157,8 +160,16 @@ export function useAdminPlayers() {
             setLoading(false)
         }
 
-        
-    }
+    }, [transformPlayerData, fetchPlayer])
+
+    // fonction pour rafraîchir la vue actuelle
+    const refreshCurrentView = useCallback(async () => {
+        if(currentEventId) {
+            await fetchPlayersByEvent(currentEventId)
+        } else {
+            await fetchPlayer()
+        }
+    }, [currentEventId, fetchPlayer, fetchPlayersByEvent])
 
     // creation d'un joueur
     const addPlayer = async (player: Partial<PlayerType>) => {
@@ -190,6 +201,7 @@ export function useAdminPlayers() {
             if (rpcError) {
                 console.error("Erreur RPC:", rpcError)
                 setError(rpcError.message)
+                setLoading(false)
                 return
             }
 
@@ -199,18 +211,18 @@ export function useAdminPlayers() {
                 if (!data.success) {
                     console.error("Erreur dans la fonction:", data.error)
                     setError(data.error as string)
+                    setLoading(false)
                     return
                 }
                 console.log("Joueur créé:", data.profile_id)
             }
 
-            // Rafraîchir la liste
-            await fetchPlayer()
+            // Rafraîchir la vue actuelle
+            await refreshCurrentView()
 
         } catch (err) {
             console.error("Erreur inattendue:", err)
             setError(err instanceof Error ? err.message : "Erreur inconnue")
-        } finally {
             setLoading(false)
         }
 
@@ -228,6 +240,7 @@ export function useAdminPlayers() {
             const currentPlayer = players.find(p => p.id === id)
             if (!currentPlayer) {
                 setError("Joueur non trouvé")
+                setLoading(false)
                 return
             }
 
@@ -254,6 +267,7 @@ export function useAdminPlayers() {
             if (rpcError) {
                 console.error("Erreur RPC:", rpcError)
                 setError(rpcError.message)
+                setLoading(false)
                 return
             }
 
@@ -264,25 +278,26 @@ export function useAdminPlayers() {
                 if (!data.success) {
                     console.error("Erreur dans la fonction:", data.error)
                     setError(data.error as string)
+                    setLoading(false)
                     return
                 }
                 console.log("Joueur mis à jour:", data.profile_id)
             }
 
-            // Rafraîchir la liste
-            await fetchPlayer()
+            // rafraîchir la vue actuelle (filtrée ou complète)
+            await refreshCurrentView()
 
         } catch (err) {
             console.error("Erreur inattendue:", err)
             setError(err instanceof Error ? err.message : "Erreur inconnue")
-        } finally {
             setLoading(false)
         }        
     }
 
+    // charger les joueurs au montage seulement
     useEffect(() => {
         fetchPlayer()
-    }, [])
+    }, []) // pas de dépendance fetchPlayer pour éviter les boucles
 
     return {
         players,
