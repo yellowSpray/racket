@@ -7,6 +7,7 @@ import { Plus, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DrawTable } from "@/components/admin/draws/DrawTable"
 import { CreateGroupsDialog } from "@/components/admin/draws/CreateGroupsDialog"
+import { ManageGroupDialog } from "@/components/admin/draws/ManageGroupsDialog"
 
 export function DrawAdmin () {
 
@@ -14,6 +15,7 @@ export function DrawAdmin () {
     const { groups, loading, fetchGroupsByEvent } = useGroups()
     const [selectedGroupId, setSelectedGroupsId] = useState<string | null>(null)
     const [createDialogOpen, setCreateDialogOpen] = useState(false)
+    const [manageDialogOpen, setManageDialogOpen] = useState(false)
 
     // charger les groups quand l'event change
     useEffect(() => {
@@ -54,7 +56,7 @@ export function DrawAdmin () {
                     <EventSelector />
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => setManageDialogOpen(true)}>
                         <Settings className="mr-2 h-4 w-4" />
                         Gérer les groupes
                     </Button>
@@ -91,6 +93,13 @@ export function DrawAdmin () {
             <CreateGroupsDialog
                 open={createDialogOpen}
                 onOpenChange={setCreateDialogOpen}
+            />
+
+            {/* dialog de gestion */}
+            <ManageGroupDialog
+                open={manageDialogOpen}
+                onOpenChange={setManageDialogOpen}
+                groups={groups}
             />
         </>
     )
