@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router";
 import { Avatar, AvatarImage } from "@/components/ui/avatar"
 import { Home, Settings, Users, FileText, SquarePen } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useClubs } from "@/hooks/useClub";
 
 
 const menuItems = [
@@ -15,7 +16,9 @@ const menuItems = [
 export function AdminSideBar() {
 
   const { profile } = useAuth()
+  const { clubs } = useClubs()
   const location = useLocation()
+  const clubName = clubs.find(c => c.id === profile?.club_id)?.club_name || "Club"
 
   return (
     <div className="h-full col-span-2 border-r border-gray-200 flex flex-col">
@@ -69,7 +72,7 @@ export function AdminSideBar() {
                 {`${profile?.first_name} ${profile?.last_name}`}
               </p>
               <p className="text-gray-400">
-                Admin de {profile?.club || "Club"}
+                Admin de {clubName}
               </p>
             </div>
           </div>

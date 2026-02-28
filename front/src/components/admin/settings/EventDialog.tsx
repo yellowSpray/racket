@@ -1,6 +1,9 @@
 import { supabase } from "@/lib/supabaseClient"
 import type { Event } from "@/types/event"
 import React, { useEffect, useState } from "react"
+import { useAuth } from "@/contexts/AuthContext"
+import { eventSchema } from "@/lib/schemas"
+import { validateFormData } from "@/lib/validation"
 import {
   Dialog,
   DialogContent,
@@ -22,8 +25,10 @@ interface EventDialogProps {
 }
 
 export function EventDialog({ open, onOpenChange, event, onSuccess}: EventDialogProps) {
+    const { profile } = useAuth()
     const [loading, setLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
 
     // form state
     const [eventName, setEventName] = useState<string>("")
@@ -57,6 +62,7 @@ export function EventDialog({ open, onOpenChange, event, onSuccess}: EventDialog
                 setNumberOfCourts(4)
             }
             setError(null)
+            setFieldErrors({})
         }
     }, [open, event])
 
@@ -64,16 +70,29 @@ export function EventDialog({ open, onOpenChange, event, onSuccess}: EventDialog
         e.preventDefault()
         setLoading(true)
         setError(null)
+        setFieldErrors({})
+
+        const validation = validateFormData(eventSchema, {
+            event_name: eventName,
+            description: description || undefined,
+            start_date: startDate,
+            end_date: endDate,
+            start_time: startTime || undefined,
+            end_time: endTime || undefined,
+            number_of_courts: numberOfCourts,
+        })
+
+        if (!validation.success) {
+            setFieldErrors(validation.fieldErrors)
+            setLoading(false)
+            return
+        }
 
         try {
             const eventData = {
-                event_name: eventName,
-                description: description || null,
-                start_date: startDate,
-                end_date: endDate,
-                start_time: startTime,
-                end_time: endTime,
-                number_of_courts: numberOfCourts
+                club_id: profile?.club_id,
+                ...validation.data,
+                description: validation.data.description || null,
             }
             
             if(event){
@@ -89,13 +108,11 @@ export function EventDialog({ open, onOpenChange, event, onSuccess}: EventDialog
                 }
             } else {
                 // creation
-                const { data, error: insertError } = await supabase
+                const { error: insertError } = await supabase
                     .from("events")
                     .insert([eventData])
                     .select()
                 
-                console.log("Réponse INSERT:", { data, error: insertError })
-
                 if(insertError) {
                     setError(insertError.message)
                     return
@@ -138,8 +155,8 @@ export function EventDialog({ open, onOpenChange, event, onSuccess}: EventDialog
                                 placeholder="Ex: Série 36"
                                 value={eventName}
                                 onChange={(e) => setEventName(e.target.value)}
-                                required
                             />
+                            {fieldErrors.event_name && <p className="text-sm text-red-600">{fieldErrors.event_name[0]}</p>}
                         </div>
 
                         {/* Description */}
@@ -165,8 +182,8 @@ export function EventDialog({ open, onOpenChange, event, onSuccess}: EventDialog
                                     type="date"
                                     value={startDate}
                                     onChange={(e) => setStartDate(e.target.value)}
-                                    required
                                 />
+                                {fieldErrors.start_date && <p className="text-sm text-red-600">{fieldErrors.start_date[0]}</p>}
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="end_date">
@@ -177,8 +194,8 @@ export function EventDialog({ open, onOpenChange, event, onSuccess}: EventDialog
                                     type="date"
                                     value={endDate}
                                     onChange={(e) => setEndDate(e.target.value)}
-                                    required
                                 />
+                                {fieldErrors.end_date && <p className="text-sm text-red-600">{fieldErrors.end_date[0]}</p>}
                             </div>
                         </div>
 
@@ -215,8 +232,8 @@ export function EventDialog({ open, onOpenChange, event, onSuccess}: EventDialog
                                 min="1"
                                 value={numberOfCourts}
                                 onChange={(e) => setNumberOfCourts(parseInt(e.target.value))}
-                                required
                             />
+                            {fieldErrors.number_of_courts && <p className="text-sm text-red-600">{fieldErrors.number_of_courts[0]}</p>}
                         </div>
 
                         {/* Erreur */}

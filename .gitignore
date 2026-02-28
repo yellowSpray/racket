@@ -38,3 +38,11 @@ coverage/
 # Temp files
 *.tmp
 .cache/
+
+#CLAUDE
+CLAUDE.md
+.claude/
+_bmad/
+
+#docs
+docs/

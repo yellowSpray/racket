@@ -36,7 +36,6 @@ export default function Login({className, toggle, ...props}: RegisterProps) {
 
     useEffect(() => {
         if (!isLoading && isAuthenticated && profile) {
-            console.log("Redirection vers:", profile.role === 'admin' ? '/admin' : '/user')
             navigate(profile.role === 'admin' || profile.role === 'superadmin' ? '/admin' : '/user', { replace: true })
         }
     }, [isAuthenticated, profile, isLoading, navigate])

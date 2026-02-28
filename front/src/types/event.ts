@@ -1,5 +1,6 @@
 export interface Event {
   id: string
+  club_id: string | null
   event_name: string
   description?: string
   start_date: string

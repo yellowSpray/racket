@@ -1,18 +1,19 @@
-import { Link } from "react-router";
-import { Home, Settings, Users, FileText, SquarePen } from "lucide-react";
+import { Link, useLocation } from "react-router";
+import { Home, Users, FileText, SquarePen } from "lucide-react";
 import { Button } from "@/components/ui/button"
 import { supabase } from "@/lib/supabaseClient"
 
 
 const menuItems = [
-  { title: "Accueil", url: "/admin", icon: Home },
-  { title: "Tableaux", url: "/admin", icon: SquarePen },
-  { title: "Match à jouer", url: "/admin", icon: FileText },
-  { title: "Liste Joueurs", url: "/admin/players", icon: Users },
-  { title: "Paramètres", url: "/admin", icon: Settings },
+  { title: "Accueil", url: "/user", icon: Home },
+  { title: "Tableaux", url: "/user/draws", icon: SquarePen },
+  { title: "Match à jouer", url: "/user/matches", icon: FileText },
+  { title: "Classement", url: "/user/rankings", icon: Users },
 ];
 
 export function UserSideBar() {
+  const location = useLocation();
+
   return (
     <aside className="col-span-2 border-r border-gray-200 flex flex-col">
       {/* Header */}

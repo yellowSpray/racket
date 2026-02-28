@@ -8,7 +8,7 @@ export interface UserProfile {
     email: string,
     phone: string,
     role: 'user' | 'admin' | 'superadmin';
-    club: string,
+    club_id: string | null,
     avatar_url?: string;
 }
 

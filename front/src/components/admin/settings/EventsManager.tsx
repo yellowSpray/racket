@@ -31,8 +31,8 @@ export function EventsManager() {
         const endDate = new Date(event.end_date)
 
         if(endDate < today) {
-            return { label: "Terminer", variant: "default" as const }
-        } else if (startDate > endDate){
+            return { label: "Terminé", variant: "default" as const }
+        } else if (startDate > today){
             return { label: "À venir", variant: "inactive" as const}
         } else {
             return { label: "En cours", variant: "active" as const}

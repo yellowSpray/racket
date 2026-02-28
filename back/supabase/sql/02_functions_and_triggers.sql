@@ -8,17 +8,42 @@
 -- FONCTIONS UTILITAIRES
 -- ===================================
 
--- Fonction helper pour vérifier si l'utilisateur connecté est admin
+-- Fonction helper pour vérifier si l'utilisateur connecté est admin (admin ou superadmin)
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS boolean
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY DEFINER STABLE
 AS $$
 BEGIN
   RETURN EXISTS (
     SELECT 1 FROM public.profiles
     WHERE id = auth.uid() AND role IN ('admin', 'superadmin')
   );
+END;
+$$;
+
+-- Fonction helper pour vérifier si l'utilisateur connecté est superadmin
+CREATE OR REPLACE FUNCTION public.is_superadmin()
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER STABLE
+AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'superadmin'
+  );
+END;
+$$;
+
+-- Fonction helper pour récupérer le club_id de l'utilisateur connecté
+CREATE OR REPLACE FUNCTION public.get_user_club_id()
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER STABLE
+AS $$
+BEGIN
+  RETURN (SELECT club_id FROM public.profiles WHERE id = auth.uid());
 END;
 $$;
 

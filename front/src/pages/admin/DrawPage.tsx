@@ -100,6 +100,7 @@ export function DrawAdmin () {
                 open={manageDialogOpen}
                 onOpenChange={setManageDialogOpen}
                 groups={groups}
+                onRefresh={() => currentEvent && fetchGroupsByEvent(currentEvent.id)}
             />
         </>
     )

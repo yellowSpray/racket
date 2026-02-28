@@ -123,7 +123,7 @@ export function ListPlayers() {
             </div>
 
             {/* Tableau */}
-            <DataTable columns={columns} data={players as PlayerType[]} />
+            <DataTable columns={columns} data={filteredPlayers as PlayerType[]} />
         </>
     )
 }

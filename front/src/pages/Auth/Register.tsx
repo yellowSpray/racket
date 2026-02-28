@@ -1,4 +1,6 @@
 import { useState } from "react"
+import { registerSchema } from "@/lib/schemas"
+import { validateFormData } from "@/lib/validation"
 import { Button } from "@/components/ui/button"
 import { 
     Card, 
@@ -40,6 +42,7 @@ export default function Register({
 
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
     const [firstName, setFirstName] = useState("")
     const [lastName, setLastName] = useState("")
     const [phoneNumber, setPhoneNumber] = useState("")
@@ -52,40 +55,39 @@ export default function Register({
         e.preventDefault()
         setLoading(true)
         setError("")
+        setFieldErrors({})
 
-        console.log(firstName, lastName, phoneNumber, selectedClub, email, password)
+        const validation = validateFormData(registerSchema, {
+            firstName, lastName, phoneNumber, selectedClub, email, password, confirmPassword
+        })
 
-        if(password !== confirmPassword) {
-            setError("Password is not matching")
+        if (!validation.success) {
+            setFieldErrors(validation.fieldErrors)
             setLoading(false)
             return
         }
 
         try {
-            const { data, error } = await supabase.auth.signUp({
-                email,
-                password,
+            const { error } = await supabase.auth.signUp({
+                email: validation.data.email,
+                password: validation.data.password,
                 options: {
                     data: {
-                        first_name: firstName,
-                        last_name: lastName,
-                        phone: phoneNumber,
-                        club_id: selectedClub
+                        first_name: validation.data.firstName,
+                        last_name: validation.data.lastName,
+                        phone: validation.data.phoneNumber,
+                        club_id: validation.data.selectedClub
                     }
                 }
             });
 
-            console.log("User registered :", data.user)
-
             if(error){
-                console.log("error sign up user :", error)
                 setError(error.message)
                 setLoading(false)
                 return
             }
-            
-        } catch (err) {
-            console.error(err)
+
+        } catch {
             setError("Unexpected error during registration")
         } finally {
             setLoading(false)
@@ -96,9 +98,9 @@ export default function Register({
         <div className={cn("flex flex-col items-center h-full", className)} {...props}>
             <Card className="w-1/2 h-full shadow-none gap-6 rounded-[0px] border-none bg(--background) justify-center">
                 <CardHeader>
-                    <CardTitle>Login to your account</CardTitle>
+                    <CardTitle>Create your account</CardTitle>
                     <CardDescription>
-                        Enter your email below to login to your account
+                        Fill in the details below to create your account
                     </CardDescription>
                     { error && (
                         <div className="text-red-600 px-4 py-3">
@@ -112,20 +114,20 @@ export default function Register({
                             <div className="grid grid-cols-2 gap-4">
                                 <Field>
                                     <FieldLabel htmlFor="first_name">First Name</FieldLabel>
-                                    <Input 
+                                    <Input
                                         id="first_name"
                                         type="text"
-                                        placeholder="Jhon"
+                                        placeholder="John"
                                         autoComplete="off"
                                         value={firstName}
                                         onChange={(e) => setFirstName(e.target.value)}
                                         disabled={loading}
-                                        required
                                     />
+                                    {fieldErrors.firstName && <p className="text-sm text-red-600">{fieldErrors.firstName[0]}</p>}
                                 </Field>
                                 <Field>
                                     <FieldLabel htmlFor="last_name">Last Name</FieldLabel>
-                                    <Input 
+                                    <Input
                                         id="last_name"
                                         type="text"
                                         placeholder="Doe"
@@ -133,13 +135,13 @@ export default function Register({
                                         value={lastName}
                                         onChange={(e) => setLastName(e.target.value)}
                                         disabled={loading}
-                                        required
                                     />
+                                    {fieldErrors.lastName && <p className="text-sm text-red-600">{fieldErrors.lastName[0]}</p>}
                                 </Field>
                             </div>
                             <Field>
-                                <FieldLabel htmlFor="last_name">Phone Number</FieldLabel>
-                                <Input 
+                                <FieldLabel htmlFor="phone_number">Phone Number</FieldLabel>
+                                <Input
                                     id="phone_number"
                                     type="tel"
                                     placeholder="+3249XXXXXXX"
@@ -147,14 +149,14 @@ export default function Register({
                                     value={phoneNumber}
                                     onChange={(e) => setPhoneNumber(e.target.value)}
                                     disabled={loading}
-                                    required
                                 />
+                                {fieldErrors.phoneNumber && <p className="text-sm text-red-600">{fieldErrors.phoneNumber[0]}</p>}
                             </Field>
                             <Field>
                                 <FieldLabel htmlFor="club">
                                     Which club do you play ?
                                 </FieldLabel>
-                                <Select 
+                                <Select
                                     value={selectedClub}
                                     onValueChange={setSelectedClub}
                                     disabled={loadingClubs}
@@ -174,10 +176,11 @@ export default function Register({
                                         )}
                                     </SelectContent>
                                 </Select>
+                                {fieldErrors.selectedClub && <p className="text-sm text-red-600">{fieldErrors.selectedClub[0]}</p>}
                             </Field>
                             <Field>
                                 <FieldLabel htmlFor="email">Email</FieldLabel>
-                                <Input 
+                                <Input
                                     id="email"
                                     type="email"
                                     placeholder="email@example.com"
@@ -185,32 +188,32 @@ export default function Register({
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     disabled={loading}
-                                    required
                                 />
+                                {fieldErrors.email && <p className="text-sm text-red-600">{fieldErrors.email[0]}</p>}
                             </Field>
                             <Field>
                                 <FieldLabel htmlFor="password">Password</FieldLabel>
-                                <Input 
-                                    id="password" 
+                                <Input
+                                    id="password"
                                     type="password"
                                     autoComplete="off"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     disabled={loading}
-                                    required
                                 />
+                                {fieldErrors.password && <p className="text-sm text-red-600">{fieldErrors.password[0]}</p>}
                             </Field>
                             <Field>
-                                <FieldLabel htmlFor="password">Confim Password</FieldLabel>
-                                <Input 
-                                    id="passwordConfirm" 
+                                <FieldLabel htmlFor="passwordConfirm">Confirm Password</FieldLabel>
+                                <Input
+                                    id="passwordConfirm"
                                     type="password"
                                     autoComplete="off"
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
                                     disabled={loading}
-                                    required
                                 />
+                                {fieldErrors.confirmPassword && <p className="text-sm text-red-600">{fieldErrors.confirmPassword[0]}</p>}
                             </Field>
                             <Field>
                                 <Button 
@@ -218,7 +221,7 @@ export default function Register({
                                     disabled={loading}
                                     className="border-green-400 border-1"
                                 >
-                                    {loading ? 'Register in...' : 'Register'}
+                                    {loading ? 'Registering...' : 'Register'}
                                 </Button>
                             </Field>
                             <Field>

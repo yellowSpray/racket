@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabaseClient"
 import { useCallback, useEffect, useState } from "react"
 import type { PlayerType } from "@/types/player"
+import { useAuth } from "@/contexts/AuthContext"
 
 // Types pour les données Supabase
 type SupabasePlayerStatus = {
@@ -29,7 +30,8 @@ type SupabasePlayer = {
 }
 
 export function useAdminPlayers() {
-    
+
+    const { profile } = useAuth()
     const [players, setPlayer] = useState<PlayerType[]>([])
     const [loading, setLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
@@ -178,9 +180,6 @@ export function useAdminPlayers() {
         setError(null)
 
         try {
-
-            console.log("Données reçues:", player)
-
             const { data, error: rpcError } = await supabase.rpc('upsert_player', {
                 p_profile_id: null,
                 p_first_name: player.first_name || '',
@@ -189,7 +188,7 @@ export function useAdminPlayers() {
                 p_email: player.email || '',
                 p_power_ranking: player.power_ranking ? parseInt(player.power_ranking) : 0,
                 p_avatar_url: null,
-                p_club_id: null,
+                p_club_id: profile?.club_id ?? null,
                 p_statuses: player.status || [],
                 p_arrival_time: player.arrival || null,
                 p_departure_time: player.departure || null,
@@ -199,29 +198,22 @@ export function useAdminPlayers() {
             })
 
             if (rpcError) {
-                console.error("Erreur RPC:", rpcError)
                 setError(rpcError.message)
                 setLoading(false)
                 return
             }
 
-            console.log("Réponse de upsert_player:", data)
-
             if (data && typeof data === 'object' && 'success' in data) {
                 if (!data.success) {
-                    console.error("Erreur dans la fonction:", data.error)
                     setError(data.error as string)
                     setLoading(false)
                     return
                 }
-                console.log("Joueur créé:", data.profile_id)
             }
 
-            // Rafraîchir la vue actuelle
             await refreshCurrentView()
 
         } catch (err) {
-            console.error("Erreur inattendue:", err)
             setError(err instanceof Error ? err.message : "Erreur inconnue")
             setLoading(false)
         }
@@ -255,7 +247,7 @@ export function useAdminPlayers() {
                     ? parseInt(updates.power_ranking) 
                     : parseInt(currentPlayer.power_ranking || '0'),
                 p_avatar_url: null,
-                p_club_id: null,
+                p_club_id: profile?.club_id ?? null,
                 p_statuses: updates.status || currentPlayer.status,
                 p_arrival_time: updates.arrival || currentPlayer.arrival || null,
                 p_departure_time: updates.departure || currentPlayer.departure || null,
@@ -265,23 +257,17 @@ export function useAdminPlayers() {
             })
 
             if (rpcError) {
-                console.error("Erreur RPC:", rpcError)
                 setError(rpcError.message)
                 setLoading(false)
                 return
             }
 
-            console.log("Réponse de upsert_player:", data)
-
-            // Vérifier le succès
             if (data && typeof data === 'object' && 'success' in data) {
                 if (!data.success) {
-                    console.error("Erreur dans la fonction:", data.error)
                     setError(data.error as string)
                     setLoading(false)
                     return
                 }
-                console.log("Joueur mis à jour:", data.profile_id)
             }
 
             // rafraîchir la vue actuelle (filtrée ou complète)

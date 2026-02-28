@@ -1,15 +1,27 @@
+import { lazy, Suspense } from "react";
 import { createBrowserRouter } from "react-router";
 import ProtectedRoute from "@/routes/ProtectedRoute";
 import Rootlayout from "@/layout/RootLayout";
-import Auth from "@/pages/auth/AuthPage";
-import UserPage from "@/pages/user/UserPage";
-import AdminPage from "@/pages/admin/AdminPage";
-import { ListPlayers } from "@/pages/admin/ListPlayerPage";
-import { DashboardAdmin } from "@/pages/admin/Dashboard";
-import { DrawAdmin } from "@/pages/admin/DrawPage";
-import { MatchAdmin } from "@/pages/admin/Match";
-import { SettingsAdmin } from "@/pages/admin/Settings";
 import { RedirectByRole } from "@/routes/RedirectByRole";
+import Loading from "@/components/shared/Loading";
+
+// Lazy-loaded pages
+const Auth = lazy(() => import("@/pages/auth/AuthPage"))
+const UserPage = lazy(() => import("@/pages/user/UserPage"))
+const AdminPage = lazy(() => import("@/pages/admin/AdminPage"))
+const DashboardAdmin = lazy(() => import("@/pages/admin/Dashboard").then(m => ({ default: m.DashboardAdmin })))
+const DrawAdmin = lazy(() => import("@/pages/admin/DrawPage").then(m => ({ default: m.DrawAdmin })))
+const MatchAdmin = lazy(() => import("@/pages/admin/Match").then(m => ({ default: m.MatchAdmin })))
+const ListPlayers = lazy(() => import("@/pages/admin/ListPlayerPage").then(m => ({ default: m.ListPlayers })))
+const SettingsAdmin = lazy(() => import("@/pages/admin/Settings").then(m => ({ default: m.SettingsAdmin })))
+
+function withSuspense(Component: React.LazyExoticComponent<React.ComponentType>) {
+    return (
+        <Suspense fallback={<Loading />}>
+            <Component />
+        </Suspense>
+    )
+}
 
 const router = createBrowserRouter([
 
@@ -18,32 +30,32 @@ const router = createBrowserRouter([
         element: <Rootlayout />,
         children: [
             // Page d'accueil : redirige automatiquement si connecté
-            { index: true, element: <RedirectByRole /> }, // redirige admin vers /admin, user vers /user
+            { index: true, element: <RedirectByRole /> },
 
             // Page de connexion
-            { path: "auth", element: <Auth /> },
+            { path: "auth", element: withSuspense(Auth) },
 
             // Routes pour les utilisateurs
-            { 
+            {
                 element: <ProtectedRoute allowedRoles={["user", "admin", "superadmin"]}/>,
                 children: [
-                    { path: "user", element: <UserPage /> }
+                    { path: "user", element: withSuspense(UserPage) }
                 ]
             },
             // Routes pour les admins
-            { 
+            {
                 element: <ProtectedRoute allowedRoles={["admin", "superadmin"]}/>,
                 children: [
-                    { 
-                        path: "admin", 
-                        element: <AdminPage />,
+                    {
+                        path: "admin",
+                        element: withSuspense(AdminPage),
                         children: [
-                            { path: "", element: <DashboardAdmin />},           
-                            { path: "draws", element: <DrawAdmin />},
-                            { path: "matches", element: <MatchAdmin />},
-                            { path: "players", element: <ListPlayers />},
-                            { path: "settings", element: <SettingsAdmin />}
-                        ] 
+                            { path: "", element: withSuspense(DashboardAdmin) },
+                            { path: "draws", element: withSuspense(DrawAdmin) },
+                            { path: "matches", element: withSuspense(MatchAdmin) },
+                            { path: "players", element: withSuspense(ListPlayers) },
+                            { path: "settings", element: withSuspense(SettingsAdmin) }
+                        ]
                     }
                 ]
             }

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import type { JSX } from "react"
+import { playerSchema } from "@/lib/schemas"
+import { validateFormData } from "@/lib/validation"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -54,6 +56,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave }: EditPlayersP
     const [currentStep, setCurrentStep] = useState<number>(1)
     const [open, setOpen] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
 
     // etat controlé du formulaire
     const [formData, setFormData] = useState<Partial<PlayerType>>(initialFormData)
@@ -70,7 +73,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave }: EditPlayersP
             setIsSubmitting(false) // reset
             if(mode === "edit" && playerData) {
                 // mode edition donc on charge les données
-                console.log("mode edition on charge les données du joueur:", playerData)
+                // mode edition donc on charge les données
 
                 setFormData({
                     first_name: playerData.first_name,
@@ -85,7 +88,6 @@ export function EditPlayers ({ mode = "edit", playerData, onSave }: EditPlayersP
                 setSelected(playerData.status || [])
                 setCurrentStep(1)
             } else {
-                console.log("mode création , reset du formulaire")
                 setFormData(initialFormData)
                 setSelected(["inactive", "visitor", "unpaid"])
                 setCurrentStep(1)
@@ -155,49 +157,45 @@ export function EditPlayers ({ mode = "edit", playerData, onSave }: EditPlayersP
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
 
-        console.log("=== HANDLE SUBMIT APPELÉ ===");
-        console.trace("Stack trace de l'appel :"); // debug handleSubmit
-        console.log("Mode:", mode);
-        console.log("Current step:", currentStep);
-        console.log("Steps length:", steps.length);
-        console.log("Is submitting flag:", isSubmitting);
-        console.log("Form data:", formData);
-        console.log("Selected status:", selected);
-
         if (currentStep !== steps.length || !isSubmitting) {
-            console.log("Pas au dernier step, on ne soumet pas");
-            setIsSubmitting(false) // reset si on arrive pas à la fin des steps ...
-            return 
+            setIsSubmitting(false)
+            return
         }
 
-        console.log("✅ Au dernier step ET flag isSubmitting activé, on soumet");
+        setFieldErrors({})
 
-        // construction des données finales
+        const validation = validateFormData(playerSchema, {
+            ...formData,
+            status: selected,
+        })
+
+        if (!validation.success) {
+            setFieldErrors(validation.fieldErrors)
+            // retour au step 1 si erreur sur les champs d'identité
+            if (validation.fieldErrors.first_name || validation.fieldErrors.last_name || validation.fieldErrors.phone || validation.fieldErrors.email) {
+                setCurrentStep(1)
+            }
+            setIsSubmitting(false)
+            return
+        }
+
         const finalData: Partial<PlayerType> = {
             ...formData,
             status: selected as ("active" | "inactive" | "member" | "visitor" | "paid" | "unpaid")[]
         }
 
-        console.log("Données finales à sauvegarder:", finalData);
-
         try {
             await onSave?.(finalData)
             setOpen(false)
-            setIsSubmitting(false) // reset
-        } catch (error) {
-            console.error("erreur sauvegarde formulaire:", error)
-            setIsSubmitting(false) // reset en cas d'erreur
+            setIsSubmitting(false)
+        } catch {
+            setIsSubmitting(false)
         }
     }
 
     const handleNext = () => {
-        console.log("=== HANDLE NEXT APPELÉ ===");
-        console.log("Current step avant:", currentStep);
         if(currentStep < steps.length) {
-            setCurrentStep(prev => {
-                console.log("Changement de step:", prev, "→", prev + 1);
-                return prev + 1
-            })
+            setCurrentStep(prev => prev + 1)
         }
     }
 
@@ -213,53 +211,53 @@ export function EditPlayers ({ mode = "edit", playerData, onSave }: EditPlayersP
                 <div className="grid grid-cols-2 gap-4">
                     <Field>
                         <FieldLabel htmlFor="firstname">Prénom</FieldLabel>
-                        <Input 
-                            id="firstname" 
-                            type="text" 
-                            name="first_name" 
-                            placeholder="Jhon" 
-                            value={formData.first_name || ""} 
-                            onChange={(e) => handleChangeInput("first_name", e.target.value)} 
-                            required 
+                        <Input
+                            id="firstname"
+                            type="text"
+                            name="first_name"
+                            placeholder="John"
+                            value={formData.first_name || ""}
+                            onChange={(e) => handleChangeInput("first_name", e.target.value)}
                         />
+                        {fieldErrors.first_name && <p className="text-sm text-red-600">{fieldErrors.first_name[0]}</p>}
                     </Field>
                     <Field>
                         <FieldLabel htmlFor="lastname">Nom</FieldLabel>
-                        <Input 
-                            id="lastname" 
-                            type="text" 
-                            name="last_name" 
-                            placeholder="Doe" 
-                            value={formData.last_name || ""} 
-                            onChange={(e) => handleChangeInput("last_name", e.target.value)} 
-                            required 
+                        <Input
+                            id="lastname"
+                            type="text"
+                            name="last_name"
+                            placeholder="Doe"
+                            value={formData.last_name || ""}
+                            onChange={(e) => handleChangeInput("last_name", e.target.value)}
                         />
+                        {fieldErrors.last_name && <p className="text-sm text-red-600">{fieldErrors.last_name[0]}</p>}
                     </Field>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <Field>
                         <FieldLabel htmlFor="phone">Téléphone</FieldLabel>
-                        <Input 
-                            id="phone" 
-                            type="tel" 
-                            name="phone" 
-                            placeholder="+32454565465" 
+                        <Input
+                            id="phone"
+                            type="tel"
+                            name="phone"
+                            placeholder="+32454565465"
                             value={formData.phone || ""}
-                            onChange={(e) => handleChangeInput("phone", e.target.value)}  
-                            required 
+                            onChange={(e) => handleChangeInput("phone", e.target.value)}
                         />
+                        {fieldErrors.phone && <p className="text-sm text-red-600">{fieldErrors.phone[0]}</p>}
                     </Field>
                     <Field>
                         <FieldLabel htmlFor="email">Email</FieldLabel>
-                        <Input 
-                            id="email" 
-                            type="email" 
-                            name="email" 
-                            placeholder="Jhon@email.com" 
-                            value={formData.email || ""} 
-                            onChange={(e) => handleChangeInput("email", e.target.value)}  
-                            required 
+                        <Input
+                            id="email"
+                            type="email"
+                            name="email"
+                            placeholder="john@email.com"
+                            value={formData.email || ""}
+                            onChange={(e) => handleChangeInput("email", e.target.value)}
                         />
+                        {fieldErrors.email && <p className="text-sm text-red-600">{fieldErrors.email[0]}</p>}
                     </Field>
                 </div>
             </FieldGroup>
@@ -361,13 +359,8 @@ export function EditPlayers ({ mode = "edit", playerData, onSave }: EditPlayersP
                     <form 
                         onSubmit={handleSubmit}
                         onKeyDown={(e) => {
-                            if(e.key === "Enter") {
-                                console.log("=== TOUCHE ENTER DÉTECTÉE ===");
-                                console.log("isSubmitting:", isSubmitting);
-                                if(!isSubmitting) {
-                                    e.preventDefault()
-                                    console.log("❌ Enter bloquée car isSubmitting = false");
-                                }
+                            if(e.key === "Enter" && !isSubmitting) {
+                                e.preventDefault()
                             }
                         }}
                     >

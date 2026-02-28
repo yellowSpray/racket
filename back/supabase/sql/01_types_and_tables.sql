@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   club_id uuid references public.clubs(id) on delete set null,
   avatar_url text,
   power_ranking int4,  -- Classement du joueur (ex: 1400)
+  email text,  -- Email du joueur (peut etre different de auth.users.email pour les profils non lies)
   role user_role not null default 'user',
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now(),
@@ -84,6 +85,7 @@ CREATE TABLE IF NOT EXISTS public.profile_sports (
 -- Contient les dates de début/fin et les paramètres de l'événement
 CREATE TABLE IF NOT EXISTS public.events (
   id uuid primary key default gen_random_uuid(),
+  club_id uuid references public.clubs(id) on delete cascade,  -- Club proprietaire de l'evenement
   event_name text not null unique,
   description text,
   start_date date not null,  -- Date de début de la série
@@ -94,6 +96,15 @@ CREATE TABLE IF NOT EXISTS public.events (
   estimated_match_duration interval default interval '00:30:00',  -- Durée estimée d'un match
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now()
+);
+
+-- TABLE EVENT_PLAYERS : Liaison entre joueurs et événements (inscription)
+CREATE TABLE IF NOT EXISTS public.event_players (
+  id uuid primary key default gen_random_uuid(),
+  event_id uuid references public.events(id) on delete cascade,
+  profile_id uuid references public.profiles(id) on delete cascade,
+  registered_at timestamp with time zone default now(),
+  unique(event_id, profile_id)  -- Un joueur ne peut s'inscrire qu'une fois par événement
 );
 
 -- TABLE GROUPS : Tableaux de joueurs (généralement 5 ou 6 joueurs par groupe)
@@ -187,6 +198,8 @@ CREATE TABLE IF NOT EXISTS public.payments (
 CREATE INDEX IF NOT EXISTS idx_profiles_club_id ON public.profiles(club_id);
 CREATE INDEX IF NOT EXISTS idx_profile_sports_profile_id ON public.profile_sports(profile_id);
 CREATE INDEX IF NOT EXISTS idx_profile_sports_sport_id ON public.profile_sports(sport_id);
+CREATE INDEX IF NOT EXISTS idx_event_players_event_id ON public.event_players(event_id);
+CREATE INDEX IF NOT EXISTS idx_event_players_profile_id ON public.event_players(profile_id);
 CREATE INDEX IF NOT EXISTS idx_events_date ON public.events(start_date, end_date);
 CREATE INDEX IF NOT EXISTS idx_groups_event_id ON public.groups(event_id);
 CREATE INDEX IF NOT EXISTS idx_matches_group_id ON public.matches(group_id);
