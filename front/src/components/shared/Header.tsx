@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router"
+import { Link, useNavigate, useLocation } from "react-router"
 import Logo from "@/components/ui/logo"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/AuthContext"
@@ -10,7 +10,9 @@ import { supabase } from "@/lib/supabaseClient"
 export default function Header() {
 
   const navigate = useNavigate()
+  const location = useLocation()
   const { profile, isAuthenticated } = useAuth()
+  const isAppPage = location.pathname.startsWith('/admin') || location.pathname.startsWith('/user')
   const [darkMode, setDarkMode] = useState(false);
 
   // Toggle Dark Mode
@@ -29,7 +31,7 @@ export default function Header() {
 
   return (
     <header className="px-4 md:px-6 border-b-1 border-b-border">
-      <div className="flex h-16 items-center justify-between gap-4">
+      <div className={`flex h-16 items-center justify-between gap-4 ${!isAppPage ? 'mx-auto max-w-6xl' : ''}`}>
 
         {/* Left side */}
         <div className="flex items-center gap-2">
@@ -59,7 +61,7 @@ export default function Header() {
               className="ml-5" 
               onClick={handleLogout}
             >
-                <p>Log out</p>
+                <p>Déconnexion</p>
                 <LogOut size={20} />
             </Button>
           </div>
@@ -69,10 +71,10 @@ export default function Header() {
               {darkMode ? <Sun size={20} /> : <Moon size={20} />}
             </Button>
             <Button asChild variant="ghost" size="sm" className="text-sm border-1 border-border">
-              <Link to="/auth">Sign In</Link>
+              <Link to="/auth">Se connecter</Link>
             </Button>
             <Button asChild size="sm" className="text-sm shadow-none border-green-400 border-1 font-bold">
-              <Link to="/auth">Get Started</Link>
+              <Link to="/auth">Commencer</Link>
             </Button>
           </div>
         )}

@@ -8,31 +8,28 @@ export default function Auth() {
     const [signIn, setSignIn] = useState(false)
     const switchOn = () => setSignIn(!signIn)
 
-    //TODO changer la taille de la div qui contient les formulaires
     return (
-        <section className="w-full h-full flex flex-col items-center justify-center p-4 md:p-6">
+        <section className="w-full flex-1 flex flex-col items-center justify-center p-4 md:p-6">
             <AnimatePresence mode="wait">
-                <div className="w-full h-[500px] flex flex-row justify-between items-center relative">
-                    <Login 
-                        toggle={switchOn} 
+                <div className="w-full flex-1 flex flex-row justify-between items-center relative rounded-3xl overflow-hidden">
+                    <Login
+                        toggle={switchOn}
                         className="w-1/2"
                     />
-                    <Register 
-                        toggle={switchOn} 
+                    <Register
+                        toggle={switchOn}
                         className="w-1/2"
                     />
                     <motion.div
-                        className="w-1/2 h-full rounded-2xl bg-red-400 absolute top-0 right-0"
+                        className="w-1/2 h-full rounded-3xl bg-muted absolute top-0 right-0"
                         layout
                         animate={{ left: signIn ? "0%" : "50%" }}
-                        transition={{ 
+                        transition={{
                             type: "spring",
                             visualDuration: 0.3,
-                            bounce: 0.2 
-                        }} 
-                    >
-                        <h1>text</h1>
-                    </motion.div>
+                            bounce: 0.2
+                        }}
+                    />
                 </div>
             </AnimatePresence>
         </section>

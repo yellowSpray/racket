@@ -1,4 +1,5 @@
 import Loading from "@/components/shared/Loading"
+import Home from "@/pages/Home"
 import { Navigate } from "react-router"
 import { useAuth } from "@/contexts/AuthContext"
 
@@ -8,10 +9,10 @@ export function RedirectByRole() {
     const { profile, isLoading, isAuthenticated } = useAuth()
 
     if(isLoading) return <Loading />
-    
-    // Si pas connecter alors vers la page home
+
+    // Si pas connecté → afficher la landing page
     if(!isAuthenticated || !profile) {
-        return <Navigate to="/" replace />
+        return <Home />
     }
 
     // Switch en fonction du role
@@ -21,6 +22,6 @@ export function RedirectByRole() {
         case "user":
             return <Navigate to="/user" replace />
         default:
-            return <Navigate to="/" replace />
+            return <Home />
     }
 }

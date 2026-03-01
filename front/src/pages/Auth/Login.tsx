@@ -1,13 +1,13 @@
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button";
-import { 
-    Card, 
-    CardContent, 
-    CardDescription,  
+import {
+    Card,
+    CardContent,
+    CardDescription,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { 
+import {
     Field,
     FieldDescription,
     FieldGroup,
@@ -21,14 +21,14 @@ import { useAuth } from "@/contexts/AuthContext";
 
 type RegisterProps = {
   className?: string;
-  toggle: () => void; 
+  toggle: () => void;
 };
 
 export default function Login({className, toggle, ...props}: RegisterProps) {
 
     const navigate = useNavigate()
     const { profile, isAuthenticated, isLoading } = useAuth()
-    
+
     const [loading, setLoading] = useState<boolean>(false)
     const [error, setError] = useState<string>("")
     const [email, setEmail] = useState<string>("")
@@ -45,7 +45,7 @@ export default function Login({className, toggle, ...props}: RegisterProps) {
         e.preventDefault()
         setLoading(true)
         setError("")
-        
+
         const { error } = await supabase.auth.signInWithPassword({
             email: email,
             password: password
@@ -60,25 +60,25 @@ export default function Login({className, toggle, ...props}: RegisterProps) {
 
     return (
         <div className={cn("flex flex-col items-center h-full", className)} {...props}>
-            <Card className="w-1/2 h-full shadow-none gap-6 rounded-[0px] border-none bg(--background) justify-center">
+            <Card className="w-1/2 h-full shadow-none gap-6 justify-center border-none">
                 <CardHeader>
-                    <CardTitle>Login to your account</CardTitle>
+                    <CardTitle>Connectez-vous</CardTitle>
                     <CardDescription>
-                        Enter your email below to login to your account
+                        Entrez vos identifiants pour accéder à votre compte
                     </CardDescription>
                     { error && (
-                        <div className="text-red-600 px-4 py-3">
+                        <div className="text-destructive px-4 py-3">
                             {error}
                         </div>
                     )}
-                    
+
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit}>
                         <FieldGroup>
                             <Field>
                                 <FieldLabel htmlFor="email">Email</FieldLabel>
-                                <Input 
+                                <Input
                                     id="email_login"
                                     type="email"
                                     placeholder="email@example.com"
@@ -91,44 +91,43 @@ export default function Login({className, toggle, ...props}: RegisterProps) {
                             </Field>
                             <Field>
                                 <div className="flex items-center">
-                                    <FieldLabel htmlFor="password">Password</FieldLabel>
-                                    <a 
+                                    <FieldLabel htmlFor="password">Mot de passe</FieldLabel>
+                                    <a
                                         href="#"
                                         className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
                                     >
-                                        Forgot your password ?
+                                        Mot de passe oublié ?
                                     </a>
                                 </div>
-                                <Input 
-                                    id="password_login" 
+                                <Input
+                                    id="password_login"
                                     type="password"
                                     autoComplete="off"
                                     value={password}
-                                    onChange={(e) => setPassword(e.target.value)} 
+                                    onChange={(e) => setPassword(e.target.value)}
                                     disabled={loading}
                                     required
                                 />
                             </Field>
                             <Field>
-                                <Button 
+                                <Button
                                     type="submit"
                                     disabled={loading}
-                                    className="border-green-400 border-1"
                                 >
-                                    {loading ? 'Logging in...' : 'Login with Email'}
+                                    {loading ? 'Connexion...' : 'Se connecter'}
                                 </Button>
-                                <Button 
-                                    variant="outline" 
-                                    type="button" 
+                                <Button
+                                    variant="outline"
+                                    type="button"
                                     className="border-1 border-border"
                                     disabled={loading}
                                 >
-                                    Login with Google
+                                    Continuer avec Google
                                 </Button>
                             </Field>
                             <Field>
                                 <FieldDescription className="text-center">
-                                    Don&apos;t have an account ? <Button onClick={toggle}>Sign up</Button>
+                                    Pas encore de compte ? <Button variant="link" onClick={toggle}>S&apos;inscrire</Button>
                                 </FieldDescription>
                             </Field>
                         </FieldGroup>

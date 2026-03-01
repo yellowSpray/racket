@@ -51,13 +51,15 @@ export function useGroups() {
                 group_name: group.group_name,
                 max_players: group.max_players,
                 created_at: group.created_at,
-                players: group.group_players?.map((gp: SupabaseGroupPlayer) => ({
-                    id: gp.profiles.id,
-                    first_name: gp.profiles.first_name,
-                    last_name: gp.profiles.last_name,
-                    phone: gp.profiles.phone,
-                    power_ranking: gp.profiles.power_ranking || "0"
-                })) || []
+                players: group.group_players
+                    ?.filter((gp: SupabaseGroupPlayer) => gp.profiles != null)
+                    .map((gp: SupabaseGroupPlayer) => ({
+                        id: gp.profiles.id,
+                        first_name: gp.profiles.first_name,
+                        last_name: gp.profiles.last_name,
+                        phone: gp.profiles.phone,
+                        power_ranking: gp.profiles.power_ranking || "0"
+                    })) || []
             }))
 
             setGroups(transformedGroups)
