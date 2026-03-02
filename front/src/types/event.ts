@@ -10,6 +10,7 @@ export interface Event {
   number_of_courts: number
   player_count?: number
   estimated_match_duration?: string
+  playing_dates?: string[] | null
   created_at?: string
   updated_at?: string
 };

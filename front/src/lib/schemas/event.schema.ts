@@ -11,6 +11,14 @@ export const eventSchema = z
     number_of_courts: z
       .number()
       .min(1, { error: 'Au moins 1 terrain requis' }),
+    estimated_match_duration: z
+      .number()
+      .min(5, { error: 'Minimum 5 minutes' })
+      .max(180, { error: 'Maximum 180 minutes' })
+      .optional(),
+    playing_dates: z
+      .array(z.string())
+      .optional(),
   })
   .check((ctx) => {
     if (

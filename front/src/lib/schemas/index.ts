@@ -1,3 +1,7 @@
 export { registerSchema, type RegisterFormData } from './register.schema'
 export { playerSchema, type PlayerFormData } from './player.schema'
 export { eventSchema, type EventFormData } from './event.schema'
+export { scoringRulesSchema, type ScoringRulesFormData } from './scoring.schema'
+export { promotionRulesSchema, type PromotionRulesFormData } from './promotion.schema'
+export { clubConfigSchema, type ClubConfigFormData } from './clubConfig.schema'
+export { courtSchema, type CourtFormData } from './court.schema'
