@@ -650,3 +650,133 @@ USING (
     WHERE p.id = profile_id AND p.club_id = public.get_user_club_id()
   ))
 );
+
+-- ===================================
+-- POLICIES RLS - SCORING_RULES (scoped par club)
+-- ===================================
+
+ALTER TABLE public.scoring_rules ENABLE ROW LEVEL SECURITY;
+
+-- Les membres du club peuvent voir les regles de scoring
+CREATE POLICY "Users can select their club scoring rules"
+ON public.scoring_rules
+FOR SELECT
+TO public
+USING (
+  public.is_superadmin()
+  OR club_id = public.get_user_club_id()
+);
+
+-- Les admins peuvent creer les regles de scoring de leur club
+CREATE POLICY "Admins can insert club scoring rules"
+ON public.scoring_rules
+FOR INSERT
+TO public
+WITH CHECK (
+  public.is_superadmin()
+  OR (public.is_admin() AND club_id = public.get_user_club_id())
+);
+
+-- Les admins peuvent modifier les regles de scoring de leur club
+CREATE POLICY "Admins can update club scoring rules"
+ON public.scoring_rules
+FOR UPDATE
+TO public
+USING (
+  public.is_superadmin()
+  OR (public.is_admin() AND club_id = public.get_user_club_id())
+);
+
+-- ===================================
+-- POLICIES RLS - PROMOTION_RULES (scoped par club)
+-- ===================================
+
+ALTER TABLE public.promotion_rules ENABLE ROW LEVEL SECURITY;
+
+-- Les membres du club peuvent voir les regles de promotion
+CREATE POLICY "Users can select their club promotion rules"
+ON public.promotion_rules
+FOR SELECT
+TO public
+USING (
+  public.is_superadmin()
+  OR club_id = public.get_user_club_id()
+);
+
+-- Les admins peuvent creer les regles de promotion de leur club
+CREATE POLICY "Admins can insert club promotion rules"
+ON public.promotion_rules
+FOR INSERT
+TO public
+WITH CHECK (
+  public.is_superadmin()
+  OR (public.is_admin() AND club_id = public.get_user_club_id())
+);
+
+-- Les admins peuvent modifier les regles de promotion de leur club
+CREATE POLICY "Admins can update club promotion rules"
+ON public.promotion_rules
+FOR UPDATE
+TO public
+USING (
+  public.is_superadmin()
+  OR (public.is_admin() AND club_id = public.get_user_club_id())
+);
+
+-- ===================================
+-- POLICIES RLS - EVENT_COURTS (scoped via event -> club)
+-- ===================================
+
+ALTER TABLE public.event_courts ENABLE ROW LEVEL SECURITY;
+
+-- Les utilisateurs voient les terrains des events de leur club
+CREATE POLICY "Users can select club event courts"
+ON public.event_courts
+FOR SELECT
+TO public
+USING (
+  public.is_superadmin()
+  OR EXISTS (
+    SELECT 1 FROM public.events e
+    WHERE e.id = event_id AND e.club_id = public.get_user_club_id()
+  )
+);
+
+-- Les admins peuvent creer des terrains pour les events de leur club
+CREATE POLICY "Admins can insert club event courts"
+ON public.event_courts
+FOR INSERT
+TO public
+WITH CHECK (
+  public.is_superadmin()
+  OR (public.is_admin() AND EXISTS (
+    SELECT 1 FROM public.events e
+    WHERE e.id = event_id AND e.club_id = public.get_user_club_id()
+  ))
+);
+
+-- Les admins peuvent modifier les terrains des events de leur club
+CREATE POLICY "Admins can update club event courts"
+ON public.event_courts
+FOR UPDATE
+TO public
+USING (
+  public.is_superadmin()
+  OR (public.is_admin() AND EXISTS (
+    SELECT 1 FROM public.events e
+    WHERE e.id = event_id AND e.club_id = public.get_user_club_id()
+  ))
+);
+
+-- Les admins peuvent supprimer les terrains des events de leur club
+CREATE POLICY "Admins can delete club event courts"
+ON public.event_courts
+FOR DELETE
+TO public
+USING (
+  public.is_superadmin()
+  OR (public.is_admin() AND EXISTS (
+    SELECT 1 FROM public.events e
+    WHERE e.id = event_id AND e.club_id = public.get_user_club_id()
+  ))
+);

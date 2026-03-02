@@ -94,6 +94,7 @@ CREATE TABLE IF NOT EXISTS public.events (
   end_time time with time zone,    -- Heure de fin des matchs
   number_of_courts int not null default 1,  -- Nombre de terrains disponibles
   estimated_match_duration interval default interval '00:30:00',  -- Durée estimée d'un match
+  playing_dates date[] default null,  -- Dates exactes de jeu sélectionnées. NULL = tous les jours entre start_date et end_date
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now()
 );
@@ -210,3 +211,53 @@ CREATE INDEX IF NOT EXISTS idx_schedule_event_id ON public.schedule(event_id);
 
 -- Index unique : un joueur ne peut avoir qu'une seule fois chaque status
 CREATE UNIQUE INDEX IF NOT EXISTS uniq_player_status_per_profile ON public.player_status(profile_id, status);
+
+-- ===================================
+-- TABLES DE CONFIGURATION CLUB
+-- ===================================
+
+-- Ajout du nombre par defaut de joueurs par groupe sur la table clubs
+ALTER TABLE public.clubs
+  ADD COLUMN IF NOT EXISTS default_max_players_per_group int not null default 5;
+
+-- TABLE SCORING_RULES : Regles de pointage par club (1 ligne par club)
+CREATE TABLE IF NOT EXISTS public.scoring_rules (
+  id uuid primary key default gen_random_uuid(),
+  club_id uuid not null references public.clubs(id) on delete cascade,
+  points_win int not null default 3,
+  points_loss int not null default 1,
+  points_draw int not null default 2,
+  points_walkover_win int not null default 3,
+  points_walkover_loss int not null default 0,
+  points_absence int not null default 0,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now(),
+  unique(club_id)
+);
+
+-- TABLE PROMOTION_RULES : Regles de montee/descente par club (1 ligne par club)
+CREATE TABLE IF NOT EXISTS public.promotion_rules (
+  id uuid primary key default gen_random_uuid(),
+  club_id uuid not null references public.clubs(id) on delete cascade,
+  promoted_count int not null default 1,
+  relegated_count int not null default 1,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now(),
+  unique(club_id)
+);
+
+-- TABLE EVENT_COURTS : Terrains avec creneaux individuels par event
+CREATE TABLE IF NOT EXISTS public.event_courts (
+  id uuid primary key default gen_random_uuid(),
+  event_id uuid not null references public.events(id) on delete cascade,
+  court_name text not null default 'Terrain 1',
+  available_from time not null,
+  available_to time not null,
+  sort_order int not null default 0,
+  created_at timestamp with time zone default now()
+);
+
+-- Index pour les nouvelles tables
+CREATE INDEX IF NOT EXISTS idx_scoring_rules_club_id ON public.scoring_rules(club_id);
+CREATE INDEX IF NOT EXISTS idx_promotion_rules_club_id ON public.promotion_rules(club_id);
+CREATE INDEX IF NOT EXISTS idx_event_courts_event_id ON public.event_courts(event_id);
