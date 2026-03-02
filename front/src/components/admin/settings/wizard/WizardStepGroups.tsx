@@ -1,5 +1,5 @@
 import type { Event } from "@/types/event"
-import type { Group, GroupPlayer } from "@/types/draw"
+import type { Group, GroupPlayer, SupabaseGroup } from "@/types/draw"
 import { useGroups } from "@/hooks/useGroups"
 import { usePlayers } from "@/contexts/PlayersContext"
 import { supabase } from "@/lib/supabaseClient"
@@ -351,8 +351,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
     )
 }
 
-// Transformer les donnees Supabase en type Group[]
-function transformGroups(data: any[]): Group[] {
+function transformGroups(data: SupabaseGroup[]): Group[] {
     return data.map(g => ({
         id: g.id,
         event_id: g.event_id,
@@ -360,8 +359,8 @@ function transformGroups(data: any[]): Group[] {
         max_players: g.max_players,
         created_at: g.created_at,
         players: (g.group_players || [])
-            .filter((gp: any) => gp.profiles)
-            .map((gp: any) => ({
+            .filter(gp => gp.profiles)
+            .map(gp => ({
                 id: gp.profiles.id,
                 first_name: gp.profiles.first_name,
                 last_name: gp.profiles.last_name,

@@ -191,9 +191,8 @@ export function GroupDndManager({ initialGroups, onFinish, onCancel }: GroupDndM
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
                 onDragEnd={handleDragEnd}
-                autoScroll={false}
             >
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-[400px] overflow-hidden">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto">
                     {localGroups.map(group => (
                         <DroppableGroupColumn
                             key={group.id}

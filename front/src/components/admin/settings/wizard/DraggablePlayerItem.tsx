@@ -28,13 +28,12 @@ export function DraggablePlayerItem({ player, id }: DraggablePlayerItemProps) {
         <div
             ref={setNodeRef}
             style={style}
-            className="flex items-center justify-between text-sm px-2 py-1.5 rounded-md border bg-white"
+            className="flex items-center justify-between text-sm px-2 py-1.5 rounded-md border bg-white cursor-grab"
             {...attributes}
+            {...listeners}
         >
             <div className="flex items-center gap-2">
-                <button type="button" className="cursor-grab text-muted-foreground" {...listeners}>
-                    <GripVertical className="h-3.5 w-3.5" />
-                </button>
+                <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
                 <span>{player.first_name} {player.last_name}</span>
             </div>
             <span className="text-xs text-muted-foreground">R{player.power_ranking || "-"}</span>

@@ -4,17 +4,16 @@ import { useState } from "react";
 
 interface DrawTableProps {
     group: Group
+    maxPlayers?: number
 }
 
-const MAX_PLAYERS = 6 // max 6 colonnes 
-
-export function DrawTable({ group }: DrawTableProps) {
+export function DrawTable({ group, maxPlayers = 6 }: DrawTableProps) {
 
     const players = group.players || []
     const [hoveredMatch, setHoveredMatch] = useState<{row: number, col: number} | null>(null)
 
-    // créer 6 slots (réels + vides)
-    const slots = Array.from({ length: MAX_PLAYERS }, (_, index) => {
+    const displaySlots = Math.max(maxPlayers, players.length)
+    const slots = Array.from({ length: displaySlots }, (_, index) => {
         return players[index] || null 
     })
 
