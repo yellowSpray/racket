@@ -1,5 +1,5 @@
 export function DashboardAdmin () {
     return (
-        <h2>Dashboard Admin</h2>
+        <h3 className="text-lg font-semibold">Dashboard</h3>
     )
 }

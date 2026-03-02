@@ -32,9 +32,8 @@ export function ListPlayers() {
             fetchPlayer()
         } else if (currentEvent) {
             fetchPlayersByEvent(currentEvent.id)
-        } else {
-            fetchPlayer()
         }
+        // Pas de fetch si !showAllPlayers && !currentEvent : le context fait déjà le fetch initial
     }, [currentEvent, showAllPlayers])
 
     const filteredPlayers = useMemo(() => {
@@ -69,25 +68,20 @@ export function ListPlayers() {
     }
 
     return (
-        <>
-            <div className="flex flex-row items-center justify-between mb-4">
+        <div className="flex flex-col h-full min-h-0">
+            <div className="flex flex-row items-center justify-between mb-6">
 
                 {/* Gauche : Titre + EventSelector */}
                 <div className="flex flex-row items-center gap-4">
-                    <h2>
-                        {showAllPlayers
-                            ? "Tous les joueurs"
-                            : currentEvent
-                                ? `Joueurs - ${currentEvent.event_name}`
-                                : "Liste des joueurs"
-                        }
-                    </h2>
+                    <h3 className="text-lg font-semibold">Joueurs</h3>
                     {!showAllPlayers && <EventSelector />}
+                    <span className="text-sm text-gray-500">
+                        {filteredPlayers.length} joueur{filteredPlayers.length > 1 ? "s" : ""}
+                    </span>
                 </div>
 
                 {/* Droite : Actions + Filtres */}
                 <div className="flex flex-row items-center gap-4">
-
                     <Button
                         variant={showAllPlayers ? "default" : "outline"}
                         onClick={() => setShowAllPlayers(!showAllPlayers)}
@@ -98,12 +92,12 @@ export function ListPlayers() {
 
                     {/* Bouton Ajouter */}
                     <EditPlayers mode="create" onSave={addPlayer} />
-                        
+
                     {/* Filtre par statut */}
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
                         <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Filtre" />
-                        </SelectTrigger> 
+                        </SelectTrigger>
                         <SelectContent className="bg-white">
                             <SelectGroup>
                                 <SelectItem value="all">Tous</SelectItem>
@@ -115,15 +109,13 @@ export function ListPlayers() {
                         </SelectContent>
                     </Select>
                 </div>
-            </div>
 
-            {/* Compteur de joueurs */}
-            <div className="mb-4 text-sm text-gray-500">
-                {filteredPlayers.length} joueur{filteredPlayers.length > 1 ? "s" : ""} affiché{filteredPlayers.length > 1 ? "s" : ""}
             </div>
 
             {/* Tableau */}
-            <DataTable columns={columns} data={filteredPlayers as PlayerType[]} />
-        </>
+            <div className="flex-1 min-h-0">
+                <DataTable columns={columns} data={filteredPlayers as PlayerType[]} />
+            </div>
+        </div>
     )
 }

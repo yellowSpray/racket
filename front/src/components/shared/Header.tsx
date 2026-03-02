@@ -30,7 +30,7 @@ export default function Header() {
   }
 
   return (
-    <header className="px-4 md:px-6 border-b-1 border-b-border">
+    <header className="px-10 border-b-1 border-b-border">
       <div className={`flex h-16 items-center justify-between gap-4 ${!isAppPage ? 'mx-auto max-w-6xl' : ''}`}>
 
         {/* Left side */}
