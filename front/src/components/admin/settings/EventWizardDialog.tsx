@@ -45,23 +45,6 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess }: Even
     const step2Completed = groups.length > 0 && groups.some(g => (g.players || []).length > 0)
     const step3Completed = matches.length > 0
 
-    // Reset a l'ouverture
-    useEffect(() => {
-        if (open) {
-            if (event) {
-                setWizardEvent(event)
-                setActiveStep(1)
-                // Charger groupes et matchs existants
-                loadEventData(event.id)
-            } else {
-                setWizardEvent(null)
-                setGroups([])
-                setMatches([])
-                setActiveStep(1)
-            }
-        }
-    }, [open, event])
-
     const loadEventData = useCallback(async (eventId: string) => {
         // Charger les groupes
         const { data: groupsData } = await supabase
@@ -95,6 +78,23 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess }: Even
             }
         }
     }, [])
+
+    // Reset a l'ouverture
+    useEffect(() => {
+        if (open) {
+            if (event) {
+                setWizardEvent(event)
+                setActiveStep(1)
+                // Charger groupes et matchs existants
+                loadEventData(event.id)
+            } else {
+                setWizardEvent(null)
+                setGroups([])
+                setMatches([])
+                setActiveStep(1)
+            }
+        }
+    }, [open, event, loadEventData])
 
     const handleStepChange = (step: number) => {
         // En mode creation, empecher de sauter des etapes non completees

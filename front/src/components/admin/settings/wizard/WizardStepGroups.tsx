@@ -35,7 +35,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
 
     useEffect(() => {
         fetchPlayersByEvent(event.id)
-    }, [event.id])
+    }, [event.id, fetchPlayersByEvent])
 
     const activePlayers = players.filter(p => p.status?.includes("active"))
     const totalPlayers = activePlayers.length
