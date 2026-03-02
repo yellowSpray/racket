@@ -320,7 +320,7 @@ function StepperTitle({ children, className }: React.ComponentProps<'h3'>) {
   const { state } = useStepItem();
 
   return (
-    <h3 data-slot="stepper-title" data-state={state} className={cn('text-sm font-medium leading-none', className)}>
+    <h3 data-slot="stepper-title" data-state={state} className={cn('text-sm font-medium leading-none mx-2', className)}>
       {children}
     </h3>
   );

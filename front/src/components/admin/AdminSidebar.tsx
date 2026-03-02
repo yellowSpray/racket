@@ -24,7 +24,7 @@ export function AdminSideBar() {
     <div className="h-full col-span-2 border-r border-gray-200 flex flex-col">
 
       {/* Navigation */}
-      <nav className="flex-1 p-6 overflow-y-auto">
+      <nav className="flex-1 p-10 overflow-y-auto">
         <h3 className="text-gray-500 uppercase text-xs ml-3 mb-2">Menu</h3>
         <ul className="space-y-2">
           {menuItems.map((item, index) => {
@@ -44,11 +44,11 @@ export function AdminSideBar() {
                   to={item.url}
                   className={`
                     flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors
-                    ${isActive ? "bg-primary/50 font-[600]" : "hover:bg-gray-100"}
+                    ${isActive ? "bg-primary font-[600]" : "hover:bg-gray-100"}
                     ${isLast ? "mt-4" : ""} 
                   `}
                 >
-                  <Icon size={20} />
+                  <Icon size={16} />
                   <span>{item.title}</span>
                 </Link>
               </li>
@@ -58,7 +58,7 @@ export function AdminSideBar() {
       </nav>
 
       {/* Footer */}
-      <div className="p-6 border-t border-gray-200">
+      <div className="p-10 border-t border-gray-200">
           <div className="flex flex-row items-center  gap-2">
             <Avatar>
               <AvatarImage 

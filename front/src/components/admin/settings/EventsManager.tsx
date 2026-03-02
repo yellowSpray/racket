@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Plus, Pencil, Trash2, Calendar } from "lucide-react"
-import { EventDialog } from "./EventDialog"
+import { EventWizardDialog } from "./EventWizardDialog"
 import { DeleteEventDialog } from "./DeleteEventDialog"
 
 export function EventsManager() {
@@ -86,31 +86,21 @@ export function EventsManager() {
     }
 
     return (
-        <>
-            <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h2 className="text-2xl font-semibold">Gestion des événements</h2>
-                    <p className="text-gray-500 mt-1">
-                        Créer, modifier ou supprimer des événements
-                    </p>
-                </div>
-                <Button onClick={handleCreate}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Créer un événement
-                </Button>
-            </div>
+        <div className="flex flex-col h-full min-h-0">
 
             {events.length === 0 ? (
-                <div className="text-center py-12 border-2 border-dashed rounded-lg">
-                    <Calendar className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-4 text-lg font-semibold">Aucun événement</h3>
-                    <p className="text-gray-500 mt-2">
-                        Commencez par créer votre premier événement
-                    </p>
-                    <Button onClick={handleCreate} className="mt-4">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Créer un événement
-                    </Button>
+                <div className="flex-1 flex items-center justify-center border-2 border-dashed rounded-lg">
+                    <div className="text-center">
+                        <Calendar className="mx-auto h-12 w-12 text-gray-300" />
+                        <h3 className="mt-4 text-lg font-semibold">Aucun événement</h3>
+                        <p className="text-muted-foreground mt-2">
+                            Commencez par créer votre premier événement
+                        </p>
+                        <Button onClick={handleCreate} className="mt-4">
+                            <Plus className="mr-2 h-4 w-4" />
+                            Créer un événement
+                        </Button>
+                    </div>
                 </div>
             ) : (
                 <div className="border rounded-lg">
@@ -173,7 +163,7 @@ export function EventsManager() {
             )}
 
             {/* dialog de creation / edition / suppression */}
-            <EventDialog
+            <EventWizardDialog
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
                 event={selectedEvent}
@@ -187,6 +177,6 @@ export function EventsManager() {
                 event={selectedEvent}
                 onSuccess={handleSuccess}
             />
-        </>
+        </div>
     )
 }

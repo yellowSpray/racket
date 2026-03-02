@@ -3,10 +3,11 @@ import Loading from "@/components/shared/Loading"
 import { useEvent } from "@/contexts/EventContext"
 import { useGroups } from "@/hooks/useGroups"
 import { useEffect, useState } from "react"
-import { Plus, Settings } from "lucide-react"
+import { useNavigate } from "react-router"
+import { Settings, SquarePen } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DrawTable } from "@/components/admin/draws/DrawTable"
-import { CreateGroupsDialog } from "@/components/admin/draws/CreateGroupsDialog"
+// import { CreateGroupsDialog } from "@/components/admin/draws/CreateGroupsDialog"
 import { ManageGroupDialog } from "@/components/admin/draws/ManageGroupsDialog"
 
 export function DrawAdmin () {
@@ -14,8 +15,9 @@ export function DrawAdmin () {
     const { currentEvent } = useEvent()
     const { groups, loading, fetchGroupsByEvent } = useGroups()
     const [selectedGroupId, setSelectedGroupsId] = useState<string | null>(null)
-    const [createDialogOpen, setCreateDialogOpen] = useState(false)
+    // const [createDialogOpen, setCreateDialogOpen] = useState(false)
     const [manageDialogOpen, setManageDialogOpen] = useState(false)
+    const navigate = useNavigate()
 
     // charger les groups quand l'event change
     useEffect(() => {
@@ -37,12 +39,28 @@ export function DrawAdmin () {
 
     if(!currentEvent) {
         return (
-            <div className="p-6">
+            <div className="h-full flex flex-col">
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold">Tableaux</h2>
-                    <EventSelector />
+                    <div className="flex items-center gap-4">
+                        <h3 className="text-lg font-semibold">Tableaux</h3>
+                        <EventSelector />
+                    </div>
+                    <Button variant="outline" size="sm" disabled>
+                        <Settings className="mr-2 h-4 w-4" />
+                        Gérer les groupes
+                    </Button>
                 </div>
-                <p className="text-gray-500">Sélectionnez un événement pour voir les tableaux</p>
+                <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-lg">
+                    <SquarePen className="h-12 w-12 text-gray-300" />
+                    <h3 className="mt-4 text-lg font-semibold">Aucun tableau créé</h3>
+                    <p className="text-gray-500 mt-3">
+                        Créez un événement depuis les paramètres pour commencer
+                    </p>
+                    <Button className="mt-6" size="sm" variant="outline" onClick={() => navigate("/admin/settings")}>
+                        <Settings className="mr-2 h-4 w-4" />
+                        Aller aux paramètres
+                    </Button>
+                </div>
             </div>
         )
     }
@@ -52,7 +70,7 @@ export function DrawAdmin () {
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
-                    <h2 className="text-2xl font-bold">Tableaux - {currentEvent.event_name}</h2>
+                    <h3 className="text-lg font-semibold">Tableaux</h3>
                     <EventSelector />
                 </div>
                 <div className="flex gap-2">
@@ -60,23 +78,24 @@ export function DrawAdmin () {
                         <Settings className="mr-2 h-4 w-4" />
                         Gérer les groupes
                     </Button>
-                    <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+                    {/* <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
                         <Plus className="mr-2 h-4 w-4" />
                         Créer les tableaux
-                    </Button>
+                    </Button> */}
                 </div>
             </div>
 
             {/* Tableaux */}
             {groups.length === 0 ? (
                 <div className="text-center py-12 border-2 border-dashed rounded-lg">
+                    <SquarePen className="mx-auto h-12 w-12 text-gray-300" />
                     <h3 className="mt-4 text-lg font-semibold">Aucun tableau créé</h3>
                     <p className="text-gray-500 mt-2">
-                        Créez des tableaux pour organiser les matchs en round-robin
+                        Créez des tableaux depuis les paramètres de l'événement
                     </p>
-                    <Button className="mt-4" onClick={() => setCreateDialogOpen(true)}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Créer les tableaux
+                    <Button className="mt-4" variant="outline" onClick={() => navigate("/admin/settings")}>
+                        <Settings className="mr-2 h-4 w-4" />
+                        Aller aux paramètres
                     </Button>
                 </div>
             ) : (
@@ -88,12 +107,6 @@ export function DrawAdmin () {
                     ))}
                 </div>
             )}
-
-            {/* dialog de creation */}
-            <CreateGroupsDialog
-                open={createDialogOpen}
-                onOpenChange={setCreateDialogOpen}
-            />
 
             {/* dialog de gestion */}
             <ManageGroupDialog
