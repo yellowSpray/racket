@@ -11,6 +11,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { MultiDateCalendar } from "@/components/ui/multi-date-calendar"
 
+/** Strips timezone offset from Supabase time values (e.g. "18:30:00+00" → "18:30") */
+function formatTimeForInput(time: string | null | undefined): string | null {
+    if (!time) return null
+    return time.replace(/([+-]\d{2})$/, "").slice(0, 5)
+}
+
 interface WizardStepConfigProps {
     event: Event | null
     onSave: (savedEvent: Event) => void
@@ -32,8 +38,8 @@ export function WizardStepConfig({ event, onSave }: WizardStepConfigProps) {
     useEffect(() => {
         if (event) {
             setEventName(event.event_name)
-            setStartTime(event.start_time || "19:00")
-            setEndTime(event.end_time || "23:00")
+            setStartTime(formatTimeForInput(event.start_time) || "19:00")
+            setEndTime(formatTimeForInput(event.end_time) || "23:00")
             setNumberOfCourts(event.number_of_courts)
             setMatchDuration(intervalToMinutes(event.estimated_match_duration))
             setPlayingDates(event.playing_dates || [])
