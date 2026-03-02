@@ -32,9 +32,8 @@ describe('DrawTable', () => {
     expect(screen.getByText('Groupe B')).toBeInTheDocument()
   })
 
-  it('displays column letters for maxPlayers slots', () => {
-    render(<DrawTable group={makeGroup()} maxPlayers={4} />)
-    // Header row letters
+  it('displays column letters for max_players slots', () => {
+    render(<DrawTable group={makeGroup({ max_players: 4 })} />)
     const letterAs = screen.getAllByText('A')
     expect(letterAs.length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('B').length).toBeGreaterThanOrEqual(1)
@@ -52,7 +51,7 @@ describe('DrawTable', () => {
       makePlayer({ id: 'p1', first_name: 'Alice', last_name: 'Martin', phone: '0611111111' }),
       makePlayer({ id: 'p2', first_name: 'Bob', last_name: 'Dupont', phone: '0622222222' }),
     ]
-    render(<DrawTable group={makeGroup({ players })} maxPlayers={2} />)
+    render(<DrawTable group={makeGroup({ players, max_players: 2 })} />)
     expect(screen.getByText('Alice Martin')).toBeInTheDocument()
     expect(screen.getByText('0611111111')).toBeInTheDocument()
     expect(screen.getByText('Bob Dupont')).toBeInTheDocument()
@@ -61,38 +60,35 @@ describe('DrawTable', () => {
 
   it('shows 0 in Total column for existing players', () => {
     const players = [makePlayer()]
-    render(<DrawTable group={makeGroup({ players })} maxPlayers={1} />)
+    render(<DrawTable group={makeGroup({ players, max_players: 1 })} />)
     expect(screen.getByText('0')).toBeInTheDocument()
   })
 
   it('shows "-" in Total column for empty slots', () => {
-    render(<DrawTable group={makeGroup({ players: [] })} maxPlayers={2} />)
+    render(<DrawTable group={makeGroup({ players: [], max_players: 2 })} />)
     const dashes = screen.getAllByText('-')
     expect(dashes.length).toBeGreaterThanOrEqual(2)
   })
 
-  it('respects maxPlayers prop for number of slots', () => {
-    render(<DrawTable group={makeGroup({ players: [] })} maxPlayers={3} />)
-    // Should render letters A, B, C in header
+  it('respects max_players for number of slots', () => {
+    render(<DrawTable group={makeGroup({ players: [], max_players: 3 })} />)
     expect(screen.getAllByText('A').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('B').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('C').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('uses default maxPlayers of 6 when not specified', () => {
-    render(<DrawTable group={makeGroup({ players: [] })} />)
-    // Should show at least letter F (index 5)
+  it('uses group max_players for slot count', () => {
+    render(<DrawTable group={makeGroup({ players: [], max_players: 6 })} />)
     expect(screen.getAllByText('F').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('expands slots when players exceed maxPlayers', () => {
+  it('expands slots when players exceed max_players', () => {
     const players = [
       makePlayer({ id: 'p1', first_name: 'A', last_name: 'A' }),
       makePlayer({ id: 'p2', first_name: 'B', last_name: 'B' }),
       makePlayer({ id: 'p3', first_name: 'C', last_name: 'C' }),
     ]
-    render(<DrawTable group={makeGroup({ players })} maxPlayers={2} />)
-    // Should show 3 rows since players.length > maxPlayers
+    render(<DrawTable group={makeGroup({ players, max_players: 2 })} />)
     expect(screen.getAllByText('C').length).toBeGreaterThanOrEqual(1)
   })
 
@@ -101,8 +97,7 @@ describe('DrawTable', () => {
       makePlayer({ id: 'p1', first_name: 'Alice', last_name: 'A' }),
       makePlayer({ id: 'p2', first_name: 'Bob', last_name: 'B' }),
     ]
-    render(<DrawTable group={makeGroup({ players })} maxPlayers={2} />)
-    // Match cells show "--:--" placeholder
+    render(<DrawTable group={makeGroup({ players, max_players: 2 })} />)
     expect(screen.getAllByText('--:--').length).toBeGreaterThanOrEqual(1)
   })
 })

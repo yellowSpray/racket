@@ -161,6 +161,7 @@ export function assignMatchesToSlots(
 ): MatchAssignment[] {
     const assignments: MatchAssignment[] = []
     const occupied = new Map<string, Set<string>>()
+    const playerDayMap = new Map<string, Set<string>>() // playerId -> Set<date> : 1 match par jour
     const playerConstraints = constraints || new Map()
     const matchDuration = durationMinutes || 30
 
@@ -194,6 +195,11 @@ export function assignMatchesToSlots(
                 }
             }
 
+            // Vérifier qu'aucun des deux joueurs n'a déjà un match ce jour-là (1 match par jour)
+            const p1Days = playerDayMap.get(pairing.player1Id)
+            const p2Days = playerDayMap.get(pairing.player2Id)
+            if (p1Days?.has(slot.date) || p2Days?.has(slot.date)) continue
+
             // Vérifier les contraintes de disponibilité des deux joueurs
             if (!isPlayerAvailable(pairing.player1Id, slot.date, slot.time, matchDuration, playerConstraints)) continue
             if (!isPlayerAvailable(pairing.player2Id, slot.date, slot.time, matchDuration, playerConstraints)) continue
@@ -206,12 +212,22 @@ export function assignMatchesToSlots(
                 courtNumber: slot.court,
             })
 
-            // Marquer les joueurs comme occupés
+            // Marquer les joueurs comme occupés au créneau
             if (!occupied.has(slotKey)) {
                 occupied.set(slotKey, new Set())
             }
             occupied.get(slotKey)!.add(pairing.player1Id)
             occupied.get(slotKey)!.add(pairing.player2Id)
+
+            // Marquer les joueurs comme ayant joué ce jour
+            if (!playerDayMap.has(pairing.player1Id)) {
+                playerDayMap.set(pairing.player1Id, new Set())
+            }
+            if (!playerDayMap.has(pairing.player2Id)) {
+                playerDayMap.set(pairing.player2Id, new Set())
+            }
+            playerDayMap.get(pairing.player1Id)!.add(slot.date)
+            playerDayMap.get(pairing.player2Id)!.add(slot.date)
 
             assigned = true
             break

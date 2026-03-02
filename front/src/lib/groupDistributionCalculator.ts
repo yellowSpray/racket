@@ -1,14 +1,12 @@
 
-export function calculateOptimalDistribution(totalPlayers: number): {
+export function calculateOptimalDistribution(totalPlayers: number, maxPlayersPerGroup = 6): {
   numberOfGroups: number
-  distribution: number[]  // Exemple: [6, 6, 5] pour 17 joueurs
+  distribution: number[]  // Exemple: [6, 6, 5] pour 17 joueurs avec max=6
   valid: boolean
   message?: string
 } {
-  const MIN_PLAYERS = 5
-  const MAX_PLAYERS = 6
+  const MIN_PLAYERS = maxPlayersPerGroup - 1
 
-  // Cas impossible : moins de 5 joueurs
   if (totalPlayers < MIN_PLAYERS) {
     return {
       numberOfGroups: 0,
@@ -18,57 +16,34 @@ export function calculateOptimalDistribution(totalPlayers: number): {
     }
   }
 
-  // Distribution optimale
+  // Nombre de groupes : on divise par le max, arrondi au supérieur
+  const numberOfGroups = Math.ceil(totalPlayers / maxPlayersPerGroup)
+
+  // Distribuer : remplir au max, le dernier prend le reste
   const distribution: number[] = []
   let remaining = totalPlayers
-  let groups = 0
-  
-  while (remaining > 0) {
-    if (remaining >= MIN_PLAYERS && remaining <= MAX_PLAYERS) {
-      // Dernier groupe : prendre tout ce qui reste
-      distribution.push(remaining)
-      remaining = 0
-    } else if (remaining > MAX_PLAYERS) {
-      // Vérifier si mettre 6 dans ce groupe laisse au moins 5 pour le prochain
-      const afterMax = remaining - MAX_PLAYERS
-      
-      if (afterMax >= MIN_PLAYERS || afterMax === 0) {
-        // On peut mettre 6
-        distribution.push(MAX_PLAYERS)
-        remaining -= MAX_PLAYERS
-      } else {
-        // On doit mettre 5 pour équilibrer
-        distribution.push(MIN_PLAYERS)
-        remaining -= MIN_PLAYERS
-      }
-    } else {
-      // Cas d'erreur (ne devrait pas arriver)
-      break
-    }
-    
-    groups++
-    
-    // Sécurité : éviter boucle infinie
-    if (groups > 20) break
+  for (let i = 0; i < numberOfGroups; i++) {
+    const size = Math.min(maxPlayersPerGroup, remaining)
+    distribution.push(size)
+    remaining -= size
   }
 
-  // Vérifier que tous les groupes sont valides
-  const allValid = distribution.every(n => n >= MIN_PLAYERS && n <= MAX_PLAYERS)
+  const allValid = distribution.every(n => n >= MIN_PLAYERS && n <= maxPlayersPerGroup)
 
   return {
-    numberOfGroups: distribution.length,
+    numberOfGroups,
     distribution,
     valid: allValid && remaining === 0,
     message: allValid ? undefined : "Distribution impossible avec ces contraintes"
   }
 }
 
-export function suggestGroupConfiguration(totalPlayers: number): {
+export function suggestGroupConfiguration(totalPlayers: number, maxPlayersPerGroup = 6): {
   config: { numberOfGroups: number; playersPerGroup: number[] }
   description: string
 } | null {
-  const result = calculateOptimalDistribution(totalPlayers)
-  
+  const result = calculateOptimalDistribution(totalPlayers, maxPlayersPerGroup)
+
   if (!result.valid) {
     return null
   }

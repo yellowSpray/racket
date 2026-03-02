@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { DrawTable } from "@/components/admin/draws/DrawTable"
 // import { CreateGroupsDialog } from "@/components/admin/draws/CreateGroupsDialog"
 import { ManageGroupDialog } from "@/components/admin/draws/ManageGroupsDialog"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 export function DrawAdmin () {
 
@@ -66,7 +67,7 @@ export function DrawAdmin () {
     }
 
     return (
-        <>
+        <div className="flex flex-col h-full min-h-0">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
@@ -78,10 +79,6 @@ export function DrawAdmin () {
                         <Settings className="mr-2 h-4 w-4" />
                         Gérer les groupes
                     </Button>
-                    {/* <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Créer les tableaux
-                    </Button> */}
                 </div>
             </div>
 
@@ -99,13 +96,15 @@ export function DrawAdmin () {
                     </Button>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {groups.map(group => (
-                        <div key={group.id}>
-                            <DrawTable group={group} />
-                        </div>
-                    ))}
-                </div>
+                <ScrollArea className="flex-1 min-h-0" type="always">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pr-4">
+                        {groups.map(group => (
+                            <div key={group.id}>
+                                <DrawTable group={group} />
+                            </div>
+                        ))}
+                    </div>
+                </ScrollArea>
             )}
 
             {/* dialog de gestion */}
@@ -115,6 +114,6 @@ export function DrawAdmin () {
                 groups={groups}
                 onRefresh={() => currentEvent && fetchGroupsByEvent(currentEvent.id)}
             />
-        </>
+        </div>
     )
 }

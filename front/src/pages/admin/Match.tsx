@@ -144,7 +144,7 @@ export function MatchAdmin() {
     const hasMatches = matches.length > 0
 
     return (
-        <>
+        <div className="flex flex-col h-full min-h-0">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
@@ -211,7 +211,9 @@ export function MatchAdmin() {
                     </Button>
                 </div>
             ) : (
-                <MatchScheduleGrid matches={matches} event={currentEvent} />
+                <div className="flex-1 min-h-0">
+                    <MatchScheduleGrid matches={matches} event={currentEvent} />
+                </div>
             )}
 
             {/* Dialog de confirmation */}
@@ -236,6 +238,6 @@ export function MatchAdmin() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </>
+        </div>
     )
 }

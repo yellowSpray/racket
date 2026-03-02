@@ -2,6 +2,8 @@ import type { Event } from "@/types/event"
 import type { Group, GroupPlayer, SupabaseGroup } from "@/types/draw"
 import { useGroups } from "@/hooks/useGroups"
 import { usePlayers } from "@/contexts/PlayersContext"
+import { useClubConfig } from "@/hooks/useClubConfig"
+import { useAuth } from "@/contexts/AuthContext"
 import { supabase } from "@/lib/supabaseClient"
 import { calculateOptimalDistribution } from "@/lib/groupDistributionCalculator"
 import { distributePlayersByRanking } from "@/lib/groupDistribution"
@@ -25,7 +27,9 @@ interface WizardStepGroupsProps {
 
 export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPrevious }: WizardStepGroupsProps) {
     const { createGroups, assignPlayersToGroup, loading: groupsLoading } = useGroups()
-    const { players, fetchPlayersByEvent } = usePlayers()
+    const { players } = usePlayers()
+    const { profile } = useAuth()
+    const { clubConfig, fetchClubConfig } = useClubConfig()
 
     const [manualMode, setManualMode] = useState(false)
     const [numberOfGroups, setNumberOfGroups] = useState(3)
@@ -33,13 +37,19 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
     const [managementMode, setManagementMode] = useState(false)
     const [creating, setCreating] = useState(false)
 
+    const maxPlayersPerGroup = clubConfig?.default_max_players_per_group ?? 6
+
     useEffect(() => {
-        fetchPlayersByEvent(event.id)
-    }, [event.id, fetchPlayersByEvent])
+        if (profile?.club_id) {
+            fetchClubConfig(profile.club_id)
+        }
+    }, [profile?.club_id, fetchClubConfig])
 
     const activePlayers = players.filter(p => p.status?.includes("active"))
     const totalPlayers = activePlayers.length
-    const optimalDistribution = calculateOptimalDistribution(totalPlayers)
+    const optimalDistribution = calculateOptimalDistribution(totalPlayers, maxPlayersPerGroup)
+
+
 
     const hasGroups = groups.length > 0
     const hasPlayers = groups.some(g => (g.players || []).length > 0)
@@ -50,7 +60,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
         setCreating(true)
 
         try {
-            await createGroups(event.id, numberOfGroups, 6)
+            await createGroups(event.id, numberOfGroups, maxPlayersPerGroup)
             // Re-fetch to get updated groups and pass them up
             const { data } = await supabase
                 .from("groups")
@@ -84,10 +94,10 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
         setCreating(true)
 
         try {
-            const groupsToCreate = optimalDistribution.distribution.map((maxPlayers, index) => ({
+            const groupsToCreate = optimalDistribution.distribution.map((_count, index) => ({
                 event_id: event.id,
                 group_name: `Box ${index + 1}`,
-                max_players: maxPlayers,
+                max_players: maxPlayersPerGroup,
             }))
 
             const { data: createdGroupsData, error: insertError } = await supabase
@@ -221,7 +231,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                             <Alert>
                                 <Info className="h-4 w-4" />
                                 <AlertDescription>
-                                    {numberOfGroups} groupe{numberOfGroups > 1 ? "s" : ""} vide{numberOfGroups > 1 ? "s" : ""} de 6 places maximum
+                                    {numberOfGroups} groupe{numberOfGroups > 1 ? "s" : ""} vide{numberOfGroups > 1 ? "s" : ""} de {maxPlayersPerGroup} places maximum
                                     <br />
                                     <span className="text-xs text-gray-500">
                                         Vous pourrez ajouter les joueurs manuellement après création

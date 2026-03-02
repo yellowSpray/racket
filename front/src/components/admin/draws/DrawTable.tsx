@@ -4,12 +4,12 @@ import { useState } from "react";
 
 interface DrawTableProps {
     group: Group
-    maxPlayers?: number
 }
 
-export function DrawTable({ group, maxPlayers = 6 }: DrawTableProps) {
+export function DrawTable({ group }: DrawTableProps) {
 
     const players = group.players || []
+    const maxPlayers = group.max_players || 6
     const [hoveredMatch, setHoveredMatch] = useState<{row: number, col: number} | null>(null)
 
     const displaySlots = Math.max(maxPlayers, players.length)
@@ -24,11 +24,11 @@ export function DrawTable({ group, maxPlayers = 6 }: DrawTableProps) {
 
     return (
         <div className="border rounded-lg overflow-hidden">
-            <Table>
+            <Table className="table-fixed">
                 <TableHeader>
                     <TableRow>
                         {/* Titre du tableau */}
-                        <TableHead className="bg-blue-200 font-bold text-center w-32">
+                        <TableHead className="bg-blue-200 font-bold text-center">
                             {group.group_name}
                         </TableHead>
 
@@ -36,14 +36,14 @@ export function DrawTable({ group, maxPlayers = 6 }: DrawTableProps) {
                         {slots.map((slot, index) => (
                             <TableHead
                                 key={index}
-                                className={`w-20 text-center font-bold ${!slot ? 'bg-gray-200': 'bg-yellow-100'}`}
+                                className={`text-center font-bold text-xs w-12 ${!slot ? 'bg-gray-200': 'bg-yellow-100'}`}
                             >
                                 {getPlayerLetter(index)}
                             </TableHead>
                         ))}
 
                         {/* Colonne total des points */}
-                        <TableHead className="bg-green-200 text-center font-bold">Total</TableHead>
+                        <TableHead className="bg-green-200 text-center font-bold w-12">Total</TableHead>
                     </TableRow>
                 </TableHeader>
 
@@ -51,18 +51,18 @@ export function DrawTable({ group, maxPlayers = 6 }: DrawTableProps) {
                     {slots.map((player, rowIndex) => (
                         <TableRow key={rowIndex} className="hover:bg-transparent">
                             {/* Cellule joueur ( lettre + nom + tel) */}
-                            <TableCell className={`font-medium w-48 ${!player ? 'bg-gray-200' : 'bg-yellow-100'}`}>
+                            <TableCell className={`font-medium ${!player ? 'bg-gray-200' : 'bg-yellow-100'}`}>
                                 {player ? (
-                                    <div className="grid grid-cols-6 m-4 w-40">
-                                        <span className="font-bold col-span-1 flex flex-col justify-center">{getPlayerLetter(rowIndex)}</span>
-                                        <div className="text-center col-span-5">
-                                            <p className="text-sm">{player.first_name} {player.last_name}</p>
-                                            <p className="text-xs text-gray-500">{player.phone}</p>
+                                    <div className="flex items-center px-1 py-0.5">
+                                        <span className="font-bold text-xs shrink-0 w-4">{getPlayerLetter(rowIndex)}</span>
+                                        <div className="flex-1 text-center min-w-0">
+                                            <p className="text-xs truncate">{player.first_name} {player.last_name}</p>
+                                            <p className="text-[10px] text-gray-500 truncate">{player.phone}</p>
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-6 m-4 w-40">
-                                        <span className="font-bold">{getPlayerLetter(rowIndex)}</span>
+                                    <div className="flex items-center px-1 py-0.5 min-h-[2.25rem]">
+                                        <span className="font-bold text-xs">{getPlayerLetter(rowIndex)}</span>
                                     </div>
                                 )}
                             </TableCell>
