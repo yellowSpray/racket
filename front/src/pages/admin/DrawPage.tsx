@@ -2,6 +2,7 @@ import { EventSelector } from "@/components/admin/settings/EventSelector"
 import Loading from "@/components/shared/Loading"
 import { useEvent } from "@/contexts/EventContext"
 import { useGroups } from "@/hooks/useGroups"
+import { useMatches } from "@/hooks/useMatches"
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router"
 import { Settings, SquarePen } from "lucide-react"
@@ -10,22 +11,25 @@ import { DrawTable } from "@/components/admin/draws/DrawTable"
 // import { CreateGroupsDialog } from "@/components/admin/draws/CreateGroupsDialog"
 import { ManageGroupDialog } from "@/components/admin/draws/ManageGroupsDialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { totalMatchCount } from "@/lib/matchScheduler"
 
 export function DrawAdmin () {
 
     const { currentEvent } = useEvent()
     const { groups, loading, fetchGroupsByEvent } = useGroups()
+    const { matches, fetchMatchesByEvent } = useMatches()
     const [selectedGroupId, setSelectedGroupsId] = useState<string | null>(null)
     // const [createDialogOpen, setCreateDialogOpen] = useState(false)
     const [manageDialogOpen, setManageDialogOpen] = useState(false)
     const navigate = useNavigate()
 
-    // charger les groups quand l'event change
+    // charger les groups et matchs quand l'event change
     useEffect(() => {
         if(currentEvent) {
             fetchGroupsByEvent(currentEvent.id)
+            fetchMatchesByEvent(currentEvent.id)
         }
-    }, [currentEvent])
+    }, [currentEvent, fetchGroupsByEvent, fetchMatchesByEvent])
 
     // selectionner le premier groupe par default
     useEffect(() => {
@@ -82,6 +86,13 @@ export function DrawAdmin () {
                 </div>
             </div>
 
+            {/* Avertissement matchs manquants */}
+            {matches.length > 0 && groups.length > 0 && matches.length < totalMatchCount(groups) && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded mb-4 text-sm">
+                    {matches.length}/{totalMatchCount(groups)} matchs planifiés. {totalMatchCount(groups) - matches.length} match(s) sans créneau — ajoutez des dates ou des terrains dans les paramètres.
+                </div>
+            )}
+
             {/* Tableaux */}
             {groups.length === 0 ? (
                 <div className="text-center py-12 border-2 border-dashed rounded-lg">
@@ -100,7 +111,7 @@ export function DrawAdmin () {
                     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pr-4">
                         {groups.map(group => (
                             <div key={group.id}>
-                                <DrawTable group={group} />
+                                <DrawTable group={group} matches={matches.filter(m => m.group_id === group.id)} />
                             </div>
                         ))}
                     </div>

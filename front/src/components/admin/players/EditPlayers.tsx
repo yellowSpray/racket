@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import type { JSX } from "react"
 import { playerSchema } from "@/lib/schemas"
 import { validateFormData } from "@/lib/validation"
@@ -28,13 +28,15 @@ import {
 } from "@/components/ui/toggle-group"
 import { Field, FieldLabel, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input"
-import { Ellipsis, Zap, UsersRound, Euro } from 'lucide-react';
+import { Zap, UsersRound, Euro } from 'lucide-react';
 import type { PlayerType } from "@/types/player";
 
 interface EditPlayersProps {
     mode?: "edit" | "create"
     playerData?: PlayerType
     onSave?: (data: Partial<PlayerType>) => Promise<void>
+    open?: boolean
+    onOpenChange?: (open: boolean) => void
 }
 
 const initialFormData: Partial<PlayerType> = {
@@ -50,11 +52,15 @@ const initialFormData: Partial<PlayerType> = {
 }
 
 
-export function EditPlayers ({ mode = "edit", playerData, onSave }: EditPlayersProps) {
-    
+export function EditPlayers ({ mode = "edit", playerData, onSave, open: controlledOpen, onOpenChange }: EditPlayersProps) {
+
     const steps = [ 1, 2, 3 ]
     const [currentStep, setCurrentStep] = useState<number>(1)
-    const [open, setOpen] = useState(false)
+    const [internalOpen, setInternalOpen] = useState(false)
+
+    const isControlled = controlledOpen !== undefined
+    const open = isControlled ? controlledOpen : internalOpen
+    const setOpen = isControlled ? (v: boolean) => onOpenChange?.(v) : setInternalOpen
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
 
@@ -154,14 +160,10 @@ export function EditPlayers ({ mode = "edit", playerData, onSave }: EditPlayersP
     }
 
     // handler pour le submit du formulaire
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
+    const handleSave = async () => {
+        if (currentStep !== steps.length) return
 
-        if (currentStep !== steps.length || !isSubmitting) {
-            setIsSubmitting(false)
-            return
-        }
-
+        setIsSubmitting(true)
         setFieldErrors({})
 
         const validation = validateFormData(playerSchema, {
@@ -187,8 +189,9 @@ export function EditPlayers ({ mode = "edit", playerData, onSave }: EditPlayersP
         try {
             await onSave?.(finalData)
             setOpen(false)
-            setIsSubmitting(false)
         } catch {
+            // erreur gérée par le parent
+        } finally {
             setIsSubmitting(false)
         }
     }
@@ -347,19 +350,15 @@ export function EditPlayers ({ mode = "edit", playerData, onSave }: EditPlayersP
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            
+            {!isControlled && (
                 <DialogTrigger asChild>
-                    { mode === "edit" ? (
-                        <Button variant="ghost"><Ellipsis /></Button>
-                    ) : (
-                        <Button variant="default">Ajouter un joueur</Button>
-                    )}
+                    <Button variant="default">Ajouter un joueur</Button>
                 </DialogTrigger>
+            )}
                 <DialogContent>
-                    <form 
-                        onSubmit={handleSubmit}
+                    <div
                         onKeyDown={(e) => {
-                            if(e.key === "Enter" && !isSubmitting) {
+                            if(e.key === "Enter") {
                                 e.preventDefault()
                             }
                         }}
@@ -414,13 +413,12 @@ export function EditPlayers ({ mode = "edit", playerData, onSave }: EditPlayersP
                                     Précédent
                                 </Button>
                                 {currentStep === steps.length ? (
-                                    <Button 
-                                        type="submit"
-                                        onClick={() => {
-                                            setIsSubmitting(true)
-                                        }}
+                                    <Button
+                                        type="button"
+                                        disabled={isSubmitting}
+                                        onClick={handleSave}
                                     >
-                                        {mode === "edit" ? "Sauvegarder" : "Créer le joueur"}
+                                        {isSubmitting ? "En cours..." : mode === "edit" ? "Sauvegarder" : "Créer le joueur"}
                                     </Button>                                
                                 ) : (
                                     <Button
@@ -436,7 +434,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave }: EditPlayersP
                             </DialogFooter>
 
                         </Stepper>
-                    </form>
+                    </div>
                 </DialogContent>
         </Dialog>
     )

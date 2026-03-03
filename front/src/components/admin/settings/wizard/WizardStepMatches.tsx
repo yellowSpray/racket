@@ -48,6 +48,15 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
     const hasMatches = matches.length > 0
     const hasPlayers = groups.some(g => (g.players || []).length >= 2)
 
+    // Conditions pour la génération auto
+    const missingRequirements: string[] = []
+    if (!hasPlayers) missingRequirements.push("Au moins 2 joueurs dans un groupe")
+    if (dates.length === 0) missingRequirements.push("Dates de jeu configurées")
+    if (timeSlots.length === 0) missingRequirements.push("Créneaux horaires (heure début/fin + durée match)")
+    if (!event.number_of_courts || event.number_of_courts < 1) missingRequirements.push("Au moins 1 terrain")
+    if (slotTotal < matchCount && slotTotal > 0 && matchCount > 0) missingRequirements.push(`Pas assez de créneaux : ${slotTotal} disponibles pour ${matchCount} matchs`)
+    const canGenerate = missingRequirements.length === 0
+
     const handleGenerate = async () => {
         if (hasMatches) {
             setConfirmAction("generate")
@@ -57,14 +66,29 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
         await doGenerate()
     }
 
+    const [warning, setWarning] = useState<string | null>(null)
+
     const doGenerate = async () => {
         setGenerating(true)
         setError(null)
+        setWarning(null)
         try {
             if (hasMatches) {
                 await deleteMatchesByEvent(event.id)
             }
-            await generateMatches(event, groups)
+            const result = await generateMatches(event, groups)
+
+            if (!result) {
+                setError("Impossible de générer les matchs. Vérifiez la configuration des créneaux et terrains.")
+                return
+            }
+
+            if (result.placed < result.total) {
+                setWarning(
+                    `${result.placed}/${result.total} matchs placés. ` +
+                    `${result.total - result.placed} match(s) sans créneau. Ajoutez des dates ou des terrains.`
+                )
+            }
 
             // Re-fetch les matchs pour obtenir les donnees completes
             const updatedMatches = await fetchMatchesForEvent(event.id)
@@ -111,13 +135,26 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
                 </div>
             )}
 
-            {!hasPlayers ? (
+            {warning && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded mb-4">
+                    ⚠ {warning}
+                </div>
+            )}
+
+            {!canGenerate ? (
                 <div className="text-center py-12 border-2 border-dashed rounded-lg">
                     <CalendarDays className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-4 text-lg font-semibold">Pas assez de joueurs</h3>
-                    <p className="text-gray-500 mt-2">
-                        Il faut au moins 2 joueurs par groupe pour générer les matchs
+                    <h3 className="mt-4 text-lg font-semibold">Génération impossible</h3>
+                    <p className="text-gray-500 mt-2 mb-4">
+                        Les conditions suivantes ne sont pas remplies :
                     </p>
+                    <ul className="text-sm text-gray-500 space-y-1">
+                        {missingRequirements.map((req, i) => (
+                            <li key={i} className="flex items-center justify-center gap-2">
+                                <span className="text-red-400">✕</span> {req}
+                            </li>
+                        ))}
+                    </ul>
                 </div>
             ) : !hasMatches ? (
                 <div className="text-center py-12 border-2 border-dashed rounded-lg">

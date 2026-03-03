@@ -5,7 +5,7 @@ import { usePlayers } from "@/contexts/PlayersContext"
 import { useClubConfig } from "@/hooks/useClubConfig"
 import { useAuth } from "@/contexts/AuthContext"
 import { supabase } from "@/lib/supabaseClient"
-import { calculateOptimalDistribution } from "@/lib/groupDistributionCalculator"
+import { calculateOptimalDistribution, calculateAllDistributions } from "@/lib/groupDistributionCalculator"
 import { distributePlayersByRanking } from "@/lib/groupDistribution"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -36,6 +36,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
     const [error, setError] = useState<string | null>(null)
     const [managementMode, setManagementMode] = useState(false)
     const [creating, setCreating] = useState(false)
+    const [selectedDistributionIndex, setSelectedDistributionIndex] = useState(0)
 
     const maxPlayersPerGroup = clubConfig?.default_max_players_per_group ?? 6
 
@@ -48,6 +49,8 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
     const activePlayers = players.filter(p => p.status?.includes("active"))
     const totalPlayers = activePlayers.length
     const optimalDistribution = calculateOptimalDistribution(totalPlayers, maxPlayersPerGroup)
+    const allDistributions = calculateAllDistributions(totalPlayers, maxPlayersPerGroup)
+    const selectedDistribution = allDistributions[selectedDistributionIndex] ?? allDistributions[0]
 
 
 
@@ -85,7 +88,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
             return
         }
 
-        if (!optimalDistribution.valid) {
+        if (!selectedDistribution) {
             setError(optimalDistribution.message || "Distribution impossible")
             return
         }
@@ -94,7 +97,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
         setCreating(true)
 
         try {
-            const groupsToCreate = optimalDistribution.distribution.map((_count, index) => ({
+            const groupsToCreate = selectedDistribution.distribution.map((_count, index) => ({
                 event_id: event.id,
                 group_name: `Box ${index + 1}`,
                 max_players: maxPlayersPerGroup,
@@ -117,7 +120,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
 
             const distributedGroups = distributePlayersByRanking(
                 playersForDistribution,
-                optimalDistribution.numberOfGroups
+                selectedDistribution.numberOfGroups
             )
 
             for (let i = 0; i < distributedGroups.length; i++) {
@@ -193,21 +196,64 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                     </div>
 
                     {!manualMode && (
-                        <Alert>
+                        <Alert variant={allDistributions.length === 0 || totalPlayers === 0 ? "destructive" : "default"}>
                             <Info className="h-4 w-4" />
                             <AlertDescription>
-                                <strong>{totalPlayers} joueurs actifs</strong> seront répartis automatiquement
-                                {optimalDistribution.valid && (
+                                <strong>{totalPlayers} joueur{totalPlayers > 1 ? "s" : ""} actif{totalPlayers > 1 ? "s" : ""}</strong>
+                                {totalPlayers === 0 && (
                                     <>
                                         <br />
-                                        <span className="text-sm font-semibold text-blue-700">
-                                            {optimalDistribution.numberOfGroups} groupe{optimalDistribution.numberOfGroups > 1 ? "s" : ""} :{" "}
-                                            {optimalDistribution.distribution.map((n, i) => (
-                                                <span key={i}>
-                                                    Box {i + 1} ({n} joueurs)
-                                                    {i < optimalDistribution.distribution.length - 1 ? ", " : ""}
-                                                </span>
+                                        <span className="text-sm">
+                                            Aucun joueur avec le status "active" trouvé. Vérifiez les status des joueurs dans la liste.
+                                        </span>
+                                    </>
+                                )}
+                                {totalPlayers > 0 && allDistributions.length > 1 && (
+                                    <>
+                                        {" "}— choisissez une configuration :
+                                        <div className="flex flex-col gap-1.5 mt-2">
+                                            {allDistributions.map((option, index) => (
+                                                <button
+                                                    key={index}
+                                                    type="button"
+                                                    onClick={() => setSelectedDistributionIndex(index)}
+                                                    className={`text-left text-sm px-3 py-1.5 rounded-md border transition-colors ${
+                                                        selectedDistributionIndex === index
+                                                            ? "border-blue-500 bg-blue-50 text-blue-700 font-semibold"
+                                                            : "border-gray-200 hover:border-gray-300 text-gray-600"
+                                                    }`}
+                                                >
+                                                    {option.label}
+                                                    {option.relaxed && option.message && (
+                                                        <span className="text-amber-600 font-normal ml-2">({option.message})</span>
+                                                    )}
+                                                </button>
                                             ))}
+                                        </div>
+                                    </>
+                                )}
+                                {totalPlayers > 0 && allDistributions.length === 1 && selectedDistribution && (
+                                    <>
+                                        {" "}seront répartis automatiquement
+                                        <br />
+                                        <span className="text-sm font-semibold text-blue-700">
+                                            {selectedDistribution.label}
+                                        </span>
+                                        {selectedDistribution.relaxed && selectedDistribution.message && (
+                                            <>
+                                                <br />
+                                                <span className="text-sm text-amber-600">
+                                                    {selectedDistribution.message}
+                                                </span>
+                                            </>
+                                        )}
+                                    </>
+                                )}
+                                {totalPlayers > 0 && allDistributions.length === 0 && (
+                                    <>
+                                        <br />
+                                        <span className="text-sm">
+                                            {optimalDistribution.message || `Distribution impossible avec ${totalPlayers} joueurs et ${maxPlayersPerGroup} joueurs max par groupe.`}
                                         </span>
                                     </>
                                 )}
@@ -256,7 +302,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                             <Button
                                 type="button"
                                 onClick={handleGenerateAuto}
-                                disabled={isLoading || !optimalDistribution.valid || totalPlayers === 0}
+                                disabled={isLoading || !selectedDistribution || totalPlayers === 0}
                             >
                                 <Sparkles className="mr-2 h-4 w-4" />
                                 Générer automatiquement

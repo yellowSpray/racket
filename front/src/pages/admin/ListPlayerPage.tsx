@@ -20,12 +20,12 @@ import { Users } from "lucide-react"
 
 export function ListPlayers() {
 
-    const { players, addPlayer, updatePlayer, loading, fetchPlayer, fetchPlayersByEvent } = usePlayers();
+    const { players, addPlayer, updatePlayer, removePlayerFromEvent, loading, fetchPlayer, fetchPlayersByEvent } = usePlayers();
     const { currentEvent } = useEvent()
     const [showAllPlayers, setShowAllPlayers] = useState<boolean>(false)
     const [statusFilter, setStatusFilter] = useState<string>("all")
 
-    const columns = playerColumns(updatePlayer)
+    const columns = playerColumns(updatePlayer, removePlayerFromEvent, !showAllPlayers && !!currentEvent)
 
     useEffect(() => {
         if(showAllPlayers) {
@@ -63,7 +63,8 @@ export function ListPlayers() {
 
     }, [players, statusFilter])
 
-    if (loading) {
+    // Loading plein écran uniquement au premier chargement (pas de joueurs encore)
+    if (loading && players.length === 0) {
         return <Loading />
     }
 
@@ -98,7 +99,7 @@ export function ListPlayers() {
                         <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Filtre" />
                         </SelectTrigger>
-                        <SelectContent className="bg-white">
+                        <SelectContent>
                             <SelectGroup>
                                 <SelectItem value="all">Tous</SelectItem>
                                 <SelectItem value="active">Actif</SelectItem>

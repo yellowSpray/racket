@@ -172,6 +172,13 @@ export function MatchAdmin() {
                 </div>
             )}
 
+            {/* Avertissement matchs manquants */}
+            {!error && hasMatches && matchCount > 0 && matches.length < matchCount && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded mb-4">
+                    {matches.length}/{matchCount} matchs planifiés. {matchCount - matches.length} match(s) sans créneau — ajoutez des dates ou des terrains dans les paramètres.
+                </div>
+            )}
+
             {/* Contenu */}
             {!hasGroups ? (
                 <div className="text-center py-12 border-2 border-dashed rounded-lg">

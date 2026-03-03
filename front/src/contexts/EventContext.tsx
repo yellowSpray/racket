@@ -38,12 +38,19 @@ export function EventProvider({children}: {children: ReactNode}) {
 
             setEvents(eventsWithCount)
 
-            // si aucun events est selectionné , selectionner le plus récent
-            if(!currentEvent && eventsWithCount && eventsWithCount.length > 0) {
-                const mostRecentEvent = eventsWithCount[0]
-                setCurrentEvent(mostRecentEvent)
-                // sauvegarde dans le localStorage
-                localStorage.setItem("selectedEventId", mostRecentEvent.id)
+            // Restaurer l'event sauvegardé ou sélectionner le plus récent
+            if (eventsWithCount.length > 0) {
+                const savedEventId = localStorage.getItem("selectedEventId")
+                const savedEvent = savedEventId ? eventsWithCount.find(e => e.id === savedEventId) : null
+
+                if (savedEvent) {
+                    setCurrentEvent(savedEvent)
+                } else {
+                    // Pas de sauvegarde valide → sélectionner le plus récent
+                    const mostRecentEvent = eventsWithCount[0]
+                    setCurrentEvent(mostRecentEvent)
+                    localStorage.setItem("selectedEventId", mostRecentEvent.id)
+                }
             }
 
         } catch (err) {
@@ -69,24 +76,9 @@ export function EventProvider({children}: {children: ReactNode}) {
         }
     }
 
-    // charger les events 
+    // charger les events au montage
     useEffect(() => {
-        const initEvents = async () => {
-            await fetchEvents()
-
-            // recuperer l'event du localStorage
-            const savedEventId = localStorage.getItem("selectedEventId")
-            if(savedEventId) {
-                const savedEvent = events.find(e => e.id === savedEventId)
-                if(savedEvent) {
-                    setCurrentEvent(savedEvent)
-                }
-            }
-        }
-
-        initEvents()
-
-        //TODO
+        fetchEvents()
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 

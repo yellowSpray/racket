@@ -28,4 +28,5 @@ export interface MatchAssignment extends MatchPairing {
     matchDate: string
     matchTime: string
     courtNumber: string
+    absentPlayerIds?: string[]
 }

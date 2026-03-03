@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
 import { DrawTable } from '../DrawTable'
 import type { Group, GroupPlayer } from '@/types/draw'
+import type { Match } from '@/types/match'
 
 const makePlayer = (overrides: Partial<GroupPlayer> = {}): GroupPlayer => ({
   id: 'p1',
@@ -9,6 +10,19 @@ const makePlayer = (overrides: Partial<GroupPlayer> = {}): GroupPlayer => ({
   last_name: 'Martin',
   phone: '0612345678',
   power_ranking: '5',
+  ...overrides,
+})
+
+const makeMatch = (overrides: Partial<Match> = {}): Match => ({
+  id: 'm1',
+  group_id: 'g1',
+  player1_id: 'p1',
+  player2_id: 'p2',
+  match_date: '2026-03-05',
+  match_time: '19:30:00+00',
+  court_number: 'Terrain 1',
+  winner_id: null,
+  score: null,
   ...overrides,
 })
 
@@ -92,12 +106,55 @@ describe('DrawTable', () => {
     expect(screen.getAllByText('C').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('renders match cells with placeholder content for valid matches', () => {
+  it('renders match cells with placeholder content when no matches provided', () => {
     const players = [
       makePlayer({ id: 'p1', first_name: 'Alice', last_name: 'A' }),
       makePlayer({ id: 'p2', first_name: 'Bob', last_name: 'B' }),
     ]
     render(<DrawTable group={makeGroup({ players, max_players: 2 })} />)
     expect(screen.getAllByText('--:--').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('displays formatted date and time when match data is provided', () => {
+    const players = [
+      makePlayer({ id: 'p1', first_name: 'Alice', last_name: 'A' }),
+      makePlayer({ id: 'p2', first_name: 'Bob', last_name: 'B' }),
+    ]
+    const matches = [makeMatch({ player1_id: 'p1', player2_id: 'p2', match_date: '2026-03-05', match_time: '19:30:00+00' })]
+    render(<DrawTable group={makeGroup({ players, max_players: 2 })} matches={matches} />)
+    expect(screen.getAllByText('05/03').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('19:30').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('displays score when match has been played', () => {
+    const players = [
+      makePlayer({ id: 'p1', first_name: 'Alice', last_name: 'A' }),
+      makePlayer({ id: 'p2', first_name: 'Bob', last_name: 'B' }),
+    ]
+    const matches = [makeMatch({ player1_id: 'p1', player2_id: 'p2', score: '3 - 1' })]
+    render(<DrawTable group={makeGroup({ players, max_players: 2 })} matches={matches} />)
+    expect(screen.getAllByText('3 - 1').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('finds match regardless of player1/player2 order', () => {
+    const players = [
+      makePlayer({ id: 'p1', first_name: 'Alice', last_name: 'A' }),
+      makePlayer({ id: 'p2', first_name: 'Bob', last_name: 'B' }),
+    ]
+    // Match stored with reversed player order
+    const matches = [makeMatch({ player1_id: 'p2', player2_id: 'p1', match_date: '2026-04-10', match_time: '20:00:00+00' })]
+    render(<DrawTable group={makeGroup({ players, max_players: 2 })} matches={matches} />)
+    expect(screen.getAllByText('10/04').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('20:00').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('shows placeholder when match has no score yet', () => {
+    const players = [
+      makePlayer({ id: 'p1', first_name: 'Alice', last_name: 'A' }),
+      makePlayer({ id: 'p2', first_name: 'Bob', last_name: 'B' }),
+    ]
+    const matches = [makeMatch({ player1_id: 'p1', player2_id: 'p2', score: null })]
+    render(<DrawTable group={makeGroup({ players, max_players: 2 })} matches={matches} />)
+    expect(screen.queryByText('3 - 1')).not.toBeInTheDocument()
   })
 })

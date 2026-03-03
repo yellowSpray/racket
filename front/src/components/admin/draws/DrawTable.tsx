@@ -1,16 +1,34 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { Group } from "@/types/draw";
+import type { Match } from "@/types/match";
 import { useState } from "react";
 
 interface DrawTableProps {
     group: Group
+    matches?: Match[]
 }
 
-export function DrawTable({ group }: DrawTableProps) {
+export function DrawTable({ group, matches = [] }: DrawTableProps) {
 
     const players = group.players || []
     const maxPlayers = group.max_players || 6
     const [hoveredMatch, setHoveredMatch] = useState<{row: number, col: number} | null>(null)
+
+    const findMatch = (id1: string, id2: string): Match | undefined =>
+        matches.find(m =>
+            (m.player1_id === id1 && m.player2_id === id2) ||
+            (m.player1_id === id2 && m.player2_id === id1)
+        )
+
+    const formatDate = (dateStr: string) => {
+        const [, month, day] = dateStr.split('-')
+        return `${day}/${month}`
+    }
+
+    const formatTime = (timeStr: string) => {
+        const match = timeStr.match(/(\d{2}:\d{2})/)
+        return match ? match[1] : timeStr
+    }
 
     const displaySlots = Math.max(maxPlayers, players.length)
     const slots = Array.from({ length: displaySlots }, (_, index) => {
@@ -95,21 +113,31 @@ export function DrawTable({ group }: DrawTableProps) {
                                     )
                                 }
 
-                                //TODO: case de match (afficher date + heure depuis table matches)
+                                const match = findMatch(player.id, opponent.id)
+
                                 return (
-                                    <TableCell 
-                                        key={colIndex} 
-                                        className={`text-center text-xs p-2 border-x border-gray-200 transition-colors cursor-pointer 
+                                    <TableCell
+                                        key={colIndex}
+                                        className={`text-center text-xs p-2 border-x border-gray-200 transition-colors cursor-pointer
                                                 ${isHovered ? 'bg-gray-200' : ''}
                                             `}
                                         onMouseEnter={() => setHoveredMatch({row: rowIndex, col: colIndex})}
                                         onMouseLeave={() => setHoveredMatch(null)}
                                     >
-                                        {/* TODO: Récupérer depuis matches table */}
-                                        <div className="text-gray-400">
-                                            <div>-</div>
-                                            <div>--:--</div>
-                                        </div>
+                                        {match ? (
+                                            <div>
+                                                <div className="text-gray-500">{formatDate(match.match_date)}</div>
+                                                <div className="font-medium">{formatTime(match.match_time)}</div>
+                                                {match.score && (
+                                                    <div className="font-bold text-blue-600">{match.score}</div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="text-gray-400">
+                                                <div>-</div>
+                                                <div>--:--</div>
+                                            </div>
+                                        )}
                                     </TableCell>
                                 )
                             })}

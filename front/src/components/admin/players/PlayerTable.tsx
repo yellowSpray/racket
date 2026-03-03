@@ -1,7 +1,9 @@
-import { flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
+import { flexRender, getCoreRowModel, getSortedRowModel, useReactTable, type SortingState } from "@tanstack/react-table";
 import type { ColumnDef, RowData } from "@tanstack/react-table";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { useState } from "react";
 
 declare module '@tanstack/react-table' {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -20,15 +22,19 @@ export function DataTable<TData, TValue>({
     data
 }: DataTableProps<TData, TValue>) {
     
+    const [sorting, setSorting] = useState<SortingState>([])
+
     const table = useReactTable({
         data,
         columns,
-        getCoreRowModel: getCoreRowModel()
+        getCoreRowModel: getCoreRowModel(),
+        getSortedRowModel: getSortedRowModel(),
+        onSortingChange: setSorting,
+        state: { sorting },
     })
 
     return (
-
-        <div className="overflow-hidden rounded-md border flex flex-col min-h-0 h-full">
+        <ScrollArea className="rounded-md border h-full" type="always">
             <Table>
                 <TableHeader className="sticky top-0 z-10 bg-background">
                     {table.getHeaderGroups().map((headerGroup) => (
@@ -37,50 +43,56 @@ export function DataTable<TData, TValue>({
                                 return (
                                     <TableHead
                                         key={header.id}
-                                        className={header.column.columnDef.meta?.className}
+                                        className={`${header.column.columnDef.meta?.className || ''} ${header.column.getCanSort() ? 'cursor-pointer select-none hover:bg-muted/50' : ''}`}
+                                        onClick={header.column.getToggleSortingHandler()}
                                     >
-                                        {header.isPlaceholder
-                                            ? null
-                                            : flexRender(
-                                                header.column.columnDef.header,
-                                                header.getContext()
-                                        )}
+                                        <div className="flex items-center gap-1">
+                                            {header.isPlaceholder
+                                                ? null
+                                                : flexRender(
+                                                    header.column.columnDef.header,
+                                                    header.getContext()
+                                            )}
+                                            {header.column.getCanSort() && (
+                                                header.column.getIsSorted() === 'asc'
+                                                    ? <ArrowUp className="h-3 w-3" />
+                                                    : header.column.getIsSorted() === 'desc'
+                                                        ? <ArrowDown className="h-3 w-3" />
+                                                        : <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+                                            )}
+                                        </div>
                                     </TableHead>
                                 )
                             })}
                         </TableRow>
                     ))}
                 </TableHeader>
-            </Table>
-            <ScrollArea className="flex-1 min-h-0" type="always">
-                <Table>
-                    <TableBody>
-                        {table.getRowModel().rows?.length ? (
-                            table.getRowModel().rows.map((row) => (
-                                <TableRow
-                                    key={row.id}
-                                    data-state={row.getIsSelected() && "selected"}
-                                >
-                                    {row.getVisibleCells().map((cell) => (
-                                        <TableCell
-                                            key={cell.id}
-                                            className={cell.column.columnDef.meta?.className}
-                                        >
-                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    No Results
-                                </TableCell>
+                <TableBody>
+                    {table.getRowModel().rows?.length ? (
+                        table.getRowModel().rows.map((row) => (
+                            <TableRow
+                                key={row.id}
+                                data-state={row.getIsSelected() && "selected"}
+                            >
+                                {row.getVisibleCells().map((cell) => (
+                                    <TableCell
+                                        key={cell.id}
+                                        className={cell.column.columnDef.meta?.className}
+                                    >
+                                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                    </TableCell>
+                                ))}
                             </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </ScrollArea>
-        </div>
+                        ))
+                    ) : (
+                        <TableRow>
+                            <TableCell colSpan={columns.length} className="h-24 text-center">
+                                No Results
+                            </TableCell>
+                        </TableRow>
+                    )}
+                </TableBody>
+            </Table>
+        </ScrollArea>
     )
 }

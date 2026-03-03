@@ -8,6 +8,27 @@ vi.mock('@/components/admin/players/EditPlayers', () => ({
   EditPlayers: ({ mode }: { mode: string }) => <button data-testid="edit-btn">{mode}</button>,
 }))
 
+// Mock dropdown-menu
+vi.mock('@/components/ui/dropdown-menu', () => ({
+  DropdownMenu: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuItem: ({ children, onSelect }: { children: React.ReactNode, onSelect?: () => void }) => <button onClick={onSelect}>{children}</button>,
+}))
+
+// Mock alert-dialog
+vi.mock('@/components/ui/alert-dialog', () => ({
+  AlertDialog: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogFooter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogDescription: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogAction: ({ children, onClick }: { children: React.ReactNode, onClick?: () => void }) => <button onClick={onClick}>{children}</button>,
+  AlertDialogCancel: ({ children }: { children: React.ReactNode }) => <button>{children}</button>,
+}))
+
 const makePlayer = (overrides: Partial<PlayerType> = {}): PlayerType => ({
   id: 'p1',
   first_name: 'Alice',
@@ -19,20 +40,22 @@ const makePlayer = (overrides: Partial<PlayerType> = {}): PlayerType => ({
   unavailable: [],
   status: ['active', 'member'],
   power_ranking: '5',
+  box: '',
   ...overrides,
 })
 
 describe('PlayerColumns', () => {
   const mockUpdatePlayer = vi.fn()
+  const mockRemovePlayer = vi.fn()
 
   it('returns an array of column definitions', () => {
-    const cols = columns(mockUpdatePlayer)
+    const cols = columns(mockUpdatePlayer, mockRemovePlayer, true)
     expect(Array.isArray(cols)).toBe(true)
     expect(cols.length).toBeGreaterThan(0)
   })
 
   it('includes expected column headers', () => {
-    const cols = columns(mockUpdatePlayer)
+    const cols = columns(mockUpdatePlayer, mockRemovePlayer, true)
     const headers = cols.map(c => c.header)
     expect(headers).toContain('Boxes')
     expect(headers).toContain('Prénom Nom')
@@ -43,11 +66,11 @@ describe('PlayerColumns', () => {
     expect(headers).toContain('Absence')
     expect(headers).toContain('Status')
     expect(headers).toContain('Force')
-    expect(headers).toContain('Modif.')
+    expect(headers).toContain('Actions')
   })
 
   it('has a full_name accessor that concatenates first and last name', () => {
-    const cols = columns(mockUpdatePlayer)
+    const cols = columns(mockUpdatePlayer, mockRemovePlayer, true)
     const fullNameCol = cols.find(c => c.header === 'Prénom Nom')
     // accessorFn should exist
     expect(fullNameCol).toBeDefined()
@@ -58,7 +81,7 @@ describe('PlayerColumns', () => {
   })
 
   it('renders unavailable dates as badges in absence column', () => {
-    const cols = columns(mockUpdatePlayer)
+    const cols = columns(mockUpdatePlayer, mockRemovePlayer, true)
     const absenceCol = cols.find(c => c.header === 'Absence')
     expect(absenceCol).toBeDefined()
     if (absenceCol && 'cell' in absenceCol && absenceCol.cell) {
@@ -74,7 +97,7 @@ describe('PlayerColumns', () => {
   })
 
   it('renders status badges in status column', () => {
-    const cols = columns(mockUpdatePlayer)
+    const cols = columns(mockUpdatePlayer, mockRemovePlayer, true)
     const statusCol = cols.find(c => c.header === 'Status')
     expect(statusCol).toBeDefined()
     if (statusCol && 'cell' in statusCol && statusCol.cell) {
@@ -89,9 +112,9 @@ describe('PlayerColumns', () => {
     }
   })
 
-  it('renders the actions column with EditPlayers', () => {
-    const cols = columns(mockUpdatePlayer)
-    const actionsCol = cols.find(c => c.header === 'Modif.')
+  it('renders the actions column with dropdown menu', () => {
+    const cols = columns(mockUpdatePlayer, mockRemovePlayer, true)
+    const actionsCol = cols.find(c => c.header === 'Actions')
     expect(actionsCol).toBeDefined()
     if (actionsCol && 'cell' in actionsCol && actionsCol.cell) {
       const CellComponent = actionsCol.cell as any
@@ -100,12 +123,13 @@ describe('PlayerColumns', () => {
         getValue: vi.fn(),
       }
       render(<CellComponent row={mockRow} />)
-      expect(screen.getByTestId('edit-btn')).toBeInTheDocument()
+      expect(screen.getByText('Modifier')).toBeInTheDocument()
+      expect(screen.getAllByText('Retirer').length).toBeGreaterThanOrEqual(1)
     }
   })
 
   it('has 10 columns total', () => {
-    const cols = columns(mockUpdatePlayer)
+    const cols = columns(mockUpdatePlayer, mockRemovePlayer, true)
     expect(cols.length).toBe(10)
   })
 })

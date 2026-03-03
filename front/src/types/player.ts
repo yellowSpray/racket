@@ -9,6 +9,7 @@ export type PlayerType = {
     unavailable: string[]
     status: ("active" | "inactive" | "member" | "visitor" | "paid" | "unpaid" )[]
     power_ranking: string
+    box: string
 }
 
 export interface PlayersContextType {
@@ -17,6 +18,7 @@ export interface PlayersContextType {
     error: string | null;
     addPlayer: (player: Partial<PlayerType>) => Promise<void>;
     updatePlayer: (id: string, updates: Partial<PlayerType>) => Promise<void>;
+    removePlayerFromEvent: (id: string) => Promise<void>;
     fetchPlayer: () => Promise<void>;
     fetchPlayersByEvent: (id: string) => Promise<void>;
 }

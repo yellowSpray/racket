@@ -12,6 +12,20 @@ import {
     type PlayerConstraints,
 } from "@/lib/matchScheduler"
 
+/**
+ * Extrait "HH:MM" depuis un timestamp Supabase (ex: "2026-03-05T20:00:00+00:00")
+ * ou un time (ex: "20:00:00+00"). Évite les décalages de timezone de new Date().
+ */
+function extractTime(value: string): string {
+    // Format timestamp ISO : "2026-03-05T20:00:00+00:00" → chercher après le T
+    const isoMatch = value.match(/T(\d{2}:\d{2})/)
+    if (isoMatch) return isoMatch[1]
+    // Format time brut : "20:00:00+00" ou "20:00"
+    const timeMatch = value.match(/^(\d{2}:\d{2})/)
+    if (timeMatch) return timeMatch[1]
+    return ""
+}
+
 export function useMatches() {
 
     const [matches, setMatches] = useState<Match[]>([])
@@ -71,20 +85,12 @@ export function useMatches() {
         }
     }, [])
 
-    const generateMatches = async (event: Event, groups: Group[]) => {
+    const generateMatches = async (event: Event, groups: Group[]): Promise<{ total: number; placed: number } | null> => {
         setLoading(true)
         setError(null)
 
         try {
-            // 1. Générer les paires round-robin
-            const pairings = generateRoundRobinPairings(groups)
-
-            if (pairings.length === 0) {
-                setError("Aucun match à générer (pas assez de joueurs dans les groupes)")
-                return
-            }
-
-            // 2. Calculer les créneaux
+            // 1. Calculer les dates de jeu (nécessaire pour le bye optimization)
             const dates = calculateDates(event.start_date, event.end_date, event.playing_dates)
             const durationMin = intervalToMinutes(event.estimated_match_duration)
             const timeSlots = calculateTimeSlots(
@@ -106,16 +112,30 @@ export function useMatches() {
             if (playerIds.size > 0) {
                 const ids = Array.from(playerIds)
 
-                const [scheduleRes, absencesRes] = await Promise.all([
+                const [scheduleEventRes, scheduleGeneralRes, absencesEventRes, absencesGeneralRes] = await Promise.all([
+                    // Schedules liés à cet événement
                     supabase
                         .from("schedule")
                         .select("profile_id, arrival, departure")
                         .eq("event_id", event.id)
                         .in("profile_id", ids),
+                    // Schedules généraux (sans event_id) — fallback
+                    supabase
+                        .from("schedule")
+                        .select("profile_id, arrival, departure")
+                        .is("event_id", null)
+                        .in("profile_id", ids),
+                    // Absences liées à cet événement
                     supabase
                         .from("absences")
                         .select("profile_id, absent_date")
                         .eq("event_id", event.id)
+                        .in("profile_id", ids),
+                    // Absences générales (sans event_id) — fallback
+                    supabase
+                        .from("absences")
+                        .select("profile_id, absent_date")
+                        .is("event_id", null)
                         .in("profile_id", ids),
                 ])
 
@@ -124,33 +144,85 @@ export function useMatches() {
                     constraints.set(id, { arrival: "", departure: "", unavailable: [] })
                 }
 
-                if (scheduleRes.data) {
-                    for (const s of scheduleRes.data) {
+                // D'abord appliquer les schedules généraux (fallback)
+                if (scheduleGeneralRes.data) {
+                    for (const s of scheduleGeneralRes.data) {
                         const c = constraints.get(s.profile_id)
                         if (c && s.arrival) {
-                            const arrivalDate = new Date(s.arrival)
-                            c.arrival = arrivalDate.toLocaleTimeString('fr-FR', {
-                                hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC'
-                            })
+                            c.arrival = extractTime(s.arrival)
                         }
                         if (c && s.departure) {
-                            const departureDate = new Date(s.departure)
-                            c.departure = departureDate.toLocaleTimeString('fr-FR', {
-                                hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC'
-                            })
+                            c.departure = extractTime(s.departure)
                         }
                     }
                 }
 
-                if (absencesRes.data) {
-                    for (const a of absencesRes.data) {
+                // Puis écraser avec les schedules spécifiques à l'événement (prioritaires)
+                if (scheduleEventRes.data) {
+                    for (const s of scheduleEventRes.data) {
+                        const c = constraints.get(s.profile_id)
+                        if (c && s.arrival) {
+                            c.arrival = extractTime(s.arrival)
+                        }
+                        if (c && s.departure) {
+                            c.departure = extractTime(s.departure)
+                        }
+                    }
+                }
+
+                // Absences générales (fallback)
+                if (absencesGeneralRes.data) {
+                    for (const a of absencesGeneralRes.data) {
                         const c = constraints.get(a.profile_id)
-                        if (c) {
+                        if (c && !c.unavailable.includes(a.absent_date)) {
+                            c.unavailable.push(a.absent_date)
+                        }
+                    }
+                }
+
+                // Absences spécifiques à l'événement (prioritaires, ajoutées en plus)
+                if (absencesEventRes.data) {
+                    for (const a of absencesEventRes.data) {
+                        const c = constraints.get(a.profile_id)
+                        if (c && !c.unavailable.includes(a.absent_date)) {
                             c.unavailable.push(a.absent_date)
                         }
                     }
                 }
             }
+
+            // Log des contraintes utilisées
+            const constraintsWithValues = Array.from(constraints.entries()).filter(
+                ([, c]) => c.arrival || c.departure || c.unavailable.length > 0
+            )
+            if (constraintsWithValues.length > 0) {
+                console.log("[Scheduler] Contraintes joueurs :")
+                for (const [id, c] of constraintsWithValues) {
+                    const parts: string[] = []
+                    if (c.arrival) parts.push(`arrivée: ${c.arrival}`)
+                    if (c.departure) parts.push(`départ: ${c.departure}`)
+                    if (c.unavailable.length > 0) parts.push(`absences: ${c.unavailable.join(", ")}`)
+                    console.log(`  - ${id}: ${parts.join(" | ")}`)
+                }
+            }
+
+            // 2. Construire la map d'absences pour l'optimisation des byes
+            const absencesMap = new Map<string, string[]>()
+            for (const [id, c] of constraints.entries()) {
+                if (c.unavailable.length > 0) {
+                    absencesMap.set(id, c.unavailable)
+                }
+            }
+
+            // 3. Générer les paires round-robin (avec optimisation bye/absence)
+            const pairings = generateRoundRobinPairings(groups, dates, absencesMap)
+
+            if (pairings.length === 0) {
+                setError("Aucun match à générer (pas assez de joueurs dans les groupes)")
+                return null
+            }
+
+            console.log(`[Scheduler] Génération: ${pairings.length} matchs, ${dates.length} dates, ${timeSlots.length} créneaux/jour, ${event.number_of_courts} terrains (${dates.length * timeSlots.length * event.number_of_courts} slots totaux)`)
 
             // 4. Assigner aux créneaux avec contraintes
             const assignments = assignMatchesToSlots(
@@ -162,13 +234,12 @@ export function useMatches() {
                 durationMin
             )
 
-            if (assignments.length < pairings.length) {
+            if (assignments.length === 0) {
                 setError(
-                    `Pas assez de créneaux : ${assignments.length}/${pairings.length} matchs placés. ` +
+                    `Pas assez de créneaux : aucun match placé sur ${pairings.length}. ` +
                     `Ajoutez des dates ou des terrains.`
                 )
-                // On insère quand même les matchs qu'on a pu placer
-                if (assignments.length === 0) return
+                return null
             }
 
             // 4. Insérer en batch dans Supabase
@@ -187,13 +258,25 @@ export function useMatches() {
 
             if (insertError) {
                 setError(insertError.message)
-                return
+                return null
             }
 
             // 5. Refresh
             await fetchMatchesByEvent(event.id)
+
+            const result = { total: pairings.length, placed: assignments.length }
+
+            if (assignments.length < pairings.length) {
+                setError(
+                    `${assignments.length}/${pairings.length} matchs placés. ` +
+                    `${pairings.length - assignments.length} match(s) sans créneau. Ajoutez des dates ou des terrains.`
+                )
+            }
+
+            return result
         } catch (err) {
             setError(err instanceof Error ? err.message : "Erreur inconnue")
+            return null
         } finally {
             setLoading(false)
         }

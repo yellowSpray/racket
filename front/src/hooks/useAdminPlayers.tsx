@@ -17,6 +17,11 @@ type SupabaseAbsence = {
     date: string
 }
 
+type SupabaseGroupPlayer = {
+    group_id: string
+    groups: { group_name: string }
+}
+
 type SupabasePlayer = {
     id: string
     first_name: string
@@ -27,6 +32,7 @@ type SupabasePlayer = {
     player_status?: SupabasePlayerStatus[]
     schedule?: SupabaseSchedule[]
     absences?: SupabaseAbsence[]
+    group_players?: SupabaseGroupPlayer[]
 }
 
 export function useAdminPlayers() {
@@ -72,6 +78,9 @@ export function useAdminPlayers() {
                     return indexA - indexB
                 })
 
+            // Récupérer le nom du groupe (box) si disponible
+            const groupName = player.group_players?.[0]?.groups?.group_name || ""
+
             return {
                 id: player.id,
                 first_name: player.first_name,
@@ -84,6 +93,7 @@ export function useAdminPlayers() {
                 unavailable: player.absences?.map((d: SupabaseAbsence) => d.date) || [],
                 status: sortedStatus,
                 power_ranking: player.power_ranking || "",
+                box: groupName,
             }
         })
     }, [])
@@ -141,9 +151,11 @@ export function useAdminPlayers() {
                     player_status(status),
                     schedule(arrival, departure),
                     absences(absent_date),
-                    event_players!inner(event_id)
+                    event_players!inner(event_id),
+                    group_players(group_id, groups(group_name))
                 `)
                 .eq("event_players.event_id", eventId)
+                .eq("group_players.groups.event_id", eventId)
                 .order("created_at", { ascending: false })
             
             if(fetchError) {
@@ -176,54 +188,45 @@ export function useAdminPlayers() {
     // creation d'un joueur
     const addPlayer = async (player: Partial<PlayerType>) => {
 
-        setLoading(true)
-        setError(null)
+        const rpcParams = {
+            p_profile_id: null,
+            p_first_name: player.first_name || '',
+            p_last_name: player.last_name || '',
+            p_phone: player.phone || '',
+            p_email: player.email || '',
+            p_power_ranking: player.power_ranking ? parseInt(player.power_ranking) : 0,
+            p_avatar_url: null,
+            p_club_id: profile?.club_id ?? null,
+            p_statuses: player.status || [],
+            p_arrival_time: player.arrival || null,
+            p_departure_time: player.departure || null,
+            p_event_id: null,
+            p_event_date: null,
+            p_payment_amount: 0
+        }
 
-        try {
-            const { data, error: rpcError } = await supabase.rpc('upsert_player', {
-                p_profile_id: null,
-                p_first_name: player.first_name || '',
-                p_last_name: player.last_name || '',
-                p_phone: player.phone || '',
-                p_email: player.email || '',
-                p_power_ranking: player.power_ranking ? parseInt(player.power_ranking) : 0,
-                p_avatar_url: null,
-                p_club_id: profile?.club_id ?? null,
-                p_statuses: player.status || [],
-                p_arrival_time: player.arrival || null,
-                p_departure_time: player.departure || null,
-                p_event_id: null,
-                p_event_date: null,
-                p_payment_amount: 0
-            })
+        // Pas de setState avant l'appel RPC pour éviter un re-render qui démonte le dialog
+        const { data, error: rpcError } = await supabase.rpc('upsert_player', rpcParams)
 
-            if (rpcError) {
-                setError(rpcError.message)
-                setLoading(false)
+        if (rpcError) {
+            setError(rpcError.message)
+            return
+        }
+
+        if (data && typeof data === 'object' && 'success' in data) {
+            if (!data.success) {
+                setError(data.error as string)
                 return
             }
-
-            if (data && typeof data === 'object' && 'success' in data) {
-                if (!data.success) {
-                    setError(data.error as string)
-                    setLoading(false)
-                    return
-                }
-            }
-
-            await refreshCurrentView()
-
-        } catch (err) {
-            setError(err instanceof Error ? err.message : "Erreur inconnue")
-            setLoading(false)
         }
+
+        await refreshCurrentView()
 
     }
     
     // mise à jour joueur
     const updatePlayer = async (id: string, updates: Partial<PlayerType>) => {
-        
-        setLoading(true)
+
         setError(null)
 
         try {
@@ -232,19 +235,18 @@ export function useAdminPlayers() {
             const currentPlayer = players.find(p => p.id === id)
             if (!currentPlayer) {
                 setError("Joueur non trouvé")
-                setLoading(false)
                 return
             }
 
             // Appel de la fonction PostgreSQL upsert_player
             const { data, error: rpcError } = await supabase.rpc('upsert_player', {
-                p_profile_id: id, 
+                p_profile_id: id,
                 p_first_name: updates.first_name || currentPlayer.first_name,
                 p_last_name: updates.last_name || currentPlayer.last_name,
                 p_phone: updates.phone || currentPlayer.phone,
                 p_email: updates.email || currentPlayer.email,
-                p_power_ranking: updates.power_ranking 
-                    ? parseInt(updates.power_ranking) 
+                p_power_ranking: updates.power_ranking
+                    ? parseInt(updates.power_ranking)
                     : parseInt(currentPlayer.power_ranking || '0'),
                 p_avatar_url: null,
                 p_club_id: profile?.club_id ?? null,
@@ -258,14 +260,12 @@ export function useAdminPlayers() {
 
             if (rpcError) {
                 setError(rpcError.message)
-                setLoading(false)
                 return
             }
 
             if (data && typeof data === 'object' && 'success' in data) {
                 if (!data.success) {
                     setError(data.error as string)
-                    setLoading(false)
                     return
                 }
             }
@@ -276,8 +276,38 @@ export function useAdminPlayers() {
         } catch (err) {
             console.error("Erreur inattendue:", err)
             setError(err instanceof Error ? err.message : "Erreur inconnue")
-            setLoading(false)
         }        
+    }
+
+    // retirer un joueur de l'événement courant
+    const removePlayerFromEvent = async (playerId: string) => {
+        if (!currentEventId) {
+            setError("Aucun événement sélectionné")
+            return
+        }
+
+        setLoading(true)
+        setError(null)
+
+        try {
+            const { error: deleteError } = await supabase
+                .from("event_players")
+                .delete()
+                .eq("profile_id", playerId)
+                .eq("event_id", currentEventId)
+
+            if (deleteError) {
+                setError(deleteError.message)
+                setLoading(false)
+                return
+            }
+
+            await refreshCurrentView()
+        } catch (err) {
+            console.error("Erreur retrait joueur:", err)
+            setError(err instanceof Error ? err.message : "Erreur inconnue")
+            setLoading(false)
+        }
     }
 
     // charger les joueurs au montage seulement
@@ -291,6 +321,7 @@ export function useAdminPlayers() {
         error,
         addPlayer,
         updatePlayer,
+        removePlayerFromEvent,
         fetchPlayer,
         fetchPlayersByEvent
     }
