@@ -52,16 +52,18 @@ Event Fest automates the entire box lifecycle: import players, calculate ranking
 * Secure authentication with role-based access (user / admin / superadmin)
 * Player registration / unregistration for events
 * Player roster management (add, edit, deactivate)
-* Group / draw management with auto-distribution
+* Group / draw management with auto-distribution and multiple configuration choices
 * Event settings and configuration
-* Round-robin table display with groups
+* Round-robin table display with groups and match details (date, time, court)
+* Multi-constraint scheduling engine (player availability, arrival/departure windows, court slots, bye optimization)
+* Smart absence management (soft constraints with bye/absence alignment for odd groups)
+* Vitest + TDD test suite (100+ tests)
 
 ### In Progress (MVP — Phase 1)
 
 * Configurable scoring engine (per-club point rules)
 * Configurable promotion/relegation rules
 * One-click new box workflow (rankings + promotions + groups + schedule)
-* Multi-constraint scheduling engine (player availability x court slots)
 * Smart Excel import with auto-detection and column mapping
 * Admin preview before publishing
 
@@ -114,13 +116,13 @@ Event-Fest/
 - [x] Authentication and role management
 - [x] Player roster management
 - [x] Event settings and configuration
-- [x] Group / draw management
+- [x] Group / draw management with distribution choices
+- [x] Multi-constraint scheduling engine
+- [x] Vitest + TDD setup
 - [ ] Configurable scoring engine
 - [ ] Promotion/relegation engine
-- [ ] Multi-constraint scheduling engine
 - [ ] One-click new box workflow
 - [ ] Smart Excel import
-- [ ] Vitest + TDD setup
 
 ### Phase 2 — Growth (Months 2-4)
 - [ ] Player-entered results with confirmation
