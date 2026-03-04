@@ -93,38 +93,64 @@ describe('MatchCell', () => {
     expect(winnerEl.className).toMatch(/font-bold|text-green/)
   })
 
-  // --- Edit mode ---
+  // --- Edit mode (select dropdowns) ---
 
-  it('shows score input in edit mode', () => {
+  it('shows two score selects in edit mode', () => {
     render(
       <MatchCell match={makeMatch()} editMode scoreValue="" onScoreChange={() => {}} />
     )
-    expect(screen.getByRole('textbox')).toBeInTheDocument()
+    expect(screen.getByLabelText('Score joueur 1')).toBeInTheDocument()
+    expect(screen.getByLabelText('Score joueur 2')).toBeInTheDocument()
   })
 
-  it('pre-fills input with scoreValue in edit mode', () => {
+  it('does not show "vs" in edit mode (replaced by selects)', () => {
+    render(
+      <MatchCell match={makeMatch()} editMode scoreValue="" onScoreChange={() => {}} />
+    )
+    expect(screen.queryByText('vs')).not.toBeInTheDocument()
+  })
+
+  it('pre-fills selects with scoreValue in edit mode', () => {
     render(
       <MatchCell match={makeMatch()} editMode scoreValue="3-1" onScoreChange={() => {}} />
     )
-    expect(screen.getByRole('textbox')).toHaveValue('3-1')
+    expect(screen.getByLabelText('Score joueur 1')).toHaveValue('3')
+    expect(screen.getByLabelText('Score joueur 2')).toHaveValue('1')
   })
 
-  it('calls onScoreChange when input value changes', () => {
+  it('calls onScoreChange when select 1 changes', () => {
     const onChange = vi.fn()
     render(
-      <MatchCell match={makeMatch()} editMode scoreValue="" onScoreChange={onChange} />
+      <MatchCell match={makeMatch()} editMode scoreValue="-" onScoreChange={onChange} />
     )
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: '3-1' } })
+    fireEvent.change(screen.getByLabelText('Score joueur 1'), { target: { value: '3' } })
+    expect(onChange).toHaveBeenCalledWith('3-')
+  })
+
+  it('calls onScoreChange when select 2 changes', () => {
+    const onChange = vi.fn()
+    render(
+      <MatchCell match={makeMatch()} editMode scoreValue="3-" onScoreChange={onChange} />
+    )
+    fireEvent.change(screen.getByLabelText('Score joueur 2'), { target: { value: '1' } })
     expect(onChange).toHaveBeenCalledWith('3-1')
   })
 
-  it('does not show input when editMode is false', () => {
-    render(<MatchCell match={makeMatch()} />)
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+  it('supports ABS value in selects', () => {
+    render(
+      <MatchCell match={makeMatch()} editMode scoreValue="ABS-0" onScoreChange={() => {}} />
+    )
+    expect(screen.getByLabelText('Score joueur 1')).toHaveValue('ABS')
+    expect(screen.getByLabelText('Score joueur 2')).toHaveValue('0')
   })
 
-  it('does not show input for null match even in edit mode', () => {
+  it('does not show selects when editMode is false', () => {
+    render(<MatchCell match={makeMatch()} />)
+    expect(screen.queryByLabelText('Score joueur 1')).not.toBeInTheDocument()
+  })
+
+  it('does not show selects for null match even in edit mode', () => {
     render(<MatchCell match={null} editMode scoreValue="" onScoreChange={() => {}} />)
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Score joueur 1')).not.toBeInTheDocument()
   })
 })

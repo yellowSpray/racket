@@ -127,6 +127,9 @@ export function MatchAdmin() {
             const match = matches.find(m => m.id === matchId)
             if (!match || match.score === score) continue
 
+            // Ignorer les scores incomplets (un seul select rempli)
+            if (!score || score === "-") continue
+
             // Valider le format
             const validation = matchResultSchema.safeParse({ score })
             if (!validation.success) {

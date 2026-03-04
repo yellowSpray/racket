@@ -1,6 +1,5 @@
 import type { Match } from "@/types/match"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
 
 interface MatchCellProps {
     match: Match | null
@@ -9,9 +8,27 @@ interface MatchCellProps {
     onScoreChange?: (value: string) => void
 }
 
+const SCORE_OPTIONS = [
+    { value: "", label: "-" },
+    { value: "0", label: "0" },
+    { value: "1", label: "1" },
+    { value: "2", label: "2" },
+    { value: "3", label: "3" },
+    { value: "ABS", label: "ABS" },
+]
+
 function formatPlayerName(player: { first_name: string; last_name: string } | undefined): string {
     if (!player) return "?"
     return `${player.first_name} ${player.last_name[0]}.`
+}
+
+/** Parse "3-1" → ["3", "1"], "ABS-0" → ["ABS", "0"], "" → ["", ""] */
+function parseScoreValue(value: string | undefined): [string, string] {
+    if (!value) return ["", ""]
+    if (value === "WO") return ["", ""]
+    const parts = value.split("-")
+    if (parts.length === 2) return [parts[0], parts[1]]
+    return ["", ""]
 }
 
 export function MatchCell({ match, editMode, scoreValue, onScoreChange }: MatchCellProps) {
@@ -28,25 +45,66 @@ export function MatchCell({ match, editMode, scoreValue, onScoreChange }: MatchC
     const isP2Winner = match.winner_id === match.player2_id
     const hasResult = !!match.winner_id && !!match.score
 
+    const [score1, score2] = parseScoreValue(scoreValue)
+
+    const handleScorePartChange = (part: 1 | 2, value: string) => {
+        const s1 = part === 1 ? value : score1
+        const s2 = part === 2 ? value : score2
+        // Si les deux sont vides, on envoie ""
+        if (!s1 && !s2) {
+            onScoreChange?.("")
+        } else {
+            onScoreChange?.(`${s1}-${s2}`)
+        }
+    }
+
     return (
         <div className="text-xs p-1.5 gap-1 flex flex-col w-full">
-            <div className="flex flex-row items-center gap-1">
-                {groupName && (
-                    <div className="shrink-0">
-                        <Badge variant="default" className="text-[10px] px-1 py-0">
-                            {groupName}
-                        </Badge>
-                    </div>
-                )}
-                <div className="flex-1 flex items-center justify-center gap-1 min-w-0">
-                    <span className={`truncate ${isP1Winner ? 'font-bold text-green-600' : ''}`}>
-                        {formatPlayerName(p1)}
-                    </span>
-                    <span className="text-gray-400">vs</span>
-                    <span className={`truncate ${isP2Winner ? 'font-bold text-green-600' : ''}`}>
-                        {formatPlayerName(p2)}
-                    </span>
+            {/* Badge groupe */}
+            {groupName && (
+                <div className="flex justify-center">
+                    <Badge variant="default" className="text-[10px] px-1 py-0">
+                        {groupName}
+                    </Badge>
                 </div>
+            )}
+
+            {/* Joueurs + score */}
+            <div className="flex items-center justify-center gap-1 min-w-0">
+                <span className={`truncate ${isP1Winner ? 'font-bold text-green-600' : ''}`}>
+                    {formatPlayerName(p1)}
+                </span>
+
+                {editMode ? (
+                    <>
+                        <select
+                            aria-label="Score joueur 1"
+                            value={score1}
+                            onChange={(e) => handleScorePartChange(1, e.target.value)}
+                            className="h-6 w-12 text-xs text-center border rounded px-0.5 bg-white"
+                        >
+                            {SCORE_OPTIONS.map(o => (
+                                <option key={o.value} value={o.value}>{o.label}</option>
+                            ))}
+                        </select>
+                        <select
+                            aria-label="Score joueur 2"
+                            value={score2}
+                            onChange={(e) => handleScorePartChange(2, e.target.value)}
+                            className="h-6 w-12 text-xs text-center border rounded px-0.5 bg-white"
+                        >
+                            {SCORE_OPTIONS.map(o => (
+                                <option key={o.value} value={o.value}>{o.label}</option>
+                            ))}
+                        </select>
+                    </>
+                ) : (
+                    <span className="text-gray-400">vs</span>
+                )}
+
+                <span className={`truncate ${isP2Winner ? 'font-bold text-green-600' : ''}`}>
+                    {formatPlayerName(p2)}
+                </span>
             </div>
 
             {/* Score display (mode lecture) */}
@@ -60,17 +118,6 @@ export function MatchCell({ match, editMode, scoreValue, onScoreChange }: MatchC
                         <span className="font-semibold text-blue-600">{match.score}</span>
                     )}
                 </div>
-            )}
-
-            {/* Score input (mode édition) */}
-            {editMode && (
-                <Input
-                    type="text"
-                    value={scoreValue ?? ""}
-                    onChange={(e) => onScoreChange?.(e.target.value)}
-                    placeholder="3-1"
-                    className="h-6 text-xs text-center px-1"
-                />
             )}
         </div>
     )
