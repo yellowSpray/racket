@@ -51,29 +51,24 @@ export function ClubConfigManager() {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h2 className="text-2xl font-semibold">Configuration du club</h2>
-                {clubConfig && (
-                    <p className="text-gray-500 mt-1">{clubConfig.club_name}</p>
-                )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <ScoringRulesCard
+                    scoringRules={scoringRules}
+                    defaultScoring={defaultScoring}
+                    onSave={(data) => upsertScoringRules(clubId, data)}
+                />
+
+                <PromotionRulesCard
+                    promotionRules={promotionRules}
+                    defaultPromotion={defaultPromotion}
+                    onSave={(data) => upsertPromotionRules(clubId, data)}
+                />
+
+                <GroupSizeCard
+                    defaultMaxPlayers={clubConfig?.default_max_players_per_group ?? 5}
+                    onSave={(data) => updateClubDefaults(clubId, data)}
+                />
             </div>
-
-            <ScoringRulesCard
-                scoringRules={scoringRules}
-                defaultScoring={defaultScoring}
-                onSave={(data) => upsertScoringRules(clubId, data)}
-            />
-
-            <PromotionRulesCard
-                promotionRules={promotionRules}
-                defaultPromotion={defaultPromotion}
-                onSave={(data) => upsertPromotionRules(clubId, data)}
-            />
-
-            <GroupSizeCard
-                defaultMaxPlayers={clubConfig?.default_max_players_per_group ?? 5}
-                onSave={(data) => updateClubDefaults(clubId, data)}
-            />
         </div>
     )
 }

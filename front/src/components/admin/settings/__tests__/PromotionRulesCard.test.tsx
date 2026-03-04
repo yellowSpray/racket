@@ -58,7 +58,7 @@ describe('PromotionRulesCard', () => {
         onSave={vi.fn()}
       />
     )
-    expect(screen.getByText(/Nombre de joueurs qui changent de groupe/)).toBeInTheDocument()
+    expect(screen.getByText(/Joueurs promus ou relégués par série/)).toBeInTheDocument()
   })
 
   it('renders promoted and relegated labels', () => {
@@ -69,11 +69,11 @@ describe('PromotionRulesCard', () => {
         onSave={vi.fn()}
       />
     )
-    expect(screen.getByText('Joueurs promus')).toBeInTheDocument()
-    expect(screen.getByText('Joueurs relégués')).toBeInTheDocument()
+    expect(screen.getByText('Promus')).toBeInTheDocument()
+    expect(screen.getByText('Relégués')).toBeInTheDocument()
   })
 
-  it('renders the save button', () => {
+  it('renders the edit button', () => {
     render(
       <PromotionRulesCard
         promotionRules={null}
@@ -81,7 +81,44 @@ describe('PromotionRulesCard', () => {
         onSave={vi.fn()}
       />
     )
-    expect(screen.getByText('Enregistrer')).toBeInTheDocument()
+    expect(screen.getByLabelText('Modifier')).toBeInTheDocument()
+  })
+
+  it('inputs are disabled by default', () => {
+    render(
+      <PromotionRulesCard
+        promotionRules={null}
+        defaultPromotion={defaultPromotion}
+        onSave={vi.fn()}
+      />
+    )
+    const input = screen.getByLabelText('Promus') as HTMLInputElement
+    expect(input.disabled).toBe(true)
+  })
+
+  it('inputs are enabled after clicking edit button', () => {
+    render(
+      <PromotionRulesCard
+        promotionRules={null}
+        defaultPromotion={defaultPromotion}
+        onSave={vi.fn()}
+      />
+    )
+    fireEvent.click(screen.getByLabelText('Modifier'))
+    const input = screen.getByLabelText('Promus') as HTMLInputElement
+    expect(input.disabled).toBe(false)
+  })
+
+  it('shows next-event warning when in edit mode', () => {
+    render(
+      <PromotionRulesCard
+        promotionRules={null}
+        defaultPromotion={defaultPromotion}
+        onSave={vi.fn()}
+      />
+    )
+    fireEvent.click(screen.getByLabelText('Modifier'))
+    expect(screen.getByText("Les modifications s'appliqueront au prochain événement")).toBeInTheDocument()
   })
 
   it('uses default values when promotionRules is null', () => {
@@ -92,9 +129,9 @@ describe('PromotionRulesCard', () => {
         onSave={vi.fn()}
       />
     )
-    const promotedInput = screen.getByLabelText('Joueurs promus') as HTMLInputElement
+    const promotedInput = screen.getByLabelText('Promus') as HTMLInputElement
     expect(promotedInput.value).toBe('1')
-    const relegatedInput = screen.getByLabelText('Joueurs relégués') as HTMLInputElement
+    const relegatedInput = screen.getByLabelText('Relégués') as HTMLInputElement
     expect(relegatedInput.value).toBe('1')
   })
 
@@ -106,13 +143,13 @@ describe('PromotionRulesCard', () => {
         onSave={vi.fn()}
       />
     )
-    const promotedInput = screen.getByLabelText('Joueurs promus') as HTMLInputElement
+    const promotedInput = screen.getByLabelText('Promus') as HTMLInputElement
     expect(promotedInput.value).toBe('3')
-    const relegatedInput = screen.getByLabelText('Joueurs relégués') as HTMLInputElement
+    const relegatedInput = screen.getByLabelText('Relégués') as HTMLInputElement
     expect(relegatedInput.value).toBe('2')
   })
 
-  it('calls onSave with form data on submit', async () => {
+  it('calls onSave when clicking save button in edit mode', async () => {
     const mockSave = vi.fn().mockResolvedValue(true)
     render(
       <PromotionRulesCard
@@ -121,13 +158,14 @@ describe('PromotionRulesCard', () => {
         onSave={mockSave}
       />
     )
-    fireEvent.submit(screen.getByText('Enregistrer').closest('form')!)
+    fireEvent.click(screen.getByLabelText('Modifier'))
+    fireEvent.click(screen.getByLabelText('Enregistrer'))
     await waitFor(() => {
       expect(mockSave).toHaveBeenCalledWith(defaultPromotion)
     })
   })
 
-  it('shows "Enregistré" after successful save', async () => {
+  it('exits edit mode after successful save', async () => {
     const mockSave = vi.fn().mockResolvedValue(true)
     render(
       <PromotionRulesCard
@@ -136,13 +174,15 @@ describe('PromotionRulesCard', () => {
         onSave={mockSave}
       />
     )
-    fireEvent.submit(screen.getByText('Enregistrer').closest('form')!)
+    fireEvent.click(screen.getByLabelText('Modifier'))
+    fireEvent.click(screen.getByLabelText('Enregistrer'))
     await waitFor(() => {
-      expect(screen.getByText('Enregistré')).toBeInTheDocument()
+      const input = screen.getByLabelText('Promus') as HTMLInputElement
+      expect(input.disabled).toBe(true)
     })
   })
 
-  it('updates promoted count on input change', () => {
+  it('updates promoted count on input change in edit mode', () => {
     render(
       <PromotionRulesCard
         promotionRules={null}
@@ -150,12 +190,13 @@ describe('PromotionRulesCard', () => {
         onSave={vi.fn()}
       />
     )
-    const input = screen.getByLabelText('Joueurs promus') as HTMLInputElement
+    fireEvent.click(screen.getByLabelText('Modifier'))
+    const input = screen.getByLabelText('Promus') as HTMLInputElement
     fireEvent.change(input, { target: { value: '5' } })
     expect(input.value).toBe('5')
   })
 
-  it('updates relegated count on input change', () => {
+  it('updates relegated count on input change in edit mode', () => {
     render(
       <PromotionRulesCard
         promotionRules={null}
@@ -163,7 +204,8 @@ describe('PromotionRulesCard', () => {
         onSave={vi.fn()}
       />
     )
-    const input = screen.getByLabelText('Joueurs relégués') as HTMLInputElement
+    fireEvent.click(screen.getByLabelText('Modifier'))
+    const input = screen.getByLabelText('Relégués') as HTMLInputElement
     fireEvent.change(input, { target: { value: '3' } })
     expect(input.value).toBe('3')
   })

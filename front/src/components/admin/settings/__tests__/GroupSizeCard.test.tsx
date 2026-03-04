@@ -14,87 +14,71 @@ describe('GroupSizeCard', () => {
 
   it('displays the card description', () => {
     render(<GroupSizeCard defaultMaxPlayers={4} onSave={vi.fn()} />)
-    expect(screen.getByText(/Nombre de joueurs par défaut/)).toBeInTheDocument()
+    expect(screen.getByText(/Joueurs par groupe par défaut/)).toBeInTheDocument()
   })
 
-  it('renders the input label', () => {
+  it('renders the label text', () => {
     render(<GroupSizeCard defaultMaxPlayers={4} onSave={vi.fn()} />)
-    expect(screen.getByText('Joueurs par groupe')).toBeInTheDocument()
+    expect(screen.getByText('joueurs par groupe')).toBeInTheDocument()
   })
 
-  it('renders the save button', () => {
+  it('renders the edit button', () => {
     render(<GroupSizeCard defaultMaxPlayers={4} onSave={vi.fn()} />)
-    expect(screen.getByText('Enregistrer')).toBeInTheDocument()
+    expect(screen.getByLabelText('Modifier')).toBeInTheDocument()
   })
 
-  it('displays the default max players value', () => {
+  it('slider is disabled by default', () => {
+    render(<GroupSizeCard defaultMaxPlayers={4} onSave={vi.fn()} />)
+    const slider = screen.getByRole('slider')
+    expect(slider).toHaveAttribute('data-disabled', '')
+  })
+
+  it('slider is enabled after clicking edit button', () => {
+    render(<GroupSizeCard defaultMaxPlayers={4} onSave={vi.fn()} />)
+    fireEvent.click(screen.getByLabelText('Modifier'))
+    const slider = screen.getByRole('slider')
+    expect(slider).not.toHaveAttribute('data-disabled')
+  })
+
+  it('shows next-event warning when in edit mode', () => {
+    render(<GroupSizeCard defaultMaxPlayers={4} onSave={vi.fn()} />)
+    fireEvent.click(screen.getByLabelText('Modifier'))
+    expect(screen.getByText("Les modifications s'appliqueront au prochain événement")).toBeInTheDocument()
+  })
+
+  it('displays the default max players value as large number', () => {
     render(<GroupSizeCard defaultMaxPlayers={6} onSave={vi.fn()} />)
-    const input = screen.getByLabelText('Joueurs par groupe') as HTMLInputElement
-    expect(input.value).toBe('6')
+    expect(screen.getByText('6')).toBeInTheDocument()
+    const slider = screen.getByRole('slider')
+    expect(slider).toHaveAttribute('aria-valuenow', '6')
   })
 
-  it('updates value on input change', () => {
-    render(<GroupSizeCard defaultMaxPlayers={4} onSave={vi.fn()} />)
-    const input = screen.getByLabelText('Joueurs par groupe') as HTMLInputElement
-    fireEvent.change(input, { target: { value: '8' } })
-    expect(input.value).toBe('8')
-  })
-
-  it('calls onSave with correct data on submit', async () => {
+  it('calls onSave when clicking save in edit mode', async () => {
     const mockSave = vi.fn().mockResolvedValue(true)
     render(<GroupSizeCard defaultMaxPlayers={4} onSave={mockSave} />)
-    fireEvent.submit(screen.getByText('Enregistrer').closest('form')!)
+    fireEvent.click(screen.getByLabelText('Modifier'))
+    fireEvent.click(screen.getByLabelText('Enregistrer'))
     await waitFor(() => {
       expect(mockSave).toHaveBeenCalledWith({ default_max_players_per_group: 4 })
     })
   })
 
-  it('shows "Enregistré" after successful save', async () => {
+  it('exits edit mode after successful save', async () => {
     const mockSave = vi.fn().mockResolvedValue(true)
     render(<GroupSizeCard defaultMaxPlayers={4} onSave={mockSave} />)
-    fireEvent.submit(screen.getByText('Enregistrer').closest('form')!)
+    fireEvent.click(screen.getByLabelText('Modifier'))
+    fireEvent.click(screen.getByLabelText('Enregistrer'))
     await waitFor(() => {
-      expect(screen.getByText('Enregistré')).toBeInTheDocument()
-    })
-  })
-
-  it('shows validation error when value is less than 2', async () => {
-    render(<GroupSizeCard defaultMaxPlayers={4} onSave={vi.fn()} />)
-    const input = screen.getByLabelText('Joueurs par groupe') as HTMLInputElement
-    fireEvent.change(input, { target: { value: '1' } })
-    fireEvent.submit(screen.getByText('Enregistrer').closest('form')!)
-    await waitFor(() => {
-      expect(screen.getByText('Le nombre doit être entre 2 et 10')).toBeInTheDocument()
-    })
-  })
-
-  it('shows validation error when value is greater than 10', async () => {
-    render(<GroupSizeCard defaultMaxPlayers={4} onSave={vi.fn()} />)
-    const input = screen.getByLabelText('Joueurs par groupe') as HTMLInputElement
-    fireEvent.change(input, { target: { value: '11' } })
-    fireEvent.submit(screen.getByText('Enregistrer').closest('form')!)
-    await waitFor(() => {
-      expect(screen.getByText('Le nombre doit être entre 2 et 10')).toBeInTheDocument()
-    })
-  })
-
-  it('does not call onSave when validation fails', async () => {
-    const mockSave = vi.fn().mockResolvedValue(true)
-    render(<GroupSizeCard defaultMaxPlayers={4} onSave={mockSave} />)
-    const input = screen.getByLabelText('Joueurs par groupe') as HTMLInputElement
-    fireEvent.change(input, { target: { value: '1' } })
-    fireEvent.submit(screen.getByText('Enregistrer').closest('form')!)
-    await waitFor(() => {
-      expect(mockSave).not.toHaveBeenCalled()
+      const slider = screen.getByRole('slider')
+      expect(slider).toHaveAttribute('data-disabled', '')
     })
   })
 
   it('updates displayed value when defaultMaxPlayers prop changes', () => {
     const { rerender } = render(<GroupSizeCard defaultMaxPlayers={4} onSave={vi.fn()} />)
-    const input = screen.getByLabelText('Joueurs par groupe') as HTMLInputElement
-    expect(input.value).toBe('4')
+    expect(screen.getByText('4')).toBeInTheDocument()
 
     rerender(<GroupSizeCard defaultMaxPlayers={7} onSave={vi.fn()} />)
-    expect(input.value).toBe('7')
+    expect(screen.getByText('7')).toBeInTheDocument()
   })
 })

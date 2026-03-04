@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { validateFormData } from "@/lib/validation"
 import { promotionRulesSchema } from "@/lib/schemas/promotion.schema"
+import { Badge } from "@/components/ui/badge"
 import type { PromotionRules } from "@/types/settings"
-import { Save, Check } from "lucide-react"
+import { Pencil, Check, Loader2, ArrowUpDown, TrendingUp, TrendingDown } from "lucide-react"
 
 interface PromotionRulesCardProps {
     promotionRules: PromotionRules | null
@@ -19,6 +20,7 @@ export function PromotionRulesCard({ promotionRules, defaultPromotion, onSave }:
     const [promotedCount, setPromotedCount] = useState(defaultPromotion.promoted_count)
     const [relegatedCount, setRelegatedCount] = useState(defaultPromotion.relegated_count)
     const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
+    const [editing, setEditing] = useState(false)
     const [saving, setSaving] = useState(false)
     const [saved, setSaved] = useState(false)
 
@@ -29,10 +31,14 @@ export function PromotionRulesCard({ promotionRules, defaultPromotion, onSave }:
         }
     }, [promotionRules])
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        setFieldErrors({})
+    const handleToggle = async () => {
+        if (!editing) {
+            setEditing(true)
+            setSaved(false)
+            return
+        }
 
+        setFieldErrors({})
         const data = { promoted_count: promotedCount, relegated_count: relegatedCount }
         const result = validateFormData(promotionRulesSchema, data)
         if (!result.success) {
@@ -45,6 +51,7 @@ export function PromotionRulesCard({ promotionRules, defaultPromotion, onSave }:
         setSaving(false)
 
         if (success) {
+            setEditing(false)
             setSaved(true)
             setTimeout(() => setSaved(false), 2000)
         }
@@ -53,52 +60,81 @@ export function PromotionRulesCard({ promotionRules, defaultPromotion, onSave }:
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Montées / Descentes</CardTitle>
-                <CardDescription>Nombre de joueurs qui changent de groupe à chaque série</CardDescription>
-            </CardHeader>
-            <form onSubmit={handleSubmit}>
-                <CardContent>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="promoted_count">Joueurs promus</Label>
-                            <Input
-                                id="promoted_count"
-                                type="number"
-                                min={0}
-                                max={10}
-                                value={promotedCount}
-                                onChange={(e) => { setPromotedCount(parseInt(e.target.value, 10) || 0); setSaved(false) }}
-                            />
-                            {fieldErrors.promoted_count && (
-                                <p className="text-sm text-red-600">{fieldErrors.promoted_count[0]}</p>
-                            )}
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="relegated_count">Joueurs relégués</Label>
-                            <Input
-                                id="relegated_count"
-                                type="number"
-                                min={0}
-                                max={10}
-                                value={relegatedCount}
-                                onChange={(e) => { setRelegatedCount(parseInt(e.target.value, 10) || 0); setSaved(false) }}
-                            />
-                            {fieldErrors.relegated_count && (
-                                <p className="text-sm text-red-600">{fieldErrors.relegated_count[0]}</p>
-                            )}
-                        </div>
+                <div className="flex items-start gap-3">
+                    <div className="flex items-center justify-center h-9 w-9 shrink-0 rounded-lg bg-muted text-muted-foreground">
+                        <ArrowUpDown className="h-5 w-5" />
                     </div>
-                </CardContent>
-                <CardFooter>
-                    <Button type="submit" disabled={saving}>
-                        {saved ? (
-                            <><Check className="mr-2 h-4 w-4" /> Enregistré</>
+                    <div className="grid gap-1">
+                        <CardTitle>Montées / Descentes</CardTitle>
+                        <CardDescription>
+                            {editing
+                                ? "Les modifications s'appliqueront au prochain événement"
+                                : "Joueurs promus ou relégués par série"
+                            }
+                        </CardDescription>
+                    </div>
+                </div>
+                <CardAction>
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="shadow-none"
+                        onClick={handleToggle}
+                        disabled={saving}
+                        aria-label={editing ? "Enregistrer" : "Modifier"}
+                    >
+                        {saving ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : saved ? (
+                            <Check className="h-4 w-4 text-green-600" />
+                        ) : editing ? (
+                            <Check className="h-4 w-4" />
                         ) : (
-                            <><Save className="mr-2 h-4 w-4" /> Enregistrer</>
+                            <Pencil className="h-4 w-4" />
                         )}
                     </Button>
-                </CardFooter>
-            </form>
+                </CardAction>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col">
+                <div className="flex flex-col gap-3 flex-1">
+                    <div className="grid gap-2 bg-blue-50 rounded-lg p-3 flex-1">
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="promoted_count">Promus</Label>
+                            <Badge className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-200"><TrendingUp className="h-3 w-3 mr-0.5" />montée</Badge>
+                        </div>
+                        <Input
+                            id="promoted_count"
+                            type="number"
+                            min={0}
+                            max={10}
+                            value={promotedCount}
+                            onChange={(e) => { setPromotedCount(parseInt(e.target.value, 10) || 0); setSaved(false) }}
+                            disabled={!editing}
+                        />
+                        {fieldErrors.promoted_count && (
+                            <p className="text-sm text-red-600">{fieldErrors.promoted_count[0]}</p>
+                        )}
+                    </div>
+                    <div className="grid gap-2 bg-orange-50 rounded-lg p-3 flex-1">
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="relegated_count">Relégués</Label>
+                            <Badge className="text-[10px] px-1.5 py-0 bg-orange-100 text-orange-700 border-orange-200"><TrendingDown className="h-3 w-3 mr-0.5" />descente</Badge>
+                        </div>
+                        <Input
+                            id="relegated_count"
+                            type="number"
+                            min={0}
+                            max={10}
+                            value={relegatedCount}
+                            onChange={(e) => { setRelegatedCount(parseInt(e.target.value, 10) || 0); setSaved(false) }}
+                            disabled={!editing}
+                        />
+                        {fieldErrors.relegated_count && (
+                            <p className="text-sm text-red-600">{fieldErrors.relegated_count[0]}</p>
+                        )}
+                    </div>
+                </div>
+            </CardContent>
         </Card>
     )
 }

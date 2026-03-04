@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { validateFormData } from "@/lib/validation"
 import { scoringRulesSchema } from "@/lib/schemas/scoring.schema"
 import type { ScorePointsEntry } from "@/types/settings"
-import { Pencil, Check, Loader2 } from "lucide-react"
+import { Pencil, Check, Loader2, Trophy } from "lucide-react"
 
 interface ScoringRulesCardProps {
     scoringRules: { score_points: ScorePointsEntry[] } | null
@@ -73,17 +73,25 @@ export function ScoringRulesCard({ scoringRules, defaultScoring, onSave }: Scori
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Règles de pointage</CardTitle>
-                <CardDescription>
-                    {editing
-                        ? "Les modifications s'appliqueront au prochain événement"
-                        : "Points attribués selon le résultat du match"
-                    }
-                </CardDescription>
+                <div className="flex items-start gap-3">
+                    <div className="flex items-center justify-center h-9 w-9 shrink-0 rounded-lg bg-muted text-muted-foreground">
+                        <Trophy className="h-5 w-5" />
+                    </div>
+                    <div className="grid gap-1">
+                        <CardTitle>Règles de pointage</CardTitle>
+                        <CardDescription>
+                            {editing
+                                ? "Les modifications s'appliqueront au prochain événement"
+                                : "Points attribués selon le résultat du match"
+                            }
+                        </CardDescription>
+                    </div>
+                </div>
                 <CardAction>
                     <Button
-                        variant="ghost"
+                        variant="outline"
                         size="icon"
+                        className="shadow-none"
                         onClick={handleToggle}
                         disabled={saving}
                         aria-label={editing ? "Enregistrer" : "Modifier"}
