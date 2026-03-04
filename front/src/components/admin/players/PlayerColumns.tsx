@@ -121,7 +121,9 @@ export const columns = (
         cell: ({ row }) => (
             <div className="flex gap-1">
                 {row.original.unavailable.map((date, i) => (
-                    <Badge key={i}>{date}</Badge>
+                    <Badge key={i}>
+                        {new Date(date + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                    </Badge>
                 ))}
             </div>
         ),

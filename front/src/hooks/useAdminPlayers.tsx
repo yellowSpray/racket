@@ -14,7 +14,7 @@ type SupabaseSchedule = {
 }
 
 type SupabaseAbsence = {
-    date: string
+    absent_date: string
 }
 
 type SupabaseGroupPlayer = {
@@ -90,7 +90,7 @@ export function useAdminPlayers() {
                 phone: player.phone || "",
                 arrival: arrivalTime,
                 departure: departureTime,
-                unavailable: player.absences?.map((d: SupabaseAbsence) => d.date) || [],
+                unavailable: player.absences?.map((d: SupabaseAbsence) => d.absent_date) || [],
                 status: sortedStatus,
                 power_ranking: player.power_ranking || "",
                 box: groupName,
