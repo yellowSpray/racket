@@ -91,8 +91,8 @@ describe('PlayerColumns', () => {
         getValue: vi.fn(),
       }
       render(<CellComponent row={mockRow} />)
-      expect(screen.getByText('2026-03-04')).toBeInTheDocument()
-      expect(screen.getByText('2026-03-05')).toBeInTheDocument()
+      expect(screen.getByText('4 mars')).toBeInTheDocument()
+      expect(screen.getByText('5 mars')).toBeInTheDocument()
     }
   })
 
