@@ -2,7 +2,7 @@ import type { Match } from "@/types/match"
 import type { ScoringRules } from "@/types/settings"
 import type { GroupStandings, PlayerStanding } from "@/types/ranking"
 
-export type MatchOutcome = "win" | "loss" | "walkover_win" | "walkover_loss"
+export type MatchOutcome = "win" | "loss" | "walkover_win" | "walkover_loss" | "absence"
 
 interface ParsedScore {
     winnerId: string | null
@@ -14,6 +14,8 @@ interface ParsedScore {
  * Parse un score texte et détermine le vainqueur.
  * - Score simple : "3-1" → player1 gagne (3 > 1)
  * - Multi-sets : "15-12 15-8" → compte les sets gagnés par chaque joueur
+ * - "ABS-0" → player1 absent, player2 gagne
+ * - "0-ABS" → player2 absent, player1 gagne
  * - "WO", "", null → retourne null
  */
 export function parseScore(
@@ -22,6 +24,17 @@ export function parseScore(
     player2Id: string
 ): ParsedScore | null {
     if (!score || score === "WO") return null
+
+    // Absence : "ABS-X" ou "X-ABS"
+    const absMatch = score.match(/^(ABS|\d+)-(ABS|\d+)$/)
+    if (absMatch && (absMatch[1] === "ABS" || absMatch[2] === "ABS")) {
+        if (absMatch[1] === "ABS") {
+            // Player 1 absent → player 2 wins
+            return { winnerId: player2Id, setsPlayer1: 0, setsPlayer2: 0 }
+        }
+        // Player 2 absent → player 1 wins
+        return { winnerId: player1Id, setsPlayer1: 0, setsPlayer2: 0 }
+    }
 
     const parts = score.trim().split(/\s+/)
 
@@ -68,10 +81,16 @@ export function determineMatchOutcome(
     if (!match.winner_id) return null
 
     const isWalkover = match.score === "WO"
+    const isAbsence = !!match.score && match.score.includes("ABS")
     const isWinner = match.winner_id === playerId
 
     if (isWalkover) {
         return isWinner ? "walkover_win" : "walkover_loss"
+    }
+
+    if (isAbsence) {
+        // Le joueur absent perd, l'autre gagne par absence
+        return isWinner ? "walkover_win" : "absence"
     }
 
     return isWinner ? "win" : "loss"
@@ -128,6 +147,7 @@ export function calculateGroupStandings(
         if (!stats1 || !stats2) continue
 
         const isWalkover = match.score === "WO"
+        const isAbsence = !!match.score && match.score.includes("ABS")
         const isP1Winner = match.winner_id === match.player1_id
 
         stats1.played++
@@ -144,6 +164,17 @@ export function calculateGroupStandings(
                 stats1.walkoversLost++
                 stats2.points += scoringRules.points_walkover_win
                 stats1.points += scoringRules.points_walkover_loss
+            }
+        } else if (isAbsence) {
+            // Joueur absent reçoit points_absence, l'autre points_walkover_win
+            if (isP1Winner) {
+                stats1.walkoversWon++
+                stats1.points += scoringRules.points_walkover_win
+                stats2.points += scoringRules.points_absence
+            } else {
+                stats2.walkoversWon++
+                stats2.points += scoringRules.points_walkover_win
+                stats1.points += scoringRules.points_absence
             }
         } else {
             // Match normal — parser le score pour les sets

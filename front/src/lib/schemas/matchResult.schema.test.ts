@@ -41,4 +41,14 @@ describe("matchResultSchema", () => {
         const result = matchResultSchema.safeParse({ score: "0-3" })
         expect(result.success).toBe(true)
     })
+
+    it("accepts 'ABS-0' for player1 absent", () => {
+        const result = matchResultSchema.safeParse({ score: "ABS-0" })
+        expect(result.success).toBe(true)
+    })
+
+    it("accepts '0-ABS' for player2 absent", () => {
+        const result = matchResultSchema.safeParse({ score: "0-ABS" })
+        expect(result.success).toBe(true)
+    })
 })

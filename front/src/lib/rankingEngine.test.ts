@@ -87,6 +87,16 @@ describe("parseScore", () => {
         const result = parseScore("8-15 15-12 10-15", "p1", "p2")
         expect(result).toEqual({ winnerId: "p2", setsPlayer1: 1, setsPlayer2: 2 })
     })
+
+    it("parses 'ABS-0' — player1 absent, player2 wins", () => {
+        const result = parseScore("ABS-0", "p1", "p2")
+        expect(result).toEqual({ winnerId: "p2", setsPlayer1: 0, setsPlayer2: 0 })
+    })
+
+    it("parses '0-ABS' — player2 absent, player1 wins", () => {
+        const result = parseScore("0-ABS", "p1", "p2")
+        expect(result).toEqual({ winnerId: "p1", setsPlayer1: 0, setsPlayer2: 0 })
+    })
 })
 
 // --- determineMatchOutcome ---
@@ -110,6 +120,16 @@ describe("determineMatchOutcome", () => {
     it("returns 'walkover_loss' for the loser of a WO match", () => {
         const match = makeMatch({ winner_id: "p1", score: "WO" })
         expect(determineMatchOutcome(match, "p2")).toBe("walkover_loss")
+    })
+
+    it("returns 'walkover_win' for the winner when opponent is absent", () => {
+        const match = makeMatch({ winner_id: "p1", score: "0-ABS" })
+        expect(determineMatchOutcome(match, "p1")).toBe("walkover_win")
+    })
+
+    it("returns 'absence' for the absent player", () => {
+        const match = makeMatch({ winner_id: "p1", score: "0-ABS" })
+        expect(determineMatchOutcome(match, "p2")).toBe("absence")
     })
 
     it("returns null for an unplayed match (no winner, no score)", () => {
@@ -183,6 +203,22 @@ describe("calculateGroupStandings", () => {
         expect(result.standings[0].rank).toBe(1)
         expect(result.standings[1].rank).toBe(2)
         expect(result.standings[2].rank).toBe(3)
+    })
+
+    it("handles absences correctly (ABS score)", () => {
+        const matches = [
+            makeMatch({ id: "m1", player1_id: "p1", player2_id: "p2", winner_id: "p2", score: "ABS-0" }),
+        ]
+
+        const result = calculateGroupStandings(matches, "g1", "Groupe A", players.slice(0, 2), rules)
+        const alice = result.standings.find(s => s.playerId === "p1")!
+        const bob = result.standings.find(s => s.playerId === "p2")!
+
+        // Alice absent: gets points_absence (0)
+        expect(alice.points).toBe(0)
+        // Bob wins by absence: gets points_walkover_win (3)
+        expect(bob.walkoversWon).toBe(1)
+        expect(bob.points).toBe(3)
     })
 
     it("handles walkovers correctly", () => {
