@@ -1,8 +1,10 @@
 import { EventSelector } from "@/components/admin/settings/EventSelector"
 import Loading from "@/components/shared/Loading"
 import { useEvent } from "@/contexts/EventContext"
+import { useAuth } from "@/contexts/AuthContext"
 import { useGroups } from "@/hooks/useGroups"
 import { useMatches } from "@/hooks/useMatches"
+import { useClubConfig } from "@/hooks/useClubConfig"
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router"
 import { Settings, SquarePen } from "lucide-react"
@@ -11,25 +13,33 @@ import { DrawTable } from "@/components/admin/draws/DrawTable"
 // import { CreateGroupsDialog } from "@/components/admin/draws/CreateGroupsDialog"
 import { ManageGroupDialog } from "@/components/admin/draws/ManageGroupsDialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { totalMatchCount } from "@/lib/matchScheduler"
+import { totalMatchCount, sortPlayersByEarliestDates } from "@/lib/matchScheduler"
 
 export function DrawAdmin () {
 
     const { currentEvent } = useEvent()
+    const { profile } = useAuth()
     const { groups, loading, fetchGroupsByEvent } = useGroups()
     const { matches, fetchMatchesByEvent } = useMatches()
+    const { scoringRules, fetchClubConfig } = useClubConfig()
     const [selectedGroupId, setSelectedGroupsId] = useState<string | null>(null)
     // const [createDialogOpen, setCreateDialogOpen] = useState(false)
     const [manageDialogOpen, setManageDialogOpen] = useState(false)
     const navigate = useNavigate()
 
-    // charger les groups et matchs quand l'event change
+    const clubId = profile?.club_id ?? null
+
+    // charger les groups, matchs et config club quand l'event change
     useEffect(() => {
         if(currentEvent) {
             fetchGroupsByEvent(currentEvent.id)
             fetchMatchesByEvent(currentEvent.id)
         }
     }, [currentEvent, fetchGroupsByEvent, fetchMatchesByEvent])
+
+    useEffect(() => {
+        fetchClubConfig(clubId)
+    }, [clubId, fetchClubConfig])
 
     // selectionner le premier groupe par default
     useEffect(() => {
@@ -109,11 +119,15 @@ export function DrawAdmin () {
             ) : (
                 <ScrollArea className="flex-1 min-h-0" type="always">
                     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pr-4">
-                        {groups.map(group => (
-                            <div key={group.id}>
-                                <DrawTable group={group} matches={matches.filter(m => m.group_id === group.id)} />
-                            </div>
-                        ))}
+                        {groups.map(group => {
+                            const groupMatches = matches.filter(m => m.group_id === group.id)
+                            const sortedGroup = sortPlayersByEarliestDates(group, groupMatches)
+                            return (
+                                <div key={group.id}>
+                                    <DrawTable group={sortedGroup} matches={groupMatches} scoringRules={scoringRules ?? undefined} />
+                                </div>
+                            )
+                        })}
                     </div>
                 </ScrollArea>
             )}

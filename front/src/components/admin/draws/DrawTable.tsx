@@ -1,18 +1,56 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { Group } from "@/types/draw";
 import type { Match } from "@/types/match";
-import { useState } from "react";
+import type { ScoringRules } from "@/types/settings";
+import { useMemo, useState } from "react";
+import { calculateGroupStandings } from "@/lib/rankingEngine";
 
 interface DrawTableProps {
     group: Group
     matches?: Match[]
+    scoringRules?: ScoringRules
 }
 
-export function DrawTable({ group, matches = [] }: DrawTableProps) {
+const DEFAULT_SCORING: ScoringRules = {
+    id: "",
+    club_id: "",
+    points_win: 3,
+    points_loss: 1,
+    points_draw: 2,
+    points_walkover_win: 3,
+    points_walkover_loss: 0,
+    points_absence: 0,
+}
+
+export function DrawTable({ group, matches = [], scoringRules }: DrawTableProps) {
 
     const players = group.players || []
     const maxPlayers = group.max_players || 6
     const [hoveredMatch, setHoveredMatch] = useState<{row: number, col: number} | null>(null)
+
+    const rules = scoringRules ?? DEFAULT_SCORING
+
+    // Calculer les standings
+    const standings = useMemo(() => {
+        if (players.length === 0) return null
+        const playerData = players.map(p => ({
+            id: p.id,
+            first_name: p.first_name,
+            last_name: p.last_name,
+        }))
+        return calculateGroupStandings(matches, group.id, group.group_name, playerData, rules)
+    }, [matches, group.id, group.group_name, players, rules])
+
+    // Map playerId → points pour accès rapide
+    const pointsMap = useMemo(() => {
+        const map = new Map<string, number>()
+        if (standings) {
+            for (const s of standings.standings) {
+                map.set(s.playerId, s.points)
+            }
+        }
+        return map
+    }, [standings])
 
     const findMatch = (id1: string, id2: string): Match | undefined =>
         matches.find(m =>
@@ -32,12 +70,19 @@ export function DrawTable({ group, matches = [] }: DrawTableProps) {
 
     const displaySlots = Math.max(maxPlayers, players.length)
     const slots = Array.from({ length: displaySlots }, (_, index) => {
-        return players[index] || null 
+        return players[index] || null
     })
 
-    // generer les lettres A,B,C ...
     const getPlayerLetter = (index: number) => {
         return String.fromCharCode(65 + index)
+    }
+
+    /**
+     * Détermine si le joueur de la ligne (row) est le gagnant du match
+     * dans la perspective de la cellule (row vs col).
+     */
+    const isRowPlayerWinner = (match: Match, rowPlayerId: string): boolean => {
+        return match.winner_id === rowPlayerId
     }
 
     return (
@@ -45,12 +90,10 @@ export function DrawTable({ group, matches = [] }: DrawTableProps) {
             <Table className="table-fixed">
                 <TableHeader>
                     <TableRow>
-                        {/* Titre du tableau */}
                         <TableHead className="bg-blue-200 font-bold text-center">
                             {group.group_name}
                         </TableHead>
 
-                        {/* Colonnes des joueurs */}
                         {slots.map((slot, index) => (
                             <TableHead
                                 key={index}
@@ -60,7 +103,6 @@ export function DrawTable({ group, matches = [] }: DrawTableProps) {
                             </TableHead>
                         ))}
 
-                        {/* Colonne total des points */}
                         <TableHead className="bg-green-200 text-center font-bold w-12">Total</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -68,7 +110,6 @@ export function DrawTable({ group, matches = [] }: DrawTableProps) {
                 <TableBody>
                     {slots.map((player, rowIndex) => (
                         <TableRow key={rowIndex} className="hover:bg-transparent">
-                            {/* Cellule joueur ( lettre + nom + tel) */}
                             <TableCell className={`font-medium ${!player ? 'bg-gray-200' : 'bg-yellow-100'}`}>
                                 {player ? (
                                     <div className="flex items-center px-1 py-0.5">
@@ -85,41 +126,39 @@ export function DrawTable({ group, matches = [] }: DrawTableProps) {
                                 )}
                             </TableCell>
 
-                            {/* Cellules des matchs */}
                             {slots.map((opponent, colIndex) => {
-                                // verifier si la cellule est en hover
                                 const isHovered = hoveredMatch && (
                                     (hoveredMatch.row === rowIndex && hoveredMatch.col === colIndex) ||
                                     (hoveredMatch.row === colIndex && hoveredMatch.col === rowIndex)
                                 )
 
-                                // case diagonale (grisée)
                                 if (rowIndex === colIndex) {
                                     return (
-                                        <TableCell 
-                                            key={colIndex} 
+                                        <TableCell
+                                            key={colIndex}
                                             className="bg-gray-400"
                                         />
                                     )
                                 }
 
-                                // case vide (ni joueur en ligne ni en colonne)
                                 if (!player || !opponent) {
                                     return (
-                                        <TableCell 
-                                            key={colIndex} 
+                                        <TableCell
+                                            key={colIndex}
                                             className="bg-gray-200"
                                         />
                                     )
                                 }
 
                                 const match = findMatch(player.id, opponent.id)
+                                const isWinner = match?.winner_id ? isRowPlayerWinner(match, player.id) : false
 
                                 return (
                                     <TableCell
                                         key={colIndex}
                                         className={`text-center text-xs p-2 border-x border-gray-200 transition-colors cursor-pointer
                                                 ${isHovered ? 'bg-gray-200' : ''}
+                                                ${isWinner ? 'bg-green-50' : ''}
                                             `}
                                         onMouseEnter={() => setHoveredMatch({row: rowIndex, col: colIndex})}
                                         onMouseLeave={() => setHoveredMatch(null)}
@@ -129,7 +168,9 @@ export function DrawTable({ group, matches = [] }: DrawTableProps) {
                                                 <div className="text-gray-500">{formatDate(match.match_date)}</div>
                                                 <div className="font-medium">{formatTime(match.match_time)}</div>
                                                 {match.score && (
-                                                    <div className="font-bold text-blue-600">{match.score}</div>
+                                                    <div className={`font-bold ${isWinner ? 'text-green-600' : 'text-blue-600'}`}>
+                                                        {match.score}
+                                                    </div>
                                                 )}
                                             </div>
                                         ) : (
@@ -142,9 +183,9 @@ export function DrawTable({ group, matches = [] }: DrawTableProps) {
                                 )
                             })}
 
-                            {/* Cellule Total */}
+                            {/* Cellule Total — points calculés */}
                             <TableCell className="bg-green-100 text-center font-bold">
-                                {player ? 0 : "-"}
+                                {player ? (pointsMap.get(player.id) ?? 0) : "-"}
                             </TableCell>
                         </TableRow>
                     ))}

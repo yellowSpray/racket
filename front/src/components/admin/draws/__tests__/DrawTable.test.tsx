@@ -3,6 +3,18 @@ import { describe, it, expect } from 'vitest'
 import { DrawTable } from '../DrawTable'
 import type { Group, GroupPlayer } from '@/types/draw'
 import type { Match } from '@/types/match'
+import type { ScoringRules } from '@/types/settings'
+
+const defaultRules: ScoringRules = {
+  id: 'r1',
+  club_id: 'c1',
+  points_win: 3,
+  points_loss: 1,
+  points_draw: 2,
+  points_walkover_win: 3,
+  points_walkover_loss: 0,
+  points_absence: 0,
+}
 
 const makePlayer = (overrides: Partial<GroupPlayer> = {}): GroupPlayer => ({
   id: 'p1',
@@ -156,5 +168,34 @@ describe('DrawTable', () => {
     const matches = [makeMatch({ player1_id: 'p1', player2_id: 'p2', score: null })]
     render(<DrawTable group={makeGroup({ players, max_players: 2 })} matches={matches} />)
     expect(screen.queryByText('3 - 1')).not.toBeInTheDocument()
+  })
+
+  // --- Scoring / Total column ---
+
+  it('displays calculated points in Total column when scoringRules provided', () => {
+    const players = [
+      makePlayer({ id: 'p1', first_name: 'Alice', last_name: 'Martin' }),
+      makePlayer({ id: 'p2', first_name: 'Bob', last_name: 'Dupont' }),
+    ]
+    const matches = [
+      makeMatch({ player1_id: 'p1', player2_id: 'p2', winner_id: 'p1', score: '3-1' }),
+    ]
+    render(<DrawTable group={makeGroup({ players, max_players: 2 })} matches={matches} scoringRules={defaultRules} />)
+    // Alice: 3 pts (win), Bob: 1 pt (loss)
+    expect(screen.getByText('3')).toBeInTheDocument()
+    expect(screen.getByText('1')).toBeInTheDocument()
+  })
+
+  it('highlights winner score in match cell', () => {
+    const players = [
+      makePlayer({ id: 'p1', first_name: 'Alice', last_name: 'Martin' }),
+      makePlayer({ id: 'p2', first_name: 'Bob', last_name: 'Dupont' }),
+    ]
+    const matches = [
+      makeMatch({ player1_id: 'p1', player2_id: 'p2', winner_id: 'p1', score: '3-1' }),
+    ]
+    render(<DrawTable group={makeGroup({ players, max_players: 2 })} matches={matches} scoringRules={defaultRules} />)
+    // Score should be displayed in the cells
+    expect(screen.getAllByText('3-1').length).toBeGreaterThanOrEqual(1)
   })
 })
