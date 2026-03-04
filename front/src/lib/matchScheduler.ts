@@ -1,5 +1,5 @@
 import type { Group } from "@/types/draw"
-import type { MatchPairing, MatchAssignment } from "@/types/match"
+import type { MatchPairing, MatchAssignment, Match } from "@/types/match"
 
 /**
  * Contraintes de disponibilité d'un joueur.
@@ -476,6 +476,81 @@ function distanceToWindow(
     const distFromEnd = slotEnd > window.end ? slotEnd - window.end : 0
 
     return Math.max(distFromStart, distFromEnd)
+}
+
+/**
+ * Trie les joueurs d'un groupe pour que celui avec les dates de matchs
+ * les plus précoces soit en position A (index 0).
+ *
+ * Pour chaque joueur, on collecte ses dates de matchs triées par ordre croissant,
+ * puis on compare lexicographiquement : d'abord la 1ère date, puis la 2e, etc.
+ * Le joueur avec les dates les plus tôt est placé en premier.
+ *
+ * Retourne une copie du groupe avec les joueurs réordonnés.
+ */
+export function sortPlayersByEarliestDates(
+    group: Group,
+    assignments: MatchAssignment[] | Match[]
+): Group {
+    const players = group.players || []
+    if (players.length < 2) return { ...group }
+
+    // Normaliser les matchs (MatchAssignment ou Match DB) en {p1, p2, date}
+    const groupPlayerIds = new Set(players.map(p => p.id))
+    const normalized = assignments.map(a => {
+        const p1 = "player1Id" in a ? a.player1Id : a.player1_id
+        const p2 = "player2Id" in a ? a.player2Id : a.player2_id
+        const date = "matchDate" in a ? a.matchDate : a.match_date
+        return { p1, p2, date }
+    }).filter(a => groupPlayerIds.has(a.p1) && groupPlayerIds.has(a.p2))
+
+    if (normalized.length === 0) return { ...group, players: [...players] }
+
+    // Pour chaque joueur, collecter ses dates triées
+    const playerDatesMap = new Map<string, string[]>()
+    for (const player of players) {
+        const dates = normalized
+            .filter(a => a.p1 === player.id || a.p2 === player.id)
+            .map(a => a.date)
+            .sort()
+        playerDatesMap.set(player.id, dates)
+    }
+
+    // Étape 1 : identifier le joueur A (dates globales les plus précoces, tri lexicographique)
+    const sortedByGlobalDates = [...players].sort((a, b) => {
+        const datesA = playerDatesMap.get(a.id) || []
+        const datesB = playerDatesMap.get(b.id) || []
+        const maxLen = Math.max(datesA.length, datesB.length)
+
+        for (let i = 0; i < maxLen; i++) {
+            const dateA = datesA[i] || ""
+            const dateB = datesB[i] || ""
+            const cmp = dateA.localeCompare(dateB)
+            if (cmp !== 0) return cmp
+        }
+        return 0
+    })
+
+    const playerA = sortedByGlobalDates[0]
+
+    // Étape 2 : construire un index date du match contre A pour chaque adversaire
+    const dateVsA = new Map<string, string>()
+    for (const match of normalized) {
+        if (match.p1 === playerA.id) {
+            dateVsA.set(match.p2, match.date)
+        } else if (match.p2 === playerA.id) {
+            dateVsA.set(match.p1, match.date)
+        }
+    }
+
+    // Étape 3 : trier les adversaires par date de leur match contre A
+    const others = sortedByGlobalDates.slice(1).sort((a, b) => {
+        const dateA = dateVsA.get(a.id) || ""
+        const dateB = dateVsA.get(b.id) || ""
+        return dateA.localeCompare(dateB)
+    })
+
+    return { ...group, players: [playerA, ...others] }
 }
 
 /**
