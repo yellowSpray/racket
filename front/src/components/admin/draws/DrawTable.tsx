@@ -3,12 +3,13 @@ import type { Group } from "@/types/draw";
 import type { Match } from "@/types/match";
 import type { ScoringRules } from "@/types/settings";
 import { useMemo, useState } from "react";
-import { calculateGroupStandings } from "@/lib/rankingEngine";
+import { calculateGroupStandings, getPointsForScore } from "@/lib/rankingEngine";
 
 interface DrawTableProps {
     group: Group
     matches?: Match[]
     scoringRules?: ScoringRules
+    displayMode?: "score" | "points"
 }
 
 const DEFAULT_SCORING: ScoringRules = {
@@ -22,7 +23,7 @@ const DEFAULT_SCORING: ScoringRules = {
     ],
 }
 
-export function DrawTable({ group, matches = [], scoringRules }: DrawTableProps) {
+export function DrawTable({ group, matches = [], scoringRules, displayMode = "score" }: DrawTableProps) {
 
     const players = group.players || []
     const maxPlayers = group.max_players || 6
@@ -152,31 +153,49 @@ export function DrawTable({ group, matches = [], scoringRules }: DrawTableProps)
 
                                 const match = findMatch(player.id, opponent.id)
                                 const isWinner = match?.winner_id ? isRowPlayerWinner(match, player.id) : false
+                                const isAbsence = !!match?.score?.includes("ABS")
+                                const isRowPlayerAbsent = isAbsence && !isWinner
 
                                 return (
                                     <TableCell
                                         key={colIndex}
                                         className={`text-center text-xs p-2 border-x border-gray-200 transition-colors cursor-pointer
                                                 ${isHovered ? 'bg-gray-200' : ''}
-                                                ${isWinner ? 'bg-green-50' : ''}
+                                                ${isAbsence ? 'bg-amber-50' : ''}
                                             `}
                                         onMouseEnter={() => setHoveredMatch({row: rowIndex, col: colIndex})}
                                         onMouseLeave={() => setHoveredMatch(null)}
                                     >
                                         {match ? (
                                             <div>
-                                                <div className="text-gray-500">{formatDate(match.match_date)}</div>
-                                                <div className="font-medium">{formatTime(match.match_time)}</div>
-                                                {match.score && (
-                                                    <div className={`font-bold ${isWinner ? 'text-green-600' : 'text-blue-600'}`}>
-                                                        {match.score}
-                                                    </div>
+                                                <div className="text-gray-500 text-[10px]">{formatDate(match.match_date)}</div>
+                                                <div className="font-medium text-[10px] pb-1 mb-1 border-b border-gray-200">{formatTime(match.match_time)}</div>
+                                                {match.score ? (
+                                                    displayMode === "points" ? (
+                                                        (() => {
+                                                            const pts = getPointsForScore(match.score, rules.score_points)
+                                                            if (!pts) return <div className="invisible">-</div>
+                                                            const playerPts = isWinner ? pts.winnerPts : pts.loserPts
+                                                            return (
+                                                                <div className={`font-bold ${isAbsence ? 'text-amber-600' : ''}`}>
+                                                                    {playerPts}
+                                                                </div>
+                                                            )
+                                                        })()
+                                                    ) : (
+                                                        <div className={`font-bold ${isAbsence ? 'text-amber-600' : ''}`}>
+                                                            {isRowPlayerAbsent ? "Abs" : isAbsence ? "-" : match.score}
+                                                        </div>
+                                                    )
+                                                ) : (
+                                                    <div className="invisible">-</div>
                                                 )}
                                             </div>
                                         ) : (
                                             <div className="text-gray-400">
                                                 <div>-</div>
-                                                <div>--:--</div>
+                                                <div className="pb-1 mb-1 border-b border-gray-200">--:--</div>
+                                                <div className="invisible">-</div>
                                             </div>
                                         )}
                                     </TableCell>

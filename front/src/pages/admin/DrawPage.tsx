@@ -7,7 +7,7 @@ import { useMatches } from "@/hooks/useMatches"
 import { useClubConfig } from "@/hooks/useClubConfig"
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router"
-import { Settings, SquarePen } from "lucide-react"
+import { Settings, SquarePen, Hash, Trophy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DrawTable } from "@/components/admin/draws/DrawTable"
 // import { CreateGroupsDialog } from "@/components/admin/draws/CreateGroupsDialog"
@@ -25,6 +25,7 @@ export function DrawAdmin () {
     const [selectedGroupId, setSelectedGroupsId] = useState<string | null>(null)
     // const [createDialogOpen, setCreateDialogOpen] = useState(false)
     const [manageDialogOpen, setManageDialogOpen] = useState(false)
+    const [displayMode, setDisplayMode] = useState<"score" | "points">("score")
     const navigate = useNavigate()
 
     const clubId = profile?.club_id ?? null
@@ -89,6 +90,17 @@ export function DrawAdmin () {
                     <EventSelector />
                 </div>
                 <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setDisplayMode(prev => prev === "score" ? "points" : "score")}
+                    >
+                        {displayMode === "score" ? (
+                            <><Trophy className="mr-2 h-4 w-4" />Points</>
+                        ) : (
+                            <><Hash className="mr-2 h-4 w-4" />Scores</>
+                        )}
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => setManageDialogOpen(true)}>
                         <Settings className="mr-2 h-4 w-4" />
                         Gérer les groupes
@@ -124,7 +136,7 @@ export function DrawAdmin () {
                             const sortedGroup = sortPlayersByEarliestDates(group, groupMatches)
                             return (
                                 <div key={group.id}>
-                                    <DrawTable group={sortedGroup} matches={groupMatches} scoringRules={scoringRules ?? undefined} />
+                                    <DrawTable group={sortedGroup} matches={groupMatches} scoringRules={scoringRules ?? undefined} displayMode={displayMode} />
                                 </div>
                             )
                         })}

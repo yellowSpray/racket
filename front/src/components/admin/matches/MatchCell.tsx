@@ -48,8 +48,13 @@ export function MatchCell({ match, editMode, scoreValue, onScoreChange }: MatchC
     const [score1, score2] = parseScoreValue(scoreValue)
 
     const handleScorePartChange = (part: 1 | 2, value: string) => {
-        const s1 = part === 1 ? value : score1
-        const s2 = part === 2 ? value : score2
+        let s1 = part === 1 ? value : score1
+        let s2 = part === 2 ? value : score2
+        // Si un joueur est ABS, l'autre est automatiquement 0
+        if (value === "ABS") {
+            if (part === 1) s2 = "0"
+            else s1 = "0"
+        }
         // Si les deux sont vides, on envoie ""
         if (!s1 && !s2) {
             onScoreChange?.("")
@@ -57,6 +62,9 @@ export function MatchCell({ match, editMode, scoreValue, onScoreChange }: MatchC
             onScoreChange?.(`${s1}-${s2}`)
         }
     }
+
+    const isP1Abs = score2 === "ABS"
+    const isP2Abs = score1 === "ABS"
 
     return (
         <div className="text-xs p-1.5 gap-1 flex flex-col w-full">
@@ -79,9 +87,10 @@ export function MatchCell({ match, editMode, scoreValue, onScoreChange }: MatchC
                     <>
                         <select
                             aria-label="Score joueur 1"
-                            value={score1}
+                            value={isP1Abs ? "" : score1}
                             onChange={(e) => handleScorePartChange(1, e.target.value)}
-                            className="h-6 w-12 text-xs text-center border rounded px-0.5 bg-white"
+                            disabled={isP1Abs}
+                            className="h-6 w-12 text-xs text-center border rounded px-0.5 bg-white disabled:opacity-50"
                         >
                             {SCORE_OPTIONS.map(o => (
                                 <option key={o.value} value={o.value}>{o.label}</option>
@@ -89,9 +98,10 @@ export function MatchCell({ match, editMode, scoreValue, onScoreChange }: MatchC
                         </select>
                         <select
                             aria-label="Score joueur 2"
-                            value={score2}
+                            value={isP2Abs ? "" : score2}
                             onChange={(e) => handleScorePartChange(2, e.target.value)}
-                            className="h-6 w-12 text-xs text-center border rounded px-0.5 bg-white"
+                            disabled={isP2Abs}
+                            className="h-6 w-12 text-xs text-center border rounded px-0.5 bg-white disabled:opacity-50"
                         >
                             {SCORE_OPTIONS.map(o => (
                                 <option key={o.value} value={o.value}>{o.label}</option>
@@ -115,7 +125,7 @@ export function MatchCell({ match, editMode, scoreValue, onScoreChange }: MatchC
                             WO
                         </span>
                     ) : (
-                        <span className="font-semibold text-blue-600">{match.score}</span>
+                        <span className="font-semibold text-blue-600">{match.score?.includes("ABS") ? "Abs" : match.score}</span>
                     )}
                 </div>
             )}

@@ -136,12 +136,14 @@ describe('MatchCell', () => {
     expect(onChange).toHaveBeenCalledWith('3-1')
   })
 
-  it('supports ABS value in selects', () => {
+  it('supports ABS value in selects and disables the other', () => {
     render(
       <MatchCell match={makeMatch()} editMode scoreValue="ABS-0" onScoreChange={() => {}} />
     )
     expect(screen.getByLabelText('Score joueur 1')).toHaveValue('ABS')
-    expect(screen.getByLabelText('Score joueur 2')).toHaveValue('0')
+    const select2 = screen.getByLabelText('Score joueur 2') as HTMLSelectElement
+    expect(select2.disabled).toBe(true)
+    expect(select2).toHaveValue('')
   })
 
   it('does not show selects when editMode is false', () => {
