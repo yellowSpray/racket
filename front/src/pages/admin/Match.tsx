@@ -4,9 +4,9 @@ import Loading from "@/components/shared/Loading"
 import { useEvent } from "@/contexts/EventContext"
 import { useGroups } from "@/hooks/useGroups"
 import { useMatches } from "@/hooks/useMatches"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useNavigate } from "react-router"
-import { Trash2, CalendarDays, Settings } from "lucide-react"
+import { Trash2, CalendarDays, Settings, Pencil, Save, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
     AlertDialog,
@@ -20,16 +20,24 @@ import {
 } from "@/components/ui/alert-dialog"
 import { totalMatchCount, totalSlotCount, calculateTimeSlots, calculateDates } from "@/lib/matchScheduler"
 import { intervalToMinutes } from "@/lib/utils"
+import { parseScore } from "@/lib/rankingEngine"
+import { matchResultSchema } from "@/lib/schemas/matchResult.schema"
 
 export function MatchAdmin() {
 
     const { currentEvent } = useEvent()
     const { groups, fetchGroupsByEvent } = useGroups()
-    const { matches, loading, error, fetchMatchesByEvent, generateMatches, deleteMatchesByEvent } = useMatches()
+    const { matches, loading, error, fetchMatchesByEvent, generateMatches, deleteMatchesByEvent, updateMatchResults } = useMatches()
     const [generating, setGenerating] = useState(false)
     const [confirmOpen, setConfirmOpen] = useState(false)
     const [confirmAction, setConfirmAction] = useState<'generate' | 'delete'>('generate')
     const navigate = useNavigate()
+
+    // Mode édition des scores
+    const [editMode, setEditMode] = useState(false)
+    const [pendingScores, setPendingScores] = useState<Map<string, string>>(new Map())
+    const [saving, setSaving] = useState(false)
+    const [scoreErrors, setScoreErrors] = useState<Map<string, string>>(new Map())
 
     useEffect(() => {
         if (currentEvent) {
@@ -38,23 +46,9 @@ export function MatchAdmin() {
         }
     }, [currentEvent])
 
-    // const handleGenerate = async () => {
-    //     if (!currentEvent || groups.length === 0) return
-
-    //     // Si des matchs existent déjà, demander confirmation
-    //     if (matches.length > 0) {
-    //         setConfirmAction('generate')
-    //         setConfirmOpen(true)
-    //         return
-    //     }
-
-    //     await doGenerate()
-    // }
-
     const doGenerate = async () => {
         if (!currentEvent) return
         setGenerating(true)
-        // Supprimer les matchs existants si nécessaire
         if (matches.length > 0) {
             await deleteMatchesByEvent(currentEvent.id)
         }
@@ -83,6 +77,99 @@ export function MatchAdmin() {
         }
     }
 
+    // --- Score editing ---
+
+    const handleEnterEditMode = () => {
+        // Pré-remplir avec les scores existants
+        const initial = new Map<string, string>()
+        for (const match of matches) {
+            if (match.score) {
+                initial.set(match.id, match.score)
+            }
+        }
+        setPendingScores(initial)
+        setScoreErrors(new Map())
+        setEditMode(true)
+    }
+
+    const handleCancelEditMode = () => {
+        setEditMode(false)
+        setPendingScores(new Map())
+        setScoreErrors(new Map())
+    }
+
+    const handleScoreChange = useCallback((matchId: string, value: string) => {
+        setPendingScores(prev => {
+            const next = new Map(prev)
+            if (value) {
+                next.set(matchId, value)
+            } else {
+                next.delete(matchId)
+            }
+            return next
+        })
+        // Clear error for this match
+        setScoreErrors(prev => {
+            if (!prev.has(matchId)) return prev
+            const next = new Map(prev)
+            next.delete(matchId)
+            return next
+        })
+    }, [])
+
+    const handleSaveScores = async () => {
+        // Valider et préparer les résultats
+        const errors = new Map<string, string>()
+        const results: { matchId: string; winnerId: string | null; score: string }[] = []
+
+        for (const [matchId, score] of pendingScores) {
+            // Trouver le match original pour voir si le score a changé
+            const match = matches.find(m => m.id === matchId)
+            if (!match || match.score === score) continue
+
+            // Valider le format
+            const validation = matchResultSchema.safeParse({ score })
+            if (!validation.success) {
+                errors.set(matchId, validation.error.issues[0].message)
+                continue
+            }
+
+            // Déterminer le vainqueur
+            if (score === "WO") {
+                // Pour WO, on garde le winner_id existant ou on laisse null pour l'instant
+                // TODO: gérer le choix du gagnant pour WO
+                results.push({ matchId, winnerId: match.winner_id, score })
+            } else {
+                const parsed = parseScore(score, match.player1_id, match.player2_id)
+                results.push({
+                    matchId,
+                    winnerId: parsed?.winnerId ?? null,
+                    score,
+                })
+            }
+        }
+
+        if (errors.size > 0) {
+            setScoreErrors(errors)
+            return
+        }
+
+        if (results.length === 0) {
+            setEditMode(false)
+            return
+        }
+
+        setSaving(true)
+        const success = await updateMatchResults(results)
+        setSaving(false)
+
+        if (success) {
+            setEditMode(false)
+            setPendingScores(new Map())
+            setScoreErrors(new Map())
+        }
+    }
+
     // Calculs pour l'info
     const matchCount = totalMatchCount(groups)
     const slotInfo = currentEvent ? (() => {
@@ -101,7 +188,7 @@ export function MatchAdmin() {
         }
     })() : null
 
-    if (loading || generating) {
+    if (loading || generating || saving) {
         return <Loading />
     }
 
@@ -152,16 +239,37 @@ export function MatchAdmin() {
                     <EventSelector />
                 </div>
                 <div className="flex gap-2">
-                    {hasMatches && (
-                        <Button variant="outline" size="sm" onClick={handleDelete}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Supprimer
-                        </Button>
+                    {editMode ? (
+                        <>
+                            <Button variant="outline" size="sm" onClick={handleCancelEditMode}>
+                                <X className="mr-2 h-4 w-4" />
+                                Annuler
+                            </Button>
+                            <Button size="sm" onClick={handleSaveScores}>
+                                <Save className="mr-2 h-4 w-4" />
+                                Enregistrer tout
+                            </Button>
+                        </>
+                    ) : (
+                        <>
+                            {hasMatches && (
+                                <>
+                                    <Button variant="outline" size="sm" onClick={handleDelete}>
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Supprimer
+                                    </Button>
+                                    <Button variant="outline" size="sm" onClick={handleEnterEditMode}>
+                                        <Pencil className="mr-2 h-4 w-4" />
+                                        Saisir les scores
+                                    </Button>
+                                </>
+                            )}
+                            <Button size="sm" onClick={() => navigate("/admin/settings")}>
+                                <Settings className="mr-2 h-4 w-4" />
+                                Modifier
+                            </Button>
+                        </>
                     )}
-                    <Button size="sm" onClick={() => navigate("/admin/settings")}>
-                        <Settings className="mr-2 h-4 w-4" />
-                        Modifier
-                    </Button>
                 </div>
             </div>
 
@@ -169,6 +277,13 @@ export function MatchAdmin() {
             {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
                     {error}
+                </div>
+            )}
+
+            {/* Erreurs de score */}
+            {scoreErrors.size > 0 && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4 text-sm">
+                    {scoreErrors.size} score(s) invalide(s). Corrigez les erreurs avant d'enregistrer.
                 </div>
             )}
 
@@ -219,7 +334,13 @@ export function MatchAdmin() {
                 </div>
             ) : (
                 <div className="flex-1 min-h-0">
-                    <MatchScheduleGrid matches={matches} event={currentEvent} />
+                    <MatchScheduleGrid
+                        matches={matches}
+                        event={currentEvent}
+                        editMode={editMode}
+                        pendingScores={pendingScores}
+                        onScoreChange={handleScoreChange}
+                    />
                 </div>
             )}
 
