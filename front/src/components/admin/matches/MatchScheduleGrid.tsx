@@ -16,6 +16,9 @@ import { intervalToMinutes } from "@/lib/utils"
 interface MatchScheduleGridProps {
     matches: Match[]
     event: Event
+    editMode?: boolean
+    pendingScores?: Map<string, string>
+    onScoreChange?: (matchId: string, value: string) => void
 }
 
 function formatDateLabel(dateStr: string): string {
@@ -28,7 +31,7 @@ function formatDateLabel(dateStr: string): string {
     })
 }
 
-export function MatchScheduleGrid({ matches, event }: MatchScheduleGridProps) {
+export function MatchScheduleGrid({ matches, event, editMode, pendingScores, onScoreChange }: MatchScheduleGridProps) {
 
     // Calculer les créneaux et terrains depuis l'event
     const durationMin = intervalToMinutes(event.estimated_match_duration)
@@ -113,7 +116,17 @@ export function MatchScheduleGrid({ matches, event }: MatchScheduleGridProps) {
                                                                 key={court}
                                                                 className="text-center border-l p-1"
                                                             >
-                                                                <MatchCell match={findMatch(dayMatches, time, court)} />
+                                                                {(() => {
+                                                                    const m = findMatch(dayMatches, time, court)
+                                                                    return (
+                                                                        <MatchCell
+                                                                            match={m}
+                                                                            editMode={editMode}
+                                                                            scoreValue={m ? pendingScores?.get(m.id) : undefined}
+                                                                            onScoreChange={m ? (v) => onScoreChange?.(m.id, v) : undefined}
+                                                                        />
+                                                                    )
+                                                                })()}
                                                             </TableCell>
                                                         ))}
                                                     </TableRow>

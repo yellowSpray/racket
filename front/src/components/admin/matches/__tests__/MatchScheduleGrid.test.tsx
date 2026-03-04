@@ -1,6 +1,14 @@
 import { render, screen } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeAll } from 'vitest'
 import { MatchScheduleGrid } from '../MatchScheduleGrid'
+
+beforeAll(() => {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver
+})
 import type { Match } from '@/types/match'
 import type { Event } from '@/types/event'
 
