@@ -221,15 +221,16 @@ ALTER TABLE public.clubs
   ADD COLUMN IF NOT EXISTS default_max_players_per_group int not null default 5;
 
 -- TABLE SCORING_RULES : Regles de pointage par club (1 ligne par club)
+-- score_points est un tableau JSON d'entrées {score, winner_points, loser_points}
 CREATE TABLE IF NOT EXISTS public.scoring_rules (
   id uuid primary key default gen_random_uuid(),
   club_id uuid not null references public.clubs(id) on delete cascade,
-  points_win int not null default 3,
-  points_loss int not null default 1,
-  points_draw int not null default 2,
-  points_walkover_win int not null default 3,
-  points_walkover_loss int not null default 0,
-  points_absence int not null default 0,
+  score_points jsonb not null default '[
+    {"score":"3-0","winner_points":5,"loser_points":0},
+    {"score":"3-1","winner_points":4,"loser_points":1},
+    {"score":"3-2","winner_points":3,"loser_points":2},
+    {"score":"ABS","winner_points":3,"loser_points":-1}
+  ]'::jsonb,
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now(),
   unique(club_id)

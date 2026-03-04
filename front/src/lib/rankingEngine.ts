@@ -1,5 +1,5 @@
 import type { Match } from "@/types/match"
-import type { ScoringRules } from "@/types/settings"
+import type { ScorePointsEntry, ScoringRules } from "@/types/settings"
 import type { GroupStandings, PlayerStanding } from "@/types/ranking"
 
 export type MatchOutcome = "win" | "loss" | "walkover_win" | "walkover_loss" | "absence"
@@ -96,6 +96,36 @@ export function determineMatchOutcome(
     return isWinner ? "win" : "loss"
 }
 
+/**
+ * Lookup le barème de points pour un score donné.
+ * - WO → lookup "WO"
+ * - ABS → lookup "ABS"
+ * - Score normal → normaliser en "max-min" (ex: "1-3" → "3-1") → lookup
+ * Retourne { winnerPts, loserPts } ou null si pas trouvé.
+ */
+export function getPointsForScore(
+    matchScore: string | null,
+    scorePoints: ScorePointsEntry[]
+): { winnerPts: number; loserPts: number } | null {
+    if (!matchScore) return null
+
+    if (matchScore === "WO" || matchScore.includes("ABS")) {
+        const entry = scorePoints.find(e => e.score === "ABS")
+        return entry ? { winnerPts: entry.winner_points, loserPts: entry.loser_points } : null
+    }
+
+    // Score normal: parse and normalize to "max-min"
+    const m = matchScore.trim().match(/^(\d+)-(\d+)$/)
+    if (!m) return null
+
+    const a = parseInt(m[1], 10)
+    const b = parseInt(m[2], 10)
+    const normalized = `${Math.max(a, b)}-${Math.min(a, b)}`
+
+    const entry = scorePoints.find(e => e.score === normalized)
+    return entry ? { winnerPts: entry.winner_points, loserPts: entry.loser_points } : null
+}
+
 interface PlayerStats {
     playerId: string
     playerName: string
@@ -138,6 +168,8 @@ export function calculateGroupStandings(
         })
     }
 
+    const { score_points } = scoringRules
+
     // Traiter chaque match
     for (const match of matches) {
         if (!match.winner_id) continue // match non joué
@@ -153,28 +185,31 @@ export function calculateGroupStandings(
         stats1.played++
         stats2.played++
 
+        const pts = getPointsForScore(match.score, score_points)
+        const winnerPts = pts?.winnerPts ?? 0
+        const loserPts = pts?.loserPts ?? 0
+
         if (isWalkover) {
             if (isP1Winner) {
                 stats1.walkoversWon++
                 stats2.walkoversLost++
-                stats1.points += scoringRules.points_walkover_win
-                stats2.points += scoringRules.points_walkover_loss
+                stats1.points += winnerPts
+                stats2.points += loserPts
             } else {
                 stats2.walkoversWon++
                 stats1.walkoversLost++
-                stats2.points += scoringRules.points_walkover_win
-                stats1.points += scoringRules.points_walkover_loss
+                stats2.points += winnerPts
+                stats1.points += loserPts
             }
         } else if (isAbsence) {
-            // Joueur absent reçoit points_absence, l'autre points_walkover_win
             if (isP1Winner) {
                 stats1.walkoversWon++
-                stats1.points += scoringRules.points_walkover_win
-                stats2.points += scoringRules.points_absence
+                stats1.points += winnerPts
+                stats2.points += loserPts
             } else {
                 stats2.walkoversWon++
-                stats2.points += scoringRules.points_walkover_win
-                stats1.points += scoringRules.points_absence
+                stats2.points += winnerPts
+                stats1.points += loserPts
             }
         } else {
             // Match normal — parser le score pour les sets
@@ -189,15 +224,15 @@ export function calculateGroupStandings(
             if (isP1Winner) {
                 stats1.wins++
                 stats2.losses++
-                stats1.points += scoringRules.points_win
-                stats2.points += scoringRules.points_loss
+                stats1.points += winnerPts
+                stats2.points += loserPts
                 stats1.headToHead.set(match.player2_id, "win")
                 stats2.headToHead.set(match.player1_id, "loss")
             } else {
                 stats2.wins++
                 stats1.losses++
-                stats2.points += scoringRules.points_win
-                stats1.points += scoringRules.points_loss
+                stats2.points += winnerPts
+                stats1.points += loserPts
                 stats2.headToHead.set(match.player1_id, "win")
                 stats1.headToHead.set(match.player2_id, "loss")
             }
@@ -205,8 +240,6 @@ export function calculateGroupStandings(
     }
 
     // Trier : points desc → diff sets → head-to-head → alphabétique
-    // Note : le head-to-head passe après la diff de sets car en cas de h2h circulaire
-    // (A>B>C>A), le tri pairwise n'est pas transitif et donne des résultats incohérents.
     const allStats = Array.from(statsMap.values())
     allStats.sort((a, b) => {
         // 1. Points décroissants

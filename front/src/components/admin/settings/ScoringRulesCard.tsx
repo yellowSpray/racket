@@ -1,58 +1,59 @@
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { validateFormData } from "@/lib/validation"
 import { scoringRulesSchema } from "@/lib/schemas/scoring.schema"
-import type { ScoringRules } from "@/types/settings"
-import { Save, Check } from "lucide-react"
+import type { ScorePointsEntry } from "@/types/settings"
+import { Pencil, Check, Loader2 } from "lucide-react"
 
 interface ScoringRulesCardProps {
-    scoringRules: ScoringRules | null
-    defaultScoring: Omit<ScoringRules, 'id' | 'club_id' | 'created_at' | 'updated_at'>
-    onSave: (data: Omit<ScoringRules, 'id' | 'club_id' | 'created_at' | 'updated_at'>) => Promise<boolean>
+    scoringRules: { score_points: ScorePointsEntry[] } | null
+    defaultScoring: { score_points: ScorePointsEntry[] }
+    onSave: (data: { score_points: ScorePointsEntry[] }) => Promise<boolean>
 }
 
-const FIELDS = [
-    { key: 'points_win', label: 'Victoire' },
-    { key: 'points_loss', label: 'Défaite' },
-    { key: 'points_draw', label: 'Égalité' },
-    { key: 'points_walkover_win', label: 'Forfait gagné' },
-    { key: 'points_walkover_loss', label: 'Forfait perdu' },
-    { key: 'points_absence', label: 'Absence' },
-] as const
+const SCORE_LABELS: Record<string, string> = {
+    "3-0": "3 - 0",
+    "3-1": "3 - 1",
+    "3-2": "3 - 2",
+    "ABS": "ABS",
+}
 
 export function ScoringRulesCard({ scoringRules, defaultScoring, onSave }: ScoringRulesCardProps) {
 
-    const [values, setValues] = useState(defaultScoring)
+    const [scorePoints, setScorePoints] = useState<ScorePointsEntry[]>(defaultScoring.score_points)
     const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
+    const [editing, setEditing] = useState(false)
     const [saving, setSaving] = useState(false)
     const [saved, setSaved] = useState(false)
 
     useEffect(() => {
         if (scoringRules) {
-            setValues({
-                points_win: scoringRules.points_win,
-                points_loss: scoringRules.points_loss,
-                points_draw: scoringRules.points_draw,
-                points_walkover_win: scoringRules.points_walkover_win,
-                points_walkover_loss: scoringRules.points_walkover_loss,
-                points_absence: scoringRules.points_absence,
-            })
+            setScorePoints(scoringRules.score_points)
         }
     }, [scoringRules])
 
-    const handleChange = (key: string, value: string) => {
-        setValues(prev => ({ ...prev, [key]: value === '' ? 0 : parseInt(value, 10) }))
+    const handleChange = (index: number, field: "winner_points" | "loser_points", value: string) => {
+        setScorePoints(prev => {
+            const updated = [...prev]
+            updated[index] = { ...updated[index], [field]: value === '' ? 0 : parseInt(value, 10) }
+            return updated
+        })
         setSaved(false)
     }
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        setFieldErrors({})
+    const handleToggle = async () => {
+        if (!editing) {
+            setEditing(true)
+            setSaved(false)
+            return
+        }
 
-        const result = validateFormData(scoringRulesSchema, values)
+        // En mode édition → enregistrer
+        setFieldErrors({})
+        const data = { score_points: scorePoints }
+        const result = validateFormData(scoringRulesSchema, data)
         if (!result.success) {
             setFieldErrors(result.fieldErrors)
             return
@@ -63,6 +64,7 @@ export function ScoringRulesCard({ scoringRules, defaultScoring, onSave }: Scori
         setSaving(false)
 
         if (success) {
+            setEditing(false)
             setSaved(true)
             setTimeout(() => setSaved(false), 2000)
         }
@@ -72,38 +74,73 @@ export function ScoringRulesCard({ scoringRules, defaultScoring, onSave }: Scori
         <Card>
             <CardHeader>
                 <CardTitle>Règles de pointage</CardTitle>
-                <CardDescription>Points attribués selon le résultat du match</CardDescription>
-            </CardHeader>
-            <form onSubmit={handleSubmit}>
-                <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {FIELDS.map(({ key, label }) => (
-                            <div key={key} className="grid gap-2">
-                                <Label htmlFor={key}>{label}</Label>
-                                <Input
-                                    id={key}
-                                    type="number"
-                                    min={0}
-                                    value={values[key]}
-                                    onChange={(e) => handleChange(key, e.target.value)}
-                                />
-                                {fieldErrors[key] && (
-                                    <p className="text-sm text-red-600">{fieldErrors[key][0]}</p>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </CardContent>
-                <CardFooter>
-                    <Button type="submit" disabled={saving}>
-                        {saved ? (
-                            <><Check className="mr-2 h-4 w-4" /> Enregistré</>
+                <CardDescription>
+                    {editing
+                        ? "Les modifications s'appliqueront au prochain événement"
+                        : "Points attribués selon le résultat du match"
+                    }
+                </CardDescription>
+                <CardAction>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleToggle}
+                        disabled={saving}
+                        aria-label={editing ? "Enregistrer" : "Modifier"}
+                    >
+                        {saving ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : saved ? (
+                            <Check className="h-4 w-4 text-green-600" />
+                        ) : editing ? (
+                            <Check className="h-4 w-4" />
                         ) : (
-                            <><Save className="mr-2 h-4 w-4" /> Enregistrer</>
+                            <Pencil className="h-4 w-4" />
                         )}
                     </Button>
-                </CardFooter>
-            </form>
+                </CardAction>
+            </CardHeader>
+            <CardContent>
+                <table className="w-full text-sm">
+                    <thead>
+                        <tr className="border-b">
+                            <th className="text-left py-2 font-medium">Score</th>
+                            <th className="text-center py-2 font-medium">Gagnant</th>
+                            <th className="text-center py-2 font-medium">Perdant</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {scorePoints.map((entry, index) => (
+                            <tr key={entry.score} className="border-b last:border-b-0">
+                                <td className="py-2 font-medium">{SCORE_LABELS[entry.score] ?? entry.score}</td>
+                                <td className="py-2 text-center">
+                                    <Input
+                                        type="number"
+                                        className="w-16 mx-auto text-center"
+                                        value={entry.winner_points}
+                                        onChange={(e) => handleChange(index, "winner_points", e.target.value)}
+                                        disabled={!editing}
+                                        aria-label={`Gagnant ${entry.score}`}
+                                    />
+                                </td>
+                                <td className="py-2 text-center">
+                                    <Input
+                                        type="number"
+                                        className="w-16 mx-auto text-center"
+                                        value={entry.loser_points}
+                                        onChange={(e) => handleChange(index, "loser_points", e.target.value)}
+                                        disabled={!editing}
+                                        aria-label={`Perdant ${entry.score}`}
+                                    />
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                {fieldErrors.score_points && (
+                    <p className="text-sm text-red-600 mt-2">{fieldErrors.score_points[0]}</p>
+                )}
+            </CardContent>
         </Card>
     )
 }

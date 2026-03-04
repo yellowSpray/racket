@@ -3,12 +3,12 @@ import type { ClubConfig, ScoringRules, PromotionRules } from "@/types/settings"
 import { useCallback, useState } from "react"
 
 const DEFAULT_SCORING: Omit<ScoringRules, 'id' | 'club_id' | 'created_at' | 'updated_at'> = {
-    points_win: 3,
-    points_loss: 1,
-    points_draw: 2,
-    points_walkover_win: 3,
-    points_walkover_loss: 0,
-    points_absence: 0,
+    score_points: [
+        { score: "3-0", winner_points: 5, loser_points: 0 },
+        { score: "3-1", winner_points: 4, loser_points: 1 },
+        { score: "3-2", winner_points: 3, loser_points: 2 },
+        { score: "ABS", winner_points: 3, loser_points: -1 },
+    ],
 }
 
 const DEFAULT_PROMOTION: Omit<PromotionRules, 'id' | 'club_id' | 'created_at' | 'updated_at'> = {

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest"
-import { parseScore, determineMatchOutcome, calculateGroupStandings } from "./rankingEngine"
+import { parseScore, determineMatchOutcome, calculateGroupStandings, getPointsForScore } from "./rankingEngine"
 import type { Match } from "@/types/match"
-import type { ScoringRules } from "@/types/settings"
+import type { ScorePointsEntry, ScoringRules } from "@/types/settings"
 
 // --- Helpers ---
 
@@ -20,16 +20,19 @@ function makeMatch(overrides: Partial<Match> = {}): Match {
     }
 }
 
+const DEFAULT_SCORE_POINTS: ScorePointsEntry[] = [
+    { score: "3-0", winner_points: 5, loser_points: 0 },
+    { score: "3-1", winner_points: 4, loser_points: 1 },
+    { score: "3-2", winner_points: 3, loser_points: 2 },
+
+    { score: "ABS", winner_points: 3, loser_points: -1 },
+]
+
 function makeRules(overrides: Partial<ScoringRules> = {}): ScoringRules {
     return {
         id: "r1",
         club_id: "c1",
-        points_win: 3,
-        points_loss: 1,
-        points_draw: 2,
-        points_walkover_win: 3,
-        points_walkover_loss: 0,
-        points_absence: 0,
+        score_points: DEFAULT_SCORE_POINTS,
         ...overrides,
     }
 }
@@ -143,6 +146,54 @@ describe("determineMatchOutcome", () => {
     })
 })
 
+// --- getPointsForScore ---
+
+describe("getPointsForScore", () => {
+    it("returns correct points for '3-0'", () => {
+        expect(getPointsForScore("3-0", DEFAULT_SCORE_POINTS)).toEqual({ winnerPts: 5, loserPts: 0 })
+    })
+
+    it("returns correct points for '3-1'", () => {
+        expect(getPointsForScore("3-1", DEFAULT_SCORE_POINTS)).toEqual({ winnerPts: 4, loserPts: 1 })
+    })
+
+    it("returns correct points for '3-2'", () => {
+        expect(getPointsForScore("3-2", DEFAULT_SCORE_POINTS)).toEqual({ winnerPts: 3, loserPts: 2 })
+    })
+
+    it("normalizes reversed score '1-3' to '3-1'", () => {
+        expect(getPointsForScore("1-3", DEFAULT_SCORE_POINTS)).toEqual({ winnerPts: 4, loserPts: 1 })
+    })
+
+    it("normalizes '0-3' to '3-0'", () => {
+        expect(getPointsForScore("0-3", DEFAULT_SCORE_POINTS)).toEqual({ winnerPts: 5, loserPts: 0 })
+    })
+
+    it("normalizes '2-3' to '3-2'", () => {
+        expect(getPointsForScore("2-3", DEFAULT_SCORE_POINTS)).toEqual({ winnerPts: 3, loserPts: 2 })
+    })
+
+    it("returns ABS points for 'WO' (WO treated as ABS)", () => {
+        expect(getPointsForScore("WO", DEFAULT_SCORE_POINTS)).toEqual({ winnerPts: 3, loserPts: -1 })
+    })
+
+    it("returns correct points for 'ABS-0'", () => {
+        expect(getPointsForScore("ABS-0", DEFAULT_SCORE_POINTS)).toEqual({ winnerPts: 3, loserPts: -1 })
+    })
+
+    it("returns correct points for '0-ABS'", () => {
+        expect(getPointsForScore("0-ABS", DEFAULT_SCORE_POINTS)).toEqual({ winnerPts: 3, loserPts: -1 })
+    })
+
+    it("returns null for null score", () => {
+        expect(getPointsForScore(null, DEFAULT_SCORE_POINTS)).toBeNull()
+    })
+
+    it("returns null for unknown score pattern", () => {
+        expect(getPointsForScore("5-0", DEFAULT_SCORE_POINTS)).toBeNull()
+    })
+})
+
 // --- calculateGroupStandings ---
 
 describe("calculateGroupStandings", () => {
@@ -161,7 +212,7 @@ describe("calculateGroupStandings", () => {
         })
     })
 
-    it("calculates correct points for simple win/loss", () => {
+    it("calculates correct points for score-based scoring", () => {
         const matches = [
             makeMatch({ id: "m1", player1_id: "p1", player2_id: "p2", winner_id: "p1", score: "3-1" }),
             makeMatch({ id: "m2", player1_id: "p1", player2_id: "p3", winner_id: "p1", score: "3-0" }),
@@ -170,22 +221,24 @@ describe("calculateGroupStandings", () => {
 
         const result = calculateGroupStandings(matches, "g1", "Groupe A", players, rules)
 
-        // Alice: 2 wins = 6 pts, Charlie: 1 win 1 loss = 4 pts, Bob: 2 losses = 2 pts
+        // Alice: 3-1 win (4pts) + 3-0 win (5pts) = 9 pts
+        // Charlie: lost 3-0 (0pts) + won 3-1 vs Bob (4pts) = 4 pts
+        // Bob: lost 3-1 (1pt) + lost 3-1 (1pt) = 2 pts
         const alice = result.standings.find(s => s.playerId === "p1")!
         const bob = result.standings.find(s => s.playerId === "p2")!
         const charlie = result.standings.find(s => s.playerId === "p3")!
 
         expect(alice.wins).toBe(2)
         expect(alice.losses).toBe(0)
-        expect(alice.points).toBe(6)  // 2 * 3
+        expect(alice.points).toBe(9)  // 4 + 5
 
         expect(bob.wins).toBe(0)
         expect(bob.losses).toBe(2)
-        expect(bob.points).toBe(2)  // 2 * 1
+        expect(bob.points).toBe(2)  // 1 + 1
 
         expect(charlie.wins).toBe(1)
         expect(charlie.losses).toBe(1)
-        expect(charlie.points).toBe(4)  // 1*3 + 1*1
+        expect(charlie.points).toBe(4)  // 0 + 4
     })
 
     it("ranks players by points descending", () => {
@@ -196,7 +249,7 @@ describe("calculateGroupStandings", () => {
         ]
 
         const result = calculateGroupStandings(matches, "g1", "Groupe A", players, rules)
-        expect(result.standings[0].playerId).toBe("p1")  // 6 pts
+        expect(result.standings[0].playerId).toBe("p1")  // 9 pts
         expect(result.standings[1].playerId).toBe("p3")  // 4 pts
         expect(result.standings[2].playerId).toBe("p2")  // 2 pts
 
@@ -214,9 +267,9 @@ describe("calculateGroupStandings", () => {
         const alice = result.standings.find(s => s.playerId === "p1")!
         const bob = result.standings.find(s => s.playerId === "p2")!
 
-        // Alice absent: gets points_absence (0)
-        expect(alice.points).toBe(0)
-        // Bob wins by absence: gets points_walkover_win (3)
+        // Alice absent: gets loser_points for ABS (-1)
+        expect(alice.points).toBe(-1)
+        // Bob wins by absence: gets winner_points for ABS (3)
         expect(bob.walkoversWon).toBe(1)
         expect(bob.points).toBe(3)
     })
@@ -231,14 +284,14 @@ describe("calculateGroupStandings", () => {
         const bob = result.standings.find(s => s.playerId === "p2")!
 
         expect(alice.walkoversWon).toBe(1)
-        expect(alice.points).toBe(3)  // walkover_win = 3
+        expect(alice.points).toBe(3)  // ABS winner = 3
 
         expect(bob.walkoversLost).toBe(1)
-        expect(bob.points).toBe(0)  // walkover_loss = 0
+        expect(bob.points).toBe(-1)  // ABS loser = -1
     })
 
     it("breaks ties by head-to-head when 2 players are tied", () => {
-        // Alice and Bob: 1 win each, 4 pts each. Alice beat Bob directly.
+        // Alice and Bob: 1 win each. Alice beat Bob directly.
         const matches = [
             makeMatch({ id: "m1", player1_id: "p1", player2_id: "p2", winner_id: "p1", score: "3-1" }),
             makeMatch({ id: "m2", player1_id: "p1", player2_id: "p3", winner_id: "p3", score: "1-3" }),
@@ -246,13 +299,12 @@ describe("calculateGroupStandings", () => {
         ]
 
         const result = calculateGroupStandings(matches, "g1", "Groupe A", players, rules)
-        // Charlie: 6 pts. Alice and Bob: 4 pts each, same set diff (+2 and +2)
-        // but wait: Alice: setsWon 3+1=4, setsLost 1+3=4, diff=0
-        //           Bob:   setsWon 1+1=2, setsLost 3+3=6, diff=-4
-        // Alice > Bob by set diff
-        expect(result.standings[0].playerId).toBe("p3")  // 6 pts
-        expect(result.standings[1].playerId).toBe("p1")  // 4 pts, diff 0
-        expect(result.standings[2].playerId).toBe("p2")  // 4 pts, diff -4
+        // Charlie: 2 wins × 4pts(3-1) = 8pts
+        // Alice: 1 win(3-1 → 4pts) + 1 loss(3-1 → 1pt) = 5pts
+        // Bob: 1 loss(3-1 → 1pt) + 1 loss(3-1 → 1pt) = 2pts
+        expect(result.standings[0].playerId).toBe("p3")  // 8 pts
+        expect(result.standings[1].playerId).toBe("p1")  // 5 pts
+        expect(result.standings[2].playerId).toBe("p2")  // 2 pts
     })
 
     it("falls back to alphabetical when h2h is circular and set diff is equal", () => {
@@ -264,14 +316,8 @@ describe("calculateGroupStandings", () => {
         ]
 
         const result = calculateGroupStandings(matches, "g1", "Groupe A", players, rules)
-        // All 4 pts, all set diff = +2 (3+1=4 won, 1+1=2 lost... wait)
-        // Alice: won 3(vsB), lost 1(vsC) → setsWon=3, setsLost=1 (only from p1 matches? no)
-        // Actually: Alice vsB: 3-1 (player1), Alice vsC: lost so C scored 3-1
-        //   Alice setsWon: 3 (vs B as p1) + 1 (vs C as p2, score 3-1 means p3 won 3, p1 got 1)
-        //   Alice setsLost: 1 (vs B) + 3 (vs C)
-        //   diff = 4-4 = 0
-        // Same for all → alphabetical
-        result.standings.forEach(s => expect(s.points).toBe(4))
+        // All: 1 win(4pts) + 1 loss(1pt) = 5 pts each, same set diff → alphabetical
+        result.standings.forEach(s => expect(s.points).toBe(5))
         expect(result.standings[0].playerName).toBe("Alice Martin")
         expect(result.standings[1].playerName).toBe("Bob Dupont")
         expect(result.standings[2].playerName).toBe("Charlie Durand")
@@ -279,11 +325,6 @@ describe("calculateGroupStandings", () => {
 
     it("breaks ties by set difference when head-to-head is equal", () => {
         // A beats B 3-0 (dominant), B beats C 3-2 (tight), C beats A 3-2 (tight)
-        // All 4 pts. Set diff: A = (3+2)-(0+3) = +2, B = (3+2)-(0+3) = -1+1=...
-        // Let's compute: A sets won: 3(vs B) + 2(vs C) = 5, lost: 0+3 = 3, diff = +2
-        //                B sets won: 0(vs A) + 3(vs C) = 3, lost: 3+2 = 5, diff = -2
-        //                C sets won: 3(vs A) + 2(vs B) = 5, lost: 2+3 = 5, diff = 0
-        // Order: A(+2), C(0), B(-2)
         const matches = [
             makeMatch({ id: "m1", player1_id: "p1", player2_id: "p2", winner_id: "p1", score: "3-0" }),
             makeMatch({ id: "m2", player1_id: "p2", player2_id: "p3", winner_id: "p2", score: "3-2" }),
@@ -291,9 +332,13 @@ describe("calculateGroupStandings", () => {
         ]
 
         const result = calculateGroupStandings(matches, "g1", "Groupe A", players, rules)
-        expect(result.standings[0].playerId).toBe("p1")  // diff +2
-        expect(result.standings[1].playerId).toBe("p3")  // diff 0
-        expect(result.standings[2].playerId).toBe("p2")  // diff -2
+        // A: 3-0 win(5pts) + 3-2 loss(2pts) = 7pts, set diff: (3+2)-(0+3) = +2
+        // B: 3-0 loss(0pts) + 3-2 win(3pts) = 3pts, set diff: (0+3)-(3+2) = -2
+        // C: 3-2 loss(2pts) + 3-2 win(3pts) = 5pts, set diff: (2+3)-(3+2) = 0
+        // Order: A(7pts), C(5pts), B(3pts)
+        expect(result.standings[0].playerId).toBe("p1")  // 7 pts
+        expect(result.standings[1].playerId).toBe("p3")  // 5 pts
+        expect(result.standings[2].playerId).toBe("p2")  // 3 pts
     })
 
     it("includes all players even those with 0 matches played", () => {
@@ -319,11 +364,18 @@ describe("calculateGroupStandings", () => {
         const alice = result.standings.find(s => s.playerId === "p1")!
         expect(alice.played).toBe(1)
         expect(alice.wins).toBe(1)
-        expect(alice.points).toBe(3)
+        expect(alice.points).toBe(4)  // 3-1 win = 4pts
     })
 
     it("uses custom scoring rules", () => {
-        const customRules = makeRules({ points_win: 5, points_loss: 2 })
+        const customRules = makeRules({
+            score_points: [
+                { score: "3-0", winner_points: 10, loser_points: 0 },
+                { score: "3-1", winner_points: 8, loser_points: 2 },
+                { score: "3-2", winner_points: 6, loser_points: 4 },
+                { score: "ABS", winner_points: 6, loser_points: -2 },
+            ],
+        })
         const matches = [
             makeMatch({ id: "m1", player1_id: "p1", player2_id: "p2", winner_id: "p1", score: "3-1" }),
         ]
@@ -332,7 +384,7 @@ describe("calculateGroupStandings", () => {
         const alice = result.standings.find(s => s.playerId === "p1")!
         const bob = result.standings.find(s => s.playerId === "p2")!
 
-        expect(alice.points).toBe(5)
+        expect(alice.points).toBe(8)
         expect(bob.points).toBe(2)
     })
 

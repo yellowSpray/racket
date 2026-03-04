@@ -1,12 +1,13 @@
+export interface ScorePointsEntry {
+  score: string          // "3-0", "3-1", "3-2", "WO", "ABS"
+  winner_points: number
+  loser_points: number
+}
+
 export interface ScoringRules {
   id: string
   club_id: string
-  points_win: number
-  points_loss: number
-  points_draw: number
-  points_walkover_win: number
-  points_walkover_loss: number
-  points_absence: number
+  score_points: ScorePointsEntry[]
   created_at?: string
   updated_at?: string
 }

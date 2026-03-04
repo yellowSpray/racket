@@ -8,12 +8,13 @@ import type { ScoringRules } from '@/types/settings'
 const defaultRules: ScoringRules = {
   id: 'r1',
   club_id: 'c1',
-  points_win: 3,
-  points_loss: 1,
-  points_draw: 2,
-  points_walkover_win: 3,
-  points_walkover_loss: 0,
-  points_absence: 0,
+  score_points: [
+    { score: '3-0', winner_points: 5, loser_points: 0 },
+    { score: '3-1', winner_points: 4, loser_points: 1 },
+    { score: '3-2', winner_points: 3, loser_points: 2 },
+
+    { score: 'ABS', winner_points: 3, loser_points: -1 },
+  ],
 }
 
 const makePlayer = (overrides: Partial<GroupPlayer> = {}): GroupPlayer => ({
@@ -181,8 +182,8 @@ describe('DrawTable', () => {
       makeMatch({ player1_id: 'p1', player2_id: 'p2', winner_id: 'p1', score: '3-1' }),
     ]
     render(<DrawTable group={makeGroup({ players, max_players: 2 })} matches={matches} scoringRules={defaultRules} />)
-    // Alice: 3 pts (win), Bob: 1 pt (loss)
-    expect(screen.getByText('3')).toBeInTheDocument()
+    // Alice: 4 pts (3-1 win), Bob: 1 pt (3-1 loss)
+    expect(screen.getByText('4')).toBeInTheDocument()
     expect(screen.getByText('1')).toBeInTheDocument()
   })
 

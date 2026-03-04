@@ -301,79 +301,75 @@ describe('eventSchema', () => {
 // ──────────────────────────────────────────────
 describe('scoringRulesSchema', () => {
   const validScoring = {
-    points_win: 3,
-    points_loss: 0,
-    points_draw: 1,
-    points_walkover_win: 3,
-    points_walkover_loss: 0,
-    points_absence: 0,
+    score_points: [
+      { score: '3-0', winner_points: 5, loser_points: 0 },
+      { score: '3-1', winner_points: 4, loser_points: 1 },
+      { score: '3-2', winner_points: 3, loser_points: 2 },
+
+      { score: 'ABS', winner_points: 3, loser_points: -1 },
+    ],
   }
 
-  it('accepts valid scoring rules', () => {
+  it('accepts valid scoring rules with score_points array', () => {
     const result = scoringRulesSchema.safeParse(validScoring)
     expect(result.success).toBe(true)
   })
 
-  it('accepts all zero values', () => {
+  it('accepts a single entry', () => {
     const result = scoringRulesSchema.safeParse({
-      points_win: 0,
-      points_loss: 0,
-      points_draw: 0,
-      points_walkover_win: 0,
-      points_walkover_loss: 0,
-      points_absence: 0,
+      score_points: [{ score: '3-0', winner_points: 5, loser_points: 0 }],
     })
     expect(result.success).toBe(true)
   })
 
-  it('rejects negative points_win', () => {
-    const result = scoringRulesSchema.safeParse({ ...validScoring, points_win: -1 })
+  it('accepts negative loser_points (e.g. ABS penalty)', () => {
+    const result = scoringRulesSchema.safeParse({
+      score_points: [{ score: 'ABS', winner_points: 3, loser_points: -1 }],
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects empty score_points array', () => {
+    const result = scoringRulesSchema.safeParse({ score_points: [] })
     expect(result.success).toBe(false)
   })
 
-  it('rejects negative points_loss', () => {
-    const result = scoringRulesSchema.safeParse({ ...validScoring, points_loss: -1 })
-    expect(result.success).toBe(false)
-  })
-
-  it('rejects negative points_draw', () => {
-    const result = scoringRulesSchema.safeParse({ ...validScoring, points_draw: -1 })
-    expect(result.success).toBe(false)
-  })
-
-  it('rejects negative points_walkover_win', () => {
-    const result = scoringRulesSchema.safeParse({ ...validScoring, points_walkover_win: -1 })
-    expect(result.success).toBe(false)
-  })
-
-  it('rejects negative points_walkover_loss', () => {
-    const result = scoringRulesSchema.safeParse({ ...validScoring, points_walkover_loss: -1 })
-    expect(result.success).toBe(false)
-  })
-
-  it('rejects negative points_absence', () => {
-    const result = scoringRulesSchema.safeParse({ ...validScoring, points_absence: -1 })
-    expect(result.success).toBe(false)
-  })
-
-  it('rejects missing required fields', () => {
+  it('rejects missing score_points field', () => {
     const result = scoringRulesSchema.safeParse({})
     expect(result.success).toBe(false)
   })
 
-  it('rejects wrong type (string instead of number)', () => {
-    const result = scoringRulesSchema.safeParse({ ...validScoring, points_win: '3' })
+  it('rejects entry with empty score string', () => {
+    const result = scoringRulesSchema.safeParse({
+      score_points: [{ score: '', winner_points: 5, loser_points: 0 }],
+    })
     expect(result.success).toBe(false)
+  })
+
+  it('rejects entry with wrong type for winner_points (string)', () => {
+    const result = scoringRulesSchema.safeParse({
+      score_points: [{ score: '3-0', winner_points: '5', loser_points: 0 }],
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects entry with non-integer points', () => {
+    const result = scoringRulesSchema.safeParse({
+      score_points: [{ score: '3-0', winner_points: 5.5, loser_points: 0 }],
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('accepts all zero values', () => {
+    const result = scoringRulesSchema.safeParse({
+      score_points: [{ score: '3-0', winner_points: 0, loser_points: 0 }],
+    })
+    expect(result.success).toBe(true)
   })
 
   it('accepts large positive values', () => {
     const result = scoringRulesSchema.safeParse({
-      points_win: 100,
-      points_loss: 50,
-      points_draw: 25,
-      points_walkover_win: 100,
-      points_walkover_loss: 50,
-      points_absence: 10,
+      score_points: [{ score: '3-0', winner_points: 100, loser_points: 50 }],
     })
     expect(result.success).toBe(true)
   })
