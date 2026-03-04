@@ -180,4 +180,62 @@ describe('useMatches', () => {
             expect(result.current.error).toBe('Delete error')
         })
     })
+
+    describe('updateMatchResults', () => {
+        it('should update matches and return true on success', async () => {
+            mockSupabase.from.mockImplementation(() => {
+                mockSupabase._builder._resolve(null)
+                return mockSupabase._builder
+            })
+
+            const { result } = renderHook(() => useMatches())
+
+            // Pre-populate matches state by fetching
+            // (matches are read-only, so we just verify the supabase call)
+
+            let returnVal: boolean | undefined
+
+            await act(async () => {
+                returnVal = await result.current.updateMatchResults([
+                    { matchId: 'm1', winnerId: 'p1', score: '3-1' },
+                    { matchId: 'm2', winnerId: 'p3', score: '3-0' },
+                ])
+            })
+
+            expect(returnVal).toBe(true)
+            expect(result.current.error).toBeNull()
+            // Verify supabase was called for each result
+            expect(mockSupabase.from).toHaveBeenCalledWith('matches')
+        })
+
+        it('should return false when update fails', async () => {
+            mockSupabase.from.mockImplementation(() => {
+                mockSupabase._builder._reject('Update error')
+                return mockSupabase._builder
+            })
+
+            const { result } = renderHook(() => useMatches())
+            let returnVal: boolean | undefined
+
+            await act(async () => {
+                returnVal = await result.current.updateMatchResults([
+                    { matchId: 'm1', winnerId: 'p1', score: '3-1' },
+                ])
+            })
+
+            expect(returnVal).toBe(false)
+            expect(result.current.error).toBe('Update error')
+        })
+
+        it('should return true for empty results array', async () => {
+            const { result } = renderHook(() => useMatches())
+            let returnVal: boolean | undefined
+
+            await act(async () => {
+                returnVal = await result.current.updateMatchResults([])
+            })
+
+            expect(returnVal).toBe(true)
+        })
+    })
 })

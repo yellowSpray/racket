@@ -319,6 +319,45 @@ export function useMatches() {
         }
     }
 
+    const updateMatchResults = useCallback(async (
+        results: { matchId: string; winnerId: string | null; score: string }[]
+    ): Promise<boolean> => {
+        if (results.length === 0) return true
+
+        setError(null)
+
+        try {
+            const updates = results.map(({ matchId, winnerId, score }) =>
+                supabase
+                    .from("matches")
+                    .update({ winner_id: winnerId, score, updated_at: new Date().toISOString() })
+                    .eq("id", matchId)
+            )
+
+            const responses = await Promise.all(updates)
+
+            const firstError = responses.find(r => r.error)
+            if (firstError?.error) {
+                setError(firstError.error.message)
+                return false
+            }
+
+            // Mettre à jour le state local
+            setMatches(prev => prev.map(m => {
+                const update = results.find(r => r.matchId === m.id)
+                if (update) {
+                    return { ...m, winner_id: update.winnerId, score: update.score }
+                }
+                return m
+            }))
+
+            return true
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Erreur inconnue")
+            return false
+        }
+    }, [])
+
     return {
         matches,
         loading,
@@ -326,5 +365,6 @@ export function useMatches() {
         fetchMatchesByEvent,
         generateMatches,
         deleteMatchesByEvent,
+        updateMatchResults,
     }
 }
