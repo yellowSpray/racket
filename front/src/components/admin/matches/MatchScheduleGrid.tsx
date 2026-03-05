@@ -77,20 +77,24 @@ export function MatchScheduleGrid({ matches, event, editMode, pendingScores, onS
     }
 
     return (
-        <div className="border rounded-lg flex flex-col h-full min-h-0 overflow-hidden">
+        <div className="flex flex-col h-full min-h-0 overflow-hidden">
             <ScrollArea className="flex-1 min-h-0" type="always">
-                <div className="space-y-6 p-8">
+                <div className="space-y-6">
                     {sortedDates.map(date => {
                         const dayMatches = matchesByDate.get(date) || []
                         const label = formatDateLabel(date)
 
                         return (
                             <div key={date}>
-                                <h3 className="text-lg font-semibold capitalize mb-3">{label}</h3>
                                 <div>
                                     <div className="overflow-x-auto border-gray-200 border-1 rounded-xl">
                                         <Table>
                                             <TableHeader>
+                                                <TableRow>
+                                                    <TableHead colSpan={courts.length + 1} className="text-center text-xs font-semibold uppercase">
+                                                        {label}
+                                                    </TableHead>
+                                                </TableRow>
                                                 <TableRow>
                                                     <TableHead className="w-20 text-center bg-gray-50 font-bold">
                                                         Heure

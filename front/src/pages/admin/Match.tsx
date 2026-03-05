@@ -1,12 +1,14 @@
 import { EventSelector } from "@/components/admin/settings/EventSelector"
 import { MatchScheduleGrid } from "@/components/admin/matches/MatchScheduleGrid"
+import { MatchListView } from "@/components/admin/matches/MatchListView"
 import Loading from "@/components/shared/Loading"
 import { useEvent } from "@/contexts/EventContext"
+import { usePlayers } from "@/contexts/PlayersContext"
 import { useGroups } from "@/hooks/useGroups"
 import { useMatches } from "@/hooks/useMatches"
 import { useCallback, useEffect, useState } from "react"
 import { useNavigate } from "react-router"
-import { CalendarDays, Settings, Pencil, Save, X } from "lucide-react"
+import { CalendarDays, Settings, Pencil, Save, X, List, LayoutGrid } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { totalMatchCount, totalSlotCount, calculateTimeSlots, calculateDates } from "@/lib/matchScheduler"
 import { intervalToMinutes } from "@/lib/utils"
@@ -16,9 +18,13 @@ import { matchResultSchema } from "@/lib/schemas/matchResult.schema"
 export function MatchAdmin() {
 
     const { currentEvent } = useEvent()
+    const { players } = usePlayers()
     const { groups, fetchGroupsByEvent } = useGroups()
     const { matches, loading, error, fetchMatchesByEvent, updateMatchResults } = useMatches()
     const navigate = useNavigate()
+
+    // Mode vue
+    const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
 
     // Mode édition des scores
     const [editMode, setEditMode] = useState(false)
@@ -188,6 +194,11 @@ export function MatchAdmin() {
                     <EventSelector />
                 </div>
                 <div className="flex gap-2">
+                    {hasMatches && (
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setViewMode(v => v === "grid" ? "list" : "grid")}>
+                            {viewMode === "grid" ? <List className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
+                        </Button>
+                    )}
                     {editMode ? (
                         <>
                             <Button variant="outline" size="sm" onClick={handleCancelEditMode}>
@@ -202,9 +213,8 @@ export function MatchAdmin() {
                     ) : (
                         <>
                             {hasMatches && (
-                                <Button variant="outline" size="sm" onClick={handleEnterEditMode}>
-                                    <Pencil className="mr-2 h-4 w-4" />
-                                    Saisir les scores
+                                <Button size="icon" className="h-8 w-8" onClick={handleEnterEditMode}>
+                                    <Pencil className="h-4 w-4" />
                                 </Button>
                             )}
                         </>
@@ -273,13 +283,23 @@ export function MatchAdmin() {
                 </div>
             ) : (
                 <div className="flex-1 min-h-0">
-                    <MatchScheduleGrid
-                        matches={matches}
-                        event={currentEvent}
-                        editMode={editMode}
-                        pendingScores={pendingScores}
-                        onScoreChange={handleScoreChange}
-                    />
+                    {viewMode === "grid" ? (
+                        <MatchScheduleGrid
+                            matches={matches}
+                            event={currentEvent}
+                            editMode={editMode}
+                            pendingScores={pendingScores}
+                            onScoreChange={handleScoreChange}
+                        />
+                    ) : (
+                        <MatchListView
+                            matches={matches}
+                            players={players}
+                            editMode={editMode}
+                            pendingScores={pendingScores}
+                            onScoreChange={handleScoreChange}
+                        />
+                    )}
                 </div>
             )}
 

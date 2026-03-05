@@ -19,7 +19,7 @@ const SCORE_OPTIONS = [
 
 function formatPlayerName(player: { first_name: string; last_name: string } | undefined): string {
     if (!player) return "?"
-    return `${player.first_name} ${player.last_name[0]}.`
+    return `${player.first_name} ${player.last_name}`
 }
 
 /** Parse "3-1" → ["3", "1"], "ABS-0" → ["ABS", "0"], "" → ["", ""] */
@@ -67,68 +67,61 @@ export function MatchCell({ match, editMode, scoreValue, onScoreChange }: MatchC
     const isP2Abs = score1 === "ABS"
 
     return (
-        <div className="text-xs p-1.5 gap-1 flex flex-col w-full">
+        <div className="text-xs p-1.5 flex items-center justify-center gap-1 w-full min-w-0">
             {/* Badge groupe */}
             {groupName && (
-                <div className="flex justify-center">
-                    <Badge variant="default" className="text-[10px] px-1 py-0">
-                        {groupName}
-                    </Badge>
-                </div>
+                <Badge variant="default" className="text-[10px] px-1 py-0 shrink-0">
+                    {groupName}
+                </Badge>
             )}
 
-            {/* Joueurs + score */}
-            <div className="flex items-center justify-center gap-1 min-w-0">
-                <span className={`truncate ${isP1Winner ? 'font-bold text-green-600' : ''}`}>
-                    {formatPlayerName(p1)}
-                </span>
+            {/* Joueur 1 */}
+            <span className={`flex-1 min-w-0 truncate text-right ${isP1Winner ? 'font-bold text-green-600' : ''}`}>
+                {formatPlayerName(p1)}
+            </span>
 
-                {editMode ? (
-                    <>
-                        <select
-                            aria-label="Score joueur 1"
-                            value={isP1Abs ? "" : score1}
-                            onChange={(e) => handleScorePartChange(1, e.target.value)}
-                            disabled={isP1Abs}
-                            className="h-6 w-12 text-xs text-center border rounded px-0.5 bg-white disabled:opacity-50"
-                        >
-                            {SCORE_OPTIONS.map(o => (
-                                <option key={o.value} value={o.value}>{o.label}</option>
-                            ))}
-                        </select>
-                        <select
-                            aria-label="Score joueur 2"
-                            value={isP2Abs ? "" : score2}
-                            onChange={(e) => handleScorePartChange(2, e.target.value)}
-                            disabled={isP2Abs}
-                            className="h-6 w-12 text-xs text-center border rounded px-0.5 bg-white disabled:opacity-50"
-                        >
-                            {SCORE_OPTIONS.map(o => (
-                                <option key={o.value} value={o.value}>{o.label}</option>
-                            ))}
-                        </select>
-                    </>
+            {/* Score / vs */}
+            {editMode ? (
+                <>
+                    <select
+                        aria-label="Score joueur 1"
+                        value={isP1Abs ? "" : score1}
+                        onChange={(e) => handleScorePartChange(1, e.target.value)}
+                        disabled={isP1Abs}
+                        className="h-6 w-12 text-xs text-center border rounded px-0.5 bg-white disabled:opacity-50 shrink-0"
+                    >
+                        {SCORE_OPTIONS.map(o => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                    </select>
+                    <select
+                        aria-label="Score joueur 2"
+                        value={isP2Abs ? "" : score2}
+                        onChange={(e) => handleScorePartChange(2, e.target.value)}
+                        disabled={isP2Abs}
+                        className="h-6 w-12 text-xs text-center border rounded px-0.5 bg-white disabled:opacity-50 shrink-0"
+                    >
+                        {SCORE_OPTIONS.map(o => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                    </select>
+                </>
+            ) : hasResult ? (
+                match.score === "WO" ? (
+                    <span className="inline-flex items-center text-[10px] px-1.5 py-0 rounded-full border border-amber-300 text-amber-600 font-medium shrink-0">
+                        WO
+                    </span>
                 ) : (
-                    <span className="text-gray-400">vs</span>
-                )}
-
-                <span className={`truncate ${isP2Winner ? 'font-bold text-green-600' : ''}`}>
-                    {formatPlayerName(p2)}
-                </span>
-            </div>
-
-            {/* Score display (mode lecture) */}
-            {hasResult && !editMode && (
-                <div className="text-center">
-                    {match.score === "WO" ? (
-                        <span className="inline-flex items-center text-[10px] px-1.5 py-0 rounded-full border border-amber-300 text-amber-600 font-medium">
-                            WO
-                        </span>
-                    ) : (
-                        <span className="font-semibold text-blue-600">{match.score?.includes("ABS") ? "Abs" : match.score}</span>
-                    )}
-                </div>
+                    <span className="font-semibold text-blue-600 shrink-0">{match.score?.includes("ABS") ? "Abs" : match.score}</span>
+                )
+            ) : (
+                <span className="text-gray-400 shrink-0">vs</span>
             )}
+
+            {/* Joueur 2 */}
+            <span className={`flex-1 min-w-0 truncate text-left ${isP2Winner ? 'font-bold text-green-600' : ''}`}>
+                {formatPlayerName(p2)}
+            </span>
         </div>
     )
 }
