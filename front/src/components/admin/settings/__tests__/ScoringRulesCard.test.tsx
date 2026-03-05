@@ -5,7 +5,7 @@ import type { ScorePointsEntry } from '@/types/settings'
 
 // Mock validation to always succeed by default
 vi.mock('@/lib/validation', () => ({
-  validateFormData: (_schema: any, data: any) => ({
+  validateFormData: (_schema: unknown, data: unknown) => ({
     success: true,
     data,
     fieldErrors: {},

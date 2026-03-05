@@ -109,15 +109,19 @@ export function CreateGroupsDialog({ open , onOpenChange }: CreateGroupsDialogPr
                 optimalDistribution.numberOfGroups
             )
 
-            // 3. Assigner les joueurs aux groupes
-            for (let i = 0; i < distributedGroups.length; i++) {
-                const groupId = createdGroupsData[i].id
-                const playerIds = distributedGroups[i].map(p => p.id)
-                
-                if (playerIds.length > 0) {
-                    await assignPlayersToGroup(groupId, playerIds, currentEvent.id)
-                }
+            // 3. Assigner les joueurs aux groupes en parallèle
+            if (!createdGroupsData || createdGroupsData.length < distributedGroups.length) {
+                throw new Error("Le nombre de groupes créés ne correspond pas à la distribution")
             }
+
+            await Promise.all(
+                distributedGroups.map((group, i) => {
+                    const playerIds = group.map(p => p.id)
+                    if (playerIds.length > 0) {
+                        return assignPlayersToGroup(createdGroupsData[i].id, playerIds, currentEvent.id)
+                    }
+                })
+            )
 
             onOpenChange(false)
 

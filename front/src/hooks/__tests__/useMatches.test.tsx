@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import type { MockQueryBuilder, MockSupabase } from '@/test/mocks/supabase'
 
 const { mockSupabase } = vi.hoisted(() => {
-    const qb: any = {
-        select: vi.fn().mockReturnThis(), insert: vi.fn().mockReturnThis(), update: vi.fn().mockReturnThis(),
-        delete: vi.fn().mockReturnThis(), upsert: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(),
-        in: vi.fn().mockReturnThis(), order: vi.fn().mockReturnThis(), single: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockReturnThis(), then: vi.fn(),
-        _resolve: (data: any) => { const p = Promise.resolve({ data, error: null }); qb.then = p.then.bind(p); return qb },
-        _reject: (error: any) => { const p = Promise.resolve({ data: null, error: { message: error } }); qb.then = p.then.bind(p); return qb },
-    }
-    return { mockSupabase: { from: vi.fn(() => qb), rpc: vi.fn(), _builder: qb } }
+    const qb = {} as MockQueryBuilder
+    qb.select = vi.fn(() => qb); qb.insert = vi.fn(() => qb); qb.update = vi.fn(() => qb)
+    qb.delete = vi.fn(() => qb); qb.upsert = vi.fn(() => qb); qb.eq = vi.fn(() => qb)
+    qb.in = vi.fn(() => qb); qb.order = vi.fn(() => qb); qb.single = vi.fn(() => qb)
+    qb.maybeSingle = vi.fn(() => qb); qb.then = vi.fn()
+    qb._resolve = (data: unknown) => { const p = Promise.resolve({ data, error: null }); qb.then = p.then.bind(p) as unknown as ReturnType<typeof vi.fn>; return qb }
+    qb._reject = (error: string) => { const p = Promise.resolve({ data: null, error: { message: error } }); qb.then = p.then.bind(p) as unknown as ReturnType<typeof vi.fn>; return qb }
+    return { mockSupabase: { from: vi.fn(() => qb), rpc: vi.fn(), _builder: qb } as MockSupabase }
 })
 
 vi.mock('@/lib/supabaseClient', () => ({
@@ -21,7 +21,7 @@ vi.mock('@/lib/supabaseClient', () => ({
 vi.mock('@/lib/matchScheduler', () => ({
     generateGroupRounds: vi.fn(),
     mapRoundsToDates: vi.fn(),
-    assignTimeSlotsForDates: vi.fn(),
+    assignTimeSlotsForDates: vi.fn().mockReturnValue({ assignments: [], unplaced: [] }),
     calculateTimeSlots: vi.fn(),
     calculateDates: vi.fn(),
 }))

@@ -77,7 +77,7 @@ export default function Login({className, toggle, ...props}: RegisterProps) {
                     <form onSubmit={handleSubmit}>
                         <FieldGroup>
                             <Field>
-                                <FieldLabel htmlFor="email">Email</FieldLabel>
+                                <FieldLabel htmlFor="email_login">Email</FieldLabel>
                                 <Input
                                     id="email_login"
                                     type="email"
@@ -91,7 +91,7 @@ export default function Login({className, toggle, ...props}: RegisterProps) {
                             </Field>
                             <Field>
                                 <div className="flex items-center">
-                                    <FieldLabel htmlFor="password">Mot de passe</FieldLabel>
+                                    <FieldLabel htmlFor="password_login">Mot de passe</FieldLabel>
                                     <a
                                         href="#"
                                         className="ml-auto inline-block text-sm underline-offset-4 hover:underline"

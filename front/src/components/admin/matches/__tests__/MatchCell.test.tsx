@@ -33,10 +33,10 @@ describe('MatchCell', () => {
     expect(screen.getByText('—')).toBeInTheDocument()
   })
 
-  it('displays player names formatted as "FirstName L."', () => {
+  it('displays player full names', () => {
     render(<MatchCell match={makeMatch()} />)
-    expect(screen.getByText('Alice M.')).toBeInTheDocument()
-    expect(screen.getByText('Bob D.')).toBeInTheDocument()
+    expect(screen.getByText('Alice Martin')).toBeInTheDocument()
+    expect(screen.getByText('Bob Dupont')).toBeInTheDocument()
   })
 
   it('displays "vs" between players', () => {
@@ -89,7 +89,7 @@ describe('MatchCell', () => {
 
   it('highlights winner name when winner_id is set', () => {
     render(<MatchCell match={makeMatch({ winner_id: 'p1', score: '3-1' })} />)
-    const winnerEl = screen.getByText('Alice M.')
+    const winnerEl = screen.getByText('Alice Martin')
     expect(winnerEl.className).toMatch(/font-bold|text-green/)
   })
 

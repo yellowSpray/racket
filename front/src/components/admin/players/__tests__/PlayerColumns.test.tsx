@@ -85,7 +85,7 @@ describe('PlayerColumns', () => {
     const absenceCol = cols.find(c => c.header === 'Absence')
     expect(absenceCol).toBeDefined()
     if (absenceCol && 'cell' in absenceCol && absenceCol.cell) {
-      const CellComponent = absenceCol.cell as any
+      const CellComponent = absenceCol.cell as React.FC<{ row: { original: PlayerType; getValue: ReturnType<typeof vi.fn> } }>
       const mockRow = {
         original: makePlayer({ unavailable: ['2026-03-04', '2026-03-05'] }),
         getValue: vi.fn(),
@@ -101,7 +101,7 @@ describe('PlayerColumns', () => {
     const statusCol = cols.find(c => c.header === 'Status')
     expect(statusCol).toBeDefined()
     if (statusCol && 'cell' in statusCol && statusCol.cell) {
-      const CellComponent = statusCol.cell as any
+      const CellComponent = statusCol.cell as React.FC<{ row: { original: PlayerType; getValue: ReturnType<typeof vi.fn> } }>
       const mockRow = {
         original: makePlayer({ status: ['active', 'member'] }),
         getValue: vi.fn(),
@@ -117,7 +117,7 @@ describe('PlayerColumns', () => {
     const actionsCol = cols.find(c => c.header === 'Actions')
     expect(actionsCol).toBeDefined()
     if (actionsCol && 'cell' in actionsCol && actionsCol.cell) {
-      const CellComponent = actionsCol.cell as any
+      const CellComponent = actionsCol.cell as React.FC<{ row: { original: PlayerType; getValue: ReturnType<typeof vi.fn> } }>
       const mockRow = {
         original: makePlayer(),
         getValue: vi.fn(),

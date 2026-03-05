@@ -231,7 +231,7 @@ export function useMatches() {
             console.log(`[Scheduler] Génération: ${totalPairings} matchs, ${dates.length} dates, ${timeSlots.length} créneaux/jour, ${event.number_of_courts} terrains (${dates.length * timeSlots.length * event.number_of_courts} slots totaux)`)
 
             // 5. Assigner les créneaux horaires et terrains par date
-            const assignments = assignTimeSlotsForDates(
+            const { assignments, unplaced } = assignTimeSlotsForDates(
                 datePlans,
                 timeSlots,
                 event.number_of_courts,
@@ -269,12 +269,16 @@ export function useMatches() {
             // 7. Refresh
             await fetchMatchesByEvent(event.id)
 
-            const result = { total: totalPairings, placed: assignments.length }
+            const result = { total: totalPairings, placed: assignments.length, unplaced }
 
-            if (assignments.length < totalPairings) {
+            if (unplaced.length > 0) {
+                const details = unplaced
+                    .map(u => `${u.pairing.player1Name} vs ${u.pairing.player2Name} (${u.pairing.groupName}, ${u.date})`)
+                    .join(", ")
                 setError(
                     `${assignments.length}/${totalPairings} matchs placés. ` +
-                    `${totalPairings - assignments.length} match(s) sans créneau. Ajoutez des dates ou des terrains.`
+                    `${unplaced.length} match(s) sans créneau : ${details}. ` +
+                    `Ajoutez des dates ou des terrains.`
                 )
             }
 

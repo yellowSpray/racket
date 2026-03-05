@@ -380,7 +380,7 @@ describe('assignTimeSlotsForDates', () => {
 
   it('assigns a single match to the first available slot', () => {
     const plans = [makeDatePlan('2026-03-01', [makePairing('g1', 'p1', 'p2')])]
-    const result = assignTimeSlotsForDates(plans, timeSlots, numberOfCourts)
+    const { assignments: result } = assignTimeSlotsForDates(plans, timeSlots, numberOfCourts)
 
     expect(result).toHaveLength(1)
     expect(result[0]).toMatchObject({
@@ -397,7 +397,7 @@ describe('assignTimeSlotsForDates', () => {
       makePairing('g1', 'p1', 'p2'),
       makePairing('g1', 'p3', 'p4'),
     ])]
-    const result = assignTimeSlotsForDates(plans, timeSlots, numberOfCourts)
+    const { assignments: result } = assignTimeSlotsForDates(plans, timeSlots, numberOfCourts)
 
     expect(result).toHaveLength(2)
     expect(result[0].matchTime).toBe('18:00')
@@ -412,7 +412,7 @@ describe('assignTimeSlotsForDates', () => {
       makePairing('g1', 'p3', 'p4'),
       makePairing('g1', 'p5', 'p6'),
     ])]
-    const result = assignTimeSlotsForDates(plans, timeSlots, numberOfCourts)
+    const { assignments: result } = assignTimeSlotsForDates(plans, timeSlots, numberOfCourts)
 
     expect(result).toHaveLength(3)
     const firstSlotMatches = result.filter((a) => a.matchTime === '18:00')
@@ -427,19 +427,19 @@ describe('assignTimeSlotsForDates', () => {
       makePairing('g1', 'p3', 'p4'),
       makePairing('g1', 'p5', 'p6'),
     ])]
-    const result = assignTimeSlotsForDates(plans, ['18:00'], 2)
+    const { assignments: result } = assignTimeSlotsForDates(plans, ['18:00'], 2)
 
     expect(result).toHaveLength(2)
   })
 
   it('returns empty array when no plans provided', () => {
-    const result = assignTimeSlotsForDates([], timeSlots, numberOfCourts)
+    const { assignments: result } = assignTimeSlotsForDates([], timeSlots, numberOfCourts)
     expect(result).toEqual([])
   })
 
   it('returns empty array when no time slots provided', () => {
     const plans = [makeDatePlan('2026-03-01', [makePairing('g1', 'p1', 'p2')])]
-    const result = assignTimeSlotsForDates(plans, [], numberOfCourts)
+    const { assignments: result } = assignTimeSlotsForDates(plans, [], numberOfCourts)
     expect(result).toEqual([])
   })
 
@@ -453,7 +453,7 @@ describe('assignTimeSlotsForDates', () => {
       constraints.set('p1', { arrival: '18:45', departure: '', unavailable: [] })
 
       const plans = [makeDatePlan('2026-03-01', [makePairing('g1', 'p1', 'p2')])]
-      const result = assignTimeSlotsForDates(plans, timeSlots, numberOfCourts, constraints, 30)
+      const { assignments: result } = assignTimeSlotsForDates(plans, timeSlots, numberOfCourts, constraints, 30)
 
       expect(result).toHaveLength(1)
       expect(result[0].matchTime).toBe('19:00')
@@ -464,7 +464,7 @@ describe('assignTimeSlotsForDates', () => {
       constraints.set('p2', { arrival: '', departure: '18:45', unavailable: [] })
 
       const plans = [makeDatePlan('2026-03-01', [makePairing('g1', 'p1', 'p2')])]
-      const result = assignTimeSlotsForDates(plans, timeSlots, numberOfCourts, constraints, 30)
+      const { assignments: result } = assignTimeSlotsForDates(plans, timeSlots, numberOfCourts, constraints, 30)
 
       expect(result).toHaveLength(1)
       expect(result[0].matchTime).toBe('18:00')
@@ -475,7 +475,7 @@ describe('assignTimeSlotsForDates', () => {
       constraints.set('p1', { arrival: '', departure: '', unavailable: ['2026-03-01'] })
 
       const plans = [makeDatePlan('2026-03-01', [makePairing('g1', 'p1', 'p2')])]
-      const result = assignTimeSlotsForDates(plans, timeSlots, numberOfCourts, constraints, 30)
+      const { assignments: result } = assignTimeSlotsForDates(plans, timeSlots, numberOfCourts, constraints, 30)
 
       expect(result).toHaveLength(1)
       expect(result[0].matchDate).toBe('2026-03-01')
@@ -487,7 +487,7 @@ describe('assignTimeSlotsForDates', () => {
       constraints.set('p1', { arrival: '19:00', departure: '', unavailable: [] })
 
       const plans = [makeDatePlan('2026-03-01', [makePairing('g1', 'p1', 'p2')])]
-      const result = assignTimeSlotsForDates(plans, ['18:00', '18:30', '19:00', '19:30'], numberOfCourts, constraints, 30)
+      const { assignments: result } = assignTimeSlotsForDates(plans, ['18:00', '18:30', '19:00', '19:30'], numberOfCourts, constraints, 30)
 
       expect(result).toHaveLength(1)
       expect(result[0].matchTime).toBe('19:00')
@@ -498,7 +498,7 @@ describe('assignTimeSlotsForDates', () => {
       constraints.set('p3', { arrival: '22:00', departure: '', unavailable: ['2026-03-01'] })
 
       const plans = [makeDatePlan('2026-03-01', [makePairing('g1', 'p1', 'p2')])]
-      const result = assignTimeSlotsForDates(plans, timeSlots, numberOfCourts, constraints, 30)
+      const { assignments: result } = assignTimeSlotsForDates(plans, timeSlots, numberOfCourts, constraints, 30)
 
       expect(result).toHaveLength(1)
       expect(result[0].matchTime).toBe('18:00')
@@ -510,7 +510,7 @@ describe('assignTimeSlotsForDates', () => {
       constraints.set('p2', { arrival: '', departure: '', unavailable: ['2026-03-01'] })
 
       const plans = [makeDatePlan('2026-03-01', [makePairing('g1', 'p1', 'p2')])]
-      const result = assignTimeSlotsForDates(plans, timeSlots, numberOfCourts, constraints, 30)
+      const { assignments: result } = assignTimeSlotsForDates(plans, timeSlots, numberOfCourts, constraints, 30)
 
       expect(result).toHaveLength(1)
       expect(result[0].absentPlayerIds).toContain('p1')
@@ -531,7 +531,7 @@ describe('assignTimeSlotsForDates', () => {
       constraints.set('p2', { arrival: '20:00', departure: '', unavailable: [] })
 
       const plans = [makeDatePlan('2026-03-01', [makePairing('g1', 'p1', 'p2')])]
-      const result = assignTimeSlotsForDates(plans, slots, 1, constraints, 30)
+      const { assignments: result } = assignTimeSlotsForDates(plans, slots, 1, constraints, 30)
 
       expect(result).toHaveLength(1)
       expect(result[0].matchTime).toBe('20:00')
@@ -543,7 +543,7 @@ describe('assignTimeSlotsForDates', () => {
       constraints.set('p2', { arrival: '', departure: '21:00', unavailable: [] })
 
       const plans = [makeDatePlan('2026-03-01', [makePairing('g1', 'p1', 'p2')])]
-      const result = assignTimeSlotsForDates(plans, slots, 1, constraints, 30)
+      const { assignments: result } = assignTimeSlotsForDates(plans, slots, 1, constraints, 30)
 
       expect(result).toHaveLength(1)
       expect(result[0].matchTime).toBe('18:00')
@@ -555,7 +555,7 @@ describe('assignTimeSlotsForDates', () => {
       constraints.set('p2', { arrival: '20:30', departure: '', unavailable: [] })
 
       const plans = [makeDatePlan('2026-03-01', [makePairing('g1', 'p1', 'p2')])]
-      const result = assignTimeSlotsForDates(plans, slots, 1, constraints, 30)
+      const { assignments: result } = assignTimeSlotsForDates(plans, slots, 1, constraints, 30)
 
       expect(result).toHaveLength(1)
       expect(result[0].matchTime).toBe('20:30')
@@ -574,7 +574,7 @@ describe('assignTimeSlotsForDates', () => {
         makePairing('g1', 'p7', 'p8'),
         makePairing('g1', 'p1', 'p2'),
       ])]
-      const result = assignTimeSlotsForDates(plans, narrowSlots, 1, constraints, 30)
+      const { assignments: result } = assignTimeSlotsForDates(plans, narrowSlots, 1, constraints, 30)
 
       // p1/p2 are scheduled first (tightest window) → they get 19:30 (first in-window slot)
       const p1p2Match = result.find(a => a.player1Id === 'p1' && a.player2Id === 'p2')
@@ -591,7 +591,7 @@ describe('assignTimeSlotsForDates', () => {
         makePairing('g1', 'p3', 'p4'),
         makePairing('g1', 'p1', 'p2'),
       ])]
-      const result = assignTimeSlotsForDates(plans, slots, 1, constraints, 30)
+      const { assignments: result } = assignTimeSlotsForDates(plans, slots, 1, constraints, 30)
 
       const p1p2Match = result.find(a => a.player1Id === 'p1' && a.player2Id === 'p2')
       expect(p1p2Match).toBeDefined()
@@ -604,7 +604,7 @@ describe('assignTimeSlotsForDates', () => {
       constraints.set('p2', { arrival: '20:00', departure: '', unavailable: [] })
 
       const plans = [makeDatePlan('2026-03-01', [makePairing('g1', 'p1', 'p2')])]
-      const result = assignTimeSlotsForDates(plans, slots, 1, constraints, 30)
+      const { assignments: result } = assignTimeSlotsForDates(plans, slots, 1, constraints, 30)
 
       expect(result).toHaveLength(1)
       expect(result[0].matchTime).toBe('20:00')
@@ -624,7 +624,7 @@ describe('assignTimeSlotsForDates', () => {
 
       const groupRounds = generateGroupRounds(groups)
       const datePlans = mapRoundsToDates(groupRounds, fiveDates)
-      const result = assignTimeSlotsForDates(datePlans, slots, 3, undefined, 30)
+      const { assignments: result } = assignTimeSlotsForDates(datePlans, slots, 3, undefined, 30)
 
       expect(result).toHaveLength(10)
     })
@@ -637,7 +637,7 @@ describe('assignTimeSlotsForDates', () => {
 
       const groupRounds = generateGroupRounds(groups)
       const datePlans = mapRoundsToDates(groupRounds, fiveDates)
-      const result = assignTimeSlotsForDates(datePlans, slots, 3, undefined, 30)
+      const { assignments: result } = assignTimeSlotsForDates(datePlans, slots, 3, undefined, 30)
 
       expect(result).toHaveLength(15)
     })
@@ -653,7 +653,7 @@ describe('assignTimeSlotsForDates', () => {
 
       const groupRounds = generateGroupRounds(groups, fiveDates, absences)
       const datePlans = mapRoundsToDates(groupRounds, fiveDates)
-      const result = assignTimeSlotsForDates(datePlans, slots, 3, undefined, 30)
+      const { assignments: result } = assignTimeSlotsForDates(datePlans, slots, 3, undefined, 30)
 
       expect(result).toHaveLength(10)
 
@@ -675,7 +675,7 @@ describe('assignTimeSlotsForDates', () => {
 
       const groupRounds = generateGroupRounds(groups, fiveDates, absences)
       const datePlans = mapRoundsToDates(groupRounds, fiveDates)
-      const result = assignTimeSlotsForDates(datePlans, slots, 3, undefined, 30)
+      const { assignments: result } = assignTimeSlotsForDates(datePlans, slots, 3, undefined, 30)
 
       expect(result).toHaveLength(10)
 
@@ -733,7 +733,7 @@ describe('assignTimeSlotsForDates', () => {
 
       const groupRounds = generateGroupRounds(groups)
       const datePlans = mapRoundsToDates(groupRounds, fiveDates)
-      const result = assignTimeSlotsForDates(datePlans, slots, 3, undefined, 30)
+      const { assignments: result } = assignTimeSlotsForDates(datePlans, slots, 3, undefined, 30)
 
       expect(result).toHaveLength(30)
     })

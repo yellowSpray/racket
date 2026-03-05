@@ -241,7 +241,7 @@ describe("sortPlayersByEarliestDates", () => {
             [firstOpponentId, { arrival: "", departure: "", unavailable: ["2026-03-01", "2026-03-02"] }],
         ])
 
-        const assignments = assignTimeSlotsForDates(datePlans, timeSlots, 4, constraints, 30)
+        const { assignments } = assignTimeSlotsForDates(datePlans, timeSlots, 4, constraints, 30)
         const sorted = sortPlayersByEarliestDates(group, assignments)
 
         // Le joueur A après tri doit avoir ses dates en ordre croissant
@@ -272,7 +272,7 @@ describe("sortPlayersByEarliestDates", () => {
         const timeSlots = calculateTimeSlots("19:00", "23:00", 30)
         const groupRounds = generateGroupRounds(groups, dates)
         const datePlans = mapRoundsToDates(groupRounds, dates)
-        const assignments = assignTimeSlotsForDates(datePlans, timeSlots, 4)
+        const { assignments } = assignTimeSlotsForDates(datePlans, timeSlots, 4)
 
         const sorted1 = sortPlayersByEarliestDates(groups[0], assignments)
         const sorted2 = sortPlayersByEarliestDates(groups[1], assignments)
@@ -422,7 +422,7 @@ describe("assignTimeSlotsForDates", () => {
         const rounds = generateGroupRounds(groups)
         const datePlans = mapRoundsToDates(rounds, dates)
 
-        const assignments = assignTimeSlotsForDates(datePlans, timeSlots, 3)
+        const { assignments } = assignTimeSlotsForDates(datePlans, timeSlots, 3)
         expect(assignments).toHaveLength(15)
     })
 
@@ -444,7 +444,7 @@ describe("assignTimeSlotsForDates", () => {
         const rounds = generateGroupRounds(groups)
         const datePlans = mapRoundsToDates(rounds, dates)
 
-        const assignments = assignTimeSlotsForDates(datePlans, timeSlots, 3)
+        const { assignments } = assignTimeSlotsForDates(datePlans, timeSlots, 3)
         expect(assignments).toHaveLength(45) // 3 × 15
     })
 
@@ -458,7 +458,7 @@ describe("assignTimeSlotsForDates", () => {
         const timeSlots = calculateTimeSlots("19:00", "23:00", 30)
         const rounds = generateGroupRounds(groups)
         const datePlans = mapRoundsToDates(rounds, dates)
-        const assignments = assignTimeSlotsForDates(datePlans, timeSlots, 3)
+        const { assignments } = assignTimeSlotsForDates(datePlans, timeSlots, 3)
 
         // Pour chaque (date, heure), aucun joueur ne doit apparaître deux fois
         const slotPlayers = new Map<string, Set<string>>()
@@ -484,7 +484,7 @@ describe("assignTimeSlotsForDates", () => {
 
         const rounds = generateGroupRounds(groups)
         const datePlans = mapRoundsToDates(rounds, dates)
-        const assignments = assignTimeSlotsForDates(datePlans, timeSlots, 3, constraints, 30)
+        const { assignments } = assignTimeSlotsForDates(datePlans, timeSlots, 3, constraints, 30)
 
         // Tous les matchs de p1 doivent être à 20:30 ou après
         const p1Matches = assignments.filter(a => a.player1Id === "p1" || a.player2Id === "p1")
@@ -516,7 +516,7 @@ describe("assignTimeSlotsForDates", () => {
             return sum + (n * (n - 1)) / 2
         }, 0)
 
-        const assignments = assignTimeSlotsForDates(datePlans, timeSlots, 3)
+        const { assignments } = assignTimeSlotsForDates(datePlans, timeSlots, 3)
         expect(assignments).toHaveLength(expectedTotal)
     })
 })

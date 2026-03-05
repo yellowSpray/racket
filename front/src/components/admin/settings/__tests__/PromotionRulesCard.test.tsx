@@ -4,7 +4,7 @@ import { PromotionRulesCard } from '../PromotionRulesCard'
 import type { PromotionRules } from '@/types/settings'
 
 vi.mock('@/lib/validation', () => ({
-  validateFormData: (_schema: any, data: any) => ({
+  validateFormData: (_schema: unknown, data: unknown) => ({
     success: true,
     data,
     fieldErrors: {},

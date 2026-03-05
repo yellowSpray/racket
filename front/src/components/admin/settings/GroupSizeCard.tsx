@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
-import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Pencil, Check, Loader2, Users } from "lucide-react"
 

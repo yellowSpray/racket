@@ -105,14 +105,26 @@ export function mapRoundsToDates(
  * - Un terrain ne peut accueillir qu'1 match par créneau
  * - Préférence pour les fenêtres de disponibilité
  */
+export interface UnplacedMatch {
+    pairing: MatchPairing
+    date: string
+    reason: string
+}
+
+export interface ScheduleResult {
+    assignments: MatchAssignment[]
+    unplaced: UnplacedMatch[]
+}
+
 export function assignTimeSlotsForDates(
     datePlans: DatePlan[],
     timeSlots: string[],
     numberOfCourts: number,
     constraints?: Map<string, PlayerConstraints>,
     durationMinutes?: number
-): MatchAssignment[] {
+): ScheduleResult {
     const allAssignments: MatchAssignment[] = []
+    const unplaced: UnplacedMatch[] = []
     const playerConstraints = constraints || new Map<string, PlayerConstraints>()
     const matchDuration = durationMinutes || 30
 
@@ -132,9 +144,11 @@ export function assignTimeSlotsForDates(
             )
 
             if (!slot) {
-                console.warn(
-                    `[Scheduler] ❌ Match non placé : ${pairing.player1Name} vs ${pairing.player2Name} (${pairing.groupName}) le ${plan.date}`
-                )
+                unplaced.push({
+                    pairing,
+                    date: plan.date,
+                    reason: `Aucun créneau disponible le ${plan.date}`,
+                })
                 continue
             }
 
@@ -155,7 +169,7 @@ export function assignTimeSlotsForDates(
         }
     }
 
-    return allAssignments
+    return { assignments: allAssignments, unplaced }
 }
 
 /**
