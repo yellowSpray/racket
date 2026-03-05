@@ -121,8 +121,12 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="flex items-center px-1 py-0.5 min-h-[2.25rem]">
-                                        <span className="font-bold text-xs">{getPlayerLetter(rowIndex)}</span>
+                                    <div className="flex items-center px-1 py-0.5">
+                                        <span className="font-bold text-xs shrink-0 w-4">{getPlayerLetter(rowIndex)}</span>
+                                        <div className="flex-1 text-center min-w-0">
+                                            <p className="text-xs truncate invisible">placeholder</p>
+                                            <p className="text-[10px] truncate invisible">placeholder</p>
+                                        </div>
                                     </div>
                                 )}
                             </TableCell>
@@ -137,8 +141,14 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                     return (
                                         <TableCell
                                             key={colIndex}
-                                            className="bg-gray-400"
-                                        />
+                                            className="bg-gray-400 p-2"
+                                        >
+                                            <div className="invisible text-[10px]">
+                                                <div>-</div>
+                                                <div className="pb-1 mb-1">-</div>
+                                                <div>-</div>
+                                            </div>
+                                        </TableCell>
                                     )
                                 }
 
@@ -146,8 +156,14 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                     return (
                                         <TableCell
                                             key={colIndex}
-                                            className="bg-gray-200"
-                                        />
+                                            className="bg-gray-200 p-2"
+                                        >
+                                            <div className="invisible text-[10px]">
+                                                <div>-</div>
+                                                <div className="pb-1 mb-1">-</div>
+                                                <div>-</div>
+                                            </div>
+                                        </TableCell>
                                     )
                                 }
 
