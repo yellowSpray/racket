@@ -17,9 +17,9 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-Event Fest replaces the manual, fragmented workflow of managing round-robin tournaments ("boxes") in racket sports clubs. Today, club administrators juggle Excel spreadsheets, WhatsApp groups, and paper to handle player registrations, group draws, match scheduling, scoring, and promotion/relegation between levels — a process that consumes hours of volunteer time per cycle.
+Event Fest replaces the manual, fragmented workflow of managing round-robin "boxes" for racket sports clubs. Today, club administrators juggle Excel spreadsheets, WhatsApp groups, and paper to handle player registrations, group draws, match scheduling, scoring, and promotion/relegation between levels - a process that consumes hours of volunteer time per cycle.
 
-Event Fest automates the entire box lifecycle: import players, calculate rankings, apply promotion/relegation rules, generate balanced groups, and publish — all validated in a single click. The platform targets all racket sports (squash, padel, tennis, badminton, table tennis, pickleball) and is designed to scale from a single club to a multi-club network.
+Event Fest automates the entire box lifecycle: import players, calculate rankings, apply promotion/relegation rules, generate balanced groups, and publish - all validated in a single click. The platform targets all racket sports (squash, padel, tennis, badminton, table tennis, pickleball) and is designed to scale from a single club to a multi-club network.
 
 ### Three access levels
 
@@ -57,13 +57,19 @@ Event Fest automates the entire box lifecycle: import players, calculate ranking
 * Round-robin table display with groups and match details (date, time, court)
 * Multi-constraint scheduling engine (player availability, arrival/departure windows, court slots, bye optimization)
 * Smart absence management (soft constraints with bye/absence alignment for odd groups)
-* Vitest + TDD test suite (100+ tests)
+* Configurable scoring engine (per-club score-to-points mapping, including ABS handling)
+* Configurable promotion/relegation rules (customizable promoted/relegated counts per club)
+* Ranking engine with full standings computation (points, set diff, head-to-head tiebreakers)
+* Promotion/relegation engine (automatic moves based on standings and club rules)
+* Elo rating engine for player power ranking updates
+* "Box precedent" wizard: generate new groups from previous event standings with automatic redistribution by power ranking
+* Previous box preview with promotion/relegation indicators and unregistered player detection
+* Drag & drop group management for proposed groups (with new player highlighting)
+* Vitest + TDD test suite (600+ tests)
 
 ### In Progress (MVP — Phase 1)
 
-* Configurable scoring engine (per-club point rules)
-* Configurable promotion/relegation rules
-* One-click new box workflow (rankings + promotions + groups + schedule)
+* One-click new box workflow (rankings + promotions + groups + schedule — in one click)
 * Smart Excel import with auto-detection and column mapping
 * Admin preview before publishing
 
@@ -75,7 +81,7 @@ Event Fest automates the entire box lifecycle: import players, calculate ranking
 * Calendar sync (Google/Apple/Outlook)
 * Integrated communication center (replacing WhatsApp)
 * Public club page with QR code for player acquisition
-* Hidden Elo system for intelligent player placement
+* Elo-based intelligent player placement (engine built, UI integration planned)
 * FIFA-style player cards, badges, and achievements
 * Participation streaks and gamification
 * Multi-club network with cross-club player profiles
@@ -90,7 +96,7 @@ Event-Fest/
 │       ├── components/ # UI components (admin/, user/, shared/, ui/)
 │       ├── contexts/   # React Context (Auth, Event, Players)
 │       ├── hooks/      # Custom hooks (data fetching via Supabase)
-│       ├── lib/        # Domain logic (ranking, promotion, scheduling engines)
+│       ├── lib/        # Domain logic (ranking, promotion, Elo, scheduling, group distribution engines)
 │       ├── pages/      # Page components (admin/, user/, auth/)
 │       ├── routes/     # React Router v7 with role-based protection
 │       └── types/      # TypeScript type definitions
@@ -118,28 +124,32 @@ Event-Fest/
 - [x] Event settings and configuration
 - [x] Group / draw management with distribution choices
 - [x] Multi-constraint scheduling engine
-- [x] Vitest + TDD setup
-- [ ] Configurable scoring engine
-- [ ] Promotion/relegation engine
-- [ ] One-click new box workflow
+- [x] Vitest + TDD setup (600+ tests)
+- [x] Configurable scoring engine (score-to-points mapping)
+- [x] Configurable promotion/relegation rules
+- [x] Ranking engine (points, set diff, head-to-head)
+- [x] Promotion/relegation engine
+- [x] Elo rating engine
+- [x] "Box precedent" wizard (generate groups from previous event)
+- [ ] One-click new box workflow (final integration)
 - [ ] Smart Excel import
 
-### Phase 2 — Growth (Months 2-4)
+### Phase 2 — Growth
 - [ ] Player-entered results with confirmation
 - [ ] Auto re-registration (opt-out)
 - [ ] Live results page during match nights
 - [ ] Complete player stats page
 - [ ] Pre-match presence confirmation
 
-### Phase 3 — Expansion (Months 4-8)
+### Phase 3 — Expansion
 - [ ] Calendar sync (Google/Apple/Outlook)
 - [ ] Integrated communication center
 - [ ] Public club page with QR code
 - [ ] Automated club/admin verification
 - [ ] Smart match reminders
 
-### Phase 4 — Engagement & Scale (Months 8+)
-- [ ] Hidden Elo system
+### Phase 4 — Engagement & Scale
+- [ ] Elo-based intelligent player placement (UI integration)
 - [ ] FIFA-style player cards and badges
 - [ ] Participation streaks
 - [ ] Multi-club network
