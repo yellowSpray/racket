@@ -15,3 +15,18 @@ export interface GroupStandings {
   groupName: string
   standings: PlayerStanding[]
 }
+
+export interface PromotionMove {
+  playerId: string
+  playerName: string
+  fromGroupId: string
+  fromGroupName: string
+  toGroupId: string
+  toGroupName: string
+  type: "promotion" | "relegation"
+}
+
+export interface PromotionResult {
+  moves: PromotionMove[]
+  stayingPlayers: { playerId: string; groupId: string }[]
+}
