@@ -86,25 +86,40 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
         return match.winner_id === rowPlayerId
     }
 
+    /**
+     * Affiche le score du point de vue du joueur de la ligne.
+     * Si le joueur est player1, le score reste tel quel (ex: "3-1").
+     * Si le joueur est player2, on inverse (ex: "1-3").
+     */
+    const orientedScore = (match: Match, rowPlayerId: string): string => {
+        const score = match.score
+        if (!score) return ""
+        if (score === "WO" || score === "ABS") return score
+        const parts = score.split("-")
+        if (parts.length !== 2) return score
+        if (match.player1_id === rowPlayerId) return score
+        return `${parts[1]}-${parts[0]}`
+    }
+
     return (
-        <div className="border rounded-lg overflow-hidden">
-            <Table className="table-fixed">
+        <div className="border border-gray-300 rounded-lg overflow-hidden" data-draw-table>
+            <Table className="table-fixed [&_tr]:border-gray-300">
                 <TableHeader>
                     <TableRow>
-                        <TableHead className="bg-blue-200 font-bold text-center">
+                        <TableHead className="bg-blue-200 font-bold text-center border-x border-gray-300">
                             {group.group_name}
                         </TableHead>
 
                         {slots.map((slot, index) => (
                             <TableHead
                                 key={index}
-                                className={`text-center font-bold text-xs w-12 ${!slot ? 'bg-gray-200': 'bg-yellow-100'}`}
+                                className={`text-center font-bold text-xs w-12 border-x border-gray-300 ${!slot ? 'bg-gray-200': 'bg-yellow-100'}`}
                             >
                                 {getPlayerLetter(index)}
                             </TableHead>
                         ))}
 
-                        <TableHead className="bg-green-200 text-center font-bold w-12">Total</TableHead>
+                        <TableHead className="bg-green-200 text-center font-bold w-12 border-x border-gray-300">Total</TableHead>
                     </TableRow>
                 </TableHeader>
 
@@ -141,7 +156,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                     return (
                                         <TableCell
                                             key={colIndex}
-                                            className="bg-gray-400 p-2"
+                                            className="bg-gray-400 p-2 border-x border-gray-300"
                                         >
                                             <div className="invisible text-[10px]">
                                                 <div>-</div>
@@ -156,7 +171,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                     return (
                                         <TableCell
                                             key={colIndex}
-                                            className="bg-gray-200 p-2"
+                                            className="bg-gray-200 p-2 border-x border-gray-300"
                                         >
                                             <div className="invisible text-[10px]">
                                                 <div>-</div>
@@ -175,9 +190,10 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                 return (
                                     <TableCell
                                         key={colIndex}
-                                        className={`text-center text-xs p-2 border-x border-gray-200 transition-colors cursor-pointer
-                                                ${isHovered ? 'bg-gray-200' : ''}
-                                                ${isAbsence ? 'bg-amber-50' : ''}
+                                        className={`text-center text-xs p-2 border-x border-gray-300 transition-colors cursor-pointer
+                                                ${isAbsence
+                                                    ? (isHovered ? 'bg-amber-100' : 'bg-amber-50')
+                                                    : (isHovered ? 'bg-gray-200' : '')}
                                             `}
                                         onMouseEnter={() => setHoveredMatch({row: rowIndex, col: colIndex})}
                                         onMouseLeave={() => setHoveredMatch(null)}
@@ -185,7 +201,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                         {match ? (
                                             <div>
                                                 <div className="text-gray-500 text-[10px]">{formatDate(match.match_date)}</div>
-                                                <div className="font-medium text-[10px] pb-1 mb-1 border-b border-gray-200">{formatTime(match.match_time)}</div>
+                                                <div className="font-medium text-[10px] pb-1 mb-1 border-b border-gray-300">{formatTime(match.match_time)}</div>
                                                 {match.score ? (
                                                     displayMode === "points" ? (
                                                         (() => {
@@ -200,7 +216,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                                         })()
                                                     ) : (
                                                         <div className={`font-bold ${isAbsence ? 'text-amber-600' : ''}`}>
-                                                            {isRowPlayerAbsent ? "Abs" : isAbsence ? "-" : match.score}
+                                                            {isRowPlayerAbsent ? "Abs" : isAbsence ? "-" : orientedScore(match, player.id)}
                                                         </div>
                                                     )
                                                 ) : (
@@ -210,7 +226,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                         ) : (
                                             <div className="text-gray-400">
                                                 <div>-</div>
-                                                <div className="pb-1 mb-1 border-b border-gray-200">--:--</div>
+                                                <div className="pb-1 mb-1 border-b border-gray-300">--:--</div>
                                                 <div className="invisible">-</div>
                                             </div>
                                         )}

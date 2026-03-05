@@ -5,15 +5,16 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useGroups } from "@/hooks/useGroups"
 import { useMatches } from "@/hooks/useMatches"
 import { useClubConfig } from "@/hooks/useClubConfig"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router"
-import { Settings, SquarePen, Hash, Trophy } from "lucide-react"
+import { Settings, SquarePen, Hash, Star, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DrawTable } from "@/components/admin/draws/DrawTable"
 // import { CreateGroupsDialog } from "@/components/admin/draws/CreateGroupsDialog"
 import { ManageGroupDialog } from "@/components/admin/draws/ManageGroupsDialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { totalMatchCount, sortPlayersByEarliestDates } from "@/lib/matchScheduler"
+import { exportTablesToPdf } from "@/lib/exportPdf"
 
 export function DrawAdmin () {
 
@@ -27,6 +28,16 @@ export function DrawAdmin () {
     const [manageDialogOpen, setManageDialogOpen] = useState(false)
     const [displayMode, setDisplayMode] = useState<"score" | "points">("score")
     const navigate = useNavigate()
+    const tablesRef = useRef<HTMLDivElement>(null)
+
+    const handleExportPdf = async () => {
+        if (!tablesRef.current) return
+        try {
+            await exportTablesToPdf(tablesRef.current, "tableaux.pdf")
+        } catch (err) {
+            console.error("Export PDF error:", err)
+        }
+    }
 
     const clubId = profile?.club_id ?? null
 
@@ -61,10 +72,6 @@ export function DrawAdmin () {
                         <h3 className="text-lg font-semibold">Tableaux</h3>
                         <EventSelector />
                     </div>
-                    <Button variant="outline" size="sm" disabled>
-                        <Settings className="mr-2 h-4 w-4" />
-                        Gérer les groupes
-                    </Button>
                 </div>
                 <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-lg">
                     <SquarePen className="h-12 w-12 text-gray-300" />
@@ -92,19 +99,22 @@ export function DrawAdmin () {
                 <div className="flex gap-2">
                     <Button
                         variant="outline"
-                        size="sm"
+                        size="icon"
+                        className="h-8 w-8"
                         onClick={() => setDisplayMode(prev => prev === "score" ? "points" : "score")}
                     >
                         {displayMode === "score" ? (
-                            <><Trophy className="mr-2 h-4 w-4" />Points</>
+                            <Star className="h-4 w-4" />
                         ) : (
-                            <><Hash className="mr-2 h-4 w-4" />Scores</>
+                            <Hash className="h-4 w-4" />
                         )}
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => setManageDialogOpen(true)}>
-                        <Settings className="mr-2 h-4 w-4" />
-                        Gérer les groupes
-                    </Button>
+                    {groups.length > 0 && (
+                        <Button size="sm" onClick={handleExportPdf}>
+                            <Download className="mr-1 h-4 w-4" />
+                            Export pdf
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -130,7 +140,7 @@ export function DrawAdmin () {
                 </div>
             ) : (
                 <ScrollArea className="flex-1 min-h-0" type="always">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pr-4">
+                    <div ref={tablesRef} className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pr-4">
                         {groups.map(group => {
                             const groupMatches = matches.filter(m => m.group_id === group.id)
                             const sortedGroup = sortPlayersByEarliestDates(group, groupMatches)
