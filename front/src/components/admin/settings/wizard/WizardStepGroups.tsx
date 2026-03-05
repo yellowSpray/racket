@@ -1,21 +1,28 @@
 import type { Event } from "@/types/event"
 import type { Group, GroupPlayer, SupabaseGroup } from "@/types/draw"
+import type { GroupStandings, PromotionResult } from "@/types/ranking"
 import { useGroups } from "@/hooks/useGroups"
 import { usePlayers } from "@/contexts/PlayersContext"
 import { useClubConfig } from "@/hooks/useClubConfig"
 import { useAuth } from "@/contexts/AuthContext"
+import { usePreviousEvent } from "@/hooks/usePreviousEvent"
 import { supabase } from "@/lib/supabaseClient"
 import { calculateOptimalDistribution, calculateAllDistributions } from "@/lib/groupDistributionCalculator"
 import { distributePlayersByRanking } from "@/lib/groupDistribution"
-import { useEffect, useState } from "react"
+import { calculateGroupStandings } from "@/lib/rankingEngine"
+import { calculatePromotions } from "@/lib/promotionEngine"
+import { buildProposedGroups } from "@/lib/buildProposedGroups"
+import { useEffect, useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { GroupDndManager } from "./GroupDndManager"
+import { PreviousBoxPreview } from "./PreviousBoxPreview"
+import { ProposedGroups } from "./ProposedGroups"
 import { Badge } from "@/components/ui/badge"
 import { validateGroups } from "@/lib/groupPlayerMove"
-import { Info, Sparkles, Settings, ArrowLeftRight, Trash2, Users } from "lucide-react"
+import { Info, Sparkles, Settings, ArrowLeftRight, Trash2, Users, Trophy } from "lucide-react"
 
 interface WizardStepGroupsProps {
     event: Event
@@ -25,18 +32,22 @@ interface WizardStepGroupsProps {
     onPrevious: () => void
 }
 
+type CreationMode = "auto" | "manual" | "previous"
+
 export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPrevious }: WizardStepGroupsProps) {
     const { createGroups, assignPlayersToGroup, loading: groupsLoading } = useGroups()
     const { players } = usePlayers()
     const { profile } = useAuth()
-    const { clubConfig, fetchClubConfig } = useClubConfig()
+    const { clubConfig, scoringRules, promotionRules, fetchClubConfig, defaultScoring, defaultPromotion } = useClubConfig()
+    const { previousEvent, previousGroups, previousMatches, loading: prevLoading, fetchPreviousEvent } = usePreviousEvent()
 
-    const [manualMode, setManualMode] = useState(false)
+    const [mode, setMode] = useState<CreationMode>("auto")
     const [numberOfGroups, setNumberOfGroups] = useState(3)
     const [error, setError] = useState<string | null>(null)
     const [managementMode, setManagementMode] = useState(false)
     const [creating, setCreating] = useState(false)
     const [selectedDistributionIndex, setSelectedDistributionIndex] = useState(0)
+    const [proposedLocalGroups, setProposedLocalGroups] = useState<Group[] | null>(null)
 
     const maxPlayersPerGroup = clubConfig?.default_max_players_per_group ?? 6
 
@@ -46,7 +57,74 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
         }
     }, [profile?.club_id, fetchClubConfig])
 
+    // Fetch previous event when switching to "previous" mode
+    useEffect(() => {
+        if (mode === "previous" && profile?.club_id && !previousEvent && !prevLoading) {
+            fetchPreviousEvent(profile.club_id, event.id)
+        }
+    }, [mode, profile?.club_id, event.id, previousEvent, prevLoading, fetchPreviousEvent])
+
+    // Calculate standings and promotions from previous event data
+    const effectiveScoringRules = scoringRules ?? { id: "", club_id: "", score_points: defaultScoring.score_points }
+    const effectivePromotionRules = promotionRules ?? { id: "", club_id: "", ...defaultPromotion }
+
+    const previousStandings: GroupStandings[] = useMemo(() => {
+        if (!previousEvent || previousGroups.length === 0) return []
+        return previousGroups.map(group => {
+            const groupMatches = previousMatches.filter(m => m.group_id === group.id)
+            const groupPlayers = (group.players || []).map(p => ({
+                id: p.id,
+                first_name: p.first_name,
+                last_name: p.last_name,
+            }))
+            return calculateGroupStandings(groupMatches, group.id, group.group_name, groupPlayers, effectiveScoringRules)
+        })
+    }, [previousEvent, previousGroups, previousMatches, effectiveScoringRules])
+
     const activePlayers = players.filter(p => p.status?.includes("active"))
+
+    const registeredPlayerIds = useMemo(
+        () => new Set(activePlayers.map(p => p.id)),
+        [activePlayers]
+    )
+
+    const promotionResult: PromotionResult = useMemo(() => {
+        if (previousStandings.length === 0) return { moves: [], stayingPlayers: [] }
+        const groupOrder = previousGroups.map(g => g.id)
+        return calculatePromotions(previousStandings, effectivePromotionRules, groupOrder)
+    }, [previousStandings, previousGroups, effectivePromotionRules])
+
+    const previousPlayerIds = useMemo(
+        () => new Set(previousGroups.flatMap(g => (g.players || []).map(p => p.id))),
+        [previousGroups]
+    )
+
+    // New players: active players not present in the previous event
+    const newPlayers = useMemo(() => {
+        return activePlayers
+            .filter(p => !previousPlayerIds.has(p.id))
+            .map(p => ({
+                id: p.id,
+                first_name: p.first_name,
+                last_name: p.last_name,
+                phone: p.phone,
+                power_ranking: p.power_ranking,
+            }))
+    }, [activePlayers, previousPlayerIds])
+
+    // Compute proposed groups as a memo so it always reflects the latest data
+    const autoProposedGroups = useMemo(() => {
+        if (previousStandings.length === 0 || previousMatches.length === 0) return null
+        return buildProposedGroups(previousGroups, previousStandings, promotionResult, registeredPlayerIds, newPlayers, maxPlayersPerGroup)
+    }, [previousGroups, previousStandings, previousMatches, promotionResult, registeredPlayerIds, newPlayers, maxPlayersPerGroup])
+
+    // Set initial proposed groups from auto-computation (only when user hasn't modified via DnD)
+    useEffect(() => {
+        if (mode === "previous" && autoProposedGroups && !proposedLocalGroups) {
+            setProposedLocalGroups(autoProposedGroups)
+        }
+    }, [mode, autoProposedGroups, proposedLocalGroups])
+
     const totalPlayers = activePlayers.length
     const optimalDistribution = calculateOptimalDistribution(totalPlayers, maxPlayersPerGroup)
     const allDistributions = calculateAllDistributions(totalPlayers, maxPlayersPerGroup)
@@ -57,8 +135,56 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
     const hasGroups = groups.length > 0
     const hasPlayers = groups.some(g => (g.players || []).length > 0)
 
+    const handleApplyFromPrevious = async () => {
+        if (!proposedLocalGroups || proposedLocalGroups.length === 0) return
+
+        setError(null)
+        setCreating(true)
+
+        try {
+            // Create groups in DB for the new event
+            const groupsToCreate = proposedLocalGroups.map(g => ({
+                event_id: event.id,
+                group_name: g.group_name,
+                max_players: g.max_players,
+            }))
+
+            const { data: createdGroupsData, error: insertError } = await supabase
+                .from("groups")
+                .insert(groupsToCreate)
+                .select()
+
+            if (insertError) throw new Error(insertError.message)
+
+            // Assign players to their respective groups
+            for (let i = 0; i < proposedLocalGroups.length; i++) {
+                const groupId = createdGroupsData[i].id
+                const playerIds = (proposedLocalGroups[i].players || []).map(p => p.id)
+                if (playerIds.length > 0) {
+                    await assignPlayersToGroup(groupId, playerIds, event.id)
+                }
+            }
+
+            // Re-fetch final state
+            const { data } = await supabase
+                .from("groups")
+                .select("*, group_players(profile_id, profiles(id, first_name, last_name, phone, power_ranking))")
+                .eq("event_id", event.id)
+                .order("group_name")
+
+            if (data) {
+                const transformed = transformGroups(data)
+                onGroupsChanged(transformed)
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Erreur lors de l'application")
+        } finally {
+            setCreating(false)
+        }
+    }
+
     const handleCreateEmpty = async () => {
-        if (!manualMode) return
+        if (mode !== "manual") return
         setError(null)
         setCreating(true)
 
@@ -177,25 +303,34 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                     <div className="flex items-center gap-2">
                         <Button
                             type="button"
-                            variant={!manualMode ? "default" : "outline"}
+                            variant={mode === "auto" ? "default" : "outline"}
                             size="sm"
-                            onClick={() => setManualMode(false)}
+                            onClick={() => { setMode("auto"); setProposedLocalGroups(null) }}
                         >
                             <Sparkles className="mr-2 h-4 w-4" />
                             Auto
                         </Button>
                         <Button
                             type="button"
-                            variant={manualMode ? "default" : "outline"}
+                            variant={mode === "manual" ? "default" : "outline"}
                             size="sm"
-                            onClick={() => setManualMode(true)}
+                            onClick={() => { setMode("manual"); setProposedLocalGroups(null) }}
                         >
                             <Settings className="mr-2 h-4 w-4" />
                             Manuel
                         </Button>
+                        <Button
+                            type="button"
+                            variant={mode === "previous" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setMode("previous")}
+                        >
+                            <Trophy className="mr-2 h-4 w-4" />
+                            Box precedent
+                        </Button>
                     </div>
 
-                    {!manualMode && (
+                    {mode === "auto" && (
                         <Alert variant={allDistributions.length === 0 || totalPlayers === 0 ? "destructive" : "default"}>
                             <Info className="h-4 w-4" />
                             <AlertDescription>
@@ -261,7 +396,55 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                         </Alert>
                     )}
 
-                    {manualMode && (
+                    {mode === "previous" && (
+                        <div className="space-y-4">
+                            {prevLoading ? (
+                                <Alert>
+                                    <Info className="h-4 w-4" />
+                                    <AlertDescription>Chargement du box precedent...</AlertDescription>
+                                </Alert>
+                            ) : !previousEvent ? (
+                                <Alert variant="destructive">
+                                    <Info className="h-4 w-4" />
+                                    <AlertDescription>Aucun box precedent trouve pour ce club.</AlertDescription>
+                                </Alert>
+                            ) : previousStandings.length === 0 ? (
+                                <Alert>
+                                    <Info className="h-4 w-4" />
+                                    <AlertDescription>
+                                        Le box precedent ({previousEvent.event_name}) n'a pas de matchs joues.
+                                    </AlertDescription>
+                                </Alert>
+                            ) : (
+                                <>
+                                    <Alert>
+                                        <Info className="h-4 w-4" />
+                                        <AlertDescription>
+                                            Groupes generes depuis <strong>{previousEvent.event_name}</strong> avec {promotionResult.moves.length} mouvement{promotionResult.moves.length > 1 ? "s" : ""} (promo/releg).
+                                            Ajustez avec le drag & drop a droite.
+                                        </AlertDescription>
+                                    </Alert>
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto">
+                                        <PreviousBoxPreview
+                                            standings={previousStandings}
+                                            promotionResult={promotionResult}
+                                            previousEventName={previousEvent.event_name}
+                                            registeredPlayerIds={registeredPlayerIds}
+                                        />
+                                        {proposedLocalGroups && (
+                                            <ProposedGroups
+                                                groups={proposedLocalGroups}
+                                                onGroupsChanged={setProposedLocalGroups}
+                                                previousPlayerIds={previousPlayerIds}
+                                            />
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                    {mode === "manual" && (
                         <>
                             <div className="grid gap-2">
                                 <Label htmlFor="numberOfGroups">Nombre de groupes</Label>
@@ -294,11 +477,12 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                     )}
 
                     <div className="flex gap-2">
-                        {manualMode ? (
+                        {mode === "manual" && (
                             <Button type="button" onClick={handleCreateEmpty} disabled={isLoading}>
                                 Créer vides
                             </Button>
-                        ) : (
+                        )}
+                        {mode === "auto" && (
                             <Button
                                 type="button"
                                 onClick={handleGenerateAuto}
@@ -306,6 +490,16 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                             >
                                 <Sparkles className="mr-2 h-4 w-4" />
                                 Générer automatiquement
+                            </Button>
+                        )}
+                        {mode === "previous" && proposedLocalGroups && proposedLocalGroups.length > 0 && (
+                            <Button
+                                type="button"
+                                onClick={handleApplyFromPrevious}
+                                disabled={isLoading}
+                            >
+                                <Trophy className="mr-2 h-4 w-4" />
+                                Appliquer les groupes
                             </Button>
                         )}
                     </div>

@@ -8,9 +8,10 @@ import type { Group } from "@/types/draw"
 interface DroppableGroupColumnProps {
     group: Group
     isOver: boolean
+    previousPlayerIds?: Set<string>
 }
 
-export function DroppableGroupColumn({ group, isOver }: DroppableGroupColumnProps) {
+export function DroppableGroupColumn({ group, isOver, previousPlayerIds }: DroppableGroupColumnProps) {
     const players = group.players || []
     const count = players.length
     const isFull = count >= group.max_players
@@ -47,6 +48,7 @@ export function DroppableGroupColumn({ group, isOver }: DroppableGroupColumnProp
                                 key={player.id}
                                 id={`player-${player.id}`}
                                 player={player}
+                                isNew={previousPlayerIds ? !previousPlayerIds.has(player.id) : false}
                             />
                         ))
                     )}
