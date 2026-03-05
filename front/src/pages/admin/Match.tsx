@@ -6,18 +6,8 @@ import { useGroups } from "@/hooks/useGroups"
 import { useMatches } from "@/hooks/useMatches"
 import { useCallback, useEffect, useState } from "react"
 import { useNavigate } from "react-router"
-import { Trash2, CalendarDays, Settings, Pencil, Save, X } from "lucide-react"
+import { CalendarDays, Settings, Pencil, Save, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 import { totalMatchCount, totalSlotCount, calculateTimeSlots, calculateDates } from "@/lib/matchScheduler"
 import { intervalToMinutes } from "@/lib/utils"
 import { parseScore } from "@/lib/rankingEngine"
@@ -27,10 +17,7 @@ export function MatchAdmin() {
 
     const { currentEvent } = useEvent()
     const { groups, fetchGroupsByEvent } = useGroups()
-    const { matches, loading, error, fetchMatchesByEvent, generateMatches, deleteMatchesByEvent, updateMatchResults } = useMatches()
-    const [generating, setGenerating] = useState(false)
-    const [confirmOpen, setConfirmOpen] = useState(false)
-    const [confirmAction, setConfirmAction] = useState<'generate' | 'delete'>('generate')
+    const { matches, loading, error, fetchMatchesByEvent, updateMatchResults } = useMatches()
     const navigate = useNavigate()
 
     // Mode édition des scores
@@ -45,37 +32,6 @@ export function MatchAdmin() {
             fetchMatchesByEvent(currentEvent.id)
         }
     }, [currentEvent])
-
-    const doGenerate = async () => {
-        if (!currentEvent) return
-        setGenerating(true)
-        if (matches.length > 0) {
-            await deleteMatchesByEvent(currentEvent.id)
-        }
-        await generateMatches(currentEvent, groups)
-        setGenerating(false)
-    }
-
-    const handleDelete = () => {
-        setConfirmAction('delete')
-        setConfirmOpen(true)
-    }
-
-    const doDelete = async () => {
-        if (!currentEvent) return
-        setGenerating(true)
-        await deleteMatchesByEvent(currentEvent.id)
-        setGenerating(false)
-    }
-
-    const handleConfirm = async () => {
-        setConfirmOpen(false)
-        if (confirmAction === 'generate') {
-            await doGenerate()
-        } else {
-            await doDelete()
-        }
-    }
 
     // --- Score editing ---
 
@@ -191,7 +147,7 @@ export function MatchAdmin() {
         }
     })() : null
 
-    if (loading || generating || saving) {
+    if (loading || saving) {
         return <Loading />
     }
 
@@ -202,16 +158,6 @@ export function MatchAdmin() {
                     <div className="flex items-center gap-4">
                         <h3 className="text-lg font-semibold">Matchs</h3>
                         <EventSelector />
-                    </div>
-                    <div className="flex gap-2">
-                        <Button variant="outline" size="sm" disabled>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Supprimer
-                        </Button>
-                        <Button size="sm" disabled>
-                            <Settings className="mr-2 h-4 w-4" />
-                            Modifier
-                        </Button>
                     </div>
                 </div>
                 <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-lg">
@@ -256,21 +202,11 @@ export function MatchAdmin() {
                     ) : (
                         <>
                             {hasMatches && (
-                                <>
-                                    <Button variant="outline" size="sm" onClick={handleDelete}>
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Supprimer
-                                    </Button>
-                                    <Button variant="outline" size="sm" onClick={handleEnterEditMode}>
-                                        <Pencil className="mr-2 h-4 w-4" />
-                                        Saisir les scores
-                                    </Button>
-                                </>
+                                <Button variant="outline" size="sm" onClick={handleEnterEditMode}>
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Saisir les scores
+                                </Button>
                             )}
-                            <Button size="sm" onClick={() => navigate("/admin/settings")}>
-                                <Settings className="mr-2 h-4 w-4" />
-                                Modifier
-                            </Button>
                         </>
                     )}
                 </div>
@@ -347,28 +283,6 @@ export function MatchAdmin() {
                 </div>
             )}
 
-            {/* Dialog de confirmation */}
-            <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>
-                            {confirmAction === 'generate' ? "Régénérer les matchs ?" : "Supprimer les matchs ?"}
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                            {confirmAction === 'generate'
-                                ? "Les matchs existants seront supprimés et remplacés par un nouveau planning."
-                                : "Tous les matchs de cet événement seront supprimés. Cette action est irréversible."
-                            }
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Annuler</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirm}>
-                            {confirmAction === 'generate' ? "Régénérer" : "Supprimer"}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
         </div>
     )
 }
