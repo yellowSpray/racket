@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest"
 import {
     generateRoundRobinPairings,
-    assignMatchesToSlots,
+    generateGroupRounds,
+    mapRoundsToDates,
+    assignTimeSlotsForDates,
     calculateTimeSlots,
     calculateDates,
     totalMatchCount,
@@ -17,7 +19,8 @@ function makePlayers(count: number) {
         id: `p${i + 1}`,
         first_name: `Player`,
         last_name: `${String.fromCharCode(65 + i)}`, // A, B, C, ...
-        power_ranking: 1000 - i * 100,
+        phone: '0000',
+        power_ranking: `${1000 - i * 100}`,
     }))
 }
 
@@ -25,10 +28,12 @@ function makePlayers(count: number) {
 function makeGroup(id: string, name: string, playerCount: number): Group {
     return {
         id,
+        event_id: 'evt-1',
         group_name: name,
         max_players: 6,
+        created_at: '',
         players: makePlayers(playerCount),
-    } as Group
+    }
 }
 
 describe("calculateTimeSlots", () => {
@@ -223,17 +228,20 @@ describe("sortPlayersByEarliestDates", () => {
         const group = makeGroup("g1", "Box 1", 6)
         const dates = calculateDates("2026-03-01", "2026-03-15")
         const timeSlots = calculateTimeSlots("19:00", "23:00", 30)
-        const pairings = generateRoundRobinPairings([group], dates)
+
+        const groupRounds = generateGroupRounds([group], dates)
+        const datePlans = mapRoundsToDates(groupRounds, dates)
 
         // Adversaire du 1er match absent les 2 premiers jours
-        const firstP1Match = pairings.find(p => p.player1Id === "p1" || p.player2Id === "p1")!
+        const allPairings = datePlans.flatMap(p => p.pairings)
+        const firstP1Match = allPairings.find(p => p.player1Id === "p1" || p.player2Id === "p1")!
         const firstOpponentId = firstP1Match.player1Id === "p1" ? firstP1Match.player2Id : firstP1Match.player1Id
 
         const constraints = new Map([
             [firstOpponentId, { arrival: "", departure: "", unavailable: ["2026-03-01", "2026-03-02"] }],
         ])
 
-        const assignments = assignMatchesToSlots(pairings, dates, timeSlots, 4, constraints, 30)
+        const assignments = assignTimeSlotsForDates(datePlans, timeSlots, 4, constraints, 30)
         const sorted = sortPlayersByEarliestDates(group, assignments)
 
         // Le joueur A après tri doit avoir ses dates en ordre croissant
@@ -256,13 +264,15 @@ describe("sortPlayersByEarliestDates", () => {
             id: `g2p${i + 1}`,
             first_name: `G2`,
             last_name: `${String.fromCharCode(65 + i)}`,
-            power_ranking: 900 - i * 100,
+            phone: '0000',
+            power_ranking: '0',
         }))
 
         const dates = calculateDates("2026-03-01", "2026-03-15")
         const timeSlots = calculateTimeSlots("19:00", "23:00", 30)
-        const pairings = generateRoundRobinPairings(groups, dates)
-        const assignments = assignMatchesToSlots(pairings, dates, timeSlots, 4)
+        const groupRounds = generateGroupRounds(groups, dates)
+        const datePlans = mapRoundsToDates(groupRounds, dates)
+        const assignments = assignTimeSlotsForDates(datePlans, timeSlots, 4)
 
         const sorted1 = sortPlayersByEarliestDates(groups[0], assignments)
         const sorted2 = sortPlayersByEarliestDates(groups[1], assignments)
@@ -283,5 +293,230 @@ describe("sortPlayersByEarliestDates", () => {
         const group = makeGroup("g1", "Box 1", 5)
         const sorted = sortPlayersByEarliestDates(group, [])
         expect(sorted.players!.map(p => p.id)).toEqual(group.players!.map(p => p.id))
+    })
+})
+
+describe("generateGroupRounds", () => {
+    it("retourne 5 rounds pour un groupe de 5 joueurs", () => {
+        const groups = [makeGroup("g1", "Box 1", 5)]
+        const rounds = generateGroupRounds(groups)
+        expect(rounds).toHaveLength(1) // 1 groupe
+        expect(rounds[0]).toHaveLength(5) // 5 joueurs + bye → 6 positions → 5 rounds
+    })
+
+    it("retourne 5 rounds pour un groupe de 6 joueurs", () => {
+        const groups = [makeGroup("g1", "Box 1", 6)]
+        const rounds = generateGroupRounds(groups)
+        expect(rounds[0]).toHaveLength(5) // 6 joueurs → 5 rounds
+    })
+
+    it("préserve groupId et roundIndex sur chaque round", () => {
+        const groups = [makeGroup("g1", "Box 1", 5)]
+        const rounds = generateGroupRounds(groups)
+
+        for (let i = 0; i < rounds[0].length; i++) {
+            expect(rounds[0][i].groupId).toBe("g1")
+            expect(rounds[0][i].groupName).toBe("Box 1")
+            expect(rounds[0][i].roundIndex).toBe(i)
+        }
+    })
+
+    it("chaque round ne contient aucun joueur en doublon", () => {
+        const groups = [makeGroup("g1", "Box 1", 6)]
+        const rounds = generateGroupRounds(groups)
+
+        for (const round of rounds[0]) {
+            const playerIds = new Set<string>()
+            for (const p of round.pairings) {
+                expect(playerIds.has(p.player1Id)).toBe(false)
+                expect(playerIds.has(p.player2Id)).toBe(false)
+                playerIds.add(p.player1Id)
+                playerIds.add(p.player2Id)
+            }
+        }
+    })
+
+    it("le total des pairings couvre tous les matchs round-robin", () => {
+        const groups = [makeGroup("g1", "Box 1", 6)]
+        const rounds = generateGroupRounds(groups)
+        const totalPairings = rounds[0].reduce((sum, r) => sum + r.pairings.length, 0)
+        expect(totalPairings).toBe(15) // C(6,2) = 15
+    })
+
+    it("gère plusieurs groupes indépendamment", () => {
+        const groups = [makeGroup("g1", "Box 1", 5), makeGroup("g2", "Box 2", 6)]
+        const rounds = generateGroupRounds(groups)
+        expect(rounds).toHaveLength(2)
+        expect(rounds[0]).toHaveLength(5) // 5 joueurs + bye → 5 rounds
+        expect(rounds[1]).toHaveLength(5) // 6 joueurs → 5 rounds
+    })
+})
+
+describe("mapRoundsToDates", () => {
+    it("mappe round N → date N pour un groupe de 5 (5 rounds, 5 dates)", () => {
+        const groups = [makeGroup("g1", "Box 1", 5)]
+        const dates = ["2026-01-12", "2026-01-19", "2026-01-26", "2026-02-02", "2026-02-09"]
+        const rounds = generateGroupRounds(groups)
+        const plans = mapRoundsToDates(rounds, dates)
+
+        expect(plans).toHaveLength(5)
+        // 5 rounds (5 joueurs impair + bye = 6 positions, 5 rounds de 2 matchs)
+        // Toutes les 5 dates ont des matchs
+        const datesWithMatches = plans.filter(p => p.pairings.length > 0)
+        expect(datesWithMatches).toHaveLength(5)
+    })
+
+    it("mappe round N → date N pour un groupe de 6 (5 rounds, 5 dates)", () => {
+        const groups = [makeGroup("g1", "Box 1", 6)]
+        const dates = ["2026-01-12", "2026-01-19", "2026-01-26", "2026-02-02", "2026-02-09"]
+        const rounds = generateGroupRounds(groups)
+        const plans = mapRoundsToDates(rounds, dates)
+
+        // Toutes les 5 dates ont des matchs
+        for (const plan of plans) {
+            expect(plan.pairings.length).toBeGreaterThan(0)
+        }
+    })
+
+    it("chaque date contient les matchs des rounds de tous les groupes", () => {
+        const groups = [makeGroup("g1", "Box 1", 5), makeGroup("g2", "Box 2", 6)]
+        groups[1].players = Array.from({ length: 6 }, (_, i) => ({
+            id: `g2p${i + 1}`,
+            first_name: `G2`,
+            last_name: `${String.fromCharCode(65 + i)}`,
+            phone: '0000',
+            power_ranking: '0',
+        }))
+        const dates = ["2026-01-12", "2026-01-19", "2026-01-26", "2026-02-02", "2026-02-09"]
+        const rounds = generateGroupRounds(groups)
+        const plans = mapRoundsToDates(rounds, dates)
+
+        // Le total des pairings doit être 10 + 15 = 25
+        const totalPairings = plans.reduce((sum, p) => sum + p.pairings.length, 0)
+        expect(totalPairings).toBe(25)
+    })
+
+    it("aucun joueur n'apparaît deux fois dans les matchs d'une même date", () => {
+        const groups = [makeGroup("g1", "Box 1", 6)]
+        const dates = ["2026-01-12", "2026-01-19", "2026-01-26", "2026-02-02", "2026-02-09"]
+        const rounds = generateGroupRounds(groups)
+        const plans = mapRoundsToDates(rounds, dates)
+
+        for (const plan of plans) {
+            const playerIds = new Set<string>()
+            for (const p of plan.pairings) {
+                expect(playerIds.has(p.player1Id)).toBe(false)
+                expect(playerIds.has(p.player2Id)).toBe(false)
+                playerIds.add(p.player1Id)
+                playerIds.add(p.player2Id)
+            }
+        }
+    })
+})
+
+describe("assignTimeSlotsForDates", () => {
+    it("place tous les matchs d'un groupe de 6 (15 matchs, 5 dates, 9 slots, 3 terrains)", () => {
+        const groups = [makeGroup("g1", "Box 1", 6)]
+        const dates = ["2026-01-12", "2026-01-19", "2026-01-26", "2026-02-02", "2026-02-09"]
+        const timeSlots = calculateTimeSlots("19:00", "23:00", 30) // 8 slots
+        const rounds = generateGroupRounds(groups)
+        const datePlans = mapRoundsToDates(rounds, dates)
+
+        const assignments = assignTimeSlotsForDates(datePlans, timeSlots, 3)
+        expect(assignments).toHaveLength(15)
+    })
+
+    it("place tous les matchs avec 3 groupes de 6 (45 matchs)", () => {
+        const groups = [
+            makeGroup("g1", "Box 1", 6),
+            makeGroup("g2", "Box 2", 6),
+            makeGroup("g3", "Box 3", 6),
+        ]
+        groups[1].players = Array.from({ length: 6 }, (_, i) => ({
+            id: `g2p${i + 1}`, first_name: "G2", last_name: String.fromCharCode(65 + i), phone: '0000', power_ranking: '0',
+        }))
+        groups[2].players = Array.from({ length: 6 }, (_, i) => ({
+            id: `g3p${i + 1}`, first_name: "G3", last_name: String.fromCharCode(65 + i), phone: '0000', power_ranking: '0',
+        }))
+
+        const dates = ["2026-01-12", "2026-01-19", "2026-01-26", "2026-02-02", "2026-02-09"]
+        const timeSlots = calculateTimeSlots("19:00", "23:00", 30) // 8 slots
+        const rounds = generateGroupRounds(groups)
+        const datePlans = mapRoundsToDates(rounds, dates)
+
+        const assignments = assignTimeSlotsForDates(datePlans, timeSlots, 3)
+        expect(assignments).toHaveLength(45) // 3 × 15
+    })
+
+    it("aucun joueur ne joue deux matchs au même créneau horaire", () => {
+        const groups = [makeGroup("g1", "Box 1", 6), makeGroup("g2", "Box 2", 6)]
+        groups[1].players = Array.from({ length: 6 }, (_, i) => ({
+            id: `g2p${i + 1}`, first_name: "G2", last_name: String.fromCharCode(65 + i), phone: '0000', power_ranking: '0',
+        }))
+
+        const dates = ["2026-01-12", "2026-01-19", "2026-01-26", "2026-02-02", "2026-02-09"]
+        const timeSlots = calculateTimeSlots("19:00", "23:00", 30)
+        const rounds = generateGroupRounds(groups)
+        const datePlans = mapRoundsToDates(rounds, dates)
+        const assignments = assignTimeSlotsForDates(datePlans, timeSlots, 3)
+
+        // Pour chaque (date, heure), aucun joueur ne doit apparaître deux fois
+        const slotPlayers = new Map<string, Set<string>>()
+        for (const a of assignments) {
+            const key = `${a.matchDate}_${a.matchTime}`
+            if (!slotPlayers.has(key)) slotPlayers.set(key, new Set())
+            const players = slotPlayers.get(key)!
+            expect(players.has(a.player1Id)).toBe(false)
+            expect(players.has(a.player2Id)).toBe(false)
+            players.add(a.player1Id)
+            players.add(a.player2Id)
+        }
+    })
+
+    it("respecte les fenêtres de disponibilité (arrivée tardive)", () => {
+        const groups = [makeGroup("g1", "Box 1", 4)]
+        const dates = ["2026-01-12", "2026-01-19", "2026-01-26"]
+        const timeSlots = calculateTimeSlots("19:00", "22:00", 30) // 19:00, 19:30, 20:00, 20:30, 21:00, 21:30
+
+        const constraints = new Map([
+            ["p1", { arrival: "20:30", departure: "", unavailable: [] }],
+        ])
+
+        const rounds = generateGroupRounds(groups)
+        const datePlans = mapRoundsToDates(rounds, dates)
+        const assignments = assignTimeSlotsForDates(datePlans, timeSlots, 3, constraints, 30)
+
+        // Tous les matchs de p1 doivent être à 20:30 ou après
+        const p1Matches = assignments.filter(a => a.player1Id === "p1" || a.player2Id === "p1")
+        for (const m of p1Matches) {
+            expect(m.matchTime >= "20:30").toBe(true)
+        }
+    })
+
+    it("intégration complète : 5 groupes mixtes, tous les matchs placés", () => {
+        const groups = Array.from({ length: 5 }, (_, gi) => {
+            const playerCount = gi % 2 === 0 ? 5 : 6
+            const g = makeGroup(`g${gi + 1}`, `Box ${gi + 1}`, playerCount)
+            g.players = Array.from({ length: playerCount }, (_, pi) => ({
+                id: `g${gi + 1}p${pi + 1}`,
+                first_name: `G${gi + 1}`,
+                last_name: String.fromCharCode(65 + pi),
+                phone: '0000', power_ranking: '0',
+            }))
+            return g
+        })
+
+        const dates = ["2026-01-12", "2026-01-19", "2026-01-26", "2026-02-02", "2026-02-09"]
+        const timeSlots = calculateTimeSlots("19:00", "23:00", 30)
+        const rounds = generateGroupRounds(groups)
+        const datePlans = mapRoundsToDates(rounds, dates)
+
+        const expectedTotal = groups.reduce((sum, g) => {
+            const n = g.players!.length
+            return sum + (n * (n - 1)) / 2
+        }, 0)
+
+        const assignments = assignTimeSlotsForDates(datePlans, timeSlots, 3)
+        expect(assignments).toHaveLength(expectedTotal)
     })
 })

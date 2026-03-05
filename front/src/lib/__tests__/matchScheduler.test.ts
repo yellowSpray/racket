@@ -3,12 +3,15 @@ import type { Group, GroupPlayer } from '@/types/draw'
 import type { MatchPairing } from '@/types/match'
 import {
   generateRoundRobinPairings,
+  generateGroupRounds,
+  mapRoundsToDates,
+  assignTimeSlotsForDates,
   calculateTimeSlots,
   calculateDates,
-  assignMatchesToSlots,
   totalMatchCount,
   totalSlotCount,
   type PlayerConstraints,
+  type DatePlan,
 } from '@/lib/matchScheduler'
 
 // ---------------------------------------------------------------------------
@@ -34,6 +37,27 @@ function makeGroup(id: string, name: string, players: GroupPlayer[], maxPlayers 
     created_at: '',
     players,
   }
+}
+
+function makePairing(
+  groupId: string,
+  p1: string,
+  p2: string,
+  groupName = 'Group A',
+): MatchPairing {
+  return {
+    groupId,
+    groupName,
+    player1Id: p1,
+    player2Id: p2,
+    player1Name: `Player ${p1}`,
+    player2Name: `Player ${p2}`,
+  }
+}
+
+/** Crée un DatePlan simple avec des pairings sur une date */
+function makeDatePlan(date: string, pairings: MatchPairing[]): DatePlan {
+  return { date, pairings }
 }
 
 // ---------------------------------------------------------------------------
@@ -74,7 +98,7 @@ describe('generateRoundRobinPairings', () => {
     const result = generateRoundRobinPairings(groups)
 
     expect(result).toHaveLength(3)
-    const pairIds = result.map((p) => `${p.player1Id}-${p.player2Id}`)
+    const pairIds = result.map((p) => [p.player1Id, p.player2Id].sort().join('-'))
     expect(pairIds).toContain('p1-p2')
     expect(pairIds).toContain('p1-p3')
     expect(pairIds).toContain('p2-p3')
@@ -347,33 +371,16 @@ describe('totalSlotCount', () => {
 })
 
 // ---------------------------------------------------------------------------
-// assignMatchesToSlots
+// assignTimeSlotsForDates
 // ---------------------------------------------------------------------------
 
-describe('assignMatchesToSlots', () => {
-  const dates = ['2026-03-01']
+describe('assignTimeSlotsForDates', () => {
   const timeSlots = ['18:00', '18:30', '19:00']
   const numberOfCourts = 2
 
-  function makePairing(
-    groupId: string,
-    p1: string,
-    p2: string,
-    groupName = 'Group A',
-  ): MatchPairing {
-    return {
-      groupId,
-      groupName,
-      player1Id: p1,
-      player2Id: p2,
-      player1Name: `Player ${p1}`,
-      player2Name: `Player ${p2}`,
-    }
-  }
-
   it('assigns a single match to the first available slot', () => {
-    const pairings = [makePairing('g1', 'p1', 'p2')]
-    const result = assignMatchesToSlots(pairings, dates, timeSlots, numberOfCourts)
+    const plans = [makeDatePlan('2026-03-01', [makePairing('g1', 'p1', 'p2')])]
+    const result = assignTimeSlotsForDates(plans, timeSlots, numberOfCourts)
 
     expect(result).toHaveLength(1)
     expect(result[0]).toMatchObject({
@@ -386,42 +393,26 @@ describe('assignMatchesToSlots', () => {
   })
 
   it('assigns two independent matches to the same time slot on different courts', () => {
-    const pairings = [
+    const plans = [makeDatePlan('2026-03-01', [
       makePairing('g1', 'p1', 'p2'),
       makePairing('g1', 'p3', 'p4'),
-    ]
-    const result = assignMatchesToSlots(pairings, dates, timeSlots, numberOfCourts)
+    ])]
+    const result = assignTimeSlotsForDates(plans, timeSlots, numberOfCourts)
 
     expect(result).toHaveLength(2)
-    // Both at 18:00 since no player conflict
     expect(result[0].matchTime).toBe('18:00')
     expect(result[1].matchTime).toBe('18:00')
     expect(result[0].courtNumber).toBe('Terrain 1')
     expect(result[1].courtNumber).toBe('Terrain 2')
   })
 
-  it('prevents a player from playing two matches at the same time (different days)', () => {
-    // p1 vs p2 and p1 vs p3: p1 can't play both on the same day (1 match per day)
-    const twoDates = ['2026-03-01', '2026-03-02']
-    const pairings = [
-      makePairing('g1', 'p1', 'p2'),
-      makePairing('g1', 'p1', 'p3'),
-    ]
-    const result = assignMatchesToSlots(pairings, twoDates, timeSlots, numberOfCourts)
-
-    expect(result).toHaveLength(2)
-    // They must be on different days (1 match per player per day)
-    expect(result[0].matchDate).not.toBe(result[1].matchDate)
-  })
-
   it('respects court capacity (cannot exceed numberOfCourts per slot)', () => {
-    const pairings = [
+    const plans = [makeDatePlan('2026-03-01', [
       makePairing('g1', 'p1', 'p2'),
       makePairing('g1', 'p3', 'p4'),
       makePairing('g1', 'p5', 'p6'),
-    ]
-    // Only 2 courts, so third match goes to next time slot
-    const result = assignMatchesToSlots(pairings, dates, timeSlots, numberOfCourts)
+    ])]
+    const result = assignTimeSlotsForDates(plans, timeSlots, numberOfCourts)
 
     expect(result).toHaveLength(3)
     const firstSlotMatches = result.filter((a) => a.matchTime === '18:00')
@@ -431,48 +422,24 @@ describe('assignMatchesToSlots', () => {
   })
 
   it('drops matches when there are more pairings than available slots', () => {
-    const singleSlot = ['18:00']
-    const pairings = [
+    const plans = [makeDatePlan('2026-03-01', [
       makePairing('g1', 'p1', 'p2'),
       makePairing('g1', 'p3', 'p4'),
-      makePairing('g1', 'p5', 'p6'), // no room (only 2 courts, 1 time slot)
-    ]
-    const result = assignMatchesToSlots(pairings, dates, singleSlot, 2)
+      makePairing('g1', 'p5', 'p6'),
+    ])]
+    const result = assignTimeSlotsForDates(plans, ['18:00'], 2)
 
     expect(result).toHaveLength(2)
   })
 
-  it('spreads matches across multiple dates', () => {
-    const twoDates = ['2026-03-01', '2026-03-02']
-    const singleSlot = ['18:00']
-    const pairings = [
-      makePairing('g1', 'p1', 'p2'),
-      makePairing('g1', 'p3', 'p4'),
-      makePairing('g1', 'p5', 'p6'),
-    ]
-    const result = assignMatchesToSlots(pairings, twoDates, singleSlot, 2)
-
-    expect(result).toHaveLength(3)
-    const day1 = result.filter((a) => a.matchDate === '2026-03-01')
-    const day2 = result.filter((a) => a.matchDate === '2026-03-02')
-    expect(day1).toHaveLength(2)
-    expect(day2).toHaveLength(1)
-  })
-
-  it('returns empty array when no pairings provided', () => {
-    const result = assignMatchesToSlots([], dates, timeSlots, numberOfCourts)
-    expect(result).toEqual([])
-  })
-
-  it('returns empty array when no dates provided', () => {
-    const pairings = [makePairing('g1', 'p1', 'p2')]
-    const result = assignMatchesToSlots(pairings, [], timeSlots, numberOfCourts)
+  it('returns empty array when no plans provided', () => {
+    const result = assignTimeSlotsForDates([], timeSlots, numberOfCourts)
     expect(result).toEqual([])
   })
 
   it('returns empty array when no time slots provided', () => {
-    const pairings = [makePairing('g1', 'p1', 'p2')]
-    const result = assignMatchesToSlots(pairings, dates, [], numberOfCourts)
+    const plans = [makeDatePlan('2026-03-01', [makePairing('g1', 'p1', 'p2')])]
+    const result = assignTimeSlotsForDates(plans, [], numberOfCourts)
     expect(result).toEqual([])
   })
 
@@ -485,11 +452,10 @@ describe('assignMatchesToSlots', () => {
       const constraints = new Map<string, PlayerConstraints>()
       constraints.set('p1', { arrival: '18:45', departure: '', unavailable: [] })
 
-      const pairings = [makePairing('g1', 'p1', 'p2')]
-      const result = assignMatchesToSlots(pairings, dates, timeSlots, numberOfCourts, constraints, 30)
+      const plans = [makeDatePlan('2026-03-01', [makePairing('g1', 'p1', 'p2')])]
+      const result = assignTimeSlotsForDates(plans, timeSlots, numberOfCourts, constraints, 30)
 
       expect(result).toHaveLength(1)
-      // p1 arrives at 18:45, so 18:00 and 18:30 slots are too early
       expect(result[0].matchTime).toBe('19:00')
     })
 
@@ -497,48 +463,42 @@ describe('assignMatchesToSlots', () => {
       const constraints = new Map<string, PlayerConstraints>()
       constraints.set('p2', { arrival: '', departure: '18:45', unavailable: [] })
 
-      const pairings = [makePairing('g1', 'p1', 'p2')]
-      // With 30 min duration: 18:00 slot ends at 18:30 (OK), 18:30 ends at 19:00 (> 18:45)
-      const result = assignMatchesToSlots(pairings, dates, timeSlots, numberOfCourts, constraints, 30)
+      const plans = [makeDatePlan('2026-03-01', [makePairing('g1', 'p1', 'p2')])]
+      const result = assignTimeSlotsForDates(plans, timeSlots, numberOfCourts, constraints, 30)
 
       expect(result).toHaveLength(1)
       expect(result[0].matchTime).toBe('18:00')
     })
 
-    it('skips dates where a player is unavailable', () => {
-      const twoDates = ['2026-03-01', '2026-03-02']
+    it('flags absent players on their absence date (soft constraint)', () => {
       const constraints = new Map<string, PlayerConstraints>()
       constraints.set('p1', { arrival: '', departure: '', unavailable: ['2026-03-01'] })
 
-      const pairings = [makePairing('g1', 'p1', 'p2')]
-      const result = assignMatchesToSlots(pairings, twoDates, timeSlots, numberOfCourts, constraints, 30)
+      const plans = [makeDatePlan('2026-03-01', [makePairing('g1', 'p1', 'p2')])]
+      const result = assignTimeSlotsForDates(plans, timeSlots, numberOfCourts, constraints, 30)
 
       expect(result).toHaveLength(1)
-      expect(result[0].matchDate).toBe('2026-03-02')
+      expect(result[0].matchDate).toBe('2026-03-01')
+      expect(result[0].absentPlayerIds).toContain('p1')
     })
 
     it('handles multiple constraints simultaneously', () => {
-      const twoDates = ['2026-03-01', '2026-03-02']
-      const slots = ['18:00', '18:30', '19:00', '19:30']
       const constraints = new Map<string, PlayerConstraints>()
-      // p1 is absent on day 1 and arrives at 19:00 on day 2
-      constraints.set('p1', { arrival: '19:00', departure: '', unavailable: ['2026-03-01'] })
+      constraints.set('p1', { arrival: '19:00', departure: '', unavailable: [] })
 
-      const pairings = [makePairing('g1', 'p1', 'p2')]
-      const result = assignMatchesToSlots(pairings, twoDates, slots, numberOfCourts, constraints, 30)
+      const plans = [makeDatePlan('2026-03-01', [makePairing('g1', 'p1', 'p2')])]
+      const result = assignTimeSlotsForDates(plans, ['18:00', '18:30', '19:00', '19:30'], numberOfCourts, constraints, 30)
 
       expect(result).toHaveLength(1)
-      expect(result[0].matchDate).toBe('2026-03-02')
       expect(result[0].matchTime).toBe('19:00')
     })
 
     it('assigns matches normally for players without constraints', () => {
       const constraints = new Map<string, PlayerConstraints>()
-      // Only p3 has constraints, but the match is p1 vs p2
       constraints.set('p3', { arrival: '22:00', departure: '', unavailable: ['2026-03-01'] })
 
-      const pairings = [makePairing('g1', 'p1', 'p2')]
-      const result = assignMatchesToSlots(pairings, dates, timeSlots, numberOfCourts, constraints, 30)
+      const plans = [makeDatePlan('2026-03-01', [makePairing('g1', 'p1', 'p2')])]
+      const result = assignTimeSlotsForDates(plans, timeSlots, numberOfCourts, constraints, 30)
 
       expect(result).toHaveLength(1)
       expect(result[0].matchTime).toBe('18:00')
@@ -547,30 +507,14 @@ describe('assignMatchesToSlots', () => {
     it('places match on absence date as last resort (soft constraint) with absentPlayerIds', () => {
       const constraints = new Map<string, PlayerConstraints>()
       constraints.set('p1', { arrival: '', departure: '', unavailable: ['2026-03-01'] })
+      constraints.set('p2', { arrival: '', departure: '', unavailable: ['2026-03-01'] })
 
-      const pairings = [makePairing('g1', 'p1', 'p2')]
-      // Only one date and p1 is unavailable — match placed anyway (soft constraint)
-      const result = assignMatchesToSlots(pairings, ['2026-03-01'], timeSlots, numberOfCourts, constraints, 30)
+      const plans = [makeDatePlan('2026-03-01', [makePairing('g1', 'p1', 'p2')])]
+      const result = assignTimeSlotsForDates(plans, timeSlots, numberOfCourts, constraints, 30)
 
       expect(result).toHaveLength(1)
-      expect(result[0].matchDate).toBe('2026-03-01')
       expect(result[0].absentPlayerIds).toContain('p1')
-    })
-
-    it('uses default 30 minute duration when durationMinutes is not provided', () => {
-      const constraints = new Map<string, PlayerConstraints>()
-      // With default 30 min duration: slot 18:00 ends at 18:30 > departure 18:25, so outside window
-      // With fallback, it still gets placed, but at 18:30 which is also outside window
-      // To properly test default duration, check that arrival at 18:20 makes 18:00 outside window
-      // but 18:30 inside window (18:30 >= 18:20 arrival, default 30 min)
-      constraints.set('p1', { arrival: '18:20', departure: '', unavailable: [] })
-
-      const pairings = [makePairing('g1', 'p1', 'p2')]
-      const result = assignMatchesToSlots(pairings, dates, ['18:00', '18:30'], numberOfCourts, constraints)
-
-      expect(result).toHaveLength(1)
-      // 18:00 is before arrival (18:20), so 18:30 is preferred (in window)
-      expect(result[0].matchTime).toBe('18:30')
+      expect(result[0].absentPlayerIds).toContain('p2')
     })
   })
 
@@ -586,11 +530,10 @@ describe('assignMatchesToSlots', () => {
       constraints.set('p1', { arrival: '19:00', departure: '', unavailable: [] })
       constraints.set('p2', { arrival: '20:00', departure: '', unavailable: [] })
 
-      const pairings = [makePairing('g1', 'p1', 'p2')]
-      const result = assignMatchesToSlots(pairings, dates, slots, 1, constraints, 30)
+      const plans = [makeDatePlan('2026-03-01', [makePairing('g1', 'p1', 'p2')])]
+      const result = assignTimeSlotsForDates(plans, slots, 1, constraints, 30)
 
       expect(result).toHaveLength(1)
-      // Both available from 20:00 onward (intersection starts at max(19:00, 20:00) = 20:00)
       expect(result[0].matchTime).toBe('20:00')
     })
 
@@ -599,25 +542,21 @@ describe('assignMatchesToSlots', () => {
       constraints.set('p1', { arrival: '', departure: '22:00', unavailable: [] })
       constraints.set('p2', { arrival: '', departure: '21:00', unavailable: [] })
 
-      const pairings = [makePairing('g1', 'p1', 'p2')]
-      const result = assignMatchesToSlots(pairings, dates, slots, 1, constraints, 30)
+      const plans = [makeDatePlan('2026-03-01', [makePairing('g1', 'p1', 'p2')])]
+      const result = assignTimeSlotsForDates(plans, slots, 1, constraints, 30)
 
       expect(result).toHaveLength(1)
-      // Match must end before 21:00 → latest start is 20:30, but first available is 18:00
       expect(result[0].matchTime).toBe('18:00')
     })
 
     it('uses fallback when availability windows do not intersect', () => {
       const constraints = new Map<string, PlayerConstraints>()
-      // A leaves at 20:00, B arrives at 20:30 → no intersection
       constraints.set('p1', { arrival: '', departure: '20:00', unavailable: [] })
       constraints.set('p2', { arrival: '20:30', departure: '', unavailable: [] })
 
-      const pairings = [makePairing('g1', 'p1', 'p2')]
-      const result = assignMatchesToSlots(pairings, dates, slots, 1, constraints, 30)
+      const plans = [makeDatePlan('2026-03-01', [makePairing('g1', 'p1', 'p2')])]
+      const result = assignTimeSlotsForDates(plans, slots, 1, constraints, 30)
 
-      // No intersection, but fallback should find the nearest free slot
-      // Nearest to the gap would be 20:30 (B's arrival, closest to window boundary)
       expect(result).toHaveLength(1)
       expect(result[0].matchTime).toBe('20:30')
     })
@@ -625,70 +564,34 @@ describe('assignMatchesToSlots', () => {
     it('falls back to nearest slot when all slots in intersection window are taken', () => {
       const narrowSlots = ['19:00', '19:30', '20:00', '20:30', '21:00']
       const constraints = new Map<string, PlayerConstraints>()
-      // p1 and p2: window is 19:30 to 21:00 (slots 19:30, 20:00 fit with 30min duration)
+      // p1/p2 have a tight window — they'll be scheduled first by sortByAvailabilityTightness
       constraints.set('p1', { arrival: '19:30', departure: '21:00', unavailable: [] })
       constraints.set('p2', { arrival: '19:30', departure: '21:00', unavailable: [] })
-      // p3 and p4 have no constraints
-      // p5 and p6 have no constraints
 
-      // Fill the window slots (19:30, 20:00) with other matches first
-      const pairings = [
-        makePairing('g1', 'p3', 'p4'), // will take 19:00
-        makePairing('g1', 'p5', 'p6'), // will take 19:30
-        makePairing('g1', 'p7', 'p8'), // will take 20:00
-        makePairing('g1', 'p1', 'p2'), // window is 19:30-21:00 but 19:30 & 20:00 taken → fallback
-      ]
-      const result = assignMatchesToSlots(pairings, dates, narrowSlots, 1, constraints, 30)
+      const plans = [makeDatePlan('2026-03-01', [
+        makePairing('g1', 'p3', 'p4'),
+        makePairing('g1', 'p5', 'p6'),
+        makePairing('g1', 'p7', 'p8'),
+        makePairing('g1', 'p1', 'p2'),
+      ])]
+      const result = assignTimeSlotsForDates(plans, narrowSlots, 1, constraints, 30)
 
-      // p1 vs p2 should be placed outside their ideal window, at nearest free slot
+      // p1/p2 are scheduled first (tightest window) → they get 19:30 (first in-window slot)
       const p1p2Match = result.find(a => a.player1Id === 'p1' && a.player2Id === 'p2')
       expect(p1p2Match).toBeDefined()
-      // 20:30 is the closest free slot to the window [19:30, 21:00]
-      expect(p1p2Match!.matchTime).toBe('20:30')
-    })
-
-    it('still respects 1-match-per-player-per-day constraint in fallback', () => {
-      const twoDates = ['2026-03-01', '2026-03-02']
-      const constraints = new Map<string, PlayerConstraints>()
-      // p1 departs at 18:30 → only 18:00 slot works (18:00+30=18:30)
-      constraints.set('p1', { arrival: '', departure: '18:30', unavailable: [] })
-
-      const pairings = [
-        makePairing('g1', 'p1', 'p2'),
-        makePairing('g1', 'p1', 'p3'), // same player, must be different day
-      ]
-      const result = assignMatchesToSlots(pairings, twoDates, slots, 1, constraints, 30)
-
-      expect(result).toHaveLength(2)
-      // p1 plays on both days, never twice on the same day
-      expect(result[0].matchDate).not.toBe(result[1].matchDate)
-    })
-
-    it('places match even when both players are absent (soft constraint)', () => {
-      const constraints = new Map<string, PlayerConstraints>()
-      constraints.set('p1', { arrival: '', departure: '', unavailable: ['2026-03-01'] })
-      constraints.set('p2', { arrival: '', departure: '', unavailable: ['2026-03-01'] })
-
-      const pairings = [makePairing('g1', 'p1', 'p2')]
-      const result = assignMatchesToSlots(pairings, ['2026-03-01'], slots, 1, constraints, 30)
-
-      expect(result).toHaveLength(1)
-      expect(result[0].absentPlayerIds).toContain('p1')
-      expect(result[0].absentPlayerIds).toContain('p2')
+      expect(p1p2Match!.matchTime).toBe('19:30')
     })
 
     it('prefers slots inside the intersection window over closer free slots outside', () => {
       const constraints = new Map<string, PlayerConstraints>()
-      // Window: 20:00 to 21:30 (arrival 20:00, departure 21:30)
       constraints.set('p1', { arrival: '20:00', departure: '', unavailable: [] })
       constraints.set('p2', { arrival: '', departure: '21:30', unavailable: [] })
 
-      // Fill 18:00 with another match to test that it doesn't greedily pick 18:00
-      const pairings = [
-        makePairing('g1', 'p3', 'p4'), // will take 18:00
-        makePairing('g1', 'p1', 'p2'), // should pick 20:00 (in window), not 18:30 (free but outside)
-      ]
-      const result = assignMatchesToSlots(pairings, dates, slots, 1, constraints, 30)
+      const plans = [makeDatePlan('2026-03-01', [
+        makePairing('g1', 'p3', 'p4'),
+        makePairing('g1', 'p1', 'p2'),
+      ])]
+      const result = assignTimeSlotsForDates(plans, slots, 1, constraints, 30)
 
       const p1p2Match = result.find(a => a.player1Id === 'p1' && a.player2Id === 'p2')
       expect(p1p2Match).toBeDefined()
@@ -697,50 +600,45 @@ describe('assignMatchesToSlots', () => {
 
     it('picks the closest slot to the window boundary when falling back', () => {
       const constraints = new Map<string, PlayerConstraints>()
-      // A departs at 19:00 (match must end by 19:00 → start at 18:30 max with 30min)
-      // B arrives at 20:00
-      // No intersection: A available [18:00, 19:00), B available [20:00, ...]
-      // Nearest to B's arrival (later boundary) = 20:00
       constraints.set('p1', { arrival: '', departure: '19:00', unavailable: [] })
       constraints.set('p2', { arrival: '20:00', departure: '', unavailable: [] })
 
-      const pairings = [makePairing('g1', 'p1', 'p2')]
-      const result = assignMatchesToSlots(pairings, dates, slots, 1, constraints, 30)
+      const plans = [makeDatePlan('2026-03-01', [makePairing('g1', 'p1', 'p2')])]
+      const result = assignTimeSlotsForDates(plans, slots, 1, constraints, 30)
 
       expect(result).toHaveLength(1)
-      // Fallback: closest free slot, which is 20:00 (B's availability starts)
       expect(result[0].matchTime).toBe('20:00')
     })
   })
 
   // -------------------------------------------------------------------------
-  // Round-robin integration: all matches placed with enough dates
+  // Round-robin integration: all matches placed with round → date mapping
   // -------------------------------------------------------------------------
 
   describe('round-robin integration', () => {
-    it('places ALL matches for 5 players across 5 dates with 1 match/player/day', () => {
+    it('places ALL matches for 5 players across 5 dates', () => {
       const players = [makePlayer('p1'), makePlayer('p2'), makePlayer('p3'), makePlayer('p4'), makePlayer('p5')]
       const groups = [makeGroup('g1', 'Box 1', players)]
-      const pairings = generateRoundRobinPairings(groups)
       const fiveDates = ['2026-03-01', '2026-03-02', '2026-03-03', '2026-03-04', '2026-03-05']
       const slots = ['19:00', '19:30', '20:00']
 
-      const result = assignMatchesToSlots(pairings, fiveDates, slots, 3, undefined, 30)
+      const groupRounds = generateGroupRounds(groups)
+      const datePlans = mapRoundsToDates(groupRounds, fiveDates)
+      const result = assignTimeSlotsForDates(datePlans, slots, 3, undefined, 30)
 
-      // C(5,2) = 10 matches, all should be placed
       expect(result).toHaveLength(10)
     })
 
-    it('places ALL matches for 6 players across 5 dates with 1 match/player/day', () => {
+    it('places ALL matches for 6 players across 5 dates', () => {
       const players = [makePlayer('p1'), makePlayer('p2'), makePlayer('p3'), makePlayer('p4'), makePlayer('p5'), makePlayer('p6')]
       const groups = [makeGroup('g1', 'Box 1', players)]
-      const pairings = generateRoundRobinPairings(groups)
       const fiveDates = ['2026-03-01', '2026-03-02', '2026-03-03', '2026-03-04', '2026-03-05']
       const slots = ['19:00', '19:30', '20:00']
 
-      const result = assignMatchesToSlots(pairings, fiveDates, slots, 3, undefined, 30)
+      const groupRounds = generateGroupRounds(groups)
+      const datePlans = mapRoundsToDates(groupRounds, fiveDates)
+      const result = assignTimeSlotsForDates(datePlans, slots, 3, undefined, 30)
 
-      // C(6,2) = 15 matches, all should be placed
       expect(result).toHaveLength(15)
     })
 
@@ -750,16 +648,15 @@ describe('assignMatchesToSlots', () => {
       const fiveDates = ['2026-03-01', '2026-03-02', '2026-03-03', '2026-03-04', '2026-03-05']
       const slots = ['19:00', '19:30', '20:00']
 
-      // p3 is absent on 2026-03-03
       const absences = new Map<string, string[]>()
       absences.set('p3', ['2026-03-03'])
 
-      const pairings = generateRoundRobinPairings(groups, fiveDates, absences)
-      const result = assignMatchesToSlots(pairings, fiveDates, slots, 3, undefined, 30)
+      const groupRounds = generateGroupRounds(groups, fiveDates, absences)
+      const datePlans = mapRoundsToDates(groupRounds, fiveDates)
+      const result = assignTimeSlotsForDates(datePlans, slots, 3, undefined, 30)
 
       expect(result).toHaveLength(10)
 
-      // p3 should NOT play on 2026-03-03 (bye aligned with absence)
       const p3MatchesOnAbsence = result.filter(
         a => (a.player1Id === 'p3' || a.player2Id === 'p3') && a.matchDate === '2026-03-03'
       )
@@ -772,23 +669,21 @@ describe('assignMatchesToSlots', () => {
       const fiveDates = ['2026-03-01', '2026-03-02', '2026-03-03', '2026-03-04', '2026-03-05']
       const slots = ['19:00', '19:30', '20:00']
 
-      // p1 absent 2026-03-01, p4 absent 2026-03-04
       const absences = new Map<string, string[]>()
       absences.set('p1', ['2026-03-01'])
       absences.set('p4', ['2026-03-04'])
 
-      const pairings = generateRoundRobinPairings(groups, fiveDates, absences)
-      const result = assignMatchesToSlots(pairings, fiveDates, slots, 3, undefined, 30)
+      const groupRounds = generateGroupRounds(groups, fiveDates, absences)
+      const datePlans = mapRoundsToDates(groupRounds, fiveDates)
+      const result = assignTimeSlotsForDates(datePlans, slots, 3, undefined, 30)
 
       expect(result).toHaveLength(10)
 
-      // p1 should not play on 2026-03-01
       const p1MatchesOnAbsence = result.filter(
         a => (a.player1Id === 'p1' || a.player2Id === 'p1') && a.matchDate === '2026-03-01'
       )
       expect(p1MatchesOnAbsence).toHaveLength(0)
 
-      // p4 should not play on 2026-03-04
       const p4MatchesOnAbsence = result.filter(
         a => (a.player1Id === 'p4' || a.player2Id === 'p4') && a.matchDate === '2026-03-04'
       )
@@ -803,7 +698,6 @@ describe('assignMatchesToSlots', () => {
       const withoutAbsences = generateRoundRobinPairings(groups)
       const withEmptyAbsences = generateRoundRobinPairings(groups, fiveDates, new Map())
 
-      // Same order
       expect(withoutAbsences.map(p => `${p.player1Id}-${p.player2Id}`))
         .toEqual(withEmptyAbsences.map(p => `${p.player1Id}-${p.player2Id}`))
     })
@@ -818,37 +712,8 @@ describe('assignMatchesToSlots', () => {
       const withoutAbsences = generateRoundRobinPairings(groups)
       const withAbsences = generateRoundRobinPairings(groups, fiveDates, absences)
 
-      // Same order (even group, no bye to optimize)
       expect(withoutAbsences.map(p => `${p.player1Id}-${p.player2Id}`))
         .toEqual(withAbsences.map(p => `${p.player1Id}-${p.player2Id}`))
-    })
-
-    it('soft absence: prefers non-absence dates but flags when forced', () => {
-      const players = [makePlayer('p1'), makePlayer('p2'), makePlayer('p3'), makePlayer('p4'), makePlayer('p5'), makePlayer('p6')]
-      const groups = [makeGroup('g1', 'Box 1', players)]
-      const twoDates = ['2026-03-01', '2026-03-02']
-      const slots = ['19:00', '19:30', '20:00']
-
-      const constraints = new Map<string, PlayerConstraints>()
-      constraints.set('p1', { arrival: '', departure: '', unavailable: ['2026-03-01'] })
-
-      const pairings = generateRoundRobinPairings(groups)
-      const result = assignMatchesToSlots(pairings, twoDates, slots, 3, constraints, 30)
-
-      // p1's matches should prefer 2026-03-02, but with 5 matches total and only 2 dates,
-      // p1 can't avoid 2026-03-01 entirely. Check that matches on absence date are flagged.
-      const p1Matches = result.filter(a => a.player1Id === 'p1' || a.player2Id === 'p1')
-      const p1OnAbsence = p1Matches.filter(a => a.matchDate === '2026-03-01')
-      const p1NotOnAbsence = p1Matches.filter(a => a.matchDate !== '2026-03-01')
-
-      // Matches on absence date should have absentPlayerIds
-      for (const m of p1OnAbsence) {
-        expect(m.absentPlayerIds).toContain('p1')
-      }
-      // Matches not on absence date should NOT have p1 in absentPlayerIds
-      for (const m of p1NotOnAbsence) {
-        expect(m.absentPlayerIds || []).not.toContain('p1')
-      }
     })
 
     it('places ALL matches for 3 groups of 5 players across 5 dates', () => {
@@ -863,24 +728,14 @@ describe('assignMatchesToSlots', () => {
         makeGroupOfFive('g2', 'Box 2', 'b'),
         makeGroupOfFive('g3', 'Box 3', 'c'),
       ]
-      const pairings = generateRoundRobinPairings(groups)
       const fiveDates = ['2026-03-01', '2026-03-02', '2026-03-03', '2026-03-04', '2026-03-05']
       const slots = ['19:00', '19:30', '20:00', '20:30']
 
-      const result = assignMatchesToSlots(pairings, fiveDates, slots, 3, undefined, 30)
+      const groupRounds = generateGroupRounds(groups)
+      const datePlans = mapRoundsToDates(groupRounds, fiveDates)
+      const result = assignTimeSlotsForDates(datePlans, slots, 3, undefined, 30)
 
-      // 3 groups × C(5,2) = 30 matches, all should be placed
       expect(result).toHaveLength(30)
-
-      // Verify 1-match-per-player-per-day constraint holds
-      const playerDays = new Map<string, Set<string>>()
-      for (const a of result) {
-        for (const pid of [a.player1Id, a.player2Id]) {
-          if (!playerDays.has(pid)) playerDays.set(pid, new Set())
-          expect(playerDays.get(pid)!.has(a.matchDate)).toBe(false)
-          playerDays.get(pid)!.add(a.matchDate)
-        }
-      }
     })
   })
 })

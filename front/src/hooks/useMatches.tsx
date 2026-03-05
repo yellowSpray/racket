@@ -5,12 +5,14 @@ import type { Event } from "@/types/event"
 import { useCallback, useState } from "react"
 import { intervalToMinutes } from "@/lib/utils"
 import {
-    generateRoundRobinPairings,
+    generateGroupRounds,
+    mapRoundsToDates,
+    assignTimeSlotsForDates,
     calculateTimeSlots,
     calculateDates,
-    assignMatchesToSlots,
     type PlayerConstraints,
 } from "@/lib/matchScheduler"
+import { computeEloUpdates, type EloMatchResult } from "@/lib/eloEngine"
 
 /**
  * Extrait "HH:MM" depuis un timestamp Supabase (ex: "2026-03-05T20:00:00+00:00")
@@ -214,20 +216,23 @@ export function useMatches() {
                 }
             }
 
-            // 3. Générer les paires round-robin (avec optimisation bye/absence)
-            const pairings = generateRoundRobinPairings(groups, dates, absencesMap)
+            // 3. Générer les rounds structurés par groupe (avec optimisation bye/absence)
+            const groupRounds = generateGroupRounds(groups, dates, absencesMap)
 
-            if (pairings.length === 0) {
+            // 4. Mapper les rounds sur les dates (round N → date N)
+            const datePlans = mapRoundsToDates(groupRounds, dates)
+            const totalPairings = datePlans.reduce((sum, p) => sum + p.pairings.length, 0)
+
+            if (totalPairings === 0) {
                 setError("Aucun match à générer (pas assez de joueurs dans les groupes)")
                 return null
             }
 
-            console.log(`[Scheduler] Génération: ${pairings.length} matchs, ${dates.length} dates, ${timeSlots.length} créneaux/jour, ${event.number_of_courts} terrains (${dates.length * timeSlots.length * event.number_of_courts} slots totaux)`)
+            console.log(`[Scheduler] Génération: ${totalPairings} matchs, ${dates.length} dates, ${timeSlots.length} créneaux/jour, ${event.number_of_courts} terrains (${dates.length * timeSlots.length * event.number_of_courts} slots totaux)`)
 
-            // 4. Assigner aux créneaux avec contraintes
-            const assignments = assignMatchesToSlots(
-                pairings,
-                dates,
+            // 5. Assigner les créneaux horaires et terrains par date
+            const assignments = assignTimeSlotsForDates(
+                datePlans,
                 timeSlots,
                 event.number_of_courts,
                 constraints,
@@ -236,13 +241,13 @@ export function useMatches() {
 
             if (assignments.length === 0) {
                 setError(
-                    `Pas assez de créneaux : aucun match placé sur ${pairings.length}. ` +
+                    `Pas assez de créneaux : aucun match placé sur ${totalPairings}. ` +
                     `Ajoutez des dates ou des terrains.`
                 )
                 return null
             }
 
-            // 4. Insérer en batch dans Supabase
+            // 6. Insérer en batch dans Supabase
             const matchRows = assignments.map(a => ({
                 group_id: a.groupId,
                 player1_id: a.player1Id,
@@ -261,15 +266,15 @@ export function useMatches() {
                 return null
             }
 
-            // 5. Refresh
+            // 7. Refresh
             await fetchMatchesByEvent(event.id)
 
-            const result = { total: pairings.length, placed: assignments.length }
+            const result = { total: totalPairings, placed: assignments.length }
 
-            if (assignments.length < pairings.length) {
+            if (assignments.length < totalPairings) {
                 setError(
-                    `${assignments.length}/${pairings.length} matchs placés. ` +
-                    `${pairings.length - assignments.length} match(s) sans créneau. Ajoutez des dates ou des terrains.`
+                    `${assignments.length}/${totalPairings} matchs placés. ` +
+                    `${totalPairings - assignments.length} match(s) sans créneau. Ajoutez des dates ou des terrains.`
                 )
             }
 
@@ -319,6 +324,41 @@ export function useMatches() {
         }
     }
 
+    const applyEloUpdates = async (eloResults: EloMatchResult[]) => {
+        try {
+            const playerIds = new Set<string>()
+            for (const r of eloResults) {
+                playerIds.add(r.winnerId)
+                playerIds.add(r.loserId)
+            }
+
+            const { data } = await supabase
+                .from("profiles")
+                .select("id, power_ranking")
+                .in("id", Array.from(playerIds))
+
+            if (!data) return
+
+            const currentRatings = new Map<string, number>()
+            for (const p of data) {
+                if (p.power_ranking != null) {
+                    currentRatings.set(p.id, p.power_ranking)
+                }
+            }
+
+            const newRatings = computeEloUpdates(eloResults, currentRatings)
+
+            if (newRatings.size === 0) return
+
+            const updates = Array.from(newRatings.entries()).map(([id, rating]) =>
+                supabase.from("profiles").update({ power_ranking: rating }).eq("id", id)
+            )
+            await Promise.all(updates)
+        } catch (err) {
+            console.warn("[Elo] Erreur mise à jour ratings:", err)
+        }
+    }
+
     const updateMatchResults = useCallback(async (
         results: { matchId: string; winnerId: string | null; score: string }[]
     ): Promise<boolean> => {
@@ -343,13 +383,38 @@ export function useMatches() {
             }
 
             // Mettre à jour le state local
-            setMatches(prev => prev.map(m => {
-                const update = results.find(r => r.matchId === m.id)
-                if (update) {
-                    return { ...m, winner_id: update.winnerId, score: update.score }
+            setMatches(prev => {
+                const updated = prev.map(m => {
+                    const update = results.find(r => r.matchId === m.id)
+                    if (update) {
+                        return { ...m, winner_id: update.winnerId, score: update.score }
+                    }
+                    return m
+                })
+
+                // Fire-and-forget : mise à jour Elo après save réussi
+                const eloResults: EloMatchResult[] = results
+                    .filter(r => r.winnerId !== null && r.score)
+                    .map(r => {
+                        const match = prev.find(m => m.id === r.matchId)
+                        const loserId = match
+                            ? (r.winnerId === match.player1_id ? match.player2_id : match.player1_id)
+                            : ""
+                        return {
+                            matchId: r.matchId,
+                            winnerId: r.winnerId!,
+                            loserId,
+                            score: r.score,
+                        }
+                    })
+                    .filter(r => r.loserId !== "")
+
+                if (eloResults.length > 0) {
+                    applyEloUpdates(eloResults)
                 }
-                return m
-            }))
+
+                return updated
+            })
 
             return true
         } catch (err) {

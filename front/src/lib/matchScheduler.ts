@@ -18,46 +18,255 @@ interface RoundInfo {
     byePlayerId: string | null
 }
 
+export interface GroupRound {
+    groupId: string
+    groupName: string
+    roundIndex: number
+    pairings: MatchPairing[]
+    byePlayerId: string | null
+}
+
+export interface DatePlan {
+    date: string
+    pairings: MatchPairing[]
+}
+
 /**
- * Génère toutes les paires round-robin depuis les groupes en utilisant la méthode du cercle.
- * Les paires sont ordonnées par round : dans chaque round, aucun joueur ne joue 2 fois.
- * Les rounds de différents groupes sont interleaved pour étaler les matchs.
- *
- * Si des dates et absences sont fournies, les rounds sont réordonnés pour aligner
- * les byes avec les dates d'absence des joueurs (groupes impairs uniquement).
+ * Génère les rounds round-robin structurés par groupe.
+ * Chaque groupe produit un tableau de GroupRound, préservant la structure des rounds.
+ */
+export function generateGroupRounds(
+    groups: Group[],
+    dates?: string[],
+    absences?: Map<string, string[]>
+): GroupRound[][] {
+    const result: GroupRound[][] = []
+
+    for (const group of groups) {
+        const players = group.players || []
+        if (players.length < 2) {
+            result.push([])
+            continue
+        }
+
+        let rounds = generateCircleRounds(players, group.id, group.group_name)
+
+        if (dates && absences && absences.size > 0) {
+            rounds = optimizeRoundOrder(rounds, dates, absences)
+        }
+
+        const groupRounds: GroupRound[] = rounds.map((r, i) => ({
+            groupId: group.id,
+            groupName: group.group_name,
+            roundIndex: i,
+            pairings: r.pairings,
+            byePlayerId: r.byePlayerId,
+        }))
+
+        result.push(groupRounds)
+    }
+
+    return result
+}
+
+/**
+ * Mappe les rounds de chaque groupe sur des dates.
+ * Round N → Date N. Si plus de rounds que de dates, les surplus vont
+ * sur les dates les moins chargées.
+ */
+export function mapRoundsToDates(
+    groupRounds: GroupRound[][],
+    dates: string[]
+): DatePlan[] {
+    const plans: DatePlan[] = dates.map(date => ({ date, pairings: [] }))
+
+    for (const rounds of groupRounds) {
+        for (let i = 0; i < rounds.length; i++) {
+            if (i < dates.length) {
+                plans[i].pairings.push(...rounds[i].pairings)
+            } else {
+                // Overflow : distribuer sur la date la moins chargée
+                const leastLoaded = plans.reduce((min, p) =>
+                    p.pairings.length < min.pairings.length ? p : min
+                )
+                leastLoaded.pairings.push(...rounds[i].pairings)
+            }
+        }
+    }
+
+    return plans
+}
+
+/**
+ * Assigne les créneaux horaires et terrains pour chaque date.
+ * La contrainte "1 match/joueur/jour" est garantie par mapRoundsToDates.
+ * Seules les contraintes de créneau restent :
+ * - Un joueur ne peut pas jouer 2 matchs au même créneau
+ * - Un terrain ne peut accueillir qu'1 match par créneau
+ * - Préférence pour les fenêtres de disponibilité
+ */
+export function assignTimeSlotsForDates(
+    datePlans: DatePlan[],
+    timeSlots: string[],
+    numberOfCourts: number,
+    constraints?: Map<string, PlayerConstraints>,
+    durationMinutes?: number
+): MatchAssignment[] {
+    const allAssignments: MatchAssignment[] = []
+    const playerConstraints = constraints || new Map<string, PlayerConstraints>()
+    const matchDuration = durationMinutes || 30
+
+    for (const plan of datePlans) {
+        const occupied = new Map<string, Set<string>>() // "time" -> Set<playerId>
+        const courtUsed = new Map<string, Set<string>>() // "time" -> Set<courtName>
+
+        // Trier : les matchs avec la fenêtre de dispo la plus étroite en premier
+        const sorted = sortByAvailabilityTightness(plan.pairings, plan.date, playerConstraints)
+
+        for (const pairing of sorted) {
+            const absentPlayerIds = getAbsentPlayers(pairing.player1Id, pairing.player2Id, plan.date, playerConstraints)
+
+            const slot = findBestTimeSlot(
+                pairing, plan.date, timeSlots, numberOfCourts,
+                occupied, courtUsed, playerConstraints, matchDuration
+            )
+
+            if (!slot) {
+                console.warn(
+                    `[Scheduler] ❌ Match non placé : ${pairing.player1Name} vs ${pairing.player2Name} (${pairing.groupName}) le ${plan.date}`
+                )
+                continue
+            }
+
+            allAssignments.push({
+                ...pairing,
+                matchDate: plan.date,
+                matchTime: slot.time,
+                courtNumber: slot.court,
+                ...(absentPlayerIds.length > 0 ? { absentPlayerIds } : {}),
+            })
+
+            if (!occupied.has(slot.time)) occupied.set(slot.time, new Set())
+            occupied.get(slot.time)!.add(pairing.player1Id)
+            occupied.get(slot.time)!.add(pairing.player2Id)
+
+            if (!courtUsed.has(slot.time)) courtUsed.set(slot.time, new Set())
+            courtUsed.get(slot.time)!.add(slot.court)
+        }
+    }
+
+    return allAssignments
+}
+
+/**
+ * Trouve le meilleur créneau (heure + terrain) pour un match sur une date fixe.
+ */
+function findBestTimeSlot(
+    pairing: MatchPairing,
+    date: string,
+    timeSlots: string[],
+    numberOfCourts: number,
+    occupied: Map<string, Set<string>>,
+    courtUsed: Map<string, Set<string>>,
+    constraints: Map<string, PlayerConstraints>,
+    matchDuration: number
+): { time: string; court: string } | null {
+    const candidates: { time: string; court: string }[] = []
+
+    for (const time of timeSlots) {
+        const occ = occupied.get(time)
+        if (occ && (occ.has(pairing.player1Id) || occ.has(pairing.player2Id))) continue
+
+        const used = courtUsed.get(time) || new Set()
+        for (let c = 1; c <= numberOfCourts; c++) {
+            const court = `Terrain ${c}`
+            if (!used.has(court)) {
+                candidates.push({ time, court })
+                break
+            }
+        }
+    }
+
+    if (candidates.length === 0) return null
+
+    return pickBestTimeSlot(candidates, pairing, date, constraints, matchDuration)
+}
+
+/**
+ * Choisit le meilleur créneau parmi les candidats : préfère in-window, sinon le plus proche.
+ */
+function pickBestTimeSlot(
+    candidates: { time: string; court: string }[],
+    pairing: MatchPairing,
+    date: string,
+    constraints: Map<string, PlayerConstraints>,
+    matchDuration: number
+): { time: string; court: string } | null {
+    if (candidates.length === 0) return null
+
+    const inWindow: typeof candidates = []
+    const outWindow: typeof candidates = []
+
+    for (const slot of candidates) {
+        const window = getAvailabilityWindow(pairing.player1Id, pairing.player2Id, date, constraints)
+        const slotStart = parseTimeToMinutes(slot.time)
+        const slotEnd = slotStart + matchDuration
+
+        if (slotStart >= window.start && slotEnd <= window.end) {
+            inWindow.push(slot)
+        } else {
+            outWindow.push(slot)
+        }
+    }
+
+    if (inWindow.length > 0) return inWindow[0]
+
+    if (outWindow.length > 0) {
+        return outWindow.reduce((best, slot) => {
+            const bestDist = distanceToWindowForDate(best, pairing, date, constraints, matchDuration)
+            const slotDist = distanceToWindowForDate(slot, pairing, date, constraints, matchDuration)
+            return slotDist < bestDist ? slot : best
+        })
+    }
+
+    return null
+}
+
+/**
+ * Trie les matchs par fenêtre de dispo la plus étroite en premier.
+ */
+function sortByAvailabilityTightness(
+    pairings: MatchPairing[],
+    date: string,
+    constraints: Map<string, PlayerConstraints>,
+): MatchPairing[] {
+    return [...pairings].sort((a, b) => {
+        const windowA = getAvailabilityWindow(a.player1Id, a.player2Id, date, constraints)
+        const windowB = getAvailabilityWindow(b.player1Id, b.player2Id, date, constraints)
+        const widthA = Math.max(0, windowA.end - windowA.start)
+        const widthB = Math.max(0, windowB.end - windowB.start)
+        return widthA - widthB
+    })
+}
+
+/**
+ * Génère toutes les paires round-robin depuis les groupes.
+ * Wrapper pour compatibilité — utilise generateGroupRounds en interne.
  */
 export function generateRoundRobinPairings(
     groups: Group[],
     dates?: string[],
     absences?: Map<string, string[]>
 ): MatchPairing[] {
-    const roundsByGroup: RoundInfo[][] = []
+    const groupRounds = generateGroupRounds(groups, dates, absences)
 
-    for (const group of groups) {
-        const players = group.players || []
-        if (players.length < 2) {
-            roundsByGroup.push([])
-            continue
-        }
-
-        let rounds = generateCircleRounds(players, group.id, group.group_name)
-
-        // Optimiser l'ordre des rounds pour aligner byes avec absences
-        if (dates && absences && absences.size > 0) {
-            rounds = optimizeRoundOrder(rounds, dates, absences)
-        }
-
-        roundsByGroup.push(rounds)
-    }
-
-    // Interleave par round : round 0 de chaque groupe, puis round 1, etc.
     const result: MatchPairing[] = []
-    const maxRounds = Math.max(0, ...roundsByGroup.map(r => r.length))
+    const maxRounds = Math.max(0, ...groupRounds.map(r => r.length))
 
     for (let round = 0; round < maxRounds; round++) {
-        for (const groupRounds of roundsByGroup) {
-            if (round < groupRounds.length) {
-                result.push(...groupRounds[round].pairings)
+        for (const rounds of groupRounds) {
+            if (round < rounds.length) {
+                result.push(...rounds[round].pairings)
             }
         }
     }
@@ -129,25 +338,24 @@ function generateCircleRounds(
     const n = players.length
     const isOdd = n % 2 !== 0
 
-    // Pour N impair, ajouter un index "bye" (-1)
-    const indices: number[] = players.map((_, i) => i)
-    if (isOdd) indices.push(-1) // -1 = bye
-
-    const totalPositions = indices.length // always even
+    const totalPositions = isOdd ? n + 1 : n // always even
     const numRounds = totalPositions - 1
     const matchesPerRound = totalPositions / 2
 
     const rounds: RoundInfo[] = []
 
-    // Position 0 est fixe, les positions 1..N-1 tournent
-    const rotating = indices.slice(1) // positions qui tournent
+    // Player A (index 0) est fixe.
+    // Les autres tournent en ordre inversé pour que A joue B en R1, C en R2, etc.
+    const fixed = 0
+    const rest = players.slice(1).map((_, i) => i + 1).reverse() // [n-1, n-2, ..., 1]
+    const rotating = isOdd ? [-1, ...rest] : [...rest]
 
     for (let round = 0; round < numRounds; round++) {
         const roundPairings: MatchPairing[] = []
         let byePlayerId: string | null = null
 
         // Construire l'arrangement courant
-        const current = [indices[0], ...rotating]
+        const current = [fixed, ...rotating]
 
         for (let m = 0; m < matchesPerRound; m++) {
             const i = current[m]
@@ -279,200 +487,27 @@ function getAbsentPlayers(
 }
 
 /**
- * Assigne les matchs aux créneaux (date, heure, terrain).
- * Contraintes dures :
- * - Un joueur ne peut pas jouer 2 matchs au même créneau
- * - Un joueur ne joue qu'1 match par jour
- * - Capacité des terrains respectée
- * Contraintes souples :
- * - Préférence pour les créneaux dans la fenêtre d'intersection des disponibilités
- * - Préférence pour les dates sans absence
- * - Si forcé de placer sur une date d'absence, le match est flaggé (absentPlayerIds)
- */
-export function assignMatchesToSlots(
-    pairings: MatchPairing[],
-    dates: string[],
-    timeSlots: string[],
-    numberOfCourts: number,
-    constraints?: Map<string, PlayerConstraints>,
-    durationMinutes?: number
-): MatchAssignment[] {
-    const assignments: MatchAssignment[] = []
-    const occupied = new Map<string, Set<string>>()
-    const playerDayMap = new Map<string, Set<string>>()
-    const playerConstraints = constraints || new Map()
-    const matchDuration = durationMinutes || 30
-
-    // Construire la liste ordonnée de tous les slots disponibles
-    const allSlots: { date: string; time: string; court: string }[] = []
-    for (const date of dates) {
-        for (const time of timeSlots) {
-            for (let c = 1; c <= numberOfCourts; c++) {
-                allSlots.push({ date, time, court: `Terrain ${c}` })
-            }
-        }
-    }
-
-    for (const pairing of pairings) {
-        // Collecter tous les créneaux libres (contraintes dures uniquement)
-        const freeSlots: { date: string; time: string; court: string }[] = []
-        let blockedByCourtTaken = 0
-        let blockedByPlayerOccupied = 0
-        let blockedByOncePerDay = 0
-
-        for (const slot of allSlots) {
-            const slotKey = `${slot.date}_${slot.time}`
-
-            const isCourtTaken = assignments.some(
-                a => a.matchDate === slot.date && a.matchTime === slot.time && a.courtNumber === slot.court
-            )
-            if (isCourtTaken) { blockedByCourtTaken++; continue }
-
-            const occupiedPlayers = occupied.get(slotKey)
-            if (occupiedPlayers) {
-                if (occupiedPlayers.has(pairing.player1Id) || occupiedPlayers.has(pairing.player2Id)) {
-                    blockedByPlayerOccupied++; continue
-                }
-            }
-
-            const p1Days = playerDayMap.get(pairing.player1Id)
-            const p2Days = playerDayMap.get(pairing.player2Id)
-            if (p1Days?.has(slot.date) || p2Days?.has(slot.date)) { blockedByOncePerDay++; continue }
-
-            freeSlots.push(slot)
-        }
-
-        if (freeSlots.length === 0) {
-            console.warn(
-                `[Scheduler] ❌ Match non placé : ${pairing.player1Name} vs ${pairing.player2Name} (${pairing.groupName})\n` +
-                `  Raisons (sur ${allSlots.length} créneaux totaux) :\n` +
-                `  - Terrains déjà pris : ${blockedByCourtTaken}\n` +
-                `  - Joueur déjà occupé au même créneau : ${blockedByPlayerOccupied}\n` +
-                `  - Joueur a déjà un match ce jour (1/jour) : ${blockedByOncePerDay}`
-            )
-            continue
-        }
-
-        // Séparer : sans absence > avec absence, puis dans chaque catégorie : in-window > out-window
-        const noAbsence: typeof freeSlots = []
-        const withAbsence: typeof freeSlots = []
-
-        for (const slot of freeSlots) {
-            const absent = getAbsentPlayers(pairing.player1Id, pairing.player2Id, slot.date, playerConstraints)
-            if (absent.length === 0) {
-                noAbsence.push(slot)
-            } else {
-                withAbsence.push(slot)
-            }
-        }
-
-        // Chercher le meilleur slot : d'abord sans absence, puis avec absence
-        const chosenSlot = pickBestSlot(noAbsence, pairing, playerConstraints, matchDuration)
-            || pickBestSlot(withAbsence, pairing, playerConstraints, matchDuration)
-
-        if (!chosenSlot) continue
-
-        // Déterminer si des joueurs sont absents sur la date choisie
-        const absentPlayerIds = getAbsentPlayers(pairing.player1Id, pairing.player2Id, chosenSlot.date, playerConstraints)
-
-        // Assigner le match
-        const slotKey = `${chosenSlot.date}_${chosenSlot.time}`
-        assignments.push({
-            ...pairing,
-            matchDate: chosenSlot.date,
-            matchTime: chosenSlot.time,
-            courtNumber: chosenSlot.court,
-            ...(absentPlayerIds.length > 0 ? { absentPlayerIds } : {}),
-        })
-
-        if (!occupied.has(slotKey)) {
-            occupied.set(slotKey, new Set())
-        }
-        occupied.get(slotKey)!.add(pairing.player1Id)
-        occupied.get(slotKey)!.add(pairing.player2Id)
-
-        if (!playerDayMap.has(pairing.player1Id)) {
-            playerDayMap.set(pairing.player1Id, new Set())
-        }
-        if (!playerDayMap.has(pairing.player2Id)) {
-            playerDayMap.set(pairing.player2Id, new Set())
-        }
-        playerDayMap.get(pairing.player1Id)!.add(chosenSlot.date)
-        playerDayMap.get(pairing.player2Id)!.add(chosenSlot.date)
-    }
-
-    return assignments
-}
-
-/**
- * Choisit le meilleur slot parmi les candidats : préfère in-window, sinon nearest.
- */
-function pickBestSlot(
-    candidates: { date: string; time: string; court: string }[],
-    pairing: MatchPairing,
-    constraints: Map<string, PlayerConstraints>,
-    matchDuration: number
-): { date: string; time: string; court: string } | null {
-    if (candidates.length === 0) return null
-
-    const inWindow: typeof candidates = []
-    const outWindow: typeof candidates = []
-
-    for (const slot of candidates) {
-        const window = getAvailabilityWindow(pairing.player1Id, pairing.player2Id, slot.date, constraints)
-        const slotStart = parseTimeToMinutes(slot.time)
-        const slotEnd = slotStart + matchDuration
-
-        if (slotStart >= window.start && slotEnd <= window.end) {
-            inWindow.push(slot)
-        } else {
-            outWindow.push(slot)
-        }
-    }
-
-    if (inWindow.length > 0) return inWindow[0]
-
-    if (outWindow.length > 0) {
-        return outWindow.reduce((best, slot) => {
-            const bestDist = distanceToWindow(best, pairing, constraints, matchDuration)
-            const slotDist = distanceToWindow(slot, pairing, constraints, matchDuration)
-            return slotDist < bestDist ? slot : best
-        })
-    }
-
-    return null
-}
-
-/**
  * Calcule la distance en minutes entre un créneau et la fenêtre de disponibilité idéale.
- * 0 = dans la fenêtre, sinon = nombre de minutes d'écart.
- *
- * Quand les fenêtres ne s'intersectent pas (start > end), on cible l'heure
- * d'arrivée du joueur le plus tardif (window.start) pour placer le match
- * au plus proche de quand les deux joueurs pourraient se retrouver.
  */
-function distanceToWindow(
-    slot: { date: string; time: string },
+function distanceToWindowForDate(
+    slot: { time: string },
     pairing: MatchPairing,
+    date: string,
     constraints: Map<string, PlayerConstraints>,
     durationMinutes: number
 ): number {
-    const window = getAvailabilityWindow(pairing.player1Id, pairing.player2Id, slot.date, constraints)
+    const window = getAvailabilityWindow(pairing.player1Id, pairing.player2Id, date, constraints)
 
     const slotStart = parseTimeToMinutes(slot.time)
     const slotEnd = slotStart + durationMinutes
 
-    // Pas d'intersection : cibler l'arrivée du joueur le plus tardif
     if (window.start > window.end) {
         return Math.abs(slotStart - window.start)
     }
 
-    // Dans la fenêtre
     if (slotStart >= window.start && slotEnd <= window.end) return 0
 
-    // Distance from start boundary (slot is too early)
     const distFromStart = window.start > slotStart ? window.start - slotStart : 0
-    // Distance from end boundary (slot ends too late)
     const distFromEnd = slotEnd > window.end ? slotEnd - window.end : 0
 
     return Math.max(distFromStart, distFromEnd)

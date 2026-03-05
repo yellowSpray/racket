@@ -19,10 +19,11 @@ vi.mock('@/lib/supabaseClient', () => ({
 
 // Mock matchScheduler since we don't want to test its internals here
 vi.mock('@/lib/matchScheduler', () => ({
-    generateRoundRobinPairings: vi.fn(),
+    generateGroupRounds: vi.fn(),
+    mapRoundsToDates: vi.fn(),
+    assignTimeSlotsForDates: vi.fn(),
     calculateTimeSlots: vi.fn(),
     calculateDates: vi.fn(),
-    assignMatchesToSlots: vi.fn(),
 }))
 
 vi.mock('@/lib/utils', () => ({
