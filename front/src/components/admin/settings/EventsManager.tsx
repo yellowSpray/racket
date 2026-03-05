@@ -103,6 +103,7 @@ export function EventsManager() {
                     </div>
                 </div>
             ) : (
+                <>
                 <div className="border rounded-lg">
                     <Table>
                         <TableHeader>
@@ -160,6 +161,12 @@ export function EventsManager() {
                         </TableBody>
                     </Table>
                 </div>
+
+                <Button onClick={handleCreate} className="mt-8 self-center">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Ajouter un événement
+                </Button>
+                </>
             )}
 
             {/* dialog de creation / edition / suppression */}
