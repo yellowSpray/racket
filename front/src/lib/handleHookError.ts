@@ -36,7 +36,7 @@ const REQUEST_TIMEOUT_MS = 15000
  * Enveloppe une Promise avec un timeout.
  * Si la promise ne résout/rejette pas dans le délai, rejette avec une erreur explicite.
  */
-export function withTimeout<T>(promise: Promise<T>, context: string, ms = REQUEST_TIMEOUT_MS): Promise<T> {
+export function withTimeout<T>(promise: PromiseLike<T>, context: string, ms = REQUEST_TIMEOUT_MS): Promise<T> {
     return Promise.race([
         promise,
         new Promise<never>((_, reject) =>
