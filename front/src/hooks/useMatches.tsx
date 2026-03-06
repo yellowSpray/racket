@@ -3,6 +3,7 @@ import type { Match } from "@/types/match"
 import type { Group } from "@/types/draw"
 import type { Event } from "@/types/event"
 import { useCallback, useState } from "react"
+import { handleHookError } from "@/lib/handleHookError"
 import { intervalToMinutes } from "@/lib/utils"
 import {
     generateGroupRounds,
@@ -51,7 +52,7 @@ export function useMatches() {
                 .eq("event_id", eventId)
 
             if (groupsError) {
-                setError(groupsError.message)
+                handleHookError(groupsError, setError, "useMatches.fetch")
                 return
             }
 
@@ -75,13 +76,13 @@ export function useMatches() {
                 .order("match_time", { ascending: true })
 
             if (fetchError) {
-                setError(fetchError.message)
+                handleHookError(fetchError, setError, "useMatches.fetch")
                 return
             }
 
             setMatches((data as Match[]) || [])
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Erreur inconnue")
+            handleHookError(err, setError, "useMatches")
         } finally {
             setLoading(false)
         }
@@ -262,7 +263,7 @@ export function useMatches() {
                 .insert(matchRows)
 
             if (insertError) {
-                setError(insertError.message)
+                handleHookError(insertError, setError, "useMatches.generate")
                 return null
             }
 
@@ -284,7 +285,7 @@ export function useMatches() {
 
             return result
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Erreur inconnue")
+            handleHookError(err, setError, "useMatches")
             return null
         } finally {
             setLoading(false)
@@ -302,7 +303,7 @@ export function useMatches() {
                 .eq("event_id", eventId)
 
             if (groupsError) {
-                setError(groupsError.message)
+                handleHookError(groupsError, setError, "useMatches.delete")
                 return false
             }
 
@@ -316,14 +317,14 @@ export function useMatches() {
                 .in("group_id", groupIds)
 
             if (deleteError) {
-                setError(deleteError.message)
+                handleHookError(deleteError, setError, "useMatches.delete")
                 return false
             }
 
             setMatches([])
             return true
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Erreur inconnue")
+            handleHookError(err, setError, "useMatches")
             return false
         }
     }
@@ -382,7 +383,7 @@ export function useMatches() {
 
             const firstError = responses.find(r => r.error)
             if (firstError?.error) {
-                setError(firstError.error.message)
+                handleHookError(firstError.error, setError, "useMatches.updateResults")
                 return false
             }
 
@@ -422,7 +423,7 @@ export function useMatches() {
 
             return true
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Erreur inconnue")
+            handleHookError(err, setError, "useMatches")
             return false
         }
     }, [])

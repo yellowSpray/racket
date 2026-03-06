@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabaseClient"
 import type { Group, SupabaseGroup, SupabaseGroupPlayer } from "@/types/draw"
 import { useCallback, useState } from "react"
+import { handleHookError } from "@/lib/handleHookError"
 
 export function useGroups() {
 
@@ -39,8 +40,7 @@ export function useGroups() {
                 .order("group_name", {ascending: true})
 
             if(fetchError) {
-                console.error("Erreur fetch groups:", fetchError)
-                setError(fetchError.message)
+                handleHookError(fetchError, setError, "useGroups.fetch")
                 return
             }
 
@@ -65,8 +65,7 @@ export function useGroups() {
             setGroups(transformedGroups)
 
         } catch (err) {
-            console.error("Erreur inattendue:", err)
-            setError(err instanceof Error ? err.message : "Erreur inconnue")
+            handleHookError(err, setError, "useGroups")
         } finally {
             setLoading(false)
         }
@@ -91,8 +90,7 @@ export function useGroups() {
                 .insert(groupsToCreate)
 
             if(insertError){
-                console.error("Erreur création groups:", insertError)
-                setError(insertError.message)
+                handleHookError(insertError, setError, "useGroups.create")
                 return
             }
 
@@ -100,8 +98,7 @@ export function useGroups() {
             await fetchGroupsByEvent(eventId)
 
         } catch (err) {
-            console.error("Erreur inattendue:", err)
-            setError(err instanceof Error ? err.message : "Erreur inconnue")
+            handleHookError(err, setError, "useGroups")
         } finally {
             setLoading(false)
         }
@@ -121,8 +118,7 @@ export function useGroups() {
                 .eq("id", groupId)
 
             if (deleteError) {
-                console.error("Erreur suppression group:", deleteError)
-                setError(deleteError.message)
+                handleHookError(deleteError, setError, "useGroups.delete")
                 return
             }
 
@@ -130,8 +126,7 @@ export function useGroups() {
             await fetchGroupsByEvent(eventId)
 
         } catch (err) {
-            console.error("Erreur inattendue:", err)
-            setError(err instanceof Error ? err.message : "Erreur inconnue")
+            handleHookError(err, setError, "useGroups")
         } finally {
             setLoading(false)
         }
@@ -155,8 +150,7 @@ export function useGroups() {
                 .insert(assignments)
 
             if (insertError) {
-                console.error("Erreur assignation players:", insertError)
-                setError(insertError.message)
+                handleHookError(insertError, setError, "useGroups.assign")
                 return
             }
 
@@ -164,8 +158,7 @@ export function useGroups() {
             await fetchGroupsByEvent(eventId)
 
         } catch (err) {
-            console.error("Erreur inattendue:", err)
-            setError(err instanceof Error ? err.message : "Erreur inconnue")
+            handleHookError(err, setError, "useGroups")
         } finally {
             setLoading(false)
         }
@@ -185,8 +178,7 @@ export function useGroups() {
                 .eq("profile_id", playerId)
             
             if (deleteError) {
-                console.error("Erreur retrait player:", deleteError)
-                setError(deleteError.message)
+                handleHookError(deleteError, setError, "useGroups.removePlayer")
                 return
             }
 
@@ -194,8 +186,7 @@ export function useGroups() {
             await fetchGroupsByEvent(eventId)
 
         } catch (err) {
-            console.error("Erreur inattendue:", err)
-            setError(err instanceof Error ? err.message : "Erreur inconnue")
+            handleHookError(err, setError, "useGroups")
         } finally {
             setLoading(false)
         }

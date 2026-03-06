@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabaseClient"
 import type { EventCourt } from "@/types/settings"
 import { useCallback, useState } from "react"
+import { handleHookError } from "@/lib/handleHookError"
 
 export function useEventCourts() {
 
@@ -25,13 +26,13 @@ export function useEventCourts() {
                 .order("sort_order", { ascending: true })
 
             if (fetchError) {
-                setError(fetchError.message)
+                handleHookError(fetchError, setError, "useEventCourts.fetch")
                 return
             }
 
             setCourts(data || [])
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Erreur inconnue")
+            handleHookError(err, setError, "useEventCourts")
         } finally {
             setLoading(false)
         }
@@ -55,7 +56,7 @@ export function useEventCourts() {
             .single()
 
         if (insertError) {
-            setError(insertError.message)
+            handleHookError(insertError, setError, "useEventCourts.add")
             return false
         }
 
@@ -74,7 +75,7 @@ export function useEventCourts() {
             .single()
 
         if (updateError) {
-            setError(updateError.message)
+            handleHookError(updateError, setError, "useEventCourts.update")
             return false
         }
 
@@ -91,7 +92,7 @@ export function useEventCourts() {
             .eq("id", courtId)
 
         if (deleteError) {
-            setError(deleteError.message)
+            handleHookError(deleteError, setError, "useEventCourts.remove")
             return false
         }
 
@@ -116,7 +117,7 @@ export function useEventCourts() {
             .select()
 
         if (insertError) {
-            setError(insertError.message)
+            handleHookError(insertError, setError, "useEventCourts.init")
             return false
         }
 

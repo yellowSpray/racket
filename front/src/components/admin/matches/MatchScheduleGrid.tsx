@@ -1,3 +1,4 @@
+import { useMemo, useCallback } from "react"
 import type { Match } from "@/types/match"
 import type { Event } from "@/types/event"
 import {
@@ -33,48 +34,45 @@ function formatDateLabel(dateStr: string): string {
 
 export function MatchScheduleGrid({ matches, event, editMode, pendingScores, onScoreChange }: MatchScheduleGridProps) {
 
-    // Calculer les créneaux et terrains depuis l'event
-    const durationMin = intervalToMinutes(event.estimated_match_duration)
-    const timeSlots = calculateTimeSlots(
-        event.start_time || "19:00",
-        event.end_time || "23:00",
-        durationMin
-    )
+    // Calculer les créneaux depuis l'event
+    const timeSlots = useMemo(() => {
+        const durationMin = intervalToMinutes(event.estimated_match_duration)
+        return calculateTimeSlots(
+            event.start_time || "19:00",
+            event.end_time || "23:00",
+            durationMin
+        )
+    }, [event.estimated_match_duration, event.start_time, event.end_time])
 
-    // Extraire les terrains uniques depuis les matchs
-    const courtsSet = new Set<string>()
-    matches.forEach(m => {
-        if (m.court_number) courtsSet.add(m.court_number)
-    })
-    const courts = Array.from(courtsSet).sort()
+    // Extraire les terrains uniques depuis les matchs ou générer depuis number_of_courts
+    const courts = useMemo(() => {
+        const courtsSet = new Set<string>()
+        matches.forEach(m => {
+            if (m.court_number) courtsSet.add(m.court_number)
+        })
+        const sorted = Array.from(courtsSet).sort()
+        if (sorted.length > 0) return sorted
+        return Array.from({ length: event.number_of_courts }, (_, i) => `Terrain ${i + 1}`)
+    }, [matches, event.number_of_courts])
 
-    // Si pas de terrains dans les matchs, générer depuis number_of_courts
-    if (courts.length === 0) {
-        for (let i = 1; i <= event.number_of_courts; i++) {
-            courts.push(`Terrain ${i}`)
+    // Grouper les matchs par date et trier les dates
+    const { sortedDates, matchesByDate } = useMemo(() => {
+        const byDate = new Map<string, Match[]>()
+        for (const match of matches) {
+            const date = match.match_date
+            if (!byDate.has(date)) byDate.set(date, [])
+            byDate.get(date)!.push(match)
         }
-    }
-
-    // Grouper les matchs par date
-    const matchesByDate = new Map<string, Match[]>()
-    for (const match of matches) {
-        const date = match.match_date
-        if (!matchesByDate.has(date)) {
-            matchesByDate.set(date, [])
-        }
-        matchesByDate.get(date)!.push(match)
-    }
-
-    // Trier les dates
-    const sortedDates = Array.from(matchesByDate.keys()).sort()
+        return { sortedDates: Array.from(byDate.keys()).sort(), matchesByDate: byDate }
+    }, [matches])
 
     // Trouver un match pour un créneau donné
-    const findMatch = (dayMatches: Match[], time: string, court: string): Match | null => {
+    const findMatch = useCallback((dayMatches: Match[], time: string, court: string): Match | null => {
         return dayMatches.find(m => {
             const matchTime = m.match_time?.match(/(\d{2}:\d{2})/)?.[1]
             return matchTime === time && m.court_number === court
         }) || null
-    }
+    }, [])
 
     return (
         <div className="flex flex-col h-full min-h-0 overflow-hidden">
