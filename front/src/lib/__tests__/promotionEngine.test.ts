@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { calculatePromotions } from "./promotionEngine"
+import { calculatePromotions } from "../promotionEngine"
 import type { GroupStandings, PlayerStanding } from "@/types/ranking"
 import type { PromotionRules } from "@/types/settings"
 

@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabaseClient"
 import { useEffect, useState } from "react"
+import { logger } from "@/lib/logger"
 
 type Club = {
     id: string,
@@ -17,15 +18,18 @@ export const useClubs = () => {
     useEffect(() => {
         const fetchClubs = async () => {
             setLoadingClubs(true)
+            const endLog = logger.start("useClubs.fetch")
             const { data , error } = await supabase
                 .from("clubs")
                 .select("id, club_name, club_address, club_email")
                 .order("club_name", { ascending: true })
-            
+
             if(error){
+                endLog({ error: error.message })
                 setErrorClubs(error.message)
             } else {
                 setClubs(data || [])
+                endLog()
             }
             setLoadingClubs(false)
         }

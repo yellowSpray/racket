@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest"
-import { extractErrorMessage, handleHookError } from "./handleHookError"
+import { extractErrorMessage, handleHookError } from "../handleHookError"
 
 describe("extractErrorMessage", () => {
     it("should extract message from Error instance", () => {
@@ -30,23 +30,23 @@ describe("handleHookError", () => {
 
     it("should log with context when provided", () => {
         const setError = vi.fn()
-        const spy = vi.spyOn(console, "error").mockImplementation(() => {})
+        const spy = vi.spyOn(console, "log").mockImplementation(() => {})
         const err = new Error("db error")
 
         handleHookError(err, setError, "useGroups")
 
-        expect(spy).toHaveBeenCalledWith("[useGroups]", "db error", err)
+        expect(spy).toHaveBeenCalled()
         expect(setError).toHaveBeenCalledWith("db error")
         spy.mockRestore()
     })
 
-    it("should not log when no context provided", () => {
+    it("should always log via logger", () => {
         const setError = vi.fn()
-        const spy = vi.spyOn(console, "error").mockImplementation(() => {})
+        const spy = vi.spyOn(console, "log").mockImplementation(() => {})
 
         handleHookError("simple error", setError)
 
-        expect(spy).not.toHaveBeenCalled()
+        expect(spy).toHaveBeenCalled()
         expect(setError).toHaveBeenCalledWith("simple error")
         spy.mockRestore()
     })

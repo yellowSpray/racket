@@ -16,7 +16,7 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Plus, Trash2, Clock } from "lucide-react"
-import Loading from "@/components/shared/Loading"
+import { CourtsSkeleton } from "@/components/shared/skeletons/SettingsSkeleton"
 
 export function CourtsManager() {
 
@@ -93,7 +93,7 @@ export function CourtsManager() {
         return Math.floor(totalMinutes / durationMinutes)
     }
 
-    if (loading) return <Loading />
+    if (loading) return <CourtsSkeleton />
 
     return (
         <Card>

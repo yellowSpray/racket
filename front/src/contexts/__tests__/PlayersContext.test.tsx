@@ -34,7 +34,7 @@ vi.mock('@/hooks/useAdminPlayers', () => ({
     useAdminPlayers: () => mockPlayersData,
 }))
 
-import { PlayersProvider, usePlayers } from './PlayersContext'
+import { PlayersProvider, usePlayers } from '../PlayersContext'
 
 describe('PlayersContext', () => {
     beforeEach(() => {

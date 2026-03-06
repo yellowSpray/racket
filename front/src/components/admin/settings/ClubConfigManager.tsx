@@ -4,7 +4,7 @@ import { useClubConfig } from "@/hooks/useClubConfig"
 import { ScoringRulesCard } from "./ScoringRulesCard"
 import { PromotionRulesCard } from "./PromotionRulesCard"
 import { GroupSizeCard } from "./GroupSizeCard"
-import Loading from "@/components/shared/Loading"
+import { ClubConfigSkeleton } from "@/components/shared/skeletons/SettingsSkeleton"
 
 export function ClubConfigManager() {
 
@@ -38,7 +38,7 @@ export function ClubConfigManager() {
     }
 
     if (loading) {
-        return <Loading />
+        return <ClubConfigSkeleton />
     }
 
     if (error) {

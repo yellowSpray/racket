@@ -27,7 +27,7 @@ vi.mock('@/components/ui/logo', () => ({
     default: () => <span data-testid="logo">Logo</span>,
 }))
 
-import Home from './Home'
+import Home from '../Home'
 
 describe('Home', () => {
     it('renders the hero title "L\'organisation de vos boxes,"', () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { buildProposedGroups } from "./buildProposedGroups"
+import { buildProposedGroups } from "../buildProposedGroups"
 import type { Group } from "@/types/draw"
 import type { GroupStandings, PromotionResult } from "@/types/ranking"
 

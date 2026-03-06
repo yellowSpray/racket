@@ -1,11 +1,11 @@
-import { Spinner } from "@/components/ui/spinner";
+import { PageSkeleton } from "@/components/shared/skeletons/PageSkeleton"
 
+/**
+ * Composant de chargement plein écran (auth, routes, suspense).
+ * Pour les skeletons spécifiques aux pages, utiliser les composants dans skeletons/.
+ */
 const Loading = () => {
-  return (
-    <section className="w-full h-lvh flex flex-col items-center justify-center">
-        <Spinner />
-    </section>
-  );
-};
+    return <PageSkeleton />
+}
 
-export default Loading;
+export default Loading

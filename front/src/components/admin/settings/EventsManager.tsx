@@ -1,4 +1,4 @@
-import Loading from "@/components/shared/Loading"
+import { EventsSkeleton } from "@/components/shared/skeletons/SettingsSkeleton"
 import { useEvent } from "@/contexts/EventContext"
 import type { Event } from "@/types/event"
 import { useState } from "react"
@@ -82,7 +82,7 @@ export function EventsManager() {
     }
 
     if(loading) {
-        return <Loading />
+        return <EventsSkeleton />
     }
 
     return (

@@ -3,6 +3,8 @@ import { supabase } from "@/lib/supabaseClient"
 import type { Session } from "@supabase/supabase-js"
 import type { UserProfile, AuthContextType } from "@/types/auth"
 import Loading from "@/components/shared/Loading"
+import { logger } from "@/lib/logger"
+import { withTimeout } from "@/lib/handleHookError"
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
@@ -21,10 +23,15 @@ export function AuthProvider({ children }: { children: ReactNode}) {
 
         // Récupère la session initiale
         const initializeAuth = async () => {
+            const endLog = logger.start("AuthContext.initializeAuth")
             try {
-                const { data: { session }, error } = await supabase.auth.getSession()
+                const { data: { session }, error } = await withTimeout(
+                    supabase.auth.getSession(),
+                    "AuthContext.getSession"
+                )
 
                 if (error) {
+                    endLog({ error: error.message })
                     setIsLoading(false)
                     return;
                 }
@@ -34,13 +41,17 @@ export function AuthProvider({ children }: { children: ReactNode}) {
                 setSession(session)
 
                 if (session) {
+                    logger.info("AuthContext", `Session trouvée, fetch profil pour ${session.user.id.slice(0, 8)}...`)
                     await fetchProfile(session.user.id)
                 } else {
+                    logger.info("AuthContext", "Pas de session active")
                     setIsLoading(false)
                 }
 
+                endLog()
                 isInitializing = false
-            } catch {
+            } catch (err) {
+                endLog({ error: err instanceof Error ? err.message : "Erreur inconnue" })
                 if (mounted) setIsLoading(false)
                 isInitializing = false
             }
@@ -97,23 +108,31 @@ export function AuthProvider({ children }: { children: ReactNode}) {
         if(isFetchingProfile.current) return
 
         isFetchingProfile.current = true
+        const endLog = logger.start("AuthContext.fetchProfile")
 
         try {
-            const { data, error } = await supabase
-                .from("profiles")
-                .select('*')
-                .eq('id', userId)
-                .single();
+            const { data, error } = await withTimeout(
+                supabase
+                    .from("profiles")
+                    .select('*')
+                    .eq('id', userId)
+                    .single(),
+                "AuthContext.fetchProfile"
+            );
 
             if (error) {
+                endLog({ error: error.message })
                 setProfile(null);
             } else if (!data) {
+                endLog({ error: "Profil non trouvé" })
                 setProfile(null);
             } else {
+                endLog()
                 setProfile(data);
             }
 
-        } catch {
+        } catch (err) {
+            endLog({ error: err instanceof Error ? err.message : "Erreur inconnue" })
             setProfile(null);
         } finally {
             isFetchingProfile.current = false

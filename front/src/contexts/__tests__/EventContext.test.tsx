@@ -42,7 +42,7 @@ vi.mock('@/lib/supabaseClient', () => ({
     supabase: mockSupabase,
 }))
 
-import { EventProvider, useEvent } from './EventContext'
+import { EventProvider, useEvent } from '../EventContext'
 
 const mockEvents = [
     {

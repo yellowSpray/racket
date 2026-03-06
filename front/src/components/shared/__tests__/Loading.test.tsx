@@ -7,7 +7,7 @@ describe('Loading', () => {
     render(<Loading />)
   })
 
-  it('renders a spinner with status role', () => {
+  it('renders with status role', () => {
     render(<Loading />)
     expect(screen.getByRole('status')).toBeInTheDocument()
   })
@@ -22,5 +22,11 @@ describe('Loading', () => {
     const section = container.querySelector('section')
     expect(section).toBeInTheDocument()
     expect(section).toHaveClass('h-lvh')
+  })
+
+  it('renders skeleton blocks', () => {
+    const { container } = render(<Loading />)
+    const skeletons = container.querySelectorAll('[data-slot="skeleton"]')
+    expect(skeletons.length).toBeGreaterThan(0)
   })
 })

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { matchResultSchema } from "./matchResult.schema"
+import { matchResultSchema } from "../matchResult.schema"
 
 describe("matchResultSchema", () => {
     it("accepts simple score '3-1'", () => {

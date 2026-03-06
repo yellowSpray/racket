@@ -1,7 +1,7 @@
 import { EventSelector } from "@/components/admin/settings/EventSelector"
 import { MatchScheduleGrid } from "@/components/admin/matches/MatchScheduleGrid"
 import { MatchListView } from "@/components/admin/matches/MatchListView"
-import Loading from "@/components/shared/Loading"
+import { MatchSkeleton } from "@/components/shared/skeletons/MatchSkeleton"
 import { useEvent } from "@/contexts/EventContext"
 import { usePlayers } from "@/contexts/PlayersContext"
 import { useGroups } from "@/hooks/useGroups"
@@ -154,7 +154,7 @@ export function MatchAdmin() {
     })() : null
 
     if (loading || saving) {
-        return <Loading />
+        return <MatchSkeleton />
     }
 
     if (!currentEvent) {

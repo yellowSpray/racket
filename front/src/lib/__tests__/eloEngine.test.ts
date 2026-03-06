@@ -6,7 +6,7 @@ import {
     computeEloUpdates,
     DEFAULT_K_FACTOR,
     type EloMatchResult,
-} from "./eloEngine"
+} from "../eloEngine"
 
 describe("calculateExpectedScore", () => {
     it("returns 0.5 for equal ratings", () => {

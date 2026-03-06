@@ -2,7 +2,8 @@ import { supabase } from "@/lib/supabaseClient"
 import { useCallback, useEffect, useState } from "react"
 import type { PlayerType, PlayerStatus, PaymentStatus } from "@/types/player"
 import { useAuth } from "@/contexts/AuthContext"
-import { handleHookError } from "@/lib/handleHookError"
+import { handleHookError, withTimeout } from "@/lib/handleHookError"
+import { logger } from "@/lib/logger"
 
 // Types pour les données Supabase
 type SupabasePlayerStatus = {
@@ -114,23 +115,30 @@ export function useAdminPlayers() {
         setLoading(true)
         setError(null)
         setCurrentEventId(null)
+        const endLog = logger.start("useAdminPlayers.fetchAll")
 
         try {
 
-            const { data, error: fetchError } = await supabase
-                .from("profiles")
-                .select("*, player_status(status), schedule(arrival, departure), absences(absent_date)")
-                .order("created_at", { ascending: false })
+            const { data, error: fetchError } = await withTimeout(
+                supabase
+                    .from("profiles")
+                    .select("*, player_status(status), schedule(arrival, departure), absences(absent_date)")
+                    .order("created_at", { ascending: false }),
+                "useAdminPlayers.fetchAll"
+            )
 
             if(fetchError) {
+                endLog({ error: fetchError.message })
                 handleHookError(fetchError, setError, "useAdminPlayers.fetch")
                 return
             }
 
             const transformedData = transformPlayerData(data as SupabasePlayer[])
             setPlayer(transformedData)
+            endLog()
 
         } catch (err) {
+            endLog({ error: err instanceof Error ? err.message : "Erreur inconnue" })
             handleHookError(err, setError, "useAdminPlayers.fetch")
         } finally {
             setLoading(false)
@@ -149,32 +157,39 @@ export function useAdminPlayers() {
             // si pas d'id, charge tout les joueurs
             if(!eventId){
                 await fetchPlayer()
-                return 
+                return
             }
 
-            const { data, error: fetchError } = await supabase
-                .from("profiles")
-                .select(`
-                    *,
-                    player_status(status),
-                    schedule(arrival, departure),
-                    absences(absent_date),
-                    event_players!inner(event_id),
-                    group_players!left(group_id, groups!inner(group_name, event_id)),
-                    payments(status)
-                `)
-                .eq("event_players.event_id", eventId)
-                .eq("group_players.groups.event_id", eventId)
-                .eq("payments.event_id", eventId)
-                .order("created_at", { ascending: false })
-            
+            const endLog = logger.start(`useAdminPlayers.fetchByEvent(${eventId.slice(0, 8)})`)
+
+            const { data, error: fetchError } = await withTimeout(
+                supabase
+                    .from("profiles")
+                    .select(`
+                        *,
+                        player_status(status),
+                        schedule(arrival, departure),
+                        absences(absent_date),
+                        event_players!inner(event_id),
+                        group_players!left(group_id, groups!inner(group_name, event_id)),
+                        payments(status)
+                    `)
+                    .eq("event_players.event_id", eventId)
+                    .eq("group_players.groups.event_id", eventId)
+                    .eq("payments.event_id", eventId)
+                    .order("created_at", { ascending: false }),
+                "useAdminPlayers.fetchByEvent"
+            )
+
             if(fetchError) {
+                endLog({ error: fetchError.message })
                 handleHookError(fetchError, setError, "useAdminPlayers.fetchByEvent")
                 return
             }
 
             const transformedData = transformPlayerData(data as SupabasePlayer[])
             setPlayer(transformedData)
+            endLog()
 
         } catch (err) {
             handleHookError(err, setError, "useAdminPlayers.fetchByEvent")

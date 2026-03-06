@@ -1,6 +1,8 @@
 import { supabase } from "@/lib/supabaseClient";
 import type { Event, EventContextType } from "@/types/event";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { logger } from "@/lib/logger";
+import { withTimeout } from "@/lib/handleHookError";
 
 const EventContext = createContext<EventContextType | undefined>(undefined)
 
@@ -16,15 +18,19 @@ export function EventProvider({children}: {children: ReactNode}) {
     const fetchEvents = async () => {
         setLoading(true)
         setError(null)
+        const endLog = logger.start("EventContext.fetchEvents")
 
         try {
-            const {data, error: fetchError} = await supabase
-                .from("events")
-                .select("*, event_players(count)")
-                .order("start_date", {ascending: false})
+            const {data, error: fetchError} = await withTimeout(
+                supabase
+                    .from("events")
+                    .select("*, event_players(count)")
+                    .order("start_date", {ascending: false}),
+                "EventContext.fetchEvents"
+            )
 
             if(fetchError) {
-                console.error("Erreur fetch events:", fetchError.message)
+                endLog({ error: fetchError.message })
                 setError(fetchError.message)
                 return
             }
@@ -37,6 +43,7 @@ export function EventProvider({children}: {children: ReactNode}) {
             }))
 
             setEvents(eventsWithCount)
+            logger.info("EventContext", `${eventsWithCount.length} événement(s) chargé(s)`)
 
             // Restaurer l'event sauvegardé ou sélectionner le plus récent
             if (eventsWithCount.length > 0) {
@@ -53,8 +60,9 @@ export function EventProvider({children}: {children: ReactNode}) {
                 }
             }
 
+            endLog()
         } catch (err) {
-            console.error("Erreur inattendue:", err)
+            endLog({ error: err instanceof Error ? err.message : "Erreur inconnue" })
             setError(err instanceof Error ? err.message : "Erreur inconnue")
         } finally {
             setLoading(false)

@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabaseClient"
 import type { EventCourt } from "@/types/settings"
 import { useCallback, useState } from "react"
 import { handleHookError } from "@/lib/handleHookError"
+import { logger } from "@/lib/logger"
 
 export function useEventCourts() {
 
@@ -17,6 +18,7 @@ export function useEventCourts() {
 
         setLoading(true)
         setError(null)
+        const endLog = logger.start("useEventCourts.fetch")
 
         try {
             const { data, error: fetchError } = await supabase
@@ -26,12 +28,15 @@ export function useEventCourts() {
                 .order("sort_order", { ascending: true })
 
             if (fetchError) {
+                endLog({ error: fetchError.message })
                 handleHookError(fetchError, setError, "useEventCourts.fetch")
                 return
             }
 
             setCourts(data || [])
+            endLog()
         } catch (err) {
+            endLog({ error: err instanceof Error ? err.message : "Erreur inconnue" })
             handleHookError(err, setError, "useEventCourts")
         } finally {
             setLoading(false)

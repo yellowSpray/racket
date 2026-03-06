@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabaseClient"
 import type { ClubConfig, ScoringRules, PromotionRules } from "@/types/settings"
 import { useCallback, useState } from "react"
 import { handleHookError } from "@/lib/handleHookError"
+import { logger } from "@/lib/logger"
 
 const DEFAULT_SCORING: Omit<ScoringRules, 'id' | 'club_id' | 'created_at' | 'updated_at'> = {
     score_points: [
@@ -35,6 +36,7 @@ export function useClubConfig() {
 
         setLoading(true)
         setError(null)
+        const endLog = logger.start("useClubConfig.fetch")
 
         try {
             const [clubRes, scoringRes, promotionRes] = await Promise.all([
@@ -56,6 +58,7 @@ export function useClubConfig() {
             ])
 
             if (clubRes.error) {
+                endLog({ error: clubRes.error.message })
                 handleHookError(clubRes.error, setError, "useClubConfig.fetch")
                 return
             }
@@ -63,8 +66,10 @@ export function useClubConfig() {
             setClubConfig(clubRes.data)
             setScoringRules(scoringRes.data)
             setPromotionRules(promotionRes.data)
+            endLog()
 
         } catch (err) {
+            endLog({ error: err instanceof Error ? err.message : "Erreur inconnue" })
             handleHookError(err, setError, "useClubConfig.fetch")
         } finally {
             setLoading(false)

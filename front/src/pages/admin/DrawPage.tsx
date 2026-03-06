@@ -1,5 +1,5 @@
 import { EventSelector } from "@/components/admin/settings/EventSelector"
-import Loading from "@/components/shared/Loading"
+import { DrawSkeleton } from "@/components/shared/skeletons/DrawSkeleton"
 import { useEvent } from "@/contexts/EventContext"
 import { useAuth } from "@/contexts/AuthContext"
 import { useGroups } from "@/hooks/useGroups"
@@ -61,7 +61,7 @@ export function DrawAdmin () {
     }, [groups, selectedGroupId])
 
     if(loading) {
-        return <Loading />
+        return <DrawSkeleton />
     }
 
     if(!currentEvent) {

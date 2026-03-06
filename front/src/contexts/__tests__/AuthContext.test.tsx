@@ -52,7 +52,7 @@ vi.mock('@/components/shared/Loading', () => ({
     default: () => <div data-testid="loading">Loading...</div>,
 }))
 
-import { AuthProvider, useAuth } from './AuthContext'
+import { AuthProvider, useAuth } from '../AuthContext'
 
 const mockSession = {
     user: { id: 'user-1', email: 'test@test.com' },

@@ -3,7 +3,8 @@ import type { Match } from "@/types/match"
 import type { Group } from "@/types/draw"
 import type { Event } from "@/types/event"
 import { useCallback, useState } from "react"
-import { handleHookError } from "@/lib/handleHookError"
+import { handleHookError, withTimeout } from "@/lib/handleHookError"
+import { logger } from "@/lib/logger"
 import { intervalToMinutes } from "@/lib/utils"
 import {
     generateGroupRounds,
@@ -43,45 +44,57 @@ export function useMatches() {
 
         setLoading(true)
         setError(null)
+        const endLog = logger.start("useMatches.fetch")
 
         try {
             // Récupérer les groups de l'event pour filtrer
-            const { data: groups, error: groupsError } = await supabase
-                .from("groups")
-                .select("id")
-                .eq("event_id", eventId)
+            const { data: groups, error: groupsError } = await withTimeout(
+                supabase
+                    .from("groups")
+                    .select("id")
+                    .eq("event_id", eventId),
+                "useMatches.fetchGroups"
+            )
 
             if (groupsError) {
+                endLog({ error: groupsError.message })
                 handleHookError(groupsError, setError, "useMatches.fetch")
                 return
             }
 
             if (!groups || groups.length === 0) {
                 setMatches([])
+                endLog()
                 return
             }
 
             const groupIds = groups.map(g => g.id)
 
-            const { data, error: fetchError } = await supabase
-                .from("matches")
-                .select(`
-                    *,
-                    player1:profiles!matches_player1_id_fkey(id, first_name, last_name),
-                    player2:profiles!matches_player2_id_fkey(id, first_name, last_name),
-                    group:groups(id, group_name, event_id)
-                `)
-                .in("group_id", groupIds)
-                .order("match_date", { ascending: true })
-                .order("match_time", { ascending: true })
+            const { data, error: fetchError } = await withTimeout(
+                supabase
+                    .from("matches")
+                    .select(`
+                        *,
+                        player1:profiles!matches_player1_id_fkey(id, first_name, last_name),
+                        player2:profiles!matches_player2_id_fkey(id, first_name, last_name),
+                        group:groups(id, group_name, event_id)
+                    `)
+                    .in("group_id", groupIds)
+                    .order("match_date", { ascending: true })
+                    .order("match_time", { ascending: true }),
+                "useMatches.fetchMatches"
+            )
 
             if (fetchError) {
+                endLog({ error: fetchError.message })
                 handleHookError(fetchError, setError, "useMatches.fetch")
                 return
             }
 
             setMatches((data as Match[]) || [])
+            endLog()
         } catch (err) {
+            endLog({ error: err instanceof Error ? err.message : "Erreur inconnue" })
             handleHookError(err, setError, "useMatches")
         } finally {
             setLoading(false)

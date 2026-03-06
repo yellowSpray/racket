@@ -27,7 +27,7 @@ vi.mock('motion/react', () => ({
     AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }))
 
-import Auth from './AuthPage'
+import Auth from '../AuthPage'
 
 describe('AuthPage', () => {
     it('renders both Login and Register components', () => {

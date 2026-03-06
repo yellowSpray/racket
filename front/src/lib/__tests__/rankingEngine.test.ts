@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { parseScore, determineMatchOutcome, calculateGroupStandings, getPointsForScore } from "./rankingEngine"
+import { parseScore, determineMatchOutcome, calculateGroupStandings, getPointsForScore } from "../rankingEngine"
 import type { Match } from "@/types/match"
 import type { ScorePointsEntry, ScoringRules } from "@/types/settings"
 

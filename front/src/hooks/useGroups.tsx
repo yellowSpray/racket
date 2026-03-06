@@ -1,7 +1,8 @@
 import { supabase } from "@/lib/supabaseClient"
 import type { Group, SupabaseGroup, SupabaseGroupPlayer } from "@/types/draw"
 import { useCallback, useState } from "react"
-import { handleHookError } from "@/lib/handleHookError"
+import { handleHookError, withTimeout } from "@/lib/handleHookError"
+import { logger } from "@/lib/logger"
 
 export function useGroups() {
 
@@ -19,27 +20,32 @@ export function useGroups() {
 
         setLoading(true)
         setError(null)
+        const endLog = logger.start("useGroups.fetch")
 
         try {
-            const { data, error: fetchError } = await supabase
-                .from("groups")
-                .select(`
-                    *,
-                    group_players(
-                        profile_id,
-                        profiles(
-                            id,
-                            first_name,
-                            last_name,
-                            phone,
-                            power_ranking
+            const { data, error: fetchError } = await withTimeout(
+                supabase
+                    .from("groups")
+                    .select(`
+                        *,
+                        group_players(
+                            profile_id,
+                            profiles(
+                                id,
+                                first_name,
+                                last_name,
+                                phone,
+                                power_ranking
+                            )
                         )
-                    )
-                `)
-                .eq("event_id", eventId)
-                .order("group_name", {ascending: true})
+                    `)
+                    .eq("event_id", eventId)
+                    .order("group_name", {ascending: true}),
+                "useGroups.fetch"
+            )
 
             if(fetchError) {
+                endLog({ error: fetchError.message })
                 handleHookError(fetchError, setError, "useGroups.fetch")
                 return
             }
@@ -63,8 +69,10 @@ export function useGroups() {
             }))
 
             setGroups(transformedGroups)
+            endLog()
 
         } catch (err) {
+            endLog({ error: err instanceof Error ? err.message : "Erreur inconnue" })
             handleHookError(err, setError, "useGroups")
         } finally {
             setLoading(false)

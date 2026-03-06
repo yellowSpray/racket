@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { movePlayerBetweenGroups, validateGroups } from "./groupPlayerMove"
+import { movePlayerBetweenGroups, validateGroups } from "../groupPlayerMove"
 import type { Group } from "@/types/draw"
 
 const makeGroups = (): Group[] => [

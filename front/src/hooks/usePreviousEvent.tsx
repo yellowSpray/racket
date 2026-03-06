@@ -3,6 +3,7 @@ import type { Event } from "@/types/event"
 import type { Group, SupabaseGroup } from "@/types/draw"
 import type { Match } from "@/types/match"
 import { useCallback, useState } from "react"
+import { logger } from "@/lib/logger"
 
 export function usePreviousEvent() {
     const [previousEvent, setPreviousEvent] = useState<Event | null>(null)
@@ -19,6 +20,7 @@ export function usePreviousEvent() {
         }
 
         setLoading(true)
+        const endLog = logger.start("usePreviousEvent.fetch")
 
         try {
             // Fetch the most recent event for this club (excluding current)
@@ -73,7 +75,9 @@ export function usePreviousEvent() {
             } else {
                 setPreviousMatches([])
             }
-        } catch {
+            endLog()
+        } catch (err) {
+            endLog({ error: err instanceof Error ? err.message : "Erreur inconnue" })
             setPreviousEvent(null)
             setPreviousGroups([])
             setPreviousMatches([])

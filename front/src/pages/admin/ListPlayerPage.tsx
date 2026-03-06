@@ -1,4 +1,4 @@
-import Loading from "@/components/shared/Loading";
+import { PlayersSkeleton } from "@/components/shared/skeletons/PlayersSkeleton";
 import { EditPlayers } from "@/components/admin/players/EditPlayers";
 import { columns as playerColumns } from "@/components/admin/players/PlayerColumns";
 import { DataTable } from "@/components/admin/players/PlayerTable";
@@ -65,7 +65,7 @@ export function ListPlayers() {
 
     // Loading plein écran uniquement au premier chargement (pas de joueurs encore)
     if (loading && players.length === 0) {
-        return <Loading />
+        return <PlayersSkeleton />
     }
 
     return (

@@ -30,7 +30,7 @@ vi.mock('@/lib/supabaseClient', () => ({
     }
 }))
 
-import Login from './Login'
+import Login from '../Login'
 
 describe('Login', () => {
     const mockToggle = vi.fn()
