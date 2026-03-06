@@ -18,7 +18,7 @@ import { useEvent } from "@/contexts/EventContext";
 import { useEffect, useMemo, useState } from "react";
 import { Users } from "lucide-react"
 
-export function ListPlayers() {
+export function AdminPlayers() {
 
     const { players, addPlayer, updatePlayer, removePlayerFromEvent, loading, fetchPlayer, fetchPlayersByEvent } = usePlayers();
     const { currentEvent } = useEvent()

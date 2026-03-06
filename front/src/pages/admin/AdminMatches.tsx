@@ -15,7 +15,7 @@ import { intervalToMinutes } from "@/lib/utils"
 import { parseScore } from "@/lib/rankingEngine"
 import { matchResultSchema } from "@/lib/schemas/matchResult.schema"
 
-export function MatchAdmin() {
+export function AdminMatches() {
 
     const { currentEvent } = useEvent()
     const { players } = usePlayers()

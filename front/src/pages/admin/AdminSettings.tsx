@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/contexts/AuthContext"
 import { useClubConfig } from "@/hooks/useClubConfig"
 
-export function SettingsAdmin () {
+export function AdminSettings () {
     const { profile } = useAuth()
     const { clubConfig, fetchClubConfig } = useClubConfig()
 

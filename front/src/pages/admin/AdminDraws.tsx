@@ -27,7 +27,7 @@ import {
 import { sortPlayersByEarliestDates } from "@/lib/matchScheduler"
 import { exportTablesToPdf } from "@/lib/exportPdf"
 
-export function DrawAdmin () {
+export function AdminDraws () {
 
     const { currentEvent, fetchEvents } = useEvent()
     const { profile } = useAuth()
