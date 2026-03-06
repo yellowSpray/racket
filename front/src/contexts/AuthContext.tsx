@@ -122,7 +122,8 @@ export function AuthProvider({ children }: { children: ReactNode}) {
 
             if (error) {
                 endLog({ error: error.message })
-                setProfile(null);
+                // Ne pas effacer un profil existant sur une erreur transitoire
+                if (!profile) setProfile(null);
             } else if (!data) {
                 endLog({ error: "Profil non trouvé" })
                 setProfile(null);
@@ -133,7 +134,8 @@ export function AuthProvider({ children }: { children: ReactNode}) {
 
         } catch (err) {
             endLog({ error: err instanceof Error ? err.message : "Erreur inconnue" })
-            setProfile(null);
+            // Timeout ou erreur réseau : garder le profil existant s'il y en a un
+            if (!profile) setProfile(null);
         } finally {
             isFetchingProfile.current = false
             setIsLoading(false);
