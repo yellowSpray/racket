@@ -34,7 +34,7 @@ type SupabasePlayer = {
     last_name: string
     email: string
     phone: string
-    power_ranking: string
+    power_ranking: number
     player_status?: SupabasePlayerStatus[]
     schedule?: SupabaseSchedule[]
     absences?: SupabaseAbsence[]
@@ -103,7 +103,7 @@ export function useAdminPlayers() {
                 unavailable: player.absences?.map((d: SupabaseAbsence) => d.absent_date) || [],
                 status: sortedStatus,
                 payment_status: paymentStatus,
-                power_ranking: player.power_ranking || "",
+                power_ranking: player.power_ranking ?? 0,
                 box: groupName,
             }
         })
@@ -227,7 +227,7 @@ export function useAdminPlayers() {
             p_last_name: player.last_name || '',
             p_phone: player.phone || '',
             p_email: player.email || '',
-            p_power_ranking: player.power_ranking ? parseInt(player.power_ranking) : 0,
+            p_power_ranking: player.power_ranking ?? 0,
             p_avatar_url: null,
             p_club_id: profile?.club_id ?? null,
             p_statuses: rpcStatuses,
@@ -288,9 +288,7 @@ export function useAdminPlayers() {
                 p_last_name: updates.last_name || currentPlayer.last_name,
                 p_phone: updates.phone || currentPlayer.phone,
                 p_email: updates.email || currentPlayer.email,
-                p_power_ranking: updates.power_ranking
-                    ? parseInt(updates.power_ranking)
-                    : parseInt(currentPlayer.power_ranking || '0'),
+                p_power_ranking: updates.power_ranking ?? currentPlayer.power_ranking ?? 0,
                 p_avatar_url: null,
                 p_club_id: profile?.club_id ?? null,
                 p_statuses: rpcStatuses,

@@ -95,6 +95,7 @@ CREATE TABLE IF NOT EXISTS public.events (
   number_of_courts int not null default 1,  -- Nombre de terrains disponibles
   estimated_match_duration interval default interval '00:30:00',  -- Durée estimée d'un match
   playing_dates date[] default null,  -- Dates exactes de jeu sélectionnées. NULL = tous les jours entre start_date et end_date
+  status text not null default 'active' check (status in ('active', 'completed')),
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now()
 );

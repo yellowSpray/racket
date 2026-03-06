@@ -16,7 +16,7 @@ const mockPlayersData = vi.hoisted(() => {
                 departure: '23:00',
                 unavailable: ['2026-03-05'],
                 status: ['active' as const, 'member' as const],
-                power_ranking: '5',
+                power_ranking: 5,
                 box: 'A',
             },
         ],

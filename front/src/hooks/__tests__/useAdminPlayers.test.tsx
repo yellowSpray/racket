@@ -39,7 +39,7 @@ describe('useAdminPlayers', () => {
                 last_name: 'Doe',
                 email: 'john@test.com',
                 phone: '123',
-                power_ranking: '5',
+                power_ranking: 5,
                 player_status: [{ status: 'active' }, { status: 'member' }],
                 schedule: [{ arrival: '2024-01-01T19:00:00Z', departure: '2024-01-01T23:00:00Z' }],
                 absences: [{ date: '2024-01-05' }],
@@ -94,7 +94,7 @@ describe('useAdminPlayers', () => {
         expect(player.departure).toBe('')
         expect(player.unavailable).toEqual([])
         expect(player.status).toEqual([])
-        expect(player.power_ranking).toBe('')
+        expect(player.power_ranking).toBe(0)
     })
 
     it('should set error on fetch failure', async () => {
@@ -147,7 +147,7 @@ describe('useAdminPlayers', () => {
                     last_name: 'Martin',
                     email: 'bob@test.com',
                     phone: '999',
-                    power_ranking: '3',
+                    power_ranking: 3,
                     player_status: [{ status: 'visitor' }],
                     schedule: [],
                     absences: [],
@@ -190,7 +190,7 @@ describe('useAdminPlayers', () => {
                     last_name: 'Player',
                     phone: '555',
                     email: 'new@test.com',
-                    power_ranking: '7',
+                    power_ranking: 7,
                     status: ['member', 'active'],
                 })
             })
@@ -254,7 +254,7 @@ describe('useAdminPlayers', () => {
                     last_name: 'Doe',
                     email: 'john@test.com',
                     phone: '123',
-                    power_ranking: '5',
+                    power_ranking: 5,
                     player_status: [{ status: 'active' }],
                     schedule: [],
                     absences: [],

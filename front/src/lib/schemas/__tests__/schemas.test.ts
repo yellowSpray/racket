@@ -28,7 +28,7 @@ describe('playerSchema', () => {
       ...validPlayer,
       arrival: '09:00',
       departure: '18:00',
-      power_ranking: '5',
+      power_ranking: 5,
       status: ['active', 'member'],
       unavailable: ['2026-03-10'],
     })

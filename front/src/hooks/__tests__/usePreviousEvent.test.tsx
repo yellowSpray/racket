@@ -37,8 +37,8 @@ const mockGroupsData = [
     {
         id: 'g1', event_id: 'event-prev', group_name: 'Box 1', max_players: 5, created_at: '2026-01-01',
         group_players: [
-            { profile_id: 'p1', profiles: { id: 'p1', first_name: 'Alice', last_name: 'A', phone: '01', power_ranking: '10' } },
-            { profile_id: 'p2', profiles: { id: 'p2', first_name: 'Bob', last_name: 'B', phone: '02', power_ranking: '8' } },
+            { profile_id: 'p1', profiles: { id: 'p1', first_name: 'Alice', last_name: 'A', phone: '01', power_ranking: 10 } },
+            { profile_id: 'p2', profiles: { id: 'p2', first_name: 'Bob', last_name: 'B', phone: '02', power_ranking: 8 } },
         ]
     },
 ]

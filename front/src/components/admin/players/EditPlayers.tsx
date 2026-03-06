@@ -46,7 +46,7 @@ const initialFormData: Partial<PlayerType> = {
     email: "",
     arrival: "",
     departure: "",
-    power_ranking: "",
+    power_ranking: 0,
     status: [],
     unavailable: []
 }
@@ -105,7 +105,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, open: controll
     },[open, mode, playerData])
 
     // handler pour les changements d'inputs
-    const handleChangeInput = (field: keyof PlayerType, value: string) => {
+    const handleChangeInput = (field: keyof PlayerType, value: string | number) => {
         setFormData(prev => ({
             ...prev,
             [field]: value
@@ -346,7 +346,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, open: controll
                             id="power_ranking" 
                             type="number"
                             value={formData.power_ranking || ""}
-                            onChange={(e) => handleChangeInput('power_ranking', e.target.value)}
+                            onChange={(e) => handleChangeInput('power_ranking', Number(e.target.value) || 0)}
                         />
                     </Field>
                 </div>

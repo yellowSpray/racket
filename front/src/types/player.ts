@@ -12,7 +12,7 @@ export type PlayerType = {
     unavailable: string[]
     status: PlayerStatus[]
     payment_status?: PaymentStatus
-    power_ranking: string
+    power_ranking: number
     box: string
 }
 

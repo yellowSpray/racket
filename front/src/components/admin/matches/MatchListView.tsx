@@ -192,18 +192,7 @@ export function MatchListView({ matches, players, editMode, pendingScores, onSco
                                             <div key={boxName}>
                                                 <div className="overflow-x-auto border border-gray-200 rounded-xl">
                                                     <Table className="table-fixed w-full">
-                                                        <colgroup>
-                                                            <col className="w-[8%]" />   {/* Date */}
-                                                            <col className="w-[7%]" />   {/* Box */}
-                                                            <col className="w-[18%]" />  {/* Joueur A */}
-                                                            <col className="w-[9%]" />   {/* Restr. A */}
-                                                            <col className="w-[4%]" />   {/* vs */}
-                                                            <col className="w-[18%]" />  {/* Joueur B */}
-                                                            <col className="w-[9%]" />   {/* Restr. B */}
-                                                            <col className="w-[7%]" />   {/* Heure */}
-                                                            <col className="w-[10%]" />  {/* Terrain */}
-                                                            <col className="w-[10%]" />  {/* Score */}
-                                                        </colgroup>
+                                                        <colgroup><col className="w-[8%]" /><col className="w-[7%]" /><col className="w-[18%]" /><col className="w-[9%]" /><col className="w-[4%]" /><col className="w-[18%]" /><col className="w-[9%]" /><col className="w-[7%]" /><col className="w-[10%]" /><col className="w-[10%]" /></colgroup>
                                                         <TableHeader>
                                                             <TableRow>
                                                                 <TableHead className="bg-gray-50 font-bold text-center">Date</TableHead>

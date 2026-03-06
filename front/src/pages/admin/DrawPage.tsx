@@ -7,26 +7,38 @@ import { useMatches } from "@/hooks/useMatches"
 import { useClubConfig } from "@/hooks/useClubConfig"
 import { useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router"
-import { Settings, SquarePen, Hash, Star, Download } from "lucide-react"
+import { Settings, SquarePen, Hash, Star, Download, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DrawTable } from "@/components/admin/draws/DrawTable"
 // import { CreateGroupsDialog } from "@/components/admin/draws/CreateGroupsDialog"
 import { ManageGroupDialog } from "@/components/admin/draws/ManageGroupsDialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { totalMatchCount, sortPlayersByEarliestDates } from "@/lib/matchScheduler"
 import { exportTablesToPdf } from "@/lib/exportPdf"
 
 export function DrawAdmin () {
 
-    const { currentEvent } = useEvent()
+    const { currentEvent, fetchEvents } = useEvent()
     const { profile } = useAuth()
     const { groups, loading, fetchGroupsByEvent } = useGroups()
-    const { matches, fetchMatchesByEvent } = useMatches()
+    const { matches, fetchMatchesByEvent, closeEvent, error: matchError } = useMatches()
     const { scoringRules, fetchClubConfig } = useClubConfig()
     const [selectedGroupId, setSelectedGroupsId] = useState<string | null>(null)
     // const [createDialogOpen, setCreateDialogOpen] = useState(false)
     const [manageDialogOpen, setManageDialogOpen] = useState(false)
     const [displayMode, setDisplayMode] = useState<"score" | "points">("score")
+    const [closing, setClosing] = useState(false)
     const navigate = useNavigate()
     const tablesRef = useRef<HTMLDivElement>(null)
 
@@ -38,6 +50,18 @@ export function DrawAdmin () {
             console.error("Export PDF error:", err)
         }
     }
+
+    const handleCloseEvent = async () => {
+        if (!currentEvent) return
+        setClosing(true)
+        const result = await closeEvent(currentEvent.id)
+        setClosing(false)
+        if (result.success) {
+            fetchEvents()
+        }
+    }
+
+    const isCompleted = currentEvent?.status === "completed"
 
     const clubId = profile?.club_id ?? null
 
@@ -110,13 +134,52 @@ export function DrawAdmin () {
                         )}
                     </Button>
                     {groups.length > 0 && (
-                        <Button size="sm" onClick={handleExportPdf}>
-                            <Download className="mr-1 h-4 w-4" />
-                            Export pdf
-                        </Button>
+                        <>
+                            <Button size="sm" variant="outline" onClick={handleExportPdf}>
+                                <Download className="mr-1 h-4 w-4" />
+                                Export pdf
+                            </Button>
+                            {!isCompleted && (
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button size="sm" disabled={closing}>
+                                            <Lock className="mr-1 h-4 w-4" />
+                                            {closing ? "Clôture..." : "Clôturer"}
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Clôturer l'événement ?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Cette action va calculer les classements Elo de tous les joueurs et marquer l'événement comme terminé. Assurez-vous que tous les résultats sont saisis.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                            <AlertDialogAction onClick={handleCloseEvent}>
+                                                Confirmer la clôture
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            )}
+                            {isCompleted && (
+                                <span className="text-sm text-green-600 font-medium flex items-center gap-1">
+                                    <Lock className="h-3.5 w-3.5" />
+                                    Clôturé
+                                </span>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
+
+            {/* Erreur cloture */}
+            {matchError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4 text-sm">
+                    {matchError}
+                </div>
+            )}
 
             {/* Avertissement matchs manquants */}
             {matches.length > 0 && groups.length > 0 && matches.length < totalMatchCount(groups) && (

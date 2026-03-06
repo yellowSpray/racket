@@ -37,7 +37,7 @@ export function buildProposedGroups(
     if (allPlayers.length === 0) return []
 
     // Step 4: Sort by power_ranking descending
-    allPlayers.sort((a, b) => (parseFloat(b.power_ranking) || 0) - (parseFloat(a.power_ranking) || 0))
+    allPlayers.sort((a, b) => (b.power_ranking || 0) - (a.power_ranking || 0))
 
     // Step 5: Pick distribution with MOST groups
     const allDistributions = calculateAllDistributions(allPlayers.length, effectiveMaxPlayers)

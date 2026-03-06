@@ -3,7 +3,7 @@ export type GroupPlayer = {
     first_name: string
     last_name: string
     phone: string
-    power_ranking: string
+    power_ranking: number
 }
 
 export type Group = {
@@ -20,7 +20,7 @@ export type SupabaseProfile = {
     first_name: string
     last_name: string
     phone: string
-    power_ranking: string
+    power_ranking: number
 }
 
 export type SupabaseGroupPlayer = {

@@ -60,7 +60,7 @@ describe('useGroups', () => {
                                 first_name: 'John',
                                 last_name: 'Doe',
                                 phone: '123',
-                                power_ranking: '5',
+                                power_ranking: 5,
                             },
                         },
                         {
@@ -88,7 +88,7 @@ describe('useGroups', () => {
                 first_name: 'John',
                 last_name: 'Doe',
                 phone: '123',
-                power_ranking: '5',
+                power_ranking: 5,
             })
         })
 
@@ -106,7 +106,7 @@ describe('useGroups', () => {
             expect(result.current.groups).toEqual([])
         })
 
-        it('should handle player with no power_ranking (defaults to "0")', async () => {
+        it('should handle player with no power_ranking (defaults to 0)', async () => {
             const rawData = [
                 {
                     id: 'g1',
@@ -137,7 +137,7 @@ describe('useGroups', () => {
                 await result.current.fetchGroupsByEvent('e1')
             })
 
-            expect(result.current.groups[0].players![0].power_ranking).toBe('0')
+            expect(result.current.groups[0].players![0].power_ranking).toBe(0)
         })
     })
 

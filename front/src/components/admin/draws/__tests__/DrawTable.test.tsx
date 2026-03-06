@@ -22,7 +22,7 @@ const makePlayer = (overrides: Partial<GroupPlayer> = {}): GroupPlayer => ({
   first_name: 'Alice',
   last_name: 'Martin',
   phone: '0612345678',
-  power_ranking: '5',
+  power_ranking: 5,
   ...overrides,
 })
 

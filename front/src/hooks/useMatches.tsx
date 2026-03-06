@@ -342,41 +342,6 @@ export function useMatches() {
         }
     }
 
-    const applyEloUpdates = async (eloResults: EloMatchResult[]) => {
-        try {
-            const playerIds = new Set<string>()
-            for (const r of eloResults) {
-                playerIds.add(r.winnerId)
-                playerIds.add(r.loserId)
-            }
-
-            const { data } = await supabase
-                .from("profiles")
-                .select("id, power_ranking")
-                .in("id", Array.from(playerIds))
-
-            if (!data) return
-
-            const currentRatings = new Map<string, number>()
-            for (const p of data) {
-                if (p.power_ranking != null) {
-                    currentRatings.set(p.id, p.power_ranking)
-                }
-            }
-
-            const newRatings = computeEloUpdates(eloResults, currentRatings)
-
-            if (newRatings.size === 0) return
-
-            const updates = Array.from(newRatings.entries()).map(([id, rating]) =>
-                supabase.from("profiles").update({ power_ranking: rating }).eq("id", id)
-            )
-            await Promise.all(updates)
-        } catch (err) {
-            console.warn("[Elo] Erreur mise à jour ratings:", err)
-        }
-    }
-
     const updateMatchResults = useCallback(async (
         results: { matchId: string; winnerId: string | null; score: string }[]
     ): Promise<boolean> => {
@@ -401,38 +366,15 @@ export function useMatches() {
             }
 
             // Mettre à jour le state local
-            setMatches(prev => {
-                const updated = prev.map(m => {
+            setMatches(prev =>
+                prev.map(m => {
                     const update = results.find(r => r.matchId === m.id)
                     if (update) {
                         return { ...m, winner_id: update.winnerId, score: update.score }
                     }
                     return m
                 })
-
-                // Fire-and-forget : mise à jour Elo après save réussi
-                const eloResults: EloMatchResult[] = results
-                    .filter(r => r.winnerId !== null && r.score)
-                    .map(r => {
-                        const match = prev.find(m => m.id === r.matchId)
-                        const loserId = match
-                            ? (r.winnerId === match.player1_id ? match.player2_id : match.player1_id)
-                            : ""
-                        return {
-                            matchId: r.matchId,
-                            winnerId: r.winnerId!,
-                            loserId,
-                            score: r.score,
-                        }
-                    })
-                    .filter(r => r.loserId !== "")
-
-                if (eloResults.length > 0) {
-                    applyEloUpdates(eloResults)
-                }
-
-                return updated
-            })
+            )
 
             return true
         } catch (err) {
@@ -440,6 +382,175 @@ export function useMatches() {
             return false
         }
     }, [])
+
+    /**
+     * Recalcule les Elo de tous les joueurs d'un événement en batch.
+     * Récupère tous les matchs terminés, calcule les deltas depuis les ratings initiaux,
+     * et met à jour les profiles. Retourne le nombre de joueurs mis à jour.
+     */
+    const applyEventElo = async (eventId: string): Promise<number> => {
+        setError(null)
+
+        try {
+            // 1. Récupérer les groupes de l'event
+            const { data: groups, error: groupsError } = await supabase
+                .from("groups")
+                .select("id")
+                .eq("event_id", eventId)
+
+            if (groupsError) {
+                handleHookError(groupsError, setError, "useMatches.applyEventElo")
+                return 0
+            }
+
+            if (!groups || groups.length === 0) return 0
+
+            const groupIds = groups.map(g => g.id)
+
+            // 2. Récupérer tous les matchs terminés (avec winner_id)
+            const { data: completedMatches, error: matchesError } = await supabase
+                .from("matches")
+                .select("id, player1_id, player2_id, winner_id, score")
+                .in("group_id", groupIds)
+                .not("winner_id", "is", null)
+
+            if (matchesError) {
+                handleHookError(matchesError, setError, "useMatches.applyEventElo")
+                return 0
+            }
+
+            if (!completedMatches || completedMatches.length === 0) return 0
+
+            // 3. Construire les EloMatchResults
+            const eloResults: EloMatchResult[] = completedMatches
+                .filter(m => m.winner_id && m.score)
+                .map(m => ({
+                    matchId: m.id,
+                    winnerId: m.winner_id!,
+                    loserId: m.winner_id === m.player1_id ? m.player2_id : m.player1_id,
+                    score: m.score!,
+                }))
+
+            if (eloResults.length === 0) return 0
+
+            // 4. Récupérer les ratings actuels des joueurs concernés
+            const playerIds = new Set<string>()
+            for (const r of eloResults) {
+                playerIds.add(r.winnerId)
+                playerIds.add(r.loserId)
+            }
+
+            const { data: profiles, error: profilesError } = await supabase
+                .from("profiles")
+                .select("id, power_ranking")
+                .in("id", Array.from(playerIds))
+
+            if (profilesError) {
+                handleHookError(profilesError, setError, "useMatches.applyEventElo")
+                return 0
+            }
+
+            if (!profiles) return 0
+
+            const currentRatings = new Map<string, number>()
+            for (const p of profiles) {
+                if (p.power_ranking != null) {
+                    currentRatings.set(p.id, p.power_ranking)
+                }
+            }
+
+            // 5. Calcul batch des nouveaux ratings
+            const newRatings = computeEloUpdates(eloResults, currentRatings)
+
+            if (newRatings.size === 0) return 0
+
+            // 6. Mise à jour en base
+            const profileUpdates = Array.from(newRatings.entries()).map(([id, rating]) =>
+                supabase.from("profiles").update({ power_ranking: rating }).eq("id", id)
+            )
+
+            const responses = await Promise.all(profileUpdates)
+            const updateError = responses.find(r => r.error)
+            if (updateError?.error) {
+                handleHookError(updateError.error, setError, "useMatches.applyEventElo")
+                return 0
+            }
+
+            return newRatings.size
+        } catch (err) {
+            handleHookError(err, setError, "useMatches.applyEventElo")
+            return 0
+        }
+    }
+
+    /**
+     * Cloture un evenement : verifie que tous les matchs sont joues,
+     * applique le Elo batch, puis passe le statut a 'completed'.
+     */
+    const closeEvent = async (eventId: string): Promise<{ success: boolean; eloUpdated: number }> => {
+        setError(null)
+
+        try {
+            // 1. Recuperer les groupes de l'event
+            const { data: groups, error: groupsError } = await supabase
+                .from("groups")
+                .select("id")
+                .eq("event_id", eventId)
+
+            if (groupsError) {
+                handleHookError(groupsError, setError, "useMatches.closeEvent")
+                return { success: false, eloUpdated: 0 }
+            }
+
+            if (!groups || groups.length === 0) {
+                setError("Aucun groupe pour cet événement")
+                return { success: false, eloUpdated: 0 }
+            }
+
+            const groupIds = groups.map(g => g.id)
+
+            // 2. Recuperer tous les matchs et verifier qu'ils sont tous joues
+            const { data: allMatches, error: matchesError } = await supabase
+                .from("matches")
+                .select("id, winner_id")
+                .in("group_id", groupIds)
+
+            if (matchesError) {
+                handleHookError(matchesError, setError, "useMatches.closeEvent")
+                return { success: false, eloUpdated: 0 }
+            }
+
+            if (!allMatches || allMatches.length === 0) {
+                setError("Aucun match dans cet événement")
+                return { success: false, eloUpdated: 0 }
+            }
+
+            const incomplete = allMatches.filter(m => !m.winner_id)
+            if (incomplete.length > 0) {
+                setError(`${incomplete.length} match(s) sans résultat. Complétez tous les matchs avant de clôturer.`)
+                return { success: false, eloUpdated: 0 }
+            }
+
+            // 3. Appliquer le Elo batch
+            const eloUpdated = await applyEventElo(eventId)
+
+            // 4. Mettre le statut de l'event a 'completed'
+            const { error: statusError } = await supabase
+                .from("events")
+                .update({ status: "completed" })
+                .eq("id", eventId)
+
+            if (statusError) {
+                handleHookError(statusError, setError, "useMatches.closeEvent")
+                return { success: false, eloUpdated: 0 }
+            }
+
+            return { success: true, eloUpdated }
+        } catch (err) {
+            handleHookError(err, setError, "useMatches.closeEvent")
+            return { success: false, eloUpdated: 0 }
+        }
+    }
 
     return {
         matches,
@@ -449,5 +560,7 @@ export function useMatches() {
         generateMatches,
         deleteMatchesByEvent,
         updateMatchResults,
+        applyEventElo,
+        closeEvent,
     }
 }

@@ -7,7 +7,7 @@ export const playerSchema = z.object({
   email: z.email({ error: 'Email invalide' }),
   arrival: z.string().optional(),
   departure: z.string().optional(),
-  power_ranking: z.coerce.string().optional(),
+  power_ranking: z.coerce.number().optional(),
   status: z.array(z.string()).optional(),
   unavailable: z.array(z.string()).optional(),
 })

@@ -7,19 +7,19 @@ const previousGroups: Group[] = [
     {
         id: "g1", event_id: "e1", group_name: "Box 1", max_players: 4, created_at: "",
         players: [
-            { id: "p1", first_name: "Alice", last_name: "A", phone: "", power_ranking: "10" },
-            { id: "p2", first_name: "Bob", last_name: "B", phone: "", power_ranking: "9" },
-            { id: "p3", first_name: "Charlie", last_name: "C", phone: "", power_ranking: "8" },
-            { id: "p4", first_name: "Diana", last_name: "D", phone: "", power_ranking: "7" },
+            { id: "p1", first_name: "Alice", last_name: "A", phone: "", power_ranking: 10 },
+            { id: "p2", first_name: "Bob", last_name: "B", phone: "", power_ranking: 9 },
+            { id: "p3", first_name: "Charlie", last_name: "C", phone: "", power_ranking: 8 },
+            { id: "p4", first_name: "Diana", last_name: "D", phone: "", power_ranking: 7 },
         ],
     },
     {
         id: "g2", event_id: "e1", group_name: "Box 2", max_players: 4, created_at: "",
         players: [
-            { id: "p5", first_name: "Eve", last_name: "E", phone: "", power_ranking: "6" },
-            { id: "p6", first_name: "Frank", last_name: "F", phone: "", power_ranking: "5" },
-            { id: "p7", first_name: "Grace", last_name: "G", phone: "", power_ranking: "4" },
-            { id: "p8", first_name: "Hank", last_name: "H", phone: "", power_ranking: "3" },
+            { id: "p5", first_name: "Eve", last_name: "E", phone: "", power_ranking: 6 },
+            { id: "p6", first_name: "Frank", last_name: "F", phone: "", power_ranking: 5 },
+            { id: "p7", first_name: "Grace", last_name: "G", phone: "", power_ranking: 4 },
+            { id: "p8", first_name: "Hank", last_name: "H", phone: "", power_ranking: 3 },
         ],
     },
 ]
@@ -147,7 +147,7 @@ describe("buildProposedGroups", () => {
         it("place un nouveau joueur fort dans le premier groupe", () => {
             const registered = new Set(["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "new1"])
             const newPlayers = [
-                { id: "new1", first_name: "Zack", last_name: "Z", phone: "", power_ranking: "9" },
+                { id: "new1", first_name: "Zack", last_name: "Z", phone: "", power_ranking: 9 },
             ]
             const result = buildProposedGroups(previousGroups, standings, promotionResult, registered, newPlayers)
 
@@ -160,7 +160,7 @@ describe("buildProposedGroups", () => {
         it("place un nouveau joueur faible dans le dernier groupe", () => {
             const registered = new Set(["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "new2"])
             const newPlayers = [
-                { id: "new2", first_name: "Yves", last_name: "Y", phone: "", power_ranking: "3" },
+                { id: "new2", first_name: "Yves", last_name: "Y", phone: "", power_ranking: 3 },
             ]
             const result = buildProposedGroups(previousGroups, standings, promotionResult, registered, newPlayers, 6)
 
@@ -174,8 +174,8 @@ describe("buildProposedGroups", () => {
         it("place plusieurs nouveaux joueurs selon leur PR", () => {
             const registered = new Set(["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "new1", "new2"])
             const newPlayers = [
-                { id: "new1", first_name: "Zack", last_name: "Z", phone: "", power_ranking: "10" },
-                { id: "new2", first_name: "Yves", last_name: "Y", phone: "", power_ranking: "2" },
+                { id: "new1", first_name: "Zack", last_name: "Z", phone: "", power_ranking: 10 },
+                { id: "new2", first_name: "Yves", last_name: "Y", phone: "", power_ranking: 2 },
             ]
             const result = buildProposedGroups(previousGroups, standings, promotionResult, registered, newPlayers, 6)
 
@@ -189,7 +189,7 @@ describe("buildProposedGroups", () => {
         it("place un joueur sans power_ranking dans le dernier groupe", () => {
             const registered = new Set(["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "new3"])
             const newPlayers = [
-                { id: "new3", first_name: "Will", last_name: "W", phone: "", power_ranking: "0" },
+                { id: "new3", first_name: "Will", last_name: "W", phone: "", power_ranking: 0 },
             ]
             const result = buildProposedGroups(previousGroups, standings, promotionResult, registered, newPlayers, 6)
 
@@ -211,10 +211,10 @@ describe("buildProposedGroups", () => {
             // 8 existing + 4 new = 12 players, max 4 → picks most groups: 4 box de 3
             const allRegistered = new Set(["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "n1", "n2", "n3", "n4"])
             const newP = [
-                { id: "n1", first_name: "N1", last_name: "X", phone: "", power_ranking: "11" },
-                { id: "n2", first_name: "N2", last_name: "X", phone: "", power_ranking: "7.5" },
-                { id: "n3", first_name: "N3", last_name: "X", phone: "", power_ranking: "4.5" },
-                { id: "n4", first_name: "N4", last_name: "X", phone: "", power_ranking: "1" },
+                { id: "n1", first_name: "N1", last_name: "X", phone: "", power_ranking: 11 },
+                { id: "n2", first_name: "N2", last_name: "X", phone: "", power_ranking: 7.5 },
+                { id: "n3", first_name: "N3", last_name: "X", phone: "", power_ranking: 4.5 },
+                { id: "n4", first_name: "N4", last_name: "X", phone: "", power_ranking: 1 },
             ]
             const result = buildProposedGroups(previousGroups, standings, promotionResult, allRegistered, newP, 4)
 
@@ -243,16 +243,16 @@ describe("buildProposedGroups", () => {
         it("redistributes players by tier when box count changes", () => {
             const allRegistered = new Set(["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "n1", "n2", "n3", "n4"])
             const newP = [
-                { id: "n1", first_name: "N1", last_name: "X", phone: "", power_ranking: "11" },
-                { id: "n2", first_name: "N2", last_name: "X", phone: "", power_ranking: "7.5" },
-                { id: "n3", first_name: "N3", last_name: "X", phone: "", power_ranking: "4.5" },
-                { id: "n4", first_name: "N4", last_name: "X", phone: "", power_ranking: "1" },
+                { id: "n1", first_name: "N1", last_name: "X", phone: "", power_ranking: 11 },
+                { id: "n2", first_name: "N2", last_name: "X", phone: "", power_ranking: 7.5 },
+                { id: "n3", first_name: "N3", last_name: "X", phone: "", power_ranking: 4.5 },
+                { id: "n4", first_name: "N4", last_name: "X", phone: "", power_ranking: 1 },
             ]
             const result = buildProposedGroups(previousGroups, standings, promotionResult, allRegistered, newP, 4)
 
             // Box 1 should have the highest PRs
-            const box1PRs = result[0].players!.map(p => parseFloat(p.power_ranking) || 0)
-            const box2PRs = result[1].players!.map(p => parseFloat(p.power_ranking) || 0)
+            const box1PRs = result[0].players!.map(p => p.power_ranking || 0)
+            const box2PRs = result[1].players!.map(p => p.power_ranking || 0)
             expect(Math.min(...box1PRs)).toBeGreaterThanOrEqual(Math.max(...box2PRs))
         })
 
@@ -268,10 +268,10 @@ describe("buildProposedGroups", () => {
         it("generates correct group names when box count changes", () => {
             const allRegistered = new Set(["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "n1", "n2", "n3", "n4"])
             const newP = [
-                { id: "n1", first_name: "N1", last_name: "X", phone: "", power_ranking: "11" },
-                { id: "n2", first_name: "N2", last_name: "X", phone: "", power_ranking: "7.5" },
-                { id: "n3", first_name: "N3", last_name: "X", phone: "", power_ranking: "4.5" },
-                { id: "n4", first_name: "N4", last_name: "X", phone: "", power_ranking: "1" },
+                { id: "n1", first_name: "N1", last_name: "X", phone: "", power_ranking: 11 },
+                { id: "n2", first_name: "N2", last_name: "X", phone: "", power_ranking: 7.5 },
+                { id: "n3", first_name: "N3", last_name: "X", phone: "", power_ranking: 4.5 },
+                { id: "n4", first_name: "N4", last_name: "X", phone: "", power_ranking: 1 },
             ]
             const result = buildProposedGroups(previousGroups, standings, promotionResult, allRegistered, newP, 4)
 
@@ -290,7 +290,7 @@ describe("buildProposedGroups", () => {
                     first_name: `Player${gi * 6 + pi + 1}`,
                     last_name: "X",
                     phone: "",
-                    power_ranking: `${30 - (gi * 6 + pi)}`,
+                    power_ranking: 30 - (gi * 6 + pi),
                 })),
             }))
             const allIds = new Set(groups.flatMap(g => g.players!.map(p => p.id)))

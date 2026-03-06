@@ -39,7 +39,7 @@ const makePlayer = (overrides: Partial<PlayerType> = {}): PlayerType => ({
   departure: '22:00',
   unavailable: [],
   status: ['active', 'member'],
-  power_ranking: '5',
+  power_ranking: 5,
   box: '',
   ...overrides,
 })

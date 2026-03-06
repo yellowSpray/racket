@@ -1,3 +1,5 @@
+export type EventStatus = 'active' | 'completed'
+
 export interface Event {
   id: string
   club_id: string | null
@@ -11,6 +13,7 @@ export interface Event {
   player_count?: number
   estimated_match_duration?: string
   playing_dates?: string[] | null
+  status?: EventStatus
   created_at?: string
   updated_at?: string
 };

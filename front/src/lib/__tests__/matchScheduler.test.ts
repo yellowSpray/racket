@@ -24,7 +24,7 @@ function makePlayer(id: string, firstName = 'Player', lastName = id): GroupPlaye
     first_name: firstName,
     last_name: lastName,
     phone: '0000',
-    power_ranking: '0',
+    power_ranking: 0,
   }
 }
 

@@ -7,8 +7,8 @@ export function distributePlayersByRanking(
     
     // trier les joueurs par power_ranking
     const sortedPlayers = [...players].sort((a, b) => {
-        const rankA = parseInt(a.power_ranking) || 0
-        const rankB = parseInt(b.power_ranking) || 0
+        const rankA = a.power_ranking || 0
+        const rankB = b.power_ranking || 0
         return rankB - rankA
     })
 
@@ -33,7 +33,7 @@ export function calculateGroupAverage(players: GroupPlayer[]): number {
     if (players.length === 0) return 0
 
     const sum = players.reduce((total, player) => {
-        return total + (parseInt(player.power_ranking) || 0)
+        return total + (player.power_ranking || 0)
     }, 0)
 
     return Math.round(sum / players.length)

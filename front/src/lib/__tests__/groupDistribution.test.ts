@@ -5,7 +5,7 @@ import {
   suggestGroupForPlayer,
 } from '@/lib/groupDistribution'
 
-function makePlayer(id: string, ranking: string): GroupPlayer {
+function makePlayer(id: string, ranking: number): GroupPlayer {
   return {
     id,
     first_name: `Player`,
@@ -34,10 +34,10 @@ function makeGroup(
 describe('distributePlayersByRanking', () => {
   it('distributes players evenly into groups sorted by ranking (descending)', () => {
     const players = [
-      makePlayer('1', '10'),
-      makePlayer('2', '30'),
-      makePlayer('3', '20'),
-      makePlayer('4', '40'),
+      makePlayer('1', 10),
+      makePlayer('2', 30),
+      makePlayer('3', 20),
+      makePlayer('4', 40),
     ]
     const result = distributePlayersByRanking(players, 2)
 
@@ -48,7 +48,7 @@ describe('distributePlayersByRanking', () => {
   })
 
   it('handles single group', () => {
-    const players = [makePlayer('1', '5'), makePlayer('2', '10')]
+    const players = [makePlayer('1', 5), makePlayer('2', 10)]
     const result = distributePlayersByRanking(players, 1)
 
     expect(result).toHaveLength(1)
@@ -63,11 +63,11 @@ describe('distributePlayersByRanking', () => {
 
   it('handles uneven distribution (5 players in 2 groups)', () => {
     const players = [
-      makePlayer('1', '10'),
-      makePlayer('2', '20'),
-      makePlayer('3', '30'),
-      makePlayer('4', '40'),
-      makePlayer('5', '50'),
+      makePlayer('1', 10),
+      makePlayer('2', 20),
+      makePlayer('3', 30),
+      makePlayer('4', 40),
+      makePlayer('5', 50),
     ]
     const result = distributePlayersByRanking(players, 2)
 
@@ -79,9 +79,9 @@ describe('distributePlayersByRanking', () => {
 
   it('handles players with no ranking (defaults to 0)', () => {
     const players = [
-      makePlayer('1', ''),
-      makePlayer('2', '20'),
-      makePlayer('3', ''),
+      makePlayer('1', 0),
+      makePlayer('2', 20),
+      makePlayer('3', 0),
     ]
     const result = distributePlayersByRanking(players, 1)
 
@@ -97,20 +97,20 @@ describe('calculateGroupAverage', () => {
   })
 
   it('calculates average for single player', () => {
-    expect(calculateGroupAverage([makePlayer('1', '10')])).toBe(10)
+    expect(calculateGroupAverage([makePlayer('1', 10)])).toBe(10)
   })
 
   it('calculates rounded average for multiple players', () => {
     const players = [
-      makePlayer('1', '10'),
-      makePlayer('2', '20'),
-      makePlayer('3', '15'),
+      makePlayer('1', 10),
+      makePlayer('2', 20),
+      makePlayer('3', 15),
     ]
     expect(calculateGroupAverage(players)).toBe(15)
   })
 
   it('treats non-numeric rankings as 0', () => {
-    const players = [makePlayer('1', ''), makePlayer('2', '20')]
+    const players = [makePlayer('1', 0), makePlayer('2', 20)]
     expect(calculateGroupAverage(players)).toBe(10)
   })
 })
@@ -125,7 +125,7 @@ describe('suggestGroupForPlayer', () => {
       makeGroup(
         'g1',
         'Box 1',
-        [makePlayer('1', '10'), makePlayer('2', '20')],
+        [makePlayer('1', 10), makePlayer('2', 20)],
         2, // max 2, currently 2
       ),
     ]
@@ -134,8 +134,8 @@ describe('suggestGroupForPlayer', () => {
 
   it('suggests closest group by average ranking', () => {
     const groups = [
-      makeGroup('g1', 'Box 1', [makePlayer('1', '10'), makePlayer('2', '10')]),
-      makeGroup('g2', 'Box 2', [makePlayer('3', '30'), makePlayer('4', '30')]),
+      makeGroup('g1', 'Box 1', [makePlayer('1', 10), makePlayer('2', 10)]),
+      makeGroup('g2', 'Box 2', [makePlayer('3', 30), makePlayer('4', 30)]),
     ]
     // player ranking 28 is closer to Box 2 (avg 30) than Box 1 (avg 10)
     const result = suggestGroupForPlayer(28, groups)
@@ -149,7 +149,7 @@ describe('suggestGroupForPlayer', () => {
       makeGroup(
         'g1',
         'Box 1',
-        [makePlayer('1', '20'), makePlayer('2', '20')],
+        [makePlayer('1', '20'), makePlayer('2', 20)],
         2, // full
       ),
       makeGroup('g2', 'Box 2', [makePlayer('3', '10')]),

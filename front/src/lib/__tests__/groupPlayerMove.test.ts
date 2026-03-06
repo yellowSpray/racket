@@ -6,14 +6,14 @@ const makeGroups = (): Group[] => [
     {
         id: "g1", event_id: "e1", group_name: "Box 1", max_players: 3, created_at: "",
         players: [
-            { id: "p1", first_name: "Alice", last_name: "A", phone: "", power_ranking: "10" },
-            { id: "p2", first_name: "Bob", last_name: "B", phone: "", power_ranking: "20" },
+            { id: "p1", first_name: "Alice", last_name: "A", phone: "", power_ranking: 10 },
+            { id: "p2", first_name: "Bob", last_name: "B", phone: "", power_ranking: 20 },
         ],
     },
     {
         id: "g2", event_id: "e1", group_name: "Box 2", max_players: 3, created_at: "",
         players: [
-            { id: "p3", first_name: "Charlie", last_name: "C", phone: "", power_ranking: "30" },
+            { id: "p3", first_name: "Charlie", last_name: "C", phone: "", power_ranking: 30 },
         ],
     },
 ]
@@ -64,10 +64,10 @@ describe("validateGroups", () => {
     it("returns invalid when a group exceeds max_players", () => {
         const groups = makeGroups()
         groups[1].players = [
-            { id: "p3", first_name: "C", last_name: "C", phone: "", power_ranking: "30" },
-            { id: "p4", first_name: "D", last_name: "D", phone: "", power_ranking: "40" },
-            { id: "p5", first_name: "E", last_name: "E", phone: "", power_ranking: "50" },
-            { id: "p6", first_name: "F", last_name: "F", phone: "", power_ranking: "60" },
+            { id: "p3", first_name: "C", last_name: "C", phone: "", power_ranking: 30 },
+            { id: "p4", first_name: "D", last_name: "D", phone: "", power_ranking: 40 },
+            { id: "p5", first_name: "E", last_name: "E", phone: "", power_ranking: 50 },
+            { id: "p6", first_name: "F", last_name: "F", phone: "", power_ranking: 60 },
         ]
         const result = validateGroups(groups)
         expect(result.valid).toBe(false)

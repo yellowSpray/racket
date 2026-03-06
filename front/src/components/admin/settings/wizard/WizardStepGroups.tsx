@@ -621,7 +621,7 @@ function transformGroups(data: SupabaseGroup[]): Group[] {
                 first_name: gp.profiles.first_name,
                 last_name: gp.profiles.last_name,
                 phone: gp.profiles.phone,
-                power_ranking: gp.profiles.power_ranking || "0",
+                power_ranking: gp.profiles.power_ranking ?? 0,
             })),
     }))
 }
