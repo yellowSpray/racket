@@ -53,16 +53,16 @@ describe("getMarginMultiplier", () => {
         expect(getMarginMultiplier("1-3")).toBe(1.10)
     })
 
-    it("returns 0.50 for ABS", () => {
-        expect(getMarginMultiplier("ABS")).toBe(0.50)
+    it("returns 0 for ABS", () => {
+        expect(getMarginMultiplier("ABS")).toBe(0)
     })
 
-    it("returns 0.50 for ABS-0", () => {
-        expect(getMarginMultiplier("ABS-0")).toBe(0.50)
+    it("returns 0 for ABS-0", () => {
+        expect(getMarginMultiplier("ABS-0")).toBe(0)
     })
 
-    it("returns 0.50 for 0-ABS", () => {
-        expect(getMarginMultiplier("0-ABS")).toBe(0.50)
+    it("returns 0 for 0-ABS", () => {
+        expect(getMarginMultiplier("0-ABS")).toBe(0)
     })
 
     it("returns 1.00 for null", () => {
@@ -112,10 +112,10 @@ describe("calculateEloChange", () => {
         expect(winnerDelta).toBeLessThan(16)
     })
 
-    it("ABS score: reduced change", () => {
-        // K=32, multiplier=0.50, E=0.5 → delta = 32 * 0.50 * 0.5 = 8
-        const { winnerDelta } = calculateEloChange(1500, 1500, "ABS")
-        expect(winnerDelta).toBe(8)
+    it("ABS score: zero change", () => {
+        const { winnerDelta, loserDelta } = calculateEloChange(1500, 1500, "ABS")
+        expect(winnerDelta).toBe(0)
+        expect(loserDelta).toBe(0)
     })
 
     it("returns integer values", () => {
@@ -131,7 +131,7 @@ describe("calculateEloChange", () => {
     })
 })
 
-describe("computeEloUpdates", () => {
+describe("computeEloUpdates (batch — end of event)", () => {
     it("computes new ratings for a single match", () => {
         const results: EloMatchResult[] = [
             { matchId: "m1", winnerId: "p1", loserId: "p2", score: "3-2" },
@@ -144,7 +144,7 @@ describe("computeEloUpdates", () => {
         expect(updated.get("p2")).toBe(1484)
     })
 
-    it("accumulates ratings across multiple matches", () => {
+    it("uses initial ratings for all matches (order-independent)", () => {
         const results: EloMatchResult[] = [
             { matchId: "m1", winnerId: "p1", loserId: "p2", score: "3-2" },
             { matchId: "m2", winnerId: "p1", loserId: "p3", score: "3-0" },
@@ -153,10 +153,32 @@ describe("computeEloUpdates", () => {
 
         const updated = computeEloUpdates(results, ratings)
 
-        // p1 wins twice, rating should increase more than 16+20
-        expect(updated.get("p1")!).toBeGreaterThan(1530)
-        expect(updated.get("p2")!).toBeLessThan(1500)
-        expect(updated.get("p3")!).toBeLessThan(1500)
+        // Both deltas calculated from initial 1500, not accumulated
+        // m1: K=32, mult=1.0, E=0.5 → delta=16
+        // m2: K=32, mult=1.25, E=0.5 → delta=20
+        // p1 total: 1500 + 16 + 20 = 1536
+        expect(updated.get("p1")).toBe(1536)
+        expect(updated.get("p2")).toBe(1484)
+        expect(updated.get("p3")).toBe(1480)
+    })
+
+    it("is independent of match order", () => {
+        const resultsA: EloMatchResult[] = [
+            { matchId: "m1", winnerId: "p1", loserId: "p2", score: "3-1" },
+            { matchId: "m2", winnerId: "p2", loserId: "p3", score: "3-0" },
+        ]
+        const resultsB: EloMatchResult[] = [
+            { matchId: "m2", winnerId: "p2", loserId: "p3", score: "3-0" },
+            { matchId: "m1", winnerId: "p1", loserId: "p2", score: "3-1" },
+        ]
+        const ratings = new Map([["p1", 1500], ["p2", 1500], ["p3", 1500]])
+
+        const updatedA = computeEloUpdates(resultsA, ratings)
+        const updatedB = computeEloUpdates(resultsB, ratings)
+
+        expect(updatedA.get("p1")).toBe(updatedB.get("p1"))
+        expect(updatedA.get("p2")).toBe(updatedB.get("p2"))
+        expect(updatedA.get("p3")).toBe(updatedB.get("p3"))
     })
 
     it("skips players not in currentRatings", () => {
@@ -177,7 +199,7 @@ describe("computeEloUpdates", () => {
         expect(updated.size).toBe(0)
     })
 
-    it("handles ABS score", () => {
+    it("ABS score has no impact on ratings", () => {
         const results: EloMatchResult[] = [
             { matchId: "m1", winnerId: "p1", loserId: "p2", score: "ABS" },
         ]
@@ -185,10 +207,8 @@ describe("computeEloUpdates", () => {
 
         const updated = computeEloUpdates(results, ratings)
 
-        expect(updated.get("p1")!).toBeGreaterThan(1500)
-        expect(updated.get("p2")!).toBeLessThan(1500)
-        // ABS multiplier 0.50 → smaller change
-        expect(updated.get("p1")! - 1500).toBeLessThan(16)
+        // ABS multiplier = 0 → no change
+        expect(updated.size).toBe(0)
     })
 
     it("only returns changed players", () => {
@@ -202,5 +222,17 @@ describe("computeEloUpdates", () => {
         expect(updated.has("p1")).toBe(true)
         expect(updated.has("p2")).toBe(true)
         expect(updated.has("p3")).toBe(false)
+    })
+
+    it("does not mutate the input ratings map", () => {
+        const results: EloMatchResult[] = [
+            { matchId: "m1", winnerId: "p1", loserId: "p2", score: "3-0" },
+        ]
+        const ratings = new Map([["p1", 1500], ["p2", 1500]])
+
+        computeEloUpdates(results, ratings)
+
+        expect(ratings.get("p1")).toBe(1500)
+        expect(ratings.get("p2")).toBe(1500)
     })
 })

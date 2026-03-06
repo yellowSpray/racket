@@ -27,7 +27,7 @@ export function calculateExpectedScore(ratingA: number, ratingB: number): number
 export function getMarginMultiplier(score: string | null): number {
     if (!score) return 1.00
 
-    if (score.includes("ABS")) return 0.50
+    if (score.includes("ABS")) return 0
 
     // Normaliser : extraire les deux chiffres et prendre max-min
     const match = score.match(/^(\d+)-(\d+)$/)
@@ -58,8 +58,10 @@ export function calculateEloChange(
     score: string | null,
     kFactor: number = DEFAULT_K_FACTOR
 ): EloDeltas {
-    const expected = calculateExpectedScore(ratingWinner, ratingLoser)
     const multiplier = getMarginMultiplier(score)
+    if (multiplier === 0) return { winnerDelta: 0, loserDelta: 0 }
+
+    const expected = calculateExpectedScore(ratingWinner, ratingLoser)
     const delta = Math.round(kFactor * multiplier * (1 - expected))
 
     return {
@@ -69,8 +71,9 @@ export function calculateEloChange(
 }
 
 /**
- * Calcule les nouveaux ratings pour un batch de résultats.
- * Les résultats sont traités séquentiellement (accumulation des deltas).
+ * Calcule les nouveaux ratings pour tous les résultats d'un événement.
+ * Tous les deltas sont calculés à partir des ratings initiaux (début d'événement),
+ * puis sommés — l'ordre des matchs n'influence pas le résultat.
  * Retourne uniquement les joueurs dont le rating a changé.
  */
 export function computeEloUpdates(
@@ -79,31 +82,27 @@ export function computeEloUpdates(
 ): Map<string, number> {
     if (results.length === 0) return new Map()
 
-    // Copie de travail
-    const working = new Map(currentRatings)
-    const changed = new Set<string>()
+    const deltas = new Map<string, number>()
 
     for (const result of results) {
-        const winnerRating = working.get(result.winnerId)
-        const loserRating = working.get(result.loserId)
+        const winnerRating = currentRatings.get(result.winnerId)
+        const loserRating = currentRatings.get(result.loserId)
 
-        // Skip si un joueur n'a pas de rating
         if (winnerRating === undefined || loserRating === undefined) continue
 
         const { winnerDelta, loserDelta } = calculateEloChange(
             winnerRating, loserRating, result.score
         )
 
-        working.set(result.winnerId, winnerRating + winnerDelta)
-        working.set(result.loserId, loserRating + loserDelta)
-        changed.add(result.winnerId)
-        changed.add(result.loserId)
+        deltas.set(result.winnerId, (deltas.get(result.winnerId) ?? 0) + winnerDelta)
+        deltas.set(result.loserId, (deltas.get(result.loserId) ?? 0) + loserDelta)
     }
 
-    // Ne retourner que les joueurs modifiés
     const updatedRatings = new Map<string, number>()
-    for (const id of changed) {
-        updatedRatings.set(id, working.get(id)!)
+    for (const [id, delta] of deltas) {
+        if (delta !== 0) {
+            updatedRatings.set(id, currentRatings.get(id)! + delta)
+        }
     }
 
     return updatedRatings
