@@ -39,7 +39,7 @@ export function CreateGroupsDialog({ open , onOpenChange }: CreateGroupsDialogPr
         if (open && currentEvent) {
             fetchPlayersByEvent(currentEvent.id)
         }
-    }, [open, currentEvent])
+    }, [open, currentEvent, fetchPlayersByEvent])
 
     // nombre de joueurs actifs
     const activePlayers = players.filter(p => p.status?.includes("active"))

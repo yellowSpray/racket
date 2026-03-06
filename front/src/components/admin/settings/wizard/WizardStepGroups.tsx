@@ -65,8 +65,14 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
     }, [mode, profile?.club_id, event.id, previousEvent, prevLoading, fetchPreviousEvent])
 
     // Calculate standings and promotions from previous event data
-    const effectiveScoringRules = scoringRules ?? { id: "", club_id: "", score_points: defaultScoring.score_points }
-    const effectivePromotionRules = promotionRules ?? { id: "", club_id: "", ...defaultPromotion }
+    const effectiveScoringRules = useMemo(
+        () => scoringRules ?? { id: "", club_id: "", score_points: defaultScoring.score_points },
+        [scoringRules, defaultScoring.score_points]
+    )
+    const effectivePromotionRules = useMemo(
+        () => promotionRules ?? { id: "", club_id: "", ...defaultPromotion },
+        [promotionRules, defaultPromotion]
+    )
 
     const previousStandings: GroupStandings[] = useMemo(() => {
         if (!previousEvent || previousGroups.length === 0) return []

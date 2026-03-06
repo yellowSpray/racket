@@ -34,7 +34,7 @@ export function ListPlayers() {
             fetchPlayersByEvent(currentEvent.id)
         }
         // Pas de fetch si !showAllPlayers && !currentEvent : le context fait déjà le fetch initial
-    }, [currentEvent, showAllPlayers])
+    }, [currentEvent, showAllPlayers, fetchPlayer, fetchPlayersByEvent])
 
     const filteredPlayers = useMemo(() => {
         let filtered = players

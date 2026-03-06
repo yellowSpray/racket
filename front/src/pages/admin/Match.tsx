@@ -37,7 +37,7 @@ export function MatchAdmin() {
             fetchGroupsByEvent(currentEvent.id)
             fetchMatchesByEvent(currentEvent.id)
         }
-    }, [currentEvent])
+    }, [currentEvent, fetchGroupsByEvent, fetchMatchesByEvent])
 
     // --- Score editing ---
 

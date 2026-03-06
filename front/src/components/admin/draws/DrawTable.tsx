@@ -25,7 +25,7 @@ const DEFAULT_SCORING: ScoringRules = {
 
 export function DrawTable({ group, matches = [], scoringRules, displayMode = "score" }: DrawTableProps) {
 
-    const players = group.players || []
+    const players = useMemo(() => group.players || [], [group.players])
     const maxPlayers = group.max_players || 6
     const [hoveredMatch, setHoveredMatch] = useState<{row: number, col: number} | null>(null)
 
