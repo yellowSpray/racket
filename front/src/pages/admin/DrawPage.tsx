@@ -24,7 +24,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { totalMatchCount, sortPlayersByEarliestDates } from "@/lib/matchScheduler"
+import { sortPlayersByEarliestDates } from "@/lib/matchScheduler"
 import { exportTablesToPdf } from "@/lib/exportPdf"
 
 export function DrawAdmin () {
@@ -178,13 +178,6 @@ export function DrawAdmin () {
             {matchError && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4 text-sm">
                     {matchError}
-                </div>
-            )}
-
-            {/* Avertissement matchs manquants */}
-            {matches.length > 0 && groups.length > 0 && matches.length < totalMatchCount(groups) && (
-                <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded mb-4 text-sm">
-                    {matches.length}/{totalMatchCount(groups)} matchs planifiés. {totalMatchCount(groups) - matches.length} match(s) sans créneau — ajoutez des dates ou des terrains dans les paramètres.
                 </div>
             )}
 

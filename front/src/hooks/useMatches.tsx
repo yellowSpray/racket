@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabaseClient"
 import type { Match } from "@/types/match"
 import type { Group } from "@/types/draw"
 import type { Event } from "@/types/event"
+import type { UnplacedMatch } from "@/lib/matchScheduler"
 import { useCallback, useState } from "react"
 import { handleHookError, withTimeout } from "@/lib/handleHookError"
 import { logger } from "@/lib/logger"
@@ -33,6 +34,7 @@ function extractTime(value: string): string {
 export function useMatches() {
 
     const [matches, setMatches] = useState<Match[]>([])
+    const [unplacedMatches, setUnplacedMatches] = useState<UnplacedMatch[]>([])
     const [loading, setLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
 
@@ -282,6 +284,8 @@ export function useMatches() {
 
             // 7. Refresh
             await fetchMatchesByEvent(event.id)
+
+            setUnplacedMatches(unplaced)
 
             const result = { total: totalPairings, placed: assignments.length, unplaced }
 
@@ -552,14 +556,44 @@ export function useMatches() {
         }
     }
 
+    const updateMatchSchedule = useCallback(async (
+        matchId: string,
+        updates: { match_date?: string; match_time?: string; court_number?: string }
+    ): Promise<boolean> => {
+        setError(null)
+
+        try {
+            const { error: updateError } = await supabase
+                .from("matches")
+                .update(updates)
+                .eq("id", matchId)
+
+            if (updateError) {
+                handleHookError(updateError, setError, "useMatches.updateSchedule")
+                return false
+            }
+
+            setMatches(prev =>
+                prev.map(m => m.id === matchId ? { ...m, ...updates } : m)
+            )
+
+            return true
+        } catch (err) {
+            handleHookError(err, setError, "useMatches.updateSchedule")
+            return false
+        }
+    }, [])
+
     return {
         matches,
+        unplacedMatches,
         loading,
         error,
         fetchMatchesByEvent,
         generateMatches,
         deleteMatchesByEvent,
         updateMatchResults,
+        updateMatchSchedule,
         applyEventElo,
         closeEvent,
     }

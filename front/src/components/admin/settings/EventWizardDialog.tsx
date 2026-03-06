@@ -138,7 +138,7 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess }: Even
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-white">
+            <DialogContent className={`max-h-[90vh] overflow-y-auto bg-white transition-[max-width] ${activeStep === 3 ? 'sm:max-w-[95vw] lg:max-w-[1200px]' : 'sm:max-w-[700px]'}`}>
                 <DialogHeader>
                     <DialogTitle>
                         {isEditing ? "Modifier l'événement" : "Créer un événement"}

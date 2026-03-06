@@ -6,7 +6,7 @@ import { useEvent } from "@/contexts/EventContext"
 import { usePlayers } from "@/contexts/PlayersContext"
 import { useGroups } from "@/hooks/useGroups"
 import { useMatches } from "@/hooks/useMatches"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router"
 import { CalendarDays, Settings, Pencil, Save, X, List, LayoutGrid } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -31,6 +31,7 @@ export function MatchAdmin() {
     const [pendingScores, setPendingScores] = useState<Map<string, string>>(new Map())
     const [saving, setSaving] = useState(false)
     const [scoreErrors, setScoreErrors] = useState<Map<string, string>>(new Map())
+
 
     useEffect(() => {
         if (currentEvent) {
@@ -137,7 +138,8 @@ export function MatchAdmin() {
 
     // Calculs pour l'info
     const matchCount = totalMatchCount(groups)
-    const slotInfo = currentEvent ? (() => {
+    const slotInfo = useMemo(() => {
+        if (!currentEvent) return null
         const durationMin = intervalToMinutes(currentEvent.estimated_match_duration)
         const dates = calculateDates(currentEvent.start_date, currentEvent.end_date, currentEvent.playing_dates)
         const timeSlots = calculateTimeSlots(
@@ -147,11 +149,11 @@ export function MatchAdmin() {
         )
         return {
             total: totalSlotCount(dates.length, timeSlots.length, currentEvent.number_of_courts),
-            dates: dates.length,
+            datesCount: dates.length,
             slotsPerDay: timeSlots.length,
-            courts: currentEvent.number_of_courts,
+            courtsCount: currentEvent.number_of_courts,
         }
-    })() : null
+    }, [currentEvent])
 
     if (loading || saving) {
         return <MatchSkeleton />
@@ -236,13 +238,6 @@ export function MatchAdmin() {
                 </div>
             )}
 
-            {/* Avertissement matchs manquants */}
-            {!error && hasMatches && matchCount > 0 && matches.length < matchCount && (
-                <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded mb-4">
-                    {matches.length}/{matchCount} matchs planifiés. {matchCount - matches.length} match(s) sans créneau — ajoutez des dates ou des terrains dans les paramètres.
-                </div>
-            )}
-
             {/* Contenu */}
             {!hasGroups ? (
                 <div className="text-center py-12 border-2 border-dashed rounded-lg">
@@ -274,7 +269,7 @@ export function MatchAdmin() {
                     <h3 className="mt-4 text-lg font-semibold">Aucun match généré</h3>
                     <p className="text-gray-500 mt-2">
                         {matchCount} matchs à programmer sur {slotInfo?.total} créneaux disponibles
-                        ({slotInfo?.dates} jour{(slotInfo?.dates || 0) > 1 ? 's' : ''} × {slotInfo?.slotsPerDay} créneaux × {slotInfo?.courts} terrain{(slotInfo?.courts || 0) > 1 ? 's' : ''})
+                        ({slotInfo?.datesCount} jour{(slotInfo?.datesCount || 0) > 1 ? 's' : ''} × {slotInfo?.slotsPerDay} créneaux × {slotInfo?.courtsCount} terrain{(slotInfo?.courtsCount || 0) > 1 ? 's' : ''})
                     </p>
                     <Button className="mt-4" variant="outline" onClick={() => navigate("/admin/settings")}>
                         <Settings className="mr-2 h-4 w-4" />

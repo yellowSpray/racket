@@ -10,6 +10,7 @@ import {
   calculateDates,
   totalMatchCount,
   totalSlotCount,
+  validateMatchSlot,
   type PlayerConstraints,
   type DatePlan,
 } from '@/lib/matchScheduler'
@@ -737,5 +738,74 @@ describe('assignTimeSlotsForDates', () => {
 
       expect(result).toHaveLength(30)
     })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// validateMatchSlot
+// ---------------------------------------------------------------------------
+
+describe('validateMatchSlot', () => {
+  it('returns valid with no constraints', () => {
+    const result = validateMatchSlot('p1', 'p2', '2026-03-01', '19:00', new Map(), 30)
+    expect(result.valid).toBe(true)
+    expect(result.warnings).toHaveLength(0)
+  })
+
+  it('returns invalid when slot is before player arrival', () => {
+    const constraints = new Map<string, PlayerConstraints>()
+    constraints.set('p1', { arrival: '20:00', departure: '', unavailable: [] })
+
+    const result = validateMatchSlot('p1', 'p2', '2026-03-01', '19:00', constraints, 30)
+    expect(result.valid).toBe(false)
+    expect(result.warnings.some(w => w.includes('p1'))).toBe(true)
+  })
+
+  it('returns invalid when match ends after player departure', () => {
+    const constraints = new Map<string, PlayerConstraints>()
+    constraints.set('p2', { arrival: '', departure: '19:15', unavailable: [] })
+
+    const result = validateMatchSlot('p1', 'p2', '2026-03-01', '19:00', constraints, 30)
+    expect(result.valid).toBe(false)
+    expect(result.warnings.some(w => w.includes('p2'))).toBe(true)
+  })
+
+  it('returns valid when slot fits within departure (match ends exactly at departure)', () => {
+    const constraints = new Map<string, PlayerConstraints>()
+    constraints.set('p1', { arrival: '', departure: '19:30', unavailable: [] })
+
+    const result = validateMatchSlot('p1', 'p2', '2026-03-01', '19:00', constraints, 30)
+    expect(result.valid).toBe(true)
+  })
+
+  it('returns warning (not invalid) when a player is absent on that date', () => {
+    const constraints = new Map<string, PlayerConstraints>()
+    constraints.set('p1', { arrival: '', departure: '', unavailable: ['2026-03-01'] })
+
+    const result = validateMatchSlot('p1', 'p2', '2026-03-01', '19:00', constraints, 30)
+    // Absence is a soft constraint — valid but with warning
+    expect(result.valid).toBe(true)
+    expect(result.warnings.length).toBeGreaterThan(0)
+    expect(result.warnings.some(w => w.includes('p1'))).toBe(true)
+  })
+
+  it('combines arrival and departure from both players', () => {
+    const constraints = new Map<string, PlayerConstraints>()
+    constraints.set('p1', { arrival: '19:00', departure: '', unavailable: [] })
+    constraints.set('p2', { arrival: '', departure: '19:15', unavailable: [] })
+
+    // p1 arrives at 19:00, p2 leaves at 19:15 → 30min match cannot fit
+    const result = validateMatchSlot('p1', 'p2', '2026-03-01', '19:00', constraints, 30)
+    expect(result.valid).toBe(false)
+  })
+
+  it('returns valid when both players available at time', () => {
+    const constraints = new Map<string, PlayerConstraints>()
+    constraints.set('p1', { arrival: '18:00', departure: '22:00', unavailable: [] })
+    constraints.set('p2', { arrival: '18:30', departure: '21:00', unavailable: [] })
+
+    const result = validateMatchSlot('p1', 'p2', '2026-03-01', '19:00', constraints, 30)
+    expect(result.valid).toBe(true)
+    expect(result.warnings).toHaveLength(0)
   })
 })

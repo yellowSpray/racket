@@ -2,11 +2,14 @@ import type { Event } from "@/types/event"
 import type { Group } from "@/types/draw"
 import type { Match } from "@/types/match"
 import { useMatches } from "@/hooks/useMatches"
+import { usePlayerConstraints } from "@/hooks/usePlayerConstraints"
 import { totalMatchCount, totalSlotCount, calculateTimeSlots, calculateDates } from "@/lib/matchScheduler"
+import { analyzeUnplaced } from "@/lib/schedulerSuggestions"
 import { intervalToMinutes } from "@/lib/utils"
-import { useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { MatchScheduleGrid } from "@/components/admin/matches/MatchScheduleGrid"
+import { UnplacedMatchesPanel } from "@/components/admin/matches/UnplacedMatchesPanel"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -29,11 +32,19 @@ interface WizardStepMatchesProps {
 }
 
 export function WizardStepMatches({ event, groups, matches, onMatchesChanged, onPrevious, onFinish }: WizardStepMatchesProps) {
-    const { generateMatches, deleteMatchesByEvent } = useMatches()
+    const { generateMatches, deleteMatchesByEvent, unplacedMatches, updateMatchSchedule } = useMatches()
+    const { constraints: playerConstraints, fetchConstraints } = usePlayerConstraints()
     const [generating, setGenerating] = useState(false)
     const [confirmOpen, setConfirmOpen] = useState(false)
     const [confirmAction, setConfirmAction] = useState<"generate" | "delete">("generate")
     const [error, setError] = useState<string | null>(null)
+
+    // Charger les contraintes joueurs
+    useEffect(() => {
+        if (groups.length > 0) {
+            fetchConstraints(event.id, groups)
+        }
+    }, [event.id, groups, fetchConstraints])
 
     const matchCount = totalMatchCount(groups)
     const durationMin = intervalToMinutes(event.estimated_match_duration)
@@ -44,6 +55,27 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
         durationMin
     )
     const slotTotal = totalSlotCount(dates.length, timeSlots.length, event.number_of_courts)
+
+    // Diagnostic des matchs non-placés
+    const diagnostic = useMemo(() => {
+        if (unplacedMatches.length === 0) return null
+        return analyzeUnplaced(unplacedMatches, {
+            totalMatches: matchCount,
+            placedMatches: matches.length,
+            dates,
+            timeSlotsPerDay: timeSlots.length,
+            courts: event.number_of_courts,
+        })
+    }, [unplacedMatches, matchCount, matches.length, dates, timeSlots.length, event.number_of_courts])
+
+    // DnD handler
+    const handleMatchDrop = useCallback(async (matchId: string, updates: { match_date: string; match_time: string; court_number: string }) => {
+        const success = await updateMatchSchedule(matchId, updates)
+        if (success) {
+            // Update local matches list
+            onMatchesChanged(matches.map(m => m.id === matchId ? { ...m, ...updates } : m))
+        }
+    }, [updateMatchSchedule, onMatchesChanged, matches])
 
     const hasMatches = matches.length > 0
     const hasPlayers = groups.some(g => (g.players || []).length >= 2)
@@ -187,8 +219,11 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
                         </div>
                     </div>
 
-                    <div className="max-h-[400px] overflow-y-auto">
-                        <MatchScheduleGrid matches={matches} event={event} />
+                    {/* Panneau conflits / matchs non-placés */}
+                    {diagnostic && <UnplacedMatchesPanel diagnostic={diagnostic} />}
+
+                    <div className="max-h-[50vh] overflow-y-auto">
+                        <MatchScheduleGrid matches={matches} event={event} onMatchDrop={handleMatchDrop} playerConstraints={playerConstraints} />
                     </div>
                 </div>
             )}

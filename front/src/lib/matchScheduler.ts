@@ -501,6 +501,66 @@ function getAbsentPlayers(
 }
 
 /**
+ * Valide si un créneau est compatible avec les contraintes des deux joueurs.
+ * - arrival/departure sont des contraintes dures (valid = false)
+ * - absences sont des contraintes souples (valid = true, mais warning)
+ */
+export function validateMatchSlot(
+    player1Id: string,
+    player2Id: string,
+    date: string,
+    time: string,
+    constraints: Map<string, PlayerConstraints>,
+    durationMinutes: number,
+    playerNames?: { player1Name: string; player2Name: string }
+): { valid: boolean; warnings: string[] } {
+    const warnings: string[] = []
+    const slotStart = parseTimeToMinutes(time)
+    const slotEnd = slotStart + durationMinutes
+
+    const name1 = playerNames?.player1Name ?? player1Id
+    const name2 = playerNames?.player2Name ?? player2Id
+
+    const c1 = constraints.get(player1Id)
+    const c2 = constraints.get(player2Id)
+
+    // Hard constraints: arrival / departure
+    const arrival1 = c1?.arrival ? parseTimeToMinutes(c1.arrival) : 0
+    const arrival2 = c2?.arrival ? parseTimeToMinutes(c2.arrival) : 0
+    const departure1 = c1?.departure ? parseTimeToMinutes(c1.departure) : 24 * 60
+    const departure2 = c2?.departure ? parseTimeToMinutes(c2.departure) : 24 * 60
+
+    let valid = true
+
+    if (slotStart < arrival1) {
+        warnings.push(`${name1} n'arrive qu'à ${c1!.arrival}`)
+        valid = false
+    }
+    if (slotStart < arrival2) {
+        warnings.push(`${name2} n'arrive qu'à ${c2!.arrival}`)
+        valid = false
+    }
+    if (slotEnd > departure1) {
+        warnings.push(`${name1} part à ${c1!.departure}`)
+        valid = false
+    }
+    if (slotEnd > departure2) {
+        warnings.push(`${name2} part à ${c2!.departure}`)
+        valid = false
+    }
+
+    // Soft constraints: absences
+    if (c1?.unavailable.includes(date)) {
+        warnings.push(`${name1} est absent le ${date}`)
+    }
+    if (c2?.unavailable.includes(date)) {
+        warnings.push(`${name2} est absent le ${date}`)
+    }
+
+    return { valid, warnings }
+}
+
+/**
  * Calcule la distance en minutes entre un créneau et la fenêtre de disponibilité idéale.
  */
 function distanceToWindowForDate(

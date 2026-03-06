@@ -1,6 +1,17 @@
-import { useMemo, useCallback } from "react"
+import { useMemo, useCallback, useState } from "react"
 import type { Match } from "@/types/match"
 import type { Event } from "@/types/event"
+import {
+    DndContext,
+    DragOverlay,
+    useSensor,
+    useSensors,
+    PointerSensor,
+    type DragStartEvent,
+    type DragEndEvent,
+} from "@dnd-kit/core"
+import { useDraggable } from "@dnd-kit/core"
+import { useDroppable } from "@dnd-kit/core"
 import {
     Table,
     TableBody,
@@ -11,7 +22,7 @@ import {
 } from "@/components/ui/table"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { MatchCell } from "./MatchCell"
-import { calculateTimeSlots } from "@/lib/matchScheduler"
+import { calculateTimeSlots, validateMatchSlot, type PlayerConstraints } from "@/lib/matchScheduler"
 import { intervalToMinutes } from "@/lib/utils"
 
 interface MatchScheduleGridProps {
@@ -20,6 +31,8 @@ interface MatchScheduleGridProps {
     editMode?: boolean
     pendingScores?: Map<string, string>
     onScoreChange?: (matchId: string, value: string) => void
+    onMatchDrop?: (matchId: string, updates: { match_date: string; match_time: string; court_number: string }) => void
+    playerConstraints?: Map<string, PlayerConstraints>
 }
 
 function formatDateLabel(dateStr: string): string {
@@ -32,9 +45,95 @@ function formatDateLabel(dateStr: string): string {
     })
 }
 
-export function MatchScheduleGrid({ matches, event, editMode, pendingScores, onScoreChange }: MatchScheduleGridProps) {
+/** Encode un slot en ID droppable */
+function slotId(date: string, time: string, court: string): string {
+    return `slot::${date}::${time}::${court}`
+}
 
-    // Calculer les créneaux depuis l'event
+/** Decode un ID droppable en {date, time, court} */
+function parseSlotId(id: string): { date: string; time: string; court: string } | null {
+    const parts = id.split("::")
+    if (parts.length !== 4 || parts[0] !== "slot") return null
+    return { date: parts[1], time: parts[2], court: parts[3] }
+}
+
+// ---------------------------------------------------------------------------
+// DraggableMatch — wraps a match cell that can be dragged
+// ---------------------------------------------------------------------------
+
+function DraggableMatch({
+    match,
+    editMode,
+    scoreValue,
+    onScoreChange,
+}: {
+    match: Match
+    editMode?: boolean
+    scoreValue?: string
+    onScoreChange?: (v: string) => void
+}) {
+    const canDrag = !match.winner_id && !editMode
+    const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+        id: `match-${match.id}`,
+        disabled: !canDrag,
+        data: { match },
+    })
+
+    return (
+        <div
+            ref={setNodeRef}
+            {...(canDrag ? { ...attributes, ...listeners } : {})}
+            className={`${canDrag ? 'cursor-grab active:cursor-grabbing' : ''} ${isDragging ? 'opacity-30' : ''}`}
+        >
+            <MatchCell
+                match={match}
+                editMode={editMode}
+                scoreValue={scoreValue}
+                onScoreChange={onScoreChange}
+            />
+        </div>
+    )
+}
+
+// ---------------------------------------------------------------------------
+// DroppableSlot — wraps an empty cell that accepts a dropped match
+// ---------------------------------------------------------------------------
+
+function DroppableSlot({ id }: { id: string }) {
+    const { setNodeRef, isOver } = useDroppable({ id })
+
+    return (
+        <div
+            ref={setNodeRef}
+            className={`py-2 text-center transition-colors rounded ${
+                isOver ? 'bg-green-100 ring-2 ring-green-400' : 'text-gray-300'
+            }`}
+        >
+            {isOver ? <span className="text-green-600 text-xs font-medium">Deposer ici</span> : "—"}
+        </div>
+    )
+}
+
+// ---------------------------------------------------------------------------
+// MatchScheduleGrid
+// ---------------------------------------------------------------------------
+
+export function MatchScheduleGrid({
+    matches,
+    event,
+    editMode,
+    pendingScores,
+    onScoreChange,
+    onMatchDrop,
+    playerConstraints,
+}: MatchScheduleGridProps) {
+    const [activeMatch, setActiveMatch] = useState<Match | null>(null)
+    const [dropError, setDropError] = useState<string | null>(null)
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+    )
+
     const timeSlots = useMemo(() => {
         const durationMin = intervalToMinutes(event.estimated_match_duration)
         return calculateTimeSlots(
@@ -44,7 +143,6 @@ export function MatchScheduleGrid({ matches, event, editMode, pendingScores, onS
         )
     }, [event.estimated_match_duration, event.start_time, event.end_time])
 
-    // Extraire les terrains uniques depuis les matchs ou générer depuis number_of_courts
     const courts = useMemo(() => {
         const courtsSet = new Set<string>()
         matches.forEach(m => {
@@ -55,7 +153,6 @@ export function MatchScheduleGrid({ matches, event, editMode, pendingScores, onS
         return Array.from({ length: event.number_of_courts }, (_, i) => `Terrain ${i + 1}`)
     }, [matches, event.number_of_courts])
 
-    // Grouper les matchs par date et trier les dates
     const { sortedDates, matchesByDate } = useMemo(() => {
         const byDate = new Map<string, Match[]>()
         for (const match of matches) {
@@ -66,7 +163,6 @@ export function MatchScheduleGrid({ matches, event, editMode, pendingScores, onS
         return { sortedDates: Array.from(byDate.keys()).sort(), matchesByDate: byDate }
     }, [matches])
 
-    // Trouver un match pour un créneau donné
     const findMatch = useCallback((dayMatches: Match[], time: string, court: string): Match | null => {
         return dayMatches.find(m => {
             const matchTime = m.match_time?.match(/(\d{2}:\d{2})/)?.[1]
@@ -74,77 +170,147 @@ export function MatchScheduleGrid({ matches, event, editMode, pendingScores, onS
         }) || null
     }, [])
 
-    return (
-        <div className="flex flex-col h-full min-h-0 overflow-hidden">
-            <ScrollArea className="flex-1 min-h-0" type="always">
-                <div className="space-y-6">
-                    {sortedDates.map(date => {
-                        const dayMatches = matchesByDate.get(date) || []
-                        const label = formatDateLabel(date)
+    const handleDragStart = (event: DragStartEvent) => {
+        const match = event.active.data.current?.match as Match | undefined
+        setActiveMatch(match || null)
+    }
 
-                        return (
-                            <div key={date}>
-                                <div>
-                                    <div className="overflow-x-auto border-gray-200 border-1 rounded-xl">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead colSpan={courts.length + 1} className="text-center text-xs font-semibold uppercase">
-                                                        {label}
-                                                    </TableHead>
-                                                </TableRow>
-                                                <TableRow>
-                                                    <TableHead className="w-20 text-center bg-gray-50 font-bold">
-                                                        Heure
-                                                    </TableHead>
-                                                    {courts.map(court => (
-                                                        <TableHead
-                                                            key={court}
-                                                            className="text-center bg-gray-50 font-bold min-w-[140px]"
-                                                        >
-                                                            {court}
+    const durationMin = intervalToMinutes(event.estimated_match_duration)
+
+    const handleDragEnd = (dragEvent: DragEndEvent) => {
+        const draggedMatch = activeMatch
+        setActiveMatch(null)
+        setDropError(null)
+        const { active, over } = dragEvent
+        if (!over || !onMatchDrop) return
+
+        const overId = over.id as string
+        const slot = parseSlotId(overId)
+        if (!slot) return
+
+        // Validate constraints if available
+        if (playerConstraints && draggedMatch) {
+            const p1 = draggedMatch.player1
+            const p2 = draggedMatch.player2
+            const validation = validateMatchSlot(
+                draggedMatch.player1_id,
+                draggedMatch.player2_id,
+                slot.date,
+                slot.time,
+                playerConstraints,
+                durationMin,
+                {
+                    player1Name: p1 ? `${p1.first_name} ${p1.last_name}` : draggedMatch.player1_id,
+                    player2Name: p2 ? `${p2.first_name} ${p2.last_name}` : draggedMatch.player2_id,
+                }
+            )
+            if (!validation.valid) {
+                setDropError(validation.warnings.join(" / "))
+                return
+            }
+        }
+
+        const matchId = (active.id as string).replace("match-", "")
+        onMatchDrop(matchId, {
+            match_date: slot.date,
+            match_time: slot.time,
+            court_number: slot.court,
+        })
+    }
+
+    return (
+        <DndContext
+            sensors={sensors}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+        >
+            <div className="flex flex-col h-full min-h-0 overflow-hidden">
+                {dropError && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded mb-2 text-sm flex items-center justify-between">
+                        <span>{dropError}</span>
+                        <button onClick={() => setDropError(null)} className="text-red-400 hover:text-red-600 ml-2">&times;</button>
+                    </div>
+                )}
+                <ScrollArea className="flex-1 min-h-0" type="always">
+                    <div className="space-y-6">
+                        {sortedDates.map(date => {
+                            const dayMatches = matchesByDate.get(date) || []
+                            const label = formatDateLabel(date)
+
+                            return (
+                                <div key={date}>
+                                    <div>
+                                        <div className="overflow-x-auto border-gray-200 border-1 rounded-xl">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead colSpan={courts.length + 1} className="text-center text-xs font-semibold uppercase">
+                                                            {label}
                                                         </TableHead>
-                                                    ))}
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {timeSlots.map(time => (
-                                                    <TableRow key={time}>
-                                                        <TableCell className="text-center font-medium bg-gray-50">
-                                                            {time}
-                                                        </TableCell>
+                                                    </TableRow>
+                                                    <TableRow>
+                                                        <TableHead className="w-20 text-center bg-gray-50 font-bold">
+                                                            Heure
+                                                        </TableHead>
                                                         {courts.map(court => (
-                                                            <TableCell
+                                                            <TableHead
                                                                 key={court}
-                                                                className="text-center border-l p-1"
+                                                                className="text-center bg-gray-50 font-bold min-w-[140px]"
                                                             >
-                                                                {(() => {
-                                                                    const m = findMatch(dayMatches, time, court)
-                                                                    return (
-                                                                        <MatchCell
-                                                                            match={m}
-                                                                            editMode={editMode}
-                                                                            scoreValue={m ? pendingScores?.get(m.id) : undefined}
-                                                                            onScoreChange={m ? (v) => onScoreChange?.(m.id, v) : undefined}
-                                                                        />
-                                                                    )
-                                                                })()}
-                                                            </TableCell>
+                                                                {court}
+                                                            </TableHead>
                                                         ))}
                                                     </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {timeSlots.map(time => (
+                                                        <TableRow key={time}>
+                                                            <TableCell className="text-center font-medium bg-gray-50">
+                                                                {time}
+                                                            </TableCell>
+                                                            {courts.map(court => {
+                                                                const m = findMatch(dayMatches, time, court)
+                                                                return (
+                                                                    <TableCell
+                                                                        key={court}
+                                                                        className="text-center border-l p-1"
+                                                                    >
+                                                                        {m ? (
+                                                                            <DraggableMatch
+                                                                                match={m}
+                                                                                editMode={editMode}
+                                                                                scoreValue={pendingScores?.get(m.id)}
+                                                                                onScoreChange={m ? (v) => onScoreChange?.(m.id, v) : undefined}
+                                                                            />
+                                                                        ) : (
+                                                                            <DroppableSlot id={slotId(date, time, court)} />
+                                                                        )}
+                                                                    </TableCell>
+                                                                )
+                                                            })}
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                        <p className="text-sm text-gray-500 mt-2">
+                                            {dayMatches.length} match{dayMatches.length > 1 ? 's' : ''} programmé{dayMatches.length > 1 ? 's' : ''}
+                                        </p>
                                     </div>
-                                    <p className="text-sm text-gray-500 mt-2">
-                                        {dayMatches.length} match{dayMatches.length > 1 ? 's' : ''} programmé{dayMatches.length > 1 ? 's' : ''}
-                                    </p>
                                 </div>
-                            </div>
-                        )
-                    })}
-                </div>
-            </ScrollArea>
-        </div>
+                            )
+                        })}
+                    </div>
+                </ScrollArea>
+            </div>
+
+            <DragOverlay>
+                {activeMatch && (
+                    <div className="bg-white shadow-lg rounded-md border-2 border-green-400 px-3 py-2 opacity-90">
+                        <MatchCell match={activeMatch} />
+                    </div>
+                )}
+            </DragOverlay>
+        </DndContext>
     )
 }
