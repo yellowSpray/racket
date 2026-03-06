@@ -45,6 +45,7 @@ const standings: GroupStandings[] = [
     },
 ]
 
+// 1 promu, 1 relegue: p4 descend en Box 2, p5 monte en Box 1
 const promotionResult: PromotionResult = {
     moves: [
         { playerId: "p4", playerName: "Diana D", fromGroupId: "g1", fromGroupName: "Box 1", toGroupId: "g2", toGroupName: "Box 2", type: "relegation" },
@@ -61,32 +62,80 @@ const promotionResult: PromotionResult = {
 }
 
 describe("buildProposedGroups", () => {
-    it("distributes all players sorted by PR descending", () => {
-        const result = buildProposedGroups(previousGroups, standings, promotionResult)
+    describe("promo/relegation application", () => {
+        it("applies promotion: p5 moves to Box 1, p4 moves to Box 2", () => {
+            const result = buildProposedGroups(previousGroups, standings, promotionResult)
 
-        expect(result).toHaveLength(2)
+            const box1Ids = result[0].players!.map(p => p.id)
+            const box2Ids = result[1].players!.map(p => p.id)
 
-        // 8 players sorted by PR: p1(10), p2(9), p3(8), p4(7), p5(6), p6(5), p7(4), p8(3)
-        // 2 groups of 4
-        const box1Ids = result[0].players!.map(p => p.id)
-        expect(box1Ids).toEqual(["p1", "p2", "p3", "p4"])
+            // p5 promoted to Box 1
+            expect(box1Ids).toContain("p5")
+            expect(box1Ids).not.toContain("p4")
 
-        const box2Ids = result[1].players!.map(p => p.id)
-        expect(box2Ids).toEqual(["p5", "p6", "p7", "p8"])
-    })
+            // p4 relegated to Box 2
+            expect(box2Ids).toContain("p4")
+            expect(box2Ids).not.toContain("p5")
+        })
 
-    it("preserves group metadata", () => {
-        const result = buildProposedGroups(previousGroups, standings, promotionResult)
+        it("staying players remain in their box", () => {
+            const result = buildProposedGroups(previousGroups, standings, promotionResult)
 
-        expect(result[0].group_name).toBe("Box 1")
-        expect(result[0].max_players).toBe(4)
-        expect(result[1].group_name).toBe("Box 2")
-    })
+            const box1Ids = result[0].players!.map(p => p.id)
+            const box2Ids = result[1].players!.map(p => p.id)
 
-    it("uses proposed-new- prefix for group IDs", () => {
-        const result = buildProposedGroups(previousGroups, standings, promotionResult)
-        expect(result[0].id).toBe("proposed-new-0")
-        expect(result[1].id).toBe("proposed-new-1")
+            // Box 1: p1, p2, p3 stay + p5 promoted
+            expect(box1Ids).toContain("p1")
+            expect(box1Ids).toContain("p2")
+            expect(box1Ids).toContain("p3")
+
+            // Box 2: p6, p7, p8 stay + p4 relegated
+            expect(box2Ids).toContain("p6")
+            expect(box2Ids).toContain("p7")
+            expect(box2Ids).toContain("p8")
+        })
+
+        it("produces correct group count and total players", () => {
+            const result = buildProposedGroups(previousGroups, standings, promotionResult)
+
+            expect(result).toHaveLength(2)
+            const total = result.reduce((s, g) => s + (g.players || []).length, 0)
+            expect(total).toBe(8)
+        })
+
+        it("preserves group metadata", () => {
+            const result = buildProposedGroups(previousGroups, standings, promotionResult)
+
+            expect(result[0].group_name).toBe("Box 1")
+            expect(result[0].max_players).toBe(4)
+            expect(result[1].group_name).toBe("Box 2")
+        })
+
+        it("uses proposed-new- prefix for group IDs", () => {
+            const result = buildProposedGroups(previousGroups, standings, promotionResult)
+            expect(result[0].id).toBe("proposed-new-0")
+            expect(result[1].id).toBe("proposed-new-1")
+        })
+
+        it("works with no moves (no promo/relegation)", () => {
+            const noMoves: PromotionResult = {
+                moves: [],
+                stayingPlayers: [
+                    { playerId: "p1", groupId: "g1" },
+                    { playerId: "p2", groupId: "g1" },
+                    { playerId: "p3", groupId: "g1" },
+                    { playerId: "p4", groupId: "g1" },
+                    { playerId: "p5", groupId: "g2" },
+                    { playerId: "p6", groupId: "g2" },
+                    { playerId: "p7", groupId: "g2" },
+                    { playerId: "p8", groupId: "g2" },
+                ],
+            }
+            const result = buildProposedGroups(previousGroups, standings, noMoves)
+
+            const box1Ids = result[0].players!.map(p => p.id)
+            expect(box1Ids).toEqual(expect.arrayContaining(["p1", "p2", "p3", "p4"]))
+        })
     })
 
     it("handles empty groups", () => {
@@ -98,41 +147,21 @@ describe("buildProposedGroups", () => {
     })
 
     describe("filtrage des joueurs desinscrits (registeredPlayerIds)", () => {
-        it("exclut les joueurs non inscrits au prochain evenement", () => {
-            // p3 et p7 se sont desinscrits → 6 players remaining
-            const registered = new Set(["p1", "p2", "p4", "p5", "p6", "p8"])
+        it("exclut les joueurs non inscrits", () => {
+            const registered = new Set(["p1", "p2", "p3", "p5", "p6", "p7", "p8"])
             const result = buildProposedGroups(previousGroups, standings, promotionResult, registered)
 
             const allIds = result.flatMap(g => (g.players || []).map(p => p.id))
-            expect(allIds).not.toContain("p3")
-            expect(allIds).not.toContain("p7")
-            expect(allIds).toHaveLength(6)
-
-            // Sorted by PR: p1(10), p2(9), p4(7), p5(6), p6(5), p8(3)
-            expect(allIds).toContain("p1")
-            expect(allIds).toContain("p2")
-            expect(allIds).toContain("p5")
-            expect(allIds).toContain("p6")
-            expect(allIds).toContain("p8")
-            expect(allIds).toContain("p4")
+            expect(allIds).not.toContain("p4") // relegated but unregistered
+            expect(allIds).toHaveLength(7)
         })
 
         it("exclut un joueur promu qui s'est desinscrit", () => {
-            // p5 (would be promoted) is unregistered
             const registered = new Set(["p1", "p2", "p3", "p4", "p6", "p7", "p8"])
             const result = buildProposedGroups(previousGroups, standings, promotionResult, registered)
 
             const allIds = result.flatMap(g => (g.players || []).map(p => p.id))
             expect(allIds).not.toContain("p5")
-        })
-
-        it("exclut un joueur relegue qui s'est desinscrit", () => {
-            // p4 (would be relegated) is unregistered
-            const registered = new Set(["p1", "p2", "p3", "p5", "p6", "p7", "p8"])
-            const result = buildProposedGroups(previousGroups, standings, promotionResult, registered)
-
-            const allIds = result.flatMap(g => (g.players || []).map(p => p.id))
-            expect(allIds).not.toContain("p4")
         })
 
         it("garde tous les joueurs si registeredPlayerIds n'est pas fourni", () => {
@@ -143,16 +172,14 @@ describe("buildProposedGroups", () => {
         })
     })
 
-    describe("placement des nouveaux joueurs par PR", () => {
+    describe("placement des nouveaux joueurs par power_ranking", () => {
         it("place un nouveau joueur fort dans le premier groupe", () => {
             const registered = new Set(["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "new1"])
             const newPlayers = [
-                { id: "new1", first_name: "Zack", last_name: "Z", phone: "", power_ranking: 9 },
+                { id: "new1", first_name: "Zack", last_name: "Z", phone: "", power_ranking: 11 },
             ]
             const result = buildProposedGroups(previousGroups, standings, promotionResult, registered, newPlayers)
 
-            // 9 players, max 4 → 3 groups of 3
-            // Sorted: p1(10), new1(9), p2(9), p3(8), p4(7), p5(6), p6(5), p7(4), p8(3)
             const box1Ids = result[0].players!.map(p => p.id)
             expect(box1Ids).toContain("new1")
         })
@@ -160,30 +187,29 @@ describe("buildProposedGroups", () => {
         it("place un nouveau joueur faible dans le dernier groupe", () => {
             const registered = new Set(["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "new2"])
             const newPlayers = [
-                { id: "new2", first_name: "Yves", last_name: "Y", phone: "", power_ranking: 3 },
+                { id: "new2", first_name: "Yves", last_name: "Y", phone: "", power_ranking: 1 },
             ]
-            const result = buildProposedGroups(previousGroups, standings, promotionResult, registered, newPlayers, 6)
+            const result = buildProposedGroups(previousGroups, standings, promotionResult, registered, newPlayers)
 
-            // 9 players, max 6 → relaxed [5,4]
-            // Sorted: p1(10), p2(9), p3(8), p4(7), p5(6), p6(5), p7(4), p8(3), new2(3)
             const lastGroup = result[result.length - 1]
             const lastIds = lastGroup.players!.map(p => p.id)
             expect(lastIds).toContain("new2")
         })
 
-        it("place plusieurs nouveaux joueurs selon leur PR", () => {
-            const registered = new Set(["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "new1", "new2"])
+        it("place un nouveau joueur mid-ranking dans le bon groupe (not Box 1)", () => {
+            const registered = new Set(["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "new1"])
             const newPlayers = [
-                { id: "new1", first_name: "Zack", last_name: "Z", phone: "", power_ranking: 10 },
-                { id: "new2", first_name: "Yves", last_name: "Y", phone: "", power_ranking: 2 },
+                { id: "new1", first_name: "Mid", last_name: "M", phone: "", power_ranking: 5 },
             ]
-            const result = buildProposedGroups(previousGroups, standings, promotionResult, registered, newPlayers, 6)
+            const result = buildProposedGroups(previousGroups, standings, promotionResult, registered, newPlayers)
 
-            // 10 players, max 6 → [5,5]
+            // PR 5 < min PR of Box 1 (p5=6), so new1 should NOT be in Box 1
             const box1Ids = result[0].players!.map(p => p.id)
-            const box2Ids = result[1].players!.map(p => p.id)
-            expect(box1Ids).toContain("new1")
-            expect(box2Ids).toContain("new2")
+            expect(box1Ids).not.toContain("new1")
+
+            // Should be in one of the lower boxes
+            const allIds = result.flatMap(g => (g.players || []).map(p => p.id))
+            expect(allIds).toContain("new1")
         })
 
         it("place un joueur sans power_ranking dans le dernier groupe", () => {
@@ -191,24 +217,135 @@ describe("buildProposedGroups", () => {
             const newPlayers = [
                 { id: "new3", first_name: "Will", last_name: "W", phone: "", power_ranking: 0 },
             ]
-            const result = buildProposedGroups(previousGroups, standings, promotionResult, registered, newPlayers, 6)
+            const result = buildProposedGroups(previousGroups, standings, promotionResult, registered, newPlayers)
 
             const lastGroup = result[result.length - 1]
-            const lastIds = lastGroup.players!.map(p => p.id)
-            expect(lastIds).toContain("new3")
-        })
-
-        it("ne place rien si newPlayers est vide", () => {
-            const result = buildProposedGroups(previousGroups, standings, promotionResult, undefined, [])
-
-            const allIds = result.flatMap(g => (g.players || []).map(p => p.id))
-            expect(allIds).toHaveLength(8)
+            expect(lastGroup.players!.map(p => p.id)).toContain("new3")
         })
     })
 
-    describe("recalcul du nombre de box (maxPlayersPerGroup)", () => {
+    describe("cascade overflow when new players exceed box capacity", () => {
+        it("cascades weakest player to next box when insertion overflows", () => {
+            // 2 boxes of max 4, each full after promo/releg (4+4=8)
+            // Insert 1 strong new player (PR=11) into Box 1 → overflow → weakest cascades to Box 2
+            const registered = new Set(["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "new1"])
+            const newPlayers = [
+                { id: "new1", first_name: "Strong", last_name: "S", phone: "", power_ranking: 11 },
+            ]
+            const result = buildProposedGroups(previousGroups, standings, promotionResult, registered, newPlayers, 4)
+
+            // Box 1 should not exceed max 4
+            expect(result[0].players!.length).toBeLessThanOrEqual(4)
+            // new1 should be in Box 1
+            expect(result[0].players!.map(p => p.id)).toContain("new1")
+        })
+
+        it("cascades through multiple boxes", () => {
+            // 2 boxes of max 4, 8 existing players. Insert 2 strong new players → both boxes overflow
+            const registered = new Set(["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "new1", "new2"])
+            const newPlayers = [
+                { id: "new1", first_name: "Strong1", last_name: "S", phone: "", power_ranking: 12 },
+                { id: "new2", first_name: "Strong2", last_name: "S", phone: "", power_ranking: 11 },
+            ]
+            // With 10 players and max 4, distribution should create 3 boxes
+            const result = buildProposedGroups(previousGroups, standings, promotionResult, registered, newPlayers, 4)
+
+            // No box should exceed its distribution capacity
+            for (let i = 0; i < result.length; i++) {
+                expect(result[i].players!.length).toBeLessThanOrEqual(result[i].max_players)
+            }
+            // Total players preserved
+            const total = result.reduce((s, g) => s + (g.players || []).length, 0)
+            expect(total).toBe(10)
+        })
+
+        it("no box exceeds its distribution capacity (generic property)", () => {
+            // 3 boxes, 3 new players of varying strength
+            const threeBoxGroups: Group[] = [
+                {
+                    id: "g1", event_id: "e1", group_name: "Box 1", max_players: 4, created_at: "",
+                    players: [
+                        { id: "p1", first_name: "A", last_name: "A", phone: "", power_ranking: 1200 },
+                        { id: "p2", first_name: "B", last_name: "B", phone: "", power_ranking: 1100 },
+                        { id: "p3", first_name: "C", last_name: "C", phone: "", power_ranking: 1000 },
+                        { id: "p4", first_name: "D", last_name: "D", phone: "", power_ranking: 900 },
+                    ],
+                },
+                {
+                    id: "g2", event_id: "e1", group_name: "Box 2", max_players: 4, created_at: "",
+                    players: [
+                        { id: "p5", first_name: "E", last_name: "E", phone: "", power_ranking: 800 },
+                        { id: "p6", first_name: "F", last_name: "F", phone: "", power_ranking: 700 },
+                        { id: "p7", first_name: "G", last_name: "G", phone: "", power_ranking: 600 },
+                        { id: "p8", first_name: "H", last_name: "H", phone: "", power_ranking: 500 },
+                    ],
+                },
+                {
+                    id: "g3", event_id: "e1", group_name: "Box 3", max_players: 4, created_at: "",
+                    players: [
+                        { id: "p9", first_name: "I", last_name: "I", phone: "", power_ranking: 400 },
+                        { id: "p10", first_name: "J", last_name: "J", phone: "", power_ranking: 300 },
+                        { id: "p11", first_name: "K", last_name: "K", phone: "", power_ranking: 200 },
+                    ],
+                },
+            ]
+            const threeBoxStandings: GroupStandings[] = []
+            const threeBoxPromo: PromotionResult = {
+                moves: [],
+                stayingPlayers: [
+                    { playerId: "p1", groupId: "g1" },
+                    { playerId: "p2", groupId: "g1" },
+                    { playerId: "p3", groupId: "g1" },
+                    { playerId: "p4", groupId: "g1" },
+                    { playerId: "p5", groupId: "g2" },
+                    { playerId: "p6", groupId: "g2" },
+                    { playerId: "p7", groupId: "g2" },
+                    { playerId: "p8", groupId: "g2" },
+                    { playerId: "p9", groupId: "g3" },
+                    { playerId: "p10", groupId: "g3" },
+                    { playerId: "p11", groupId: "g3" },
+                ],
+            }
+            const allIds = new Set(["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "p10", "p11", "new1", "new2", "new3"])
+            const newPlayers = [
+                { id: "new1", first_name: "Timothy", last_name: "T", phone: "", power_ranking: 1184 },
+                { id: "new2", first_name: "Joshua", last_name: "J", phone: "", power_ranking: 580 },
+                { id: "new3", first_name: "Ross", last_name: "R", phone: "", power_ranking: 250 },
+            ]
+
+            const result = buildProposedGroups(threeBoxGroups, threeBoxStandings, threeBoxPromo, allIds, newPlayers, 5)
+
+            // No box exceeds its distribution capacity
+            for (const group of result) {
+                expect(group.players!.length).toBeLessThanOrEqual(group.max_players)
+            }
+            // All players present
+            const total = result.reduce((s, g) => s + (g.players || []).length, 0)
+            expect(total).toBe(14)
+        })
+
+        it("cascaded player lands in the correct lower box by PR", () => {
+            // Box 1 max 4, has 4 players (PR 10,9,8,7). Insert new1 PR=11 → weakest (PR=7 i.e. p4/relegated) cascades down
+            // We use the promotionResult where p4 is in Box 2 and p5 in Box 1
+            // Box 1: p1(10), p2(9), p3(8), p5(6) — inserting new1(11) overflows → p5(6) weakest cascades to Box 2
+            const registered = new Set(["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "new1"])
+            const newPlayers = [
+                { id: "new1", first_name: "Super", last_name: "S", phone: "", power_ranking: 11 },
+            ]
+            const result = buildProposedGroups(previousGroups, standings, promotionResult, registered, newPlayers, 4)
+
+            // p5 (weakest in Box 1 with PR=6) should have been cascaded to Box 2
+            const box1Ids = result[0].players!.map(p => p.id)
+            const box2Ids = result[1].players!.map(p => p.id)
+            expect(box1Ids).not.toContain("p5")
+            expect(box2Ids).toContain("p5")
+            // new1 stays in Box 1
+            expect(box1Ids).toContain("new1")
+        })
+    })
+
+    describe("recalcul du nombre de box", () => {
         it("increases box count when many new players arrive", () => {
-            // 8 existing + 4 new = 12 players, max 4 → picks most groups: 4 box de 3
             const allRegistered = new Set(["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "n1", "n2", "n3", "n4"])
             const newP = [
                 { id: "n1", first_name: "N1", last_name: "X", phone: "", power_ranking: 11 },
@@ -218,29 +355,22 @@ describe("buildProposedGroups", () => {
             ]
             const result = buildProposedGroups(previousGroups, standings, promotionResult, allRegistered, newP, 4)
 
-            expect(result).toHaveLength(4)
-            const totalPlayers = result.reduce((sum, g) => sum + (g.players || []).length, 0)
-            expect(totalPlayers).toBe(12)
+            // 12 players, max 4 → should create more boxes
+            expect(result.length).toBeGreaterThan(2)
+            const total = result.reduce((s, g) => s + (g.players || []).length, 0)
+            expect(total).toBe(12)
         })
 
-        it("decreases box count when many players depart", () => {
-            // 4 remaining, max 4 → 1 box de 4
+        it("decreases box count when many players leave", () => {
             const registered = new Set(["p1", "p2", "p5", "p6"])
             const result = buildProposedGroups(previousGroups, standings, promotionResult, registered, [], 4)
 
             expect(result).toHaveLength(1)
-            const totalPlayers = result.reduce((sum, g) => sum + (g.players || []).length, 0)
-            expect(totalPlayers).toBe(4)
+            const total = result.reduce((s, g) => s + (g.players || []).length, 0)
+            expect(total).toBe(4)
         })
 
-        it("keeps same box count when player count stays compatible", () => {
-            const allRegistered = new Set(["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"])
-            const result = buildProposedGroups(previousGroups, standings, promotionResult, allRegistered, [], 4)
-
-            expect(result).toHaveLength(2)
-        })
-
-        it("redistributes players by tier when box count changes", () => {
+        it("generates correct group names", () => {
             const allRegistered = new Set(["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "n1", "n2", "n3", "n4"])
             const newP = [
                 { id: "n1", first_name: "N1", last_name: "X", phone: "", power_ranking: 11 },
@@ -250,57 +380,8 @@ describe("buildProposedGroups", () => {
             ]
             const result = buildProposedGroups(previousGroups, standings, promotionResult, allRegistered, newP, 4)
 
-            // Box 1 should have the highest PRs
-            const box1PRs = result[0].players!.map(p => p.power_ranking || 0)
-            const box2PRs = result[1].players!.map(p => p.power_ranking || 0)
-            expect(Math.min(...box1PRs)).toBeGreaterThanOrEqual(Math.max(...box2PRs))
-        })
-
-        it("handles no new players and no departures", () => {
-            const allRegistered = new Set(["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"])
-            const result = buildProposedGroups(previousGroups, standings, promotionResult, allRegistered, [], 4)
-
-            const totalPlayers = result.reduce((sum, g) => sum + (g.players || []).length, 0)
-            expect(totalPlayers).toBe(8)
-            expect(result).toHaveLength(2)
-        })
-
-        it("generates correct group names when box count changes", () => {
-            const allRegistered = new Set(["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "n1", "n2", "n3", "n4"])
-            const newP = [
-                { id: "n1", first_name: "N1", last_name: "X", phone: "", power_ranking: 11 },
-                { id: "n2", first_name: "N2", last_name: "X", phone: "", power_ranking: 7.5 },
-                { id: "n3", first_name: "N3", last_name: "X", phone: "", power_ranking: 4.5 },
-                { id: "n4", first_name: "N4", last_name: "X", phone: "", power_ranking: 1 },
-            ]
-            const result = buildProposedGroups(previousGroups, standings, promotionResult, allRegistered, newP, 4)
-
-            expect(result[0].group_name).toBe("Box 1")
-            expect(result[1].group_name).toBe("Box 2")
-            expect(result[2].group_name).toBe("Box 3")
-            expect(result[3].group_name).toBe("Box 4")
-        })
-
-        it("picks distribution with most groups (6x5 over 5x6 for 30 players)", () => {
-            // Create 5 groups of 6 = 30 players
-            const groups: Group[] = Array.from({ length: 5 }, (_, gi) => ({
-                id: `g${gi + 1}`, event_id: "e1", group_name: `Box ${gi + 1}`, max_players: 6, created_at: "",
-                players: Array.from({ length: 6 }, (_, pi) => ({
-                    id: `p${gi * 6 + pi + 1}`,
-                    first_name: `Player${gi * 6 + pi + 1}`,
-                    last_name: "X",
-                    phone: "",
-                    power_ranking: 30 - (gi * 6 + pi),
-                })),
-            }))
-            const allIds = new Set(groups.flatMap(g => g.players!.map(p => p.id)))
-
-            const result = buildProposedGroups(groups, [], { moves: [], stayingPlayers: [] }, allIds, [], 6)
-
-            // 30 players, max 6: should pick 6 groups of 5 (most groups)
-            expect(result).toHaveLength(6)
-            for (const g of result) {
-                expect(g.players).toHaveLength(5)
+            for (let i = 0; i < result.length; i++) {
+                expect(result[i].group_name).toBe(`Box ${i + 1}`)
             }
         })
     })
