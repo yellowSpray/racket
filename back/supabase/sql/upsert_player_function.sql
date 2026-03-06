@@ -118,16 +118,18 @@ BEGIN
   DELETE FROM public.player_status
   WHERE profile_id = v_profile_id;
   
-  -- Inserer les nouveaux statuts
+  -- Inserer les nouveaux statuts (uniquement les statuts joueur, pas paid/unpaid)
   IF p_statuses IS NOT NULL AND array_length(p_statuses, 1) > 0 THEN
     FOREACH v_status IN ARRAY p_statuses LOOP
-      INSERT INTO public.player_status (profile_id, status)
-      VALUES (v_profile_id, v_status::player_status_enum)
-      ON CONFLICT (profile_id, status) DO NOTHING;
+      IF v_status IN ('active', 'inactive', 'member', 'visitor') THEN
+        INSERT INTO public.player_status (profile_id, status)
+        VALUES (v_profile_id, v_status::player_status_enum)
+        ON CONFLICT (profile_id, status) DO NOTHING;
+      END IF;
     END LOOP;
   END IF;
-  
-  -- Determiner si c'est un visitor et si c'est paye
+
+  -- Determiner si c'est un visitor et si c'est paye (paid/unpaid viennent du frontend mais ne sont pas des player_status)
   v_is_visitor := 'visitor' = ANY(p_statuses);
   v_is_paid := 'paid' = ANY(p_statuses);
 

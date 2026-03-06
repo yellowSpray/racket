@@ -220,6 +220,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS uniq_player_status_per_profile ON public.playe
 ALTER TABLE public.clubs
   ADD COLUMN IF NOT EXISTS default_max_players_per_group int not null default 5;
 
+-- Tarif visiteur par defaut du club
+ALTER TABLE public.clubs
+  ADD COLUMN IF NOT EXISTS visitor_fee numeric(10,2) not null default 0;
+
 -- TABLE SCORING_RULES : Regles de pointage par club (1 ligne par club)
 -- score_points est un tableau JSON d'entrées {score, winner_points, loser_points}
 CREATE TABLE IF NOT EXISTS public.scoring_rules (

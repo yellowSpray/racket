@@ -67,8 +67,9 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, open: controll
     // etat controlé du formulaire
     const [formData, setFormData] = useState<Partial<PlayerType>>(initialFormData)
 
-    // etat séparé pour les status
+    // etat séparé pour les status joueur et paiement
     const [selected, setSelected] = useState<string[]>([])
+    const [paymentStatus, setPaymentStatus] = useState<"paid" | "unpaid">("unpaid")
 
     // voir si le membre est actif dans l'event
     const isVisitor = selected.includes("visitor")
@@ -92,10 +93,12 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, open: controll
                     unavailable: playerData.unavailable || []
                 })
                 setSelected(playerData.status || [])
+                setPaymentStatus(playerData.payment_status || "unpaid")
                 setCurrentStep(1)
             } else {
                 setFormData(initialFormData)
-                setSelected(["inactive", "visitor", "unpaid"])
+                setSelected(["inactive", "visitor"])
+                setPaymentStatus("unpaid")
                 setCurrentStep(1)
             }
         }
@@ -109,7 +112,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, open: controll
         }))
     }
 
-    // handler pour les status 
+    // handler pour les status joueur
     const handleStatusChange = (values: string[]) => {
         let newSelected = [...selected]
 
@@ -132,8 +135,6 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, open: controll
             if (!newSelected.includes("member")) {
                 newSelected.push("member")
             }
-            // Si member est activé, on retire paid/unpaid
-            newSelected = newSelected.filter(v => v !== "paid" && v !== "unpaid")
         } else {
             newSelected = newSelected.filter(v => v !== "member")
             if (!newSelected.includes("visitor")) {
@@ -141,22 +142,12 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, open: controll
             }
         }
 
-        // gestion status paid/unpaid
-        if (newSelected.includes("visitor")) {
-            if (values.includes("paid")) {
-                newSelected = newSelected.filter(v => v !== "unpaid")
-                if (!newSelected.includes("paid")) {
-                    newSelected.push("paid")
-                }
-            } else {
-                newSelected = newSelected.filter(v => v !== "paid")
-                if (!newSelected.includes("unpaid")) {
-                    newSelected.push("unpaid")
-                }
-            }
-        }
-
         setSelected(newSelected)
+    }
+
+    // handler pour le toggle paid/unpaid
+    const handlePaymentToggle = (values: string[]) => {
+        setPaymentStatus(values.includes("paid") ? "paid" : "unpaid")
     }
 
     // handler pour le submit du formulaire
@@ -183,7 +174,8 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, open: controll
 
         const finalData: Partial<PlayerType> = {
             ...formData,
-            status: selected as ("active" | "inactive" | "member" | "visitor" | "paid" | "unpaid")[]
+            status: selected as PlayerType["status"],
+            payment_status: isVisitor ? paymentStatus : undefined,
         }
 
         try {
@@ -301,13 +293,13 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, open: controll
                 <div className="grid grid-cols-1 gap-4">
                     <Field>
                         <FieldLabel htmlFor="status">Status</FieldLabel>
-                        <ToggleGroup 
-                            type="multiple" 
-                            variant="outline" 
-                            size="sm" 
-                            className="grid grid-cols-3" 
+                        <ToggleGroup
+                            type="multiple"
+                            variant="outline"
+                            size="sm"
+                            className="grid grid-cols-2"
                             spacing={4}
-                            value={selected.filter(s => ["active", "member", "paid"].includes(s))}
+                            value={selected.filter(s => ["active", "member"].includes(s))}
                             onValueChange={handleStatusChange}
                         >
                             <ToggleGroupItem
@@ -317,23 +309,37 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, open: controll
                             >
                                 <Zap /> Actif
                             </ToggleGroupItem>
-                            <ToggleGroupItem 
+                            <ToggleGroupItem
                                 value="member"
                                 aria-label="Toggle member"
                                 className="data-[state=off]:bg-gray-100 data-[state=on]:bg-transparent data-[state=on]:*:[svg]:stroke-green-500 col-span-1"
                             >
                                 <UsersRound /> Membre
                             </ToggleGroupItem>
-                            <ToggleGroupItem 
-                                value="paid"
-                                aria-label="Toggle paid"
-                                className="data-[state=off]:bg-gray-100 data-[state=on]:bg-transparent data-[state=on]:*:[svg]:stroke-green-500 col-span-1"
-                                disabled={!isVisitor}
-                            >
-                                <Euro /> Payé
-                            </ToggleGroupItem>
                         </ToggleGroup>
                     </Field>
+                    {isVisitor && (
+                        <Field>
+                            <FieldLabel htmlFor="payment">Paiement</FieldLabel>
+                            <ToggleGroup
+                                type="multiple"
+                                variant="outline"
+                                size="sm"
+                                className="grid grid-cols-2"
+                                spacing={4}
+                                value={paymentStatus === "paid" ? ["paid"] : []}
+                                onValueChange={handlePaymentToggle}
+                            >
+                                <ToggleGroupItem
+                                    value="paid"
+                                    aria-label="Toggle paid"
+                                    className="data-[state=off]:bg-gray-100 data-[state=on]:bg-transparent data-[state=on]:*:[svg]:stroke-green-500 col-span-1"
+                                >
+                                    <Euro /> Payé
+                                </ToggleGroupItem>
+                            </ToggleGroup>
+                        </Field>
+                    )}
                     <Field>
                         <FieldLabel htmlFor="power_ranking">Power ranking</FieldLabel>
                         <Input 

@@ -37,4 +37,5 @@ export interface ClubConfig {
   club_address?: string
   club_email?: string
   default_max_players_per_group: number
+  visitor_fee: number
 }

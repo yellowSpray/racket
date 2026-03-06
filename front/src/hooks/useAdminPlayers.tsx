@@ -1,11 +1,12 @@
 import { supabase } from "@/lib/supabaseClient"
 import { useCallback, useEffect, useState } from "react"
-import type { PlayerType } from "@/types/player"
+import type { PlayerType, PlayerStatus, PaymentStatus } from "@/types/player"
 import { useAuth } from "@/contexts/AuthContext"
+import { handleHookError } from "@/lib/handleHookError"
 
 // Types pour les données Supabase
 type SupabasePlayerStatus = {
-    status: "active" | "inactive" | "member" | "visitor" | "paid" | "unpaid"
+    status: PlayerStatus
 }
 
 type SupabaseSchedule = {
@@ -22,6 +23,10 @@ type SupabaseGroupPlayer = {
     groups: { group_name: string }
 }
 
+type SupabasePayment = {
+    status: PaymentStatus
+}
+
 type SupabasePlayer = {
     id: string
     first_name: string
@@ -33,6 +38,7 @@ type SupabasePlayer = {
     schedule?: SupabaseSchedule[]
     absences?: SupabaseAbsence[]
     group_players?: SupabaseGroupPlayer[]
+    payments?: SupabasePayment[]
 }
 
 export function useAdminPlayers() {
@@ -69,14 +75,17 @@ export function useAdminPlayers() {
                 })
             }
 
-            // trier les status 
-            const statusOrder = ['member', 'visitor', 'active', 'inactive', 'paid', 'unpaid']
+            // trier les status joueur (sans paid/unpaid)
+            const statusOrder = ['member', 'visitor', 'active', 'inactive']
             const sortedStatus = (player.player_status?.map((s: SupabasePlayerStatus) => s.status) || [])
                 .sort((a, b) => {
                     const indexA = statusOrder.indexOf(a)
                     const indexB = statusOrder.indexOf(b)
                     return indexA - indexB
                 })
+
+            // Récupérer le statut de paiement depuis la table payments (contexte événement)
+            const paymentStatus = player.payments?.[0]?.status as PaymentStatus | undefined
 
             // Récupérer le nom du groupe (box) si disponible
             const groupName = player.group_players?.[0]?.groups?.group_name || ""
@@ -92,6 +101,7 @@ export function useAdminPlayers() {
                 departure: departureTime,
                 unavailable: player.absences?.map((d: SupabaseAbsence) => d.absent_date) || [],
                 status: sortedStatus,
+                payment_status: paymentStatus,
                 power_ranking: player.power_ranking || "",
                 box: groupName,
             }
@@ -113,8 +123,7 @@ export function useAdminPlayers() {
                 .order("created_at", { ascending: false })
 
             if(fetchError) {
-                console.error("Erreur Supabase:", fetchError.message)
-                setError(fetchError.message)
+                handleHookError(fetchError, setError, "useAdminPlayers.fetch")
                 return
             }
 
@@ -122,12 +131,11 @@ export function useAdminPlayers() {
             setPlayer(transformedData)
 
         } catch (err) {
-            console.error("Erreur inattendue:", err)
-            setError(err instanceof Error ? err.message : "Erreur inconnue")
+            handleHookError(err, setError, "useAdminPlayers.fetch")
         } finally {
             setLoading(false)
         }
-        
+
     }, [transformPlayerData])
 
     // filtre par event
@@ -152,15 +160,16 @@ export function useAdminPlayers() {
                     schedule(arrival, departure),
                     absences(absent_date),
                     event_players!inner(event_id),
-                    group_players(group_id, groups(group_name))
+                    group_players!left(group_id, groups!inner(group_name, event_id)),
+                    payments(status)
                 `)
                 .eq("event_players.event_id", eventId)
                 .eq("group_players.groups.event_id", eventId)
+                .eq("payments.event_id", eventId)
                 .order("created_at", { ascending: false })
             
             if(fetchError) {
-                console.error("Erreur supabase", fetchError.message)
-                setError(fetchError.message)
+                handleHookError(fetchError, setError, "useAdminPlayers.fetchByEvent")
                 return
             }
 
@@ -168,8 +177,7 @@ export function useAdminPlayers() {
             setPlayer(transformedData)
 
         } catch (err) {
-            console.error("Erreur inattendue", err)
-            setError(err instanceof Error ? err.message : "Erreur inconnue")
+            handleHookError(err, setError, "useAdminPlayers.fetchByEvent")
         } finally {
             setLoading(false)
         }
@@ -188,6 +196,16 @@ export function useAdminPlayers() {
     // creation d'un joueur
     const addPlayer = async (player: Partial<PlayerType>) => {
 
+        // Séparer les statuts joueur du statut de paiement
+        const playerStatuses = (player.status || []) as string[]
+        const isPaid = player.payment_status === "paid"
+
+        // Construire le tableau p_statuses avec paid/unpaid pour la logique paiement côté SQL
+        const rpcStatuses = [...playerStatuses]
+        if (playerStatuses.includes("visitor")) {
+            rpcStatuses.push(isPaid ? "paid" : "unpaid")
+        }
+
         const rpcParams = {
             p_profile_id: null,
             p_first_name: player.first_name || '',
@@ -197,10 +215,10 @@ export function useAdminPlayers() {
             p_power_ranking: player.power_ranking ? parseInt(player.power_ranking) : 0,
             p_avatar_url: null,
             p_club_id: profile?.club_id ?? null,
-            p_statuses: player.status || [],
+            p_statuses: rpcStatuses,
             p_arrival_time: player.arrival || null,
             p_departure_time: player.departure || null,
-            p_event_id: null,
+            p_event_id: currentEventId,
             p_event_date: null,
             p_payment_amount: 0
         }
@@ -209,13 +227,13 @@ export function useAdminPlayers() {
         const { data, error: rpcError } = await supabase.rpc('upsert_player', rpcParams)
 
         if (rpcError) {
-            setError(rpcError.message)
+            handleHookError(rpcError, setError, "useAdminPlayers.add")
             return
         }
 
         if (data && typeof data === 'object' && 'success' in data) {
             if (!data.success) {
-                setError(data.error as string)
+                handleHookError(data.error as string, setError, "useAdminPlayers.add")
                 return
             }
         }
@@ -223,7 +241,7 @@ export function useAdminPlayers() {
         await refreshCurrentView()
 
     }
-    
+
     // mise à jour joueur
     const updatePlayer = async (id: string, updates: Partial<PlayerType>) => {
 
@@ -238,6 +256,16 @@ export function useAdminPlayers() {
                 return
             }
 
+            // Séparer les statuts joueur du statut de paiement
+            const playerStatuses = (updates.status || currentPlayer.status) as string[]
+            const isPaid = (updates.payment_status ?? currentPlayer.payment_status) === "paid"
+
+            // Construire le tableau p_statuses avec paid/unpaid pour la logique paiement côté SQL
+            const rpcStatuses = [...playerStatuses]
+            if (playerStatuses.includes("visitor")) {
+                rpcStatuses.push(isPaid ? "paid" : "unpaid")
+            }
+
             // Appel de la fonction PostgreSQL upsert_player
             const { data, error: rpcError } = await supabase.rpc('upsert_player', {
                 p_profile_id: id,
@@ -250,22 +278,22 @@ export function useAdminPlayers() {
                     : parseInt(currentPlayer.power_ranking || '0'),
                 p_avatar_url: null,
                 p_club_id: profile?.club_id ?? null,
-                p_statuses: updates.status || currentPlayer.status,
+                p_statuses: rpcStatuses,
                 p_arrival_time: updates.arrival || currentPlayer.arrival || null,
                 p_departure_time: updates.departure || currentPlayer.departure || null,
-                p_event_id: null,
+                p_event_id: currentEventId,
                 p_event_date: null,
                 p_payment_amount: 0
             })
 
             if (rpcError) {
-                setError(rpcError.message)
+                handleHookError(rpcError, setError, "useAdminPlayers.update")
                 return
             }
 
             if (data && typeof data === 'object' && 'success' in data) {
                 if (!data.success) {
-                    setError(data.error as string)
+                    handleHookError(data.error as string, setError, "useAdminPlayers.update")
                     return
                 }
             }
@@ -274,9 +302,8 @@ export function useAdminPlayers() {
             await refreshCurrentView()
 
         } catch (err) {
-            console.error("Erreur inattendue:", err)
-            setError(err instanceof Error ? err.message : "Erreur inconnue")
-        }        
+            handleHookError(err, setError, "useAdminPlayers.update")
+        }
     }
 
     // retirer un joueur de l'événement courant
@@ -297,15 +324,14 @@ export function useAdminPlayers() {
                 .eq("event_id", currentEventId)
 
             if (deleteError) {
-                setError(deleteError.message)
+                handleHookError(deleteError, setError, "useAdminPlayers.remove")
                 setLoading(false)
                 return
             }
 
             await refreshCurrentView()
         } catch (err) {
-            console.error("Erreur retrait joueur:", err)
-            setError(err instanceof Error ? err.message : "Erreur inconnue")
+            handleHookError(err, setError, "useAdminPlayers.remove")
             setLoading(false)
         }
     }
@@ -313,7 +339,7 @@ export function useAdminPlayers() {
     // charger les joueurs au montage seulement
     useEffect(() => {
         fetchPlayer()
-    }, []) // pas de dépendance fetchPlayer pour éviter les boucles
+    }, [fetchPlayer])
 
     return {
         players,

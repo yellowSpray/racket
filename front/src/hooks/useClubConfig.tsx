@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabaseClient"
 import type { ClubConfig, ScoringRules, PromotionRules } from "@/types/settings"
 import { useCallback, useState } from "react"
+import { handleHookError } from "@/lib/handleHookError"
 
 const DEFAULT_SCORING: Omit<ScoringRules, 'id' | 'club_id' | 'created_at' | 'updated_at'> = {
     score_points: [
@@ -39,7 +40,7 @@ export function useClubConfig() {
             const [clubRes, scoringRes, promotionRes] = await Promise.all([
                 supabase
                     .from("clubs")
-                    .select("id, club_name, club_address, club_email, default_max_players_per_group")
+                    .select("id, club_name, club_address, club_email, default_max_players_per_group, visitor_fee")
                     .eq("id", clubId)
                     .single(),
                 supabase
@@ -55,7 +56,7 @@ export function useClubConfig() {
             ])
 
             if (clubRes.error) {
-                setError(clubRes.error.message)
+                handleHookError(clubRes.error, setError, "useClubConfig.fetch")
                 return
             }
 
@@ -64,7 +65,7 @@ export function useClubConfig() {
             setPromotionRules(promotionRes.data)
 
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Erreur inconnue")
+            handleHookError(err, setError, "useClubConfig.fetch")
         } finally {
             setLoading(false)
         }
@@ -79,7 +80,7 @@ export function useClubConfig() {
             .eq("id", clubId)
 
         if (updateError) {
-            setError(updateError.message)
+            handleHookError(updateError, setError, "useClubConfig.updateDefaults")
             return false
         }
 
@@ -100,7 +101,7 @@ export function useClubConfig() {
             .single()
 
         if (upsertError) {
-            setError(upsertError.message)
+            handleHookError(upsertError, setError, "useClubConfig.upsertScoring")
             return false
         }
 
@@ -121,7 +122,7 @@ export function useClubConfig() {
             .single()
 
         if (upsertError) {
-            setError(upsertError.message)
+            handleHookError(upsertError, setError, "useClubConfig.upsertPromotion")
             return false
         }
 

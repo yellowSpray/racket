@@ -1,3 +1,6 @@
+export type PlayerStatus = "active" | "inactive" | "member" | "visitor"
+export type PaymentStatus = "paid" | "unpaid"
+
 export type PlayerType = {
     id: string
     first_name: string
@@ -7,7 +10,8 @@ export type PlayerType = {
     arrival: string
     departure: string
     unavailable: string[]
-    status: ("active" | "inactive" | "member" | "visitor" | "paid" | "unpaid" )[]
+    status: PlayerStatus[]
+    payment_status?: PaymentStatus
     power_ranking: string
     box: string
 }
