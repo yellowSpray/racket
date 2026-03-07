@@ -9,7 +9,7 @@ export default function Auth() {
     const switchOn = () => setSignIn(!signIn)
 
     return (
-        <section className="w-full flex-1 flex flex-col items-center justify-center p-4 md:p-6">
+        <section className="w-full flex-1 flex flex-col items-center justify-center">
             <AnimatePresence mode="wait">
                 <div className="w-full flex-1 flex flex-row justify-between items-center relative rounded-3xl overflow-hidden">
                     <Login
