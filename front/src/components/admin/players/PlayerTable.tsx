@@ -2,7 +2,7 @@ import { flexRender, getCoreRowModel, getSortedRowModel, useReactTable, type Sor
 import type { ColumnDef, RowData } from "@tanstack/react-table";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUpDownIcon, ArrowUp01Icon, ArrowDown01Icon } from "hugeicons-react";
 import { useState } from "react";
 
 declare module '@tanstack/react-table' {
@@ -46,7 +46,7 @@ export function DataTable<TData, TValue>({
                                         className={`${header.column.columnDef.meta?.className || ''} ${header.column.getCanSort() ? 'cursor-pointer select-none hover:bg-muted/50' : ''}`}
                                         onClick={header.column.getToggleSortingHandler()}
                                     >
-                                        <div className="flex items-center gap-1">
+                                        <div className={`flex items-center gap-1 ${header.column.columnDef.meta?.className?.includes('text-center') ? 'justify-center' : ''}`}>
                                             {header.isPlaceholder
                                                 ? null
                                                 : flexRender(
@@ -55,10 +55,10 @@ export function DataTable<TData, TValue>({
                                             )}
                                             {header.column.getCanSort() && (
                                                 header.column.getIsSorted() === 'asc'
-                                                    ? <ArrowUp className="h-3 w-3" />
+                                                    ? <ArrowUp01Icon className="h-3 w-3" />
                                                     : header.column.getIsSorted() === 'desc'
-                                                        ? <ArrowDown className="h-3 w-3" />
-                                                        : <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+                                                        ? <ArrowDown01Icon className="h-3 w-3" />
+                                                        : <ArrowUpDownIcon className="h-3 w-3 text-muted-foreground" />
                                             )}
                                         </div>
                                     </TableHead>

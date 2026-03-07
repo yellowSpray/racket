@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/toggle-group"
 import { Field, FieldLabel, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input"
-import { Zap, UsersRound, Euro } from 'lucide-react';
+import { ZapIcon, UserGroupIcon, EuroIcon } from 'hugeicons-react';
 import type { PlayerType } from "@/types/player";
 
 interface EditPlayersProps {
@@ -307,14 +307,14 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, open: controll
                                 aria-label="Toggle active"
                                 className="data-[state=off]:bg-gray-100 data-[state=on]:bg-transparent data-[state=on]:*:[svg]:stroke-green-500 col-span-1"
                             >
-                                <Zap /> Actif
+                                <ZapIcon /> Actif
                             </ToggleGroupItem>
                             <ToggleGroupItem
                                 value="member"
                                 aria-label="Toggle member"
                                 className="data-[state=off]:bg-gray-100 data-[state=on]:bg-transparent data-[state=on]:*:[svg]:stroke-green-500 col-span-1"
                             >
-                                <UsersRound /> Membre
+                                <UserGroupIcon /> Membre
                             </ToggleGroupItem>
                         </ToggleGroup>
                     </Field>
@@ -335,7 +335,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, open: controll
                                     aria-label="Toggle paid"
                                     className="data-[state=off]:bg-gray-100 data-[state=on]:bg-transparent data-[state=on]:*:[svg]:stroke-green-500 col-span-1"
                                 >
-                                    <Euro /> Payé
+                                    <EuroIcon /> Payé
                                 </ToggleGroupItem>
                             </ToggleGroup>
                         </Field>

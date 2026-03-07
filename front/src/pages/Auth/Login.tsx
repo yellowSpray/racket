@@ -62,7 +62,7 @@ export default function Login({className, toggle, ...props}: RegisterProps) {
         <div className={cn("flex flex-col items-center h-full", className)} {...props}>
             <Card className="w-1/2 h-full shadow-none gap-6 justify-center border-none">
                 <CardHeader>
-                    <CardTitle>Connectez-vous</CardTitle>
+                    <h3 className="leading-none font-semibold text-lg">Connectez-vous</h3>
                     <CardDescription>
                         Entrez vos identifiants pour accéder à votre compte
                     </CardDescription>

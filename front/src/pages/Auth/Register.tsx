@@ -131,7 +131,7 @@ export default function Register({
         <div className={cn("flex flex-col items-center h-full", className)} {...props}>
             <Card className="w-1/2 h-full shadow-none gap-6 justify-center border-none">
                 <CardHeader>
-                    <CardTitle>Créer un compte</CardTitle>
+                    <h3 className="leading-none font-semibold text-lg">Créer un compte</h3>
                     <CardDescription>
                         Remplissez les informations ci-dessous pour créer votre compte
                     </CardDescription>
