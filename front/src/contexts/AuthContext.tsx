@@ -102,8 +102,8 @@ export function AuthProvider({ children }: { children: ReactNode}) {
 
     },[])
 
-    // Fonction pour récupérer le profil
-    const fetchProfile = async (userId: string) => {
+    // Fonction pour récupérer le profil avec retry sur timeout/erreur réseau
+    const fetchProfile = async (userId: string, retries = 2) => {
 
         if(isFetchingProfile.current) return
 
@@ -134,7 +134,13 @@ export function AuthProvider({ children }: { children: ReactNode}) {
 
         } catch (err) {
             endLog({ error: err instanceof Error ? err.message : "Erreur inconnue" })
-            // Timeout ou erreur réseau : garder le profil existant s'il y en a un
+            // Timeout ou erreur réseau : retry avant d'abandonner
+            if (retries > 0) {
+                logger.info("AuthContext", `Retry fetchProfile (${retries} restant(s))...`)
+                isFetchingProfile.current = false
+                return fetchProfile(userId, retries - 1)
+            }
+            // Plus de retries : garder le profil existant s'il y en a un
             if (!profile) setProfile(null);
         } finally {
             isFetchingProfile.current = false
