@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Plus, Pencil, Trash2, Calendar } from "lucide-react"
+import { PlusSignIcon, PencilEdit01Icon, Delete02Icon, Calendar03Icon } from "hugeicons-react"
 import { EventWizardDialog } from "./EventWizardDialog"
 import { DeleteEventDialog } from "./DeleteEventDialog"
 
@@ -91,13 +91,13 @@ export function EventsManager() {
             {events.length === 0 ? (
                 <div className="flex-1 flex items-center justify-center border-2 border-dashed rounded-lg">
                     <div className="text-center">
-                        <Calendar className="mx-auto h-12 w-12 text-gray-300" />
+                        <Calendar03Icon className="mx-auto h-12 w-12 text-gray-300" />
                         <h3 className="mt-4 text-lg font-semibold">Aucun événement</h3>
                         <p className="text-muted-foreground mt-2">
                             Commencez par créer votre premier événement
                         </p>
                         <Button onClick={handleCreate} className="mt-4">
-                            <Plus className="mr-2 h-4 w-4" />
+                            <PlusSignIcon className="mr-2 h-4 w-4" />
                             Créer un événement
                         </Button>
                     </div>
@@ -144,14 +144,14 @@ export function EventsManager() {
                                                     size="sm"
                                                     onClick={() => handleEdit(event)}
                                                 >
-                                                    <Pencil className="h-4 w-4" />
+                                                    <PencilEdit01Icon className="h-4 w-4" />
                                                 </Button>
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => handleDelete(event)}
                                                 >
-                                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                                    <Delete02Icon className="h-4 w-4 text-red-500" />
                                                 </Button>
                                             </div>
                                         </TableCell>
@@ -163,7 +163,7 @@ export function EventsManager() {
                 </div>
 
                 <Button onClick={handleCreate} className="mt-8 self-center">
-                    <Plus className="mr-2 h-4 w-4" />
+                    <PlusSignIcon className="mr-2 h-4 w-4" />
                     Ajouter un événement
                 </Button>
                 </>

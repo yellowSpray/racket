@@ -1,5 +1,5 @@
 import type { GroupStandings, PromotionResult } from "@/types/ranking"
-import { TrendingUp, TrendingDown, UserMinus } from "lucide-react"
+import { ChartIncreaseIcon, ChartDecreaseIcon, UserRemove01Icon } from "hugeicons-react"
 
 interface PreviousBoxPreviewProps {
     standings: GroupStandings[]
@@ -56,17 +56,17 @@ export function PreviousBoxPreview({ standings, promotionResult, previousEventNa
                                         </span>
                                         {isUnregistered && (
                                             <span data-move="unregistered" className="text-muted-foreground">
-                                                <UserMinus className="h-3.5 w-3.5" />
+                                                <UserRemove01Icon className="h-3.5 w-3.5" />
                                             </span>
                                         )}
                                         {!isUnregistered && moveType === "promotion" && (
                                             <span data-move="promotion" className="text-emerald-600">
-                                                <TrendingUp className="h-3.5 w-3.5" />
+                                                <ChartIncreaseIcon className="h-3.5 w-3.5" />
                                             </span>
                                         )}
                                         {!isUnregistered && moveType === "relegation" && (
                                             <span data-move="relegation" className="text-red-500">
-                                                <TrendingDown className="h-3.5 w-3.5" />
+                                                <ChartDecreaseIcon className="h-3.5 w-3.5" />
                                             </span>
                                         )}
                                     </span>

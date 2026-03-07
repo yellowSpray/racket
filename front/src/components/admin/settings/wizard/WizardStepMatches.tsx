@@ -20,7 +20,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Sparkles, Trash2, CalendarDays } from "lucide-react"
+import { SparklesIcon, Delete02Icon, Calendar03Icon } from "hugeicons-react"
 
 interface WizardStepMatchesProps {
     event: Event
@@ -175,7 +175,7 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
 
             {!canGenerate ? (
                 <div className="text-center py-12 border-2 border-dashed rounded-lg">
-                    <CalendarDays className="mx-auto h-12 w-12 text-gray-400" />
+                    <Calendar03Icon className="mx-auto h-12 w-12 text-gray-400" />
                     <h3 className="mt-4 text-lg font-semibold">Génération impossible</h3>
                     <p className="text-gray-500 mt-2 mb-4">
                         Les conditions suivantes ne sont pas remplies :
@@ -190,14 +190,14 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
                 </div>
             ) : !hasMatches ? (
                 <div className="text-center py-12 border-2 border-dashed rounded-lg">
-                    <CalendarDays className="mx-auto h-12 w-12 text-gray-400" />
+                    <Calendar03Icon className="mx-auto h-12 w-12 text-gray-400" />
                     <h3 className="mt-4 text-lg font-semibold">Aucun match généré</h3>
                     <p className="text-gray-500 mt-2">
                         {matchCount} matchs à programmer sur {slotTotal} créneaux disponibles
                         ({dates.length} jour{dates.length > 1 ? "s" : ""} × {timeSlots.length} créneaux × {event.number_of_courts} terrain{event.number_of_courts > 1 ? "s" : ""})
                     </p>
                     <Button className="mt-4" onClick={handleGenerate} disabled={generating}>
-                        <Sparkles className="mr-2 h-4 w-4" />
+                        <SparklesIcon className="mr-2 h-4 w-4" />
                         {generating ? "Génération..." : "Générer les matchs"}
                     </Button>
                 </div>
@@ -209,11 +209,11 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
                         </p>
                         <div className="flex gap-2">
                             <Button variant="outline" size="sm" onClick={handleDelete} disabled={generating}>
-                                <Trash2 className="mr-2 h-4 w-4" />
+                                <Delete02Icon className="mr-2 h-4 w-4" />
                                 Supprimer
                             </Button>
                             <Button size="sm" onClick={handleGenerate} disabled={generating}>
-                                <Sparkles className="mr-2 h-4 w-4" />
+                                <SparklesIcon className="mr-2 h-4 w-4" />
                                 {generating ? "Génération..." : "Régénérer"}
                             </Button>
                         </div>

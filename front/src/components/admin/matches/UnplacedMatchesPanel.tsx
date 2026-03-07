@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { AlertTriangle, ChevronDown, ChevronUp, Plus, Calendar, User } from "lucide-react"
+import { Alert02Icon, ArrowDown01Icon, ArrowUp01Icon, PlusSignIcon, Calendar03Icon, UserIcon } from "hugeicons-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import type { SchedulerDiagnostic, SuggestionType } from "@/lib/schedulerSuggestions"
@@ -8,10 +8,10 @@ interface UnplacedMatchesPanelProps {
     diagnostic: SchedulerDiagnostic
 }
 
-const SUGGESTION_ICONS: Record<SuggestionType, typeof Plus> = {
-    add_courts: Plus,
-    add_dates: Calendar,
-    check_player: User,
+const SUGGESTION_ICONS: Record<SuggestionType, typeof PlusSignIcon> = {
+    add_courts: PlusSignIcon,
+    add_dates: Calendar03Icon,
+    check_player: UserIcon,
 }
 
 function formatDate(dateStr: string): string {
@@ -32,7 +32,7 @@ export function UnplacedMatchesPanel({ diagnostic }: UnplacedMatchesPanelProps) 
         <div className="bg-amber-50 border border-amber-200 rounded-lg mb-4">
             {/* Summary */}
             <div className="px-4 py-3 flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                <Alert02Icon className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-amber-800">
                         {diagnostic.placedCount}/{diagnostic.totalCount} matchs planifies
@@ -63,9 +63,9 @@ export function UnplacedMatchesPanel({ diagnostic }: UnplacedMatchesPanelProps) 
                     aria-label={expanded ? "Masquer les details" : "Voir les details"}
                 >
                     {expanded ? (
-                        <><ChevronUp className="h-4 w-4 mr-1" />Masquer</>
+                        <><ArrowUp01Icon className="h-4 w-4 mr-1" />Masquer</>
                     ) : (
-                        <><ChevronDown className="h-4 w-4 mr-1" />Details</>
+                        <><ArrowDown01Icon className="h-4 w-4 mr-1" />Details</>
                     )}
                 </Button>
             </div>

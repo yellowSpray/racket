@@ -7,7 +7,7 @@ import { useMatches } from "@/hooks/useMatches"
 import { useClubConfig } from "@/hooks/useClubConfig"
 import { useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router"
-import { Settings, SquarePen, Hash, Star, Download, Lock } from "lucide-react"
+import { Settings01Icon, PencilEdit02Icon, HashtagIcon, StarIcon, Download04Icon, SquareLock01Icon } from "hugeicons-react"
 import { Button } from "@/components/ui/button"
 import { DrawTable } from "@/components/admin/draws/DrawTable"
 // import { CreateGroupsDialog } from "@/components/admin/draws/CreateGroupsDialog"
@@ -98,13 +98,13 @@ export function AdminDraws () {
                     </div>
                 </div>
                 <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-lg">
-                    <SquarePen className="h-12 w-12 text-gray-300" />
+                    <PencilEdit02Icon className="h-12 w-12 text-gray-300" />
                     <h3 className="mt-4 text-lg font-semibold">Aucun tableau créé</h3>
                     <p className="text-gray-500 mt-3">
                         Créez un événement depuis les paramètres pour commencer
                     </p>
                     <Button className="mt-6" size="sm" variant="outline" onClick={() => navigate("/admin/settings")}>
-                        <Settings className="mr-2 h-4 w-4" />
+                        <Settings01Icon className="mr-2 h-4 w-4" />
                         Aller aux paramètres
                     </Button>
                 </div>
@@ -128,22 +128,22 @@ export function AdminDraws () {
                         onClick={() => setDisplayMode(prev => prev === "score" ? "points" : "score")}
                     >
                         {displayMode === "score" ? (
-                            <Star className="h-4 w-4" />
+                            <StarIcon className="h-4 w-4" />
                         ) : (
-                            <Hash className="h-4 w-4" />
+                            <HashtagIcon className="h-4 w-4" />
                         )}
                     </Button>
                     {groups.length > 0 && (
                         <>
                             <Button size="sm" variant="outline" onClick={handleExportPdf}>
-                                <Download className="mr-1 h-4 w-4" />
+                                <Download04Icon className="mr-1 h-4 w-4" />
                                 Export pdf
                             </Button>
                             {!isCompleted && (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                         <Button size="sm" disabled={closing}>
-                                            <Lock className="mr-1 h-4 w-4" />
+                                            <SquareLock01Icon className="mr-1 h-4 w-4" />
                                             {closing ? "Clôture..." : "Clôturer"}
                                         </Button>
                                     </AlertDialogTrigger>
@@ -165,7 +165,7 @@ export function AdminDraws () {
                             )}
                             {isCompleted && (
                                 <span className="text-sm text-green-600 font-medium flex items-center gap-1">
-                                    <Lock className="h-3.5 w-3.5" />
+                                    <SquareLock01Icon className="h-3.5 w-3.5" />
                                     Clôturé
                                 </span>
                             )}
@@ -184,13 +184,13 @@ export function AdminDraws () {
             {/* Tableaux */}
             {groups.length === 0 ? (
                 <div className="text-center py-12 border-2 border-dashed rounded-lg">
-                    <SquarePen className="mx-auto h-12 w-12 text-gray-300" />
+                    <PencilEdit02Icon className="mx-auto h-12 w-12 text-gray-300" />
                     <h3 className="mt-4 text-lg font-semibold">Aucun tableau créé</h3>
                     <p className="text-gray-500 mt-2">
                         Créez des tableaux depuis les paramètres de l'événement
                     </p>
                     <Button className="mt-4" variant="outline" onClick={() => navigate("/admin/settings")}>
-                        <Settings className="mr-2 h-4 w-4" />
+                        <Settings01Icon className="mr-2 h-4 w-4" />
                         Aller aux paramètres
                     </Button>
                 </div>

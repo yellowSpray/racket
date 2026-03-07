@@ -23,7 +23,7 @@ import {
 import { WizardStepConfig } from "./wizard/WizardStepConfig"
 import { WizardStepGroups } from "./wizard/WizardStepGroups"
 import { WizardStepMatches } from "./wizard/WizardStepMatches"
-import { Check } from "lucide-react"
+import { Tick02Icon } from "hugeicons-react"
 
 interface EventWizardDialogProps {
     open: boolean
@@ -154,7 +154,7 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess }: Even
                 <Stepper
                     value={activeStep}
                     onValueChange={handleStepChange}
-                    indicators={{ completed: <Check className="h-4 w-4" /> }}
+                    indicators={{ completed: <Tick02Icon className="h-4 w-4" /> }}
                 >
                     <StepperNav className="mb-6">
                         <StepperItem step={1} completed={step1Completed}>

@@ -1,7 +1,7 @@
 import { useDroppable } from "@dnd-kit/core"
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { Badge } from "@/components/ui/badge"
-import { Users } from "lucide-react"
+import { UserGroupIcon } from "hugeicons-react"
 import { DraggablePlayerItem } from "./DraggablePlayerItem"
 import type { Group } from "@/types/draw"
 
@@ -34,7 +34,7 @@ export function DroppableGroupColumn({ group, isOver, previousPlayerIds }: Dropp
             <div className="flex items-center justify-between mb-3">
                 <h4 className="font-semibold text-sm">{group.group_name}</h4>
                 <Badge variant={isOverMax ? "inactive" : "default"}>
-                    <Users className="h-3 w-3 mr-1" />
+                    <UserGroupIcon className="h-3 w-3 mr-1" />
                     {count}/{group.max_players}
                 </Badge>
             </div>

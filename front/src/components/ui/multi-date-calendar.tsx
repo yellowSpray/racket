@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ArrowLeft01Icon, ArrowRight01Icon } from "hugeicons-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -94,13 +94,13 @@ export function MultiDateCalendar({ selectedDates, onChange }: MultiDateCalendar
             {/* Header */}
             <div className="flex items-center justify-between mb-2">
                 <Button type="button" variant="ghost" size="sm" onClick={prevMonth} className="h-7 w-7 p-0">
-                    <ChevronLeft className="h-4 w-4" />
+                    <ArrowLeft01Icon className="h-4 w-4" />
                 </Button>
                 <span className="text-sm font-medium">
                     {MONTH_LABELS[viewMonth]} {viewYear}
                 </span>
                 <Button type="button" variant="ghost" size="sm" onClick={nextMonth} className="h-7 w-7 p-0">
-                    <ChevronRight className="h-4 w-4" />
+                    <ArrowRight01Icon className="h-4 w-4" />
                 </Button>
             </div>
 

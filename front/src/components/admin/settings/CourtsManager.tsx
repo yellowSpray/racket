@@ -15,7 +15,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { Plus, Trash2, Clock } from "lucide-react"
+import { PlusSignIcon, Delete02Icon, Clock01Icon } from "hugeicons-react"
 import { CourtsSkeleton } from "@/components/shared/skeletons/SettingsSkeleton"
 
 export function CourtsManager() {
@@ -108,14 +108,14 @@ export function CourtsManager() {
 
                 {courts.length === 0 ? (
                     <div className="text-center py-8 border-2 border-dashed rounded-lg">
-                        <Clock className="mx-auto h-10 w-10 text-gray-400" />
+                        <Clock01Icon className="mx-auto h-10 w-10 text-gray-400" />
                         <p className="mt-3 text-gray-500">Aucun terrain configuré</p>
                         <div className="flex gap-2 justify-center mt-4">
                             <Button onClick={handleInitCourts} variant="outline">
                                 Initialiser {currentEvent.number_of_courts} terrain{currentEvent.number_of_courts > 1 ? 's' : ''}
                             </Button>
                             <Button onClick={() => setShowAddForm(true)}>
-                                <Plus className="mr-2 h-4 w-4" /> Ajouter manuellement
+                                <PlusSignIcon className="mr-2 h-4 w-4" /> Ajouter manuellement
                             </Button>
                         </div>
                     </div>
@@ -167,7 +167,7 @@ export function CourtsManager() {
                                                     size="sm"
                                                     onClick={() => removeCourt(court.id)}
                                                 >
-                                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                                    <Delete02Icon className="h-4 w-4 text-red-500" />
                                                 </Button>
                                             </TableCell>
                                         </TableRow>
@@ -180,7 +180,7 @@ export function CourtsManager() {
                             variant="outline"
                             onClick={() => setShowAddForm(true)}
                         >
-                            <Plus className="mr-2 h-4 w-4" /> Ajouter un terrain
+                            <PlusSignIcon className="mr-2 h-4 w-4" /> Ajouter un terrain
                         </Button>
                     </>
                 )}

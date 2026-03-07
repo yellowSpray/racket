@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useEvent } from "@/contexts/EventContext";
 import { useEffect, useMemo, useState } from "react";
-import { Users } from "lucide-react"
+import { UserGroupIcon } from "hugeicons-react"
 
 export function AdminPlayers() {
 
@@ -87,7 +87,7 @@ export function AdminPlayers() {
                         variant={showAllPlayers ? "default" : "outline"}
                         onClick={() => setShowAllPlayers(!showAllPlayers)}
                     >
-                        <Users size={20} />
+                        <UserGroupIcon size={20} />
                         {showAllPlayers ? "Retour à l'événement" : "Tous les joueurs"}
                     </Button>
 

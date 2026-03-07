@@ -7,7 +7,7 @@ import { validateFormData } from "@/lib/validation"
 import { promotionRulesSchema } from "@/lib/schemas/promotion.schema"
 import { Badge } from "@/components/ui/badge"
 import type { PromotionRules } from "@/types/settings"
-import { Pencil, Check, Loader2, ArrowUpDown, TrendingUp, TrendingDown } from "lucide-react"
+import { PencilEdit01Icon, Tick02Icon, Loading03Icon, ArrowUpDownIcon, ChartIncreaseIcon, ChartDecreaseIcon } from "hugeicons-react"
 
 interface PromotionRulesCardProps {
     promotionRules: PromotionRules | null
@@ -62,7 +62,7 @@ export function PromotionRulesCard({ promotionRules, defaultPromotion, onSave }:
             <CardHeader>
                 <div className="flex items-start gap-3">
                     <div className="flex items-center justify-center h-9 w-9 shrink-0 rounded-lg bg-muted text-muted-foreground">
-                        <ArrowUpDown className="h-5 w-5" />
+                        <ArrowUpDownIcon className="h-5 w-5" />
                     </div>
                     <div className="grid gap-1">
                         <CardTitle>Montées / Descentes</CardTitle>
@@ -84,13 +84,13 @@ export function PromotionRulesCard({ promotionRules, defaultPromotion, onSave }:
                         aria-label={editing ? "Enregistrer" : "Modifier"}
                     >
                         {saving ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Loading03Icon className="h-4 w-4 animate-spin" />
                         ) : saved ? (
-                            <Check className="h-4 w-4 text-green-600" />
+                            <Tick02Icon className="h-4 w-4 text-green-600" />
                         ) : editing ? (
-                            <Check className="h-4 w-4" />
+                            <Tick02Icon className="h-4 w-4" />
                         ) : (
-                            <Pencil className="h-4 w-4" />
+                            <PencilEdit01Icon className="h-4 w-4" />
                         )}
                     </Button>
                 </CardAction>
@@ -100,7 +100,7 @@ export function PromotionRulesCard({ promotionRules, defaultPromotion, onSave }:
                     <div className="grid gap-2 bg-blue-50 rounded-lg p-3 flex-1">
                         <div className="flex items-center justify-between">
                             <Label htmlFor="promoted_count">Promus</Label>
-                            <Badge className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-200"><TrendingUp className="h-3 w-3 mr-0.5" />montée</Badge>
+                            <Badge className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-200"><ChartIncreaseIcon className="h-3 w-3 mr-0.5" />montée</Badge>
                         </div>
                         <Input
                             id="promoted_count"
@@ -118,7 +118,7 @@ export function PromotionRulesCard({ promotionRules, defaultPromotion, onSave }:
                     <div className="grid gap-2 bg-orange-50 rounded-lg p-3 flex-1">
                         <div className="flex items-center justify-between">
                             <Label htmlFor="relegated_count">Relégués</Label>
-                            <Badge className="text-[10px] px-1.5 py-0 bg-orange-100 text-orange-700 border-orange-200"><TrendingDown className="h-3 w-3 mr-0.5" />descente</Badge>
+                            <Badge className="text-[10px] px-1.5 py-0 bg-orange-100 text-orange-700 border-orange-200"><ChartDecreaseIcon className="h-3 w-3 mr-0.5" />descente</Badge>
                         </div>
                         <Input
                             id="relegated_count"

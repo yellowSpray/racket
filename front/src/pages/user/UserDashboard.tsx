@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
-import { Users, TrendingUp, BarChart3, Radio, ClipboardEdit } from "lucide-react"
+import { UserGroupIcon, ChartIncreaseIcon, BarChartIcon, Radio01Icon, TaskEdit01Icon } from "hugeicons-react"
 
 export function UserDashboard() {
     const { profile } = useAuth()
@@ -14,13 +14,13 @@ export function UserDashboard() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-sm">
-                            <Users size={16} className="text-gray-500" />
+                            <UserGroupIcon size={16} className="text-gray-500" />
                             Présence sociale
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-                            <Users size={32} className="mb-3" />
+                            <UserGroupIcon size={32} className="mb-3" />
                             <p className="text-sm text-center">Qui joue en même temps que vous ce soir</p>
                             <p className="text-xs mt-1">À venir</p>
                         </div>
@@ -31,13 +31,13 @@ export function UserDashboard() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-sm">
-                            <TrendingUp size={16} className="text-gray-500" />
+                            <ChartIncreaseIcon size={16} className="text-gray-500" />
                             Évolution
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-                            <TrendingUp size={32} className="mb-3" />
+                            <ChartIncreaseIcon size={32} className="mb-3" />
                             <p className="text-sm text-center">Votre progression dans les tableaux au fil des séries</p>
                             <p className="text-xs mt-1">À venir</p>
                         </div>
@@ -48,13 +48,13 @@ export function UserDashboard() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-sm">
-                            <BarChart3 size={16} className="text-gray-500" />
+                            <BarChartIcon size={16} className="text-gray-500" />
                             Statistiques
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-                            <BarChart3 size={32} className="mb-3" />
+                            <BarChartIcon size={32} className="mb-3" />
                             <p className="text-sm text-center">Victoires, défaites, ratio, séries en cours</p>
                             <p className="text-xs mt-1">À venir</p>
                         </div>
@@ -65,13 +65,13 @@ export function UserDashboard() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-sm">
-                            <Radio size={16} className="text-gray-500" />
+                            <Radio01Icon size={16} className="text-gray-500" />
                             Matchs en cours
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-                            <Radio size={32} className="mb-3" />
+                            <Radio01Icon size={32} className="mb-3" />
                             <p className="text-sm text-center">Matchs en direct avec terrains et horaires</p>
                             <p className="text-xs mt-1">À venir</p>
                         </div>
@@ -82,13 +82,13 @@ export function UserDashboard() {
                 <Card className="lg:col-span-2">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-sm">
-                            <ClipboardEdit size={16} className="text-gray-500" />
+                            <TaskEdit01Icon size={16} className="text-gray-500" />
                             Mes matchs — Saisie des scores
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-                            <ClipboardEdit size={32} className="mb-3" />
+                            <TaskEdit01Icon size={32} className="mb-3" />
                             <p className="text-sm text-center">Liste de vos matchs sur l'événement en cours pour saisir les résultats</p>
                             <p className="text-xs mt-1">À venir</p>
                         </div>

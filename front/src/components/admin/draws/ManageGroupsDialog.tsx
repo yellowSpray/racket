@@ -13,7 +13,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeftRight, UserPlus } from "lucide-react";
+import { ArrowLeftRightIcon, UserAdd01Icon } from "hugeicons-react";
 import type { Group } from "@/types/draw";
 
 interface ManageGroupsDialogProps {
@@ -180,7 +180,7 @@ export function ManageGroupDialog({
           {/* Message d'instruction */}
           {step === "select_target" && (
             <Alert>
-              <UserPlus className="h-4 w-4" />
+              <UserAdd01Icon className="h-4 w-4" />
               <AlertDescription>
                 Cliquez sur un groupe pour y déplacer <strong>{selectedPlayer?.name}</strong>
               </AlertDescription>
@@ -189,7 +189,7 @@ export function ManageGroupDialog({
 
           {step === "select_swap" && targetGroup && (
             <Alert className="bg-blue-50 border-blue-200">
-              <ArrowLeftRight className="h-4 w-4" />
+              <ArrowLeftRightIcon className="h-4 w-4" />
               <AlertDescription>
                 <strong>{targetGroup.name}</strong> est complet. Choisissez un joueur à échanger avec <strong>{selectedPlayer?.name}</strong>
               </AlertDescription>
@@ -239,12 +239,12 @@ export function ManageGroupDialog({
                     >
                       {isFull ? (
                         <>
-                          <ArrowLeftRight className="h-3 w-3" />
+                          <ArrowLeftRightIcon className="h-3 w-3" />
                           Échanger avec...
                         </>
                       ) : (
                         <>
-                          <UserPlus className="h-3 w-3" />
+                          <UserAdd01Icon className="h-3 w-3" />
                           Déplacer ici
                         </>
                       )}
@@ -289,7 +289,7 @@ export function ManageGroupDialog({
                               {player.first_name} {player.last_name}
                             </span>
                             {step === "select_swap" && isTargetGroup && (
-                              <ArrowLeftRight className="h-3 w-3 text-orange-600" />
+                              <ArrowLeftRightIcon className="h-3 w-3 text-orange-600" />
                             )}
                           </div>
                           <span className="text-xs text-gray-500">

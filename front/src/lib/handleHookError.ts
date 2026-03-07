@@ -30,7 +30,7 @@ export function handleHookError(
 /**
  * Timeout en ms pour les requêtes Supabase.
  */
-const REQUEST_TIMEOUT_MS = 15000
+const REQUEST_TIMEOUT_MS = 30000
 
 /**
  * Enveloppe une Promise avec un timeout.

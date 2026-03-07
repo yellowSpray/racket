@@ -4,7 +4,7 @@ import { useEvent } from "@/contexts/EventContext"
 import { useMatches } from "@/hooks/useMatches"
 import { Card, CardContent } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, MapPin } from "lucide-react"
+import { Calendar03Icon, MapPinIcon } from "hugeicons-react"
 import type { Match } from "@/types/match"
 
 function formatDate(dateStr: string) {
@@ -120,7 +120,7 @@ function MatchCard({ match, myId }: { match: Match; myId: string }) {
                     <p className="font-semibold truncate">vs {opponent}</p>
                     <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
                         <span className="flex items-center gap-1">
-                            <Calendar size={13} />
+                            <Calendar03Icon size={13} />
                             {formatDate(match.match_date)}
                         </span>
                         {match.match_time && (
@@ -128,7 +128,7 @@ function MatchCard({ match, myId }: { match: Match; myId: string }) {
                         )}
                         {match.court_number && (
                             <span className="flex items-center gap-1">
-                                <MapPin size={13} />
+                                <MapPinIcon size={13} />
                                 T{match.court_number}
                             </span>
                         )}

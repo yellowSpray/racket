@@ -22,7 +22,7 @@ import { PreviousBoxPreview } from "./PreviousBoxPreview"
 import { ProposedGroups } from "./ProposedGroups"
 import { Badge } from "@/components/ui/badge"
 import { validateGroups } from "@/lib/groupPlayerMove"
-import { Info, Sparkles, Settings, ArrowLeftRight, Trash2, Users, Trophy } from "lucide-react"
+import { InformationCircleIcon, SparklesIcon, Settings01Icon, ArrowLeftRightIcon, Delete02Icon, UserGroupIcon, Award01Icon } from "hugeicons-react"
 
 interface WizardStepGroupsProps {
     event: Event
@@ -313,7 +313,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                             size="sm"
                             onClick={() => { setMode("auto"); setProposedLocalGroups(null) }}
                         >
-                            <Sparkles className="mr-2 h-4 w-4" />
+                            <SparklesIcon className="mr-2 h-4 w-4" />
                             Auto
                         </Button>
                         <Button
@@ -322,7 +322,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                             size="sm"
                             onClick={() => { setMode("manual"); setProposedLocalGroups(null) }}
                         >
-                            <Settings className="mr-2 h-4 w-4" />
+                            <Settings01Icon className="mr-2 h-4 w-4" />
                             Manuel
                         </Button>
                         <Button
@@ -331,14 +331,14 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                             size="sm"
                             onClick={() => setMode("previous")}
                         >
-                            <Trophy className="mr-2 h-4 w-4" />
+                            <Award01Icon className="mr-2 h-4 w-4" />
                             Box precedent
                         </Button>
                     </div>
 
                     {mode === "auto" && (
                         <Alert variant={allDistributions.length === 0 || totalPlayers === 0 ? "destructive" : "default"}>
-                            <Info className="h-4 w-4" />
+                            <InformationCircleIcon className="h-4 w-4" />
                             <AlertDescription>
                                 <strong>{totalPlayers} joueur{totalPlayers > 1 ? "s" : ""} actif{totalPlayers > 1 ? "s" : ""}</strong>
                                 {totalPlayers === 0 && (
@@ -406,17 +406,17 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                         <div className="space-y-4">
                             {prevLoading ? (
                                 <Alert>
-                                    <Info className="h-4 w-4" />
+                                    <InformationCircleIcon className="h-4 w-4" />
                                     <AlertDescription>Chargement du box precedent...</AlertDescription>
                                 </Alert>
                             ) : !previousEvent ? (
                                 <Alert variant="destructive">
-                                    <Info className="h-4 w-4" />
+                                    <InformationCircleIcon className="h-4 w-4" />
                                     <AlertDescription>Aucun box precedent trouve pour ce club.</AlertDescription>
                                 </Alert>
                             ) : previousStandings.length === 0 ? (
                                 <Alert>
-                                    <Info className="h-4 w-4" />
+                                    <InformationCircleIcon className="h-4 w-4" />
                                     <AlertDescription>
                                         Le box precedent ({previousEvent.event_name}) n'a pas de matchs joues.
                                     </AlertDescription>
@@ -424,7 +424,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                             ) : (
                                 <>
                                     <Alert>
-                                        <Info className="h-4 w-4" />
+                                        <InformationCircleIcon className="h-4 w-4" />
                                         <AlertDescription>
                                             Groupes generes depuis <strong>{previousEvent.event_name}</strong> avec {promotionResult.moves.length} mouvement{promotionResult.moves.length > 1 ? "s" : ""} (promo/releg).
                                             Ajustez avec le drag & drop a droite.
@@ -464,7 +464,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                                 />
                             </div>
                             <Alert>
-                                <Info className="h-4 w-4" />
+                                <InformationCircleIcon className="h-4 w-4" />
                                 <AlertDescription>
                                     {numberOfGroups} groupe{numberOfGroups > 1 ? "s" : ""} vide{numberOfGroups > 1 ? "s" : ""} de {maxPlayersPerGroup} places maximum
                                     <br />
@@ -494,7 +494,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                                 onClick={handleGenerateAuto}
                                 disabled={isLoading || !selectedDistribution || totalPlayers === 0}
                             >
-                                <Sparkles className="mr-2 h-4 w-4" />
+                                <SparklesIcon className="mr-2 h-4 w-4" />
                                 Générer automatiquement
                             </Button>
                         )}
@@ -504,7 +504,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                                 onClick={handleApplyFromPrevious}
                                 disabled={isLoading}
                             >
-                                <Trophy className="mr-2 h-4 w-4" />
+                                <Award01Icon className="mr-2 h-4 w-4" />
                                 Appliquer les groupes
                             </Button>
                         )}
@@ -534,7 +534,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                                 size="sm"
                                 onClick={() => setManagementMode(true)}
                             >
-                                <ArrowLeftRight className="mr-2 h-4 w-4" />
+                                <ArrowLeftRightIcon className="mr-2 h-4 w-4" />
                                 Gérer les groupes
                             </Button>
                             <Button
@@ -543,7 +543,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                                 onClick={handleDeleteGroups}
                                 disabled={isLoading}
                             >
-                                <Trash2 className="mr-2 h-4 w-4" />
+                                <Delete02Icon className="mr-2 h-4 w-4" />
                                 Supprimer
                             </Button>
                         </div>
@@ -555,7 +555,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                                 <div className="flex items-center justify-between mb-3">
                                     <h4 className="font-semibold text-sm">{group.group_name}</h4>
                                     <Badge variant="default">
-                                        <Users className="h-3 w-3 mr-1" />
+                                        <UserGroupIcon className="h-3 w-3 mr-1" />
                                         {(group.players || []).length}/{group.max_players}
                                     </Badge>
                                 </div>

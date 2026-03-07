@@ -9,7 +9,7 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { ArrowDown, ArrowUp } from "lucide-react"
+import { ArrowDown01Icon, ArrowUp01Icon } from "hugeicons-react"
 
 interface MatchListViewProps {
     matches: Match[]
@@ -65,12 +65,12 @@ function RestrictionDisplay({ restrictions, playerId }: { restrictions: Map<stri
         <span className="inline-flex items-center gap-1">
             {r.arrival && (
                 <span className="inline-flex items-center gap-0.5">
-                    <ArrowDown className="h-3 w-3" />{r.arrival}
+                    <ArrowDown01Icon className="h-3 w-3" />{r.arrival}
                 </span>
             )}
             {r.departure && (
                 <span className="inline-flex items-center gap-0.5">
-                    <ArrowUp className="h-3 w-3" />{r.departure}
+                    <ArrowUp01Icon className="h-3 w-3" />{r.departure}
                 </span>
             )}
         </span>

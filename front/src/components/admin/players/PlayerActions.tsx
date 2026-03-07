@@ -17,7 +17,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Ellipsis, Pencil, UserMinus } from "lucide-react";
+import { MoreHorizontalIcon, PencilEdit01Icon, UserRemove01Icon } from "hugeicons-react";
 import type { PlayerType } from "@/types/player";
 
 export function PlayerActions({ player, updatePlayer, removePlayer, canRemove }: {
@@ -34,19 +34,19 @@ export function PlayerActions({ player, updatePlayer, removePlayer, canRemove }:
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon">
-                        <Ellipsis />
+                        <MoreHorizontalIcon />
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuItem onSelect={() => setEditOpen(true)}>
-                        <Pencil /> Modifier
+                        <PencilEdit01Icon /> Modifier
                     </DropdownMenuItem>
                     {canRemove && (
                         <DropdownMenuItem
                             variant="destructive"
                             onSelect={() => setRemoveOpen(true)}
                         >
-                            <UserMinus /> Retirer
+                            <UserRemove01Icon /> Retirer
                         </DropdownMenuItem>
                     )}
                 </DropdownMenuContent>

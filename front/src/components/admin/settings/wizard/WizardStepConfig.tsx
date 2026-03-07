@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { eventSchema } from "@/lib/schemas"
 import { validateFormData } from "@/lib/validation"
 import { intervalToMinutes, minutesToInterval } from "@/lib/utils"
-import { CalendarDays } from "lucide-react"
+import { Calendar03Icon } from "hugeicons-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -207,7 +207,7 @@ export function WizardStepConfig({ event, onSave }: WizardStepConfigProps) {
                         {/* Jours sélectionnés */}
                         <div className="bg-muted/30 rounded-lg p-4 mt-2 flex-1 flex flex-col">
                             <div className="flex items-center gap-2 mb-4">
-                                <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                                <Calendar03Icon className="h-4 w-4 text-muted-foreground" />
                                 <Label>Jours sélectionnés</Label>
                             </div>
                             {playingDates.length === 0 ? (

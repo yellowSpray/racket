@@ -8,7 +8,7 @@ import { useGroups } from "@/hooks/useGroups"
 import { useMatches } from "@/hooks/useMatches"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router"
-import { CalendarDays, Settings, Pencil, Save, X, List, LayoutGrid } from "lucide-react"
+import { Calendar03Icon, Settings01Icon, PencilEdit01Icon, FloppyDiskIcon, Cancel01Icon, ListViewIcon, GridViewIcon } from "hugeicons-react"
 import { Button } from "@/components/ui/button"
 import { totalMatchCount, totalSlotCount, calculateTimeSlots, calculateDates } from "@/lib/matchScheduler"
 import { intervalToMinutes } from "@/lib/utils"
@@ -169,13 +169,13 @@ export function AdminMatches() {
                     </div>
                 </div>
                 <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-lg">
-                    <CalendarDays className="h-12 w-12 text-gray-300" />
+                    <Calendar03Icon className="h-12 w-12 text-gray-300" />
                     <h3 className="mt-4 text-lg font-semibold">Aucun match</h3>
                     <p className="text-gray-500 mt-3">
                         Créez un événement depuis les paramètres pour commencer
                     </p>
                     <Button className="mt-6" size="sm" variant="outline" onClick={() => navigate("/admin/settings")}>
-                        <Settings className="mr-2 h-4 w-4" />
+                        <Settings01Icon className="mr-2 h-4 w-4" />
                         Aller aux paramètres
                     </Button>
                 </div>
@@ -198,17 +198,17 @@ export function AdminMatches() {
                 <div className="flex gap-2">
                     {hasMatches && (
                         <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setViewMode(v => v === "grid" ? "list" : "grid")}>
-                            {viewMode === "grid" ? <List className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
+                            {viewMode === "grid" ? <ListViewIcon className="h-4 w-4" /> : <GridViewIcon className="h-4 w-4" />}
                         </Button>
                     )}
                     {editMode ? (
                         <>
                             <Button variant="outline" size="sm" onClick={handleCancelEditMode}>
-                                <X className="mr-2 h-4 w-4" />
+                                <Cancel01Icon className="mr-2 h-4 w-4" />
                                 Annuler
                             </Button>
                             <Button size="sm" onClick={handleSaveScores}>
-                                <Save className="mr-2 h-4 w-4" />
+                                <FloppyDiskIcon className="mr-2 h-4 w-4" />
                                 Enregistrer tout
                             </Button>
                         </>
@@ -216,7 +216,7 @@ export function AdminMatches() {
                         <>
                             {hasMatches && (
                                 <Button size="icon" className="h-8 w-8" onClick={handleEnterEditMode}>
-                                    <Pencil className="h-4 w-4" />
+                                    <PencilEdit01Icon className="h-4 w-4" />
                                 </Button>
                             )}
                         </>
@@ -241,38 +241,38 @@ export function AdminMatches() {
             {/* Contenu */}
             {!hasGroups ? (
                 <div className="text-center py-12 border-2 border-dashed rounded-lg">
-                    <CalendarDays className="mx-auto h-12 w-12 text-gray-400" />
+                    <Calendar03Icon className="mx-auto h-12 w-12 text-gray-400" />
                     <h3 className="mt-4 text-lg font-semibold">Aucun tableau créé</h3>
                     <p className="text-gray-500 mt-2">
                         Créez d'abord les tableaux depuis les paramètres pour générer les matchs
                     </p>
                     <Button className="mt-4" variant="outline" onClick={() => navigate("/admin/settings")}>
-                        <Settings className="mr-2 h-4 w-4" />
+                        <Settings01Icon className="mr-2 h-4 w-4" />
                         Aller aux paramètres
                     </Button>
                 </div>
             ) : !hasPlayers ? (
                 <div className="text-center py-12 border-2 border-dashed rounded-lg">
-                    <CalendarDays className="mx-auto h-12 w-12 text-gray-400" />
+                    <Calendar03Icon className="mx-auto h-12 w-12 text-gray-400" />
                     <h3 className="mt-4 text-lg font-semibold">Pas assez de joueurs</h3>
                     <p className="text-gray-500 mt-2">
                         Il faut au moins 2 joueurs par groupe pour générer les matchs
                     </p>
                     <Button className="mt-4" variant="outline" onClick={() => navigate("/admin/settings")}>
-                        <Settings className="mr-2 h-4 w-4" />
+                        <Settings01Icon className="mr-2 h-4 w-4" />
                         Aller aux paramètres
                     </Button>
                 </div>
             ) : !hasMatches ? (
                 <div className="text-center py-12 border-2 border-dashed rounded-lg">
-                    <CalendarDays className="mx-auto h-12 w-12 text-gray-400" />
+                    <Calendar03Icon className="mx-auto h-12 w-12 text-gray-400" />
                     <h3 className="mt-4 text-lg font-semibold">Aucun match généré</h3>
                     <p className="text-gray-500 mt-2">
                         {matchCount} matchs à programmer sur {slotInfo?.total} créneaux disponibles
                         ({slotInfo?.datesCount} jour{(slotInfo?.datesCount || 0) > 1 ? 's' : ''} × {slotInfo?.slotsPerDay} créneaux × {slotInfo?.courtsCount} terrain{(slotInfo?.courtsCount || 0) > 1 ? 's' : ''})
                     </p>
                     <Button className="mt-4" variant="outline" onClick={() => navigate("/admin/settings")}>
-                        <Settings className="mr-2 h-4 w-4" />
+                        <Settings01Icon className="mr-2 h-4 w-4" />
                         Aller aux paramètres
                     </Button>
                 </div>

@@ -1,6 +1,6 @@
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { GripVertical, UserPlus } from "lucide-react"
+import { DragDropVerticalIcon, UserAdd01Icon } from "hugeicons-react"
 import type { GroupPlayer } from "@/types/draw"
 
 interface DraggablePlayerItemProps {
@@ -36,10 +36,10 @@ export function DraggablePlayerItem({ player, id, isNew }: DraggablePlayerItemPr
             {...listeners}
         >
             <div className="flex items-center gap-2">
-                <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
+                <DragDropVerticalIcon className="h-3.5 w-3.5 text-muted-foreground" />
                 <span>{player.first_name} {player.last_name}</span>
                 {isNew && (
-                    <UserPlus className="h-3.5 w-3.5 text-blue-500" />
+                    <UserAdd01Icon className="h-3.5 w-3.5 text-blue-500" />
                 )}
             </div>
             <span className="text-xs text-muted-foreground">R{player.power_ranking || "-"}</span>

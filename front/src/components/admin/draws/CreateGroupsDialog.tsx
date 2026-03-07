@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Info, Sparkles, Settings } from "lucide-react"
+import { InformationCircleIcon, SparklesIcon, Settings01Icon } from "hugeicons-react"
 import type { GroupPlayer } from "@/types/draw"
 
 interface CreateGroupsDialogProps {
@@ -150,7 +150,7 @@ export function CreateGroupsDialog({ open , onOpenChange }: CreateGroupsDialogPr
                             size="sm"
                             onClick={() => setManualMode(false)}
                         >
-                            <Sparkles className="mr-2 h-4 w-4" />
+                            <SparklesIcon className="mr-2 h-4 w-4" />
                             Auto
                         </Button>
                         <Button
@@ -159,7 +159,7 @@ export function CreateGroupsDialog({ open , onOpenChange }: CreateGroupsDialogPr
                             size="sm"
                             onClick={() => setManualMode(true)}
                         >
-                            <Settings className="mr-2 h-4 w-4" />
+                            <Settings01Icon className="mr-2 h-4 w-4" />
                             Manuel
                         </Button>
                     </div>
@@ -167,7 +167,7 @@ export function CreateGroupsDialog({ open , onOpenChange }: CreateGroupsDialogPr
                     {/* Mode AUTO */}
                     {!manualMode && (
                         <Alert>
-                            <Info className="h-4 w-4" />
+                            <InformationCircleIcon className="h-4 w-4" />
                             <AlertDescription>
                                 <strong>{totalPlayers} joueurs actifs</strong> seront répartis automatiquement
                                 {optimalDistribution.valid && (
@@ -201,7 +201,7 @@ export function CreateGroupsDialog({ open , onOpenChange }: CreateGroupsDialogPr
                             </div>
 
                             <Alert>
-                                <Info className="h-4 w-4" />
+                                <InformationCircleIcon className="h-4 w-4" />
                                 <AlertDescription>
                                 {numberOfGroups} groupe{numberOfGroups > 1 ? 's' : ''} vide{numberOfGroups > 1 ? 's' : ''} de 6 places maximum
                                 <br />
@@ -247,7 +247,7 @@ export function CreateGroupsDialog({ open , onOpenChange }: CreateGroupsDialogPr
                             onClick={handleGenerateAuto}
                             disabled={loading || !optimalDistribution.valid || totalPlayers === 0}
                         >
-                            <Sparkles className="mr-2 h-4 w-4" />
+                            <SparklesIcon className="mr-2 h-4 w-4" />
                             Générer automatiquement
                         </Button>
                     )}

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { validateFormData } from "@/lib/validation"
 import { scoringRulesSchema } from "@/lib/schemas/scoring.schema"
 import type { ScorePointsEntry } from "@/types/settings"
-import { Pencil, Check, Loader2, Trophy } from "lucide-react"
+import { PencilEdit01Icon, Tick02Icon, Loading03Icon, Award01Icon } from "hugeicons-react"
 
 interface ScoringRulesCardProps {
     scoringRules: { score_points: ScorePointsEntry[] } | null
@@ -75,7 +75,7 @@ export function ScoringRulesCard({ scoringRules, defaultScoring, onSave }: Scori
             <CardHeader>
                 <div className="flex items-start gap-3">
                     <div className="flex items-center justify-center h-9 w-9 shrink-0 rounded-lg bg-muted text-muted-foreground">
-                        <Trophy className="h-5 w-5" />
+                        <Award01Icon className="h-5 w-5" />
                     </div>
                     <div className="grid gap-1">
                         <CardTitle>Règles de pointage</CardTitle>
@@ -97,13 +97,13 @@ export function ScoringRulesCard({ scoringRules, defaultScoring, onSave }: Scori
                         aria-label={editing ? "Enregistrer" : "Modifier"}
                     >
                         {saving ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Loading03Icon className="h-4 w-4 animate-spin" />
                         ) : saved ? (
-                            <Check className="h-4 w-4 text-green-600" />
+                            <Tick02Icon className="h-4 w-4 text-green-600" />
                         ) : editing ? (
-                            <Check className="h-4 w-4" />
+                            <Tick02Icon className="h-4 w-4" />
                         ) : (
-                            <Pencil className="h-4 w-4" />
+                            <PencilEdit01Icon className="h-4 w-4" />
                         )}
                     </Button>
                 </CardAction>

@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { DroppableGroupColumn } from "./DroppableGroupColumn"
 import { DraggablePlayerItem } from "./DraggablePlayerItem"
-import { Check, AlertTriangle } from "lucide-react"
+import { Tick02Icon, Alert02Icon } from "hugeicons-react"
 import type { Group, GroupPlayer } from "@/types/draw"
 
 interface GroupDndManagerProps {
@@ -164,7 +164,7 @@ export function GroupDndManager({ initialGroups, onFinish, onCancel }: GroupDndM
                         Annuler
                     </Button>
                     <Button size="sm" onClick={handleFinish} disabled={!validation.valid || saving}>
-                        <Check className="mr-2 h-4 w-4" />
+                        <Tick02Icon className="mr-2 h-4 w-4" />
                         {saving ? "Sauvegarde..." : "Terminer"}
                     </Button>
                 </div>
@@ -172,7 +172,7 @@ export function GroupDndManager({ initialGroups, onFinish, onCancel }: GroupDndM
 
             {!validation.valid && (
                 <Alert variant="destructive">
-                    <AlertTriangle className="h-4 w-4" />
+                    <Alert02Icon className="h-4 w-4" />
                     <AlertDescription>
                         {validation.errors.map((e, i) => <span key={i}>{e}<br /></span>)}
                     </AlertDescription>

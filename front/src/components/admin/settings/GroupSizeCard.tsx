@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
-import { Pencil, Check, Loader2, Users } from "lucide-react"
+import { PencilEdit01Icon, Tick02Icon, Loading03Icon, UserGroupIcon } from "hugeicons-react"
 
 interface GroupSizeCardProps {
     defaultMaxPlayers: number
@@ -50,7 +50,7 @@ export function GroupSizeCard({ defaultMaxPlayers, onSave }: GroupSizeCardProps)
             <CardHeader>
                 <div className="flex items-start gap-3">
                     <div className="flex items-center justify-center h-9 w-9 shrink-0 rounded-lg bg-muted text-muted-foreground">
-                        <Users className="h-5 w-5" />
+                        <UserGroupIcon className="h-5 w-5" />
                     </div>
                     <div className="grid gap-1">
                         <CardTitle>Taille des groupes</CardTitle>
@@ -72,13 +72,13 @@ export function GroupSizeCard({ defaultMaxPlayers, onSave }: GroupSizeCardProps)
                         aria-label={editing ? "Enregistrer" : "Modifier"}
                     >
                         {saving ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Loading03Icon className="h-4 w-4 animate-spin" />
                         ) : saved ? (
-                            <Check className="h-4 w-4 text-green-600" />
+                            <Tick02Icon className="h-4 w-4 text-green-600" />
                         ) : editing ? (
-                            <Check className="h-4 w-4" />
+                            <Tick02Icon className="h-4 w-4" />
                         ) : (
-                            <Pencil className="h-4 w-4" />
+                            <PencilEdit01Icon className="h-4 w-4" />
                         )}
                     </Button>
                 </CardAction>
