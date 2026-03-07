@@ -1,82 +1,51 @@
 import { Link, useLocation } from "react-router";
-import { Avatar, AvatarImage } from "@/components/ui/avatar"
-import { Home, Settings, Users, FileText, SquarePen } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useClubs } from "@/hooks/useClub";
+import { DashboardSquare02Icon, Settings01Icon, UserGroupIcon, File01Icon, LayoutTable02Icon } from "hugeicons-react";
 
 
 const menuItems = [
-  { title: "Dashboard", url: "/admin", icon: Home},
-  { title: "Tableaux", url: "/admin/draws", icon: SquarePen},
-  { title: "Matchs", url: "/admin/matches", icon: FileText},
-  { title: "Joueurs", url: "/admin/players", icon: Users},
-  { title: "Paramètres", url: "/admin/settings", icon: Settings},
+  { title: "Dashboard", url: "/admin", icon: DashboardSquare02Icon},
+  { title: "Tableaux", url: "/admin/draws", icon: LayoutTable02Icon},
+  { title: "Matchs", url: "/admin/matches", icon: File01Icon},
+  { title: "Joueurs", url: "/admin/players", icon: UserGroupIcon},
 ];
 
 export function AdminSideBar() {
 
-  const { profile } = useAuth()
-  const { clubs } = useClubs()
   const location = useLocation()
-  const clubName = clubs.find(c => c.id === profile?.club_id)?.club_name || "Club"
 
   return (
-    <div className="h-full col-span-2 border-r border-gray-200 flex flex-col">
-
+    <>
       {/* Navigation */}
-      <nav className="flex-1 p-10 overflow-y-auto">
-        <h3 className="text-gray-500 uppercase text-xs ml-3 mb-2">Menu</h3>
-        <ul className="space-y-2">
-          {menuItems.map((item, index) => {
-
+      <nav className="flex-1 flex flex-col items-center justify-between py-7.5 px-5 overflow-y-auto">
+        <ul className="space-y-7.5">
+          {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.url;
-            const isLast = index === menuItems.length - 1;
-
             return (
-              <li 
-                key={item.title}
-                className={`
-                  ${isLast ? "border-t border-gray-300 mt-5" : ""}   
-                `}
-              >
+              <li key={item.title}>
                 <Link
                   to={item.url}
                   className={`
-                    flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors
+                    flex items-center justify-center p-2.5 rounded-full transition-colors
                     ${isActive ? "bg-primary font-[600]" : "hover:bg-gray-100"}
-                    ${isLast ? "mt-4" : ""} 
                   `}
                 >
-                  <Icon size={16} />
-                  <span>{item.title}</span>
+                  <Icon size={20} />
                 </Link>
               </li>
             );
           })}
         </ul>
+        <Link
+          to="/admin/settings"
+          className={`
+            flex items-center justify-center p-2.5 rounded-full transition-colors
+            ${location.pathname === "/admin/settings" ? "bg-primary font-[600]" : "hover:bg-gray-100"}
+          `}
+        >
+          <Settings01Icon size={20} />
+        </Link>
       </nav>
-
-      {/* Footer */}
-      <div className="p-10 border-t border-gray-200">
-          <div className="flex flex-row items-center  gap-2">
-            <Avatar>
-              <AvatarImage 
-                src={profile?.avatar_url || "https://github.com/shadcn.png"} 
-                alt={`${profile?.first_name} ${profile?.last_name}`}  
-              />
-            </Avatar>
-
-            <div className="ml-2">
-              <p className="font-bold">
-                {`${profile?.first_name} ${profile?.last_name}`}
-              </p>
-              <p className="text-gray-400">
-                Admin de {clubName}
-              </p>
-            </div>
-          </div>
-      </div>
-    </div>
+    </>
   );
 }
