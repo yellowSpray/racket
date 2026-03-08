@@ -10,7 +10,7 @@ const Rootlayout = () => {
   return (
     <>
       <Header />
-      <main className={`flex-1 flex flex-col min-h-0 w-full px-10 ${isApp ? 'pb-10' : ''}`}>
+      <main className={`flex-1 flex flex-col min-h-0 w-full px-8 ${isApp ? 'pb-8' : ''}`}>
         <Outlet />
       </main>
       {showFooter && <Footer />}

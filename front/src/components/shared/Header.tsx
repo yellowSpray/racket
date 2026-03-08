@@ -31,25 +31,25 @@ export default function Header() {
   // }
 
   return (
-    <header className="px-10 pt-[30px] pb-[15px] flex items-center justify-between gap-4">
+    <header className="p-8 flex items-center justify-between gap-4">
 
         {/* Left side */}
-        <Link to="/" className="text-primary flex items-center gap-2 pl-6">
+        <Link to="/" className="text-primary flex items-center gap-2 pl-3">
           <Logo />
           <h1 className="text-[#3d3d3d] text-xl font-extrabold">volena</h1>
         </Link>
 
         {/* Right side */}
         {isAuthenticated && profile ? (
-          <div className="flex items-center gap-[15px]">
-            <Button variant="ghost" className="rounded-full" onClick={() => setDarkMode(!darkMode)}>
+          <div className="flex items-center gap-2">
+            <Button className="rounded-full bg-accent hover:bg-gray-200" onClick={() => setDarkMode(!darkMode)}>
               {darkMode ? <Sun03Icon size={20} /> : <Moon02Icon size={20} />}
             </Button>
-            <Button variant="ghost" className="rounded-full relative">
+            <Button className="rounded-full bg-accent relative hover:bg-gray-200">
               <Notification03Icon size={20} />
               <span className="absolute top-2 right-3 w-2 h-2 bg-rose-500 rounded-full border border-white dark:border-slate-900" />
             </Button>
-            <button className="flex items-center gap-2 pr-4 pl-1 py-[4px] rounded-full hover:bg-accent hover:text-accent-foreground transition-colors duration-200 ease-out">
+            <button className="flex items-center gap-2 pr-4 pl-1 py-[4px] bg-accent rounded-xl hover:bg-gray-200 hover:text-accent-foreground transition-colors duration-200 ease-out">
               <Avatar>
                 <AvatarImage
                   src={profile?.avatar_url || "https://github.com/shadcn.png"}

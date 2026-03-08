@@ -16,8 +16,8 @@ export function AdminSideBar() {
   return (
     <>
       {/* Navigation */}
-      <nav className="flex-1 flex flex-col items-center justify-between py-7.5 px-5 overflow-y-auto">
-        <ul className="space-y-7.5">
+      <nav className="w-full flex-1 flex flex-col items-center justify-between py-2 bg-gray-100 rounded-xl">
+        <ul className="space-y-6">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.url;
@@ -26,8 +26,8 @@ export function AdminSideBar() {
                 <Link
                   to={item.url}
                   className={`
-                    flex items-center justify-center p-2.5 rounded-full transition-colors
-                    ${isActive ? "bg-primary font-[600]" : "hover:bg-gray-100"}
+                    flex items-center justify-center p-2.5 rounded-xl transition-colors
+                    ${isActive ? "bg-primary font-[600]" : "hover:bg-gray-200"}
                   `}
                 >
                   <Icon size={20} />
@@ -39,8 +39,8 @@ export function AdminSideBar() {
         <Link
           to="/admin/settings"
           className={`
-            flex items-center justify-center p-2.5 rounded-full transition-colors
-            ${location.pathname === "/admin/settings" ? "bg-primary font-[600]" : "hover:bg-gray-100"}
+            flex items-center justify-center p-2.5 rounded-xl transition-colors
+            ${location.pathname === "/admin/settings" ? "bg-primary font-[600]" : "hover:bg-gray-200"}
           `}
         >
           <Settings01Icon size={20} />
