@@ -195,8 +195,8 @@ export function AdminDraws () {
                     </Button>
                 </div>
             ) : (
-                <ScrollArea className="flex-1 min-h-0" type="always">
-                    <div ref={tablesRef} className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pr-4">
+                <ScrollArea className="flex-1 min-h-0" type="auto">
+                    <div ref={tablesRef} className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pr-3">
                         {groups.map(group => {
                             const groupMatches = matches.filter(m => m.group_id === group.id)
                             const sortedGroup = sortPlayersByEarliestDates(group, groupMatches)

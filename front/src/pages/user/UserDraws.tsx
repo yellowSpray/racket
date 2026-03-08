@@ -94,8 +94,8 @@ export function UserDraws() {
                     <h3 className="text-lg font-semibold">{currentEvent.event_name}</h3>
                     {clubName && <span className="text-sm text-muted-foreground">- {clubName}</span>}
                 </div>
-                <ScrollArea className="flex-1 min-h-0" type="always">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pr-4">
+                <ScrollArea className="flex-1 min-h-0" type="auto">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pr-3">
                         {groups.map(group => (
                             <DrawTable
                                 key={group.id}
@@ -125,9 +125,9 @@ export function UserDraws() {
                 </Tabs>
             </div>
 
-            <ScrollArea className="flex-1 min-h-0" type="always">
+            <ScrollArea className="flex-1 min-h-0" type="auto">
                 {tab === "mon-tableau" && myGroup && (
-                    <div className="pr-4">
+                    <div>
                         <DrawTable
                             group={myGroup}
                             matches={matchesByGroup.get(myGroup.id) || []}
@@ -137,7 +137,7 @@ export function UserDraws() {
                 )}
 
                 {tab === "tous" && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pr-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pr-3">
                         {groups.map(group => (
                             <DrawTable
                                 key={group.id}

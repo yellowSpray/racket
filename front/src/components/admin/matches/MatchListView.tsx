@@ -167,7 +167,7 @@ export function MatchListView({ matches, players, editMode, pendingScores, onSco
 
     return (
         <div className="flex flex-col h-full min-h-0 overflow-hidden">
-            <ScrollArea className="flex-1 min-h-0" type="always">
+            <ScrollArea className="flex-1 min-h-0" type="auto">
                 <div className="space-y-6">
                     {sortedDates.map(date => {
                         const dayMatches = matchesByDate.get(date) || []

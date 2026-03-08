@@ -1,7 +1,7 @@
 import type { Match } from "@/types/match"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Calendar03Icon } from "hugeicons-react"
 
 function formatTime(matchTime: string): string {
@@ -53,13 +53,11 @@ export function TodayMatchesFeed({ matches, matchDate, loading }: TodayMatchesFe
     return (
         <div className="flex flex-col h-full min-h-0">
             <div className="flex-1 min-h-0">
-                <ScrollArea className="h-full" type="always">
+                <ScrollArea className="h-full" type="auto">
                     <div className="flex flex-col gap-4 pr-3">
                         {Array.from(timeSlots.entries()).map(([time, slotMatches]) => (
                             <div key={time}>
-                                <p className="text-xs font-semibold mb-1.5">{time}</p>
-
-                                {/* Desktop : table */}
+                                {/* Desktop : table avec header heure */}
                                 <div className="hidden md:block overflow-hidden rounded-md border">
                                     <Table className="table-fixed">
                                         <colgroup>
@@ -70,6 +68,13 @@ export function TodayMatchesFeed({ matches, matchDate, loading }: TodayMatchesFe
                                             <col className="w-[10%]" />
                                             <col className="w-[10%]" />
                                         </colgroup>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead colSpan={6} className="text-xs font-semibold h-8">
+                                                    {time}
+                                                </TableHead>
+                                            </TableRow>
+                                        </TableHeader>
                                         <TableBody>
                                             {slotMatches.map((match) => (
                                                 <MatchTableRow key={match.id} match={match} />
@@ -80,6 +85,7 @@ export function TodayMatchesFeed({ matches, matchDate, loading }: TodayMatchesFe
 
                                 {/* Mobile : cards empilées */}
                                 <div className="md:hidden flex flex-col gap-2">
+                                    <p className="text-xs font-semibold">{time}</p>
                                     {slotMatches.map((match) => (
                                         <MatchCard key={match.id} match={match} />
                                     ))}

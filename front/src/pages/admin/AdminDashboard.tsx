@@ -7,11 +7,19 @@ import {
     Calendar03Icon,
     TaskEdit01Icon,
     CreditCardIcon,
+    FilterIcon,
 } from "hugeicons-react"
+import { useEffect, useState } from "react"
 import { useEvent } from "@/contexts/EventContext"
+import { useAuth } from "@/contexts/AuthContext"
+import { useClubConfig } from "@/hooks/useClubConfig"
 import { TodayMatchesFeed } from "@/components/admin/dashboard/TodayMatchesFeed"
+import { PlayerMovementsFeed } from "@/components/admin/dashboard/PlayerMovementsFeed"
 import { useTodayMatches } from "@/hooks/useTodayMatches"
+import { usePlayerMovements } from "@/hooks/usePlayerMovements"
 import { formatDateLabel } from "@/lib/formatDateLabel"
+
+type MovementFilter = "active" | "inactive"
 
 function MatchProgressBadge({ played, total }: { played: number; total: number }) {
     const allDone = played === total
@@ -48,11 +56,28 @@ function MatchProgressBadge({ played, total }: { played: number; total: number }
 }
 
 export function AdminDashboard() {
+    const { profile } = useAuth()
     const { currentEvent } = useEvent()
+    const { clubConfig, fetchClubConfig } = useClubConfig()
+
+    useEffect(() => {
+        fetchClubConfig(profile?.club_id ?? null)
+    }, [profile?.club_id, fetchClubConfig])
     const todayMatches = useTodayMatches(currentEvent?.id ?? null)
+    const playerMovements = usePlayerMovements(currentEvent?.id ?? null, currentEvent?.club_id ?? null)
+    const [movementFilter, setMovementFilter] = useState<MovementFilter>("active")
+
+    const filteredMovements = playerMovements.movements.filter((m) => m.status === movementFilter)
     return (
         <div className="flex flex-col h-full min-h-0 gap-6">
-            <h3 className="text-lg font-semibold">Dashboard</h3>
+            <div className="flex items-center gap-3">
+                <h3 className="text-lg font-semibold">Dashboard</h3>
+                {(clubConfig || currentEvent) && (
+                    <span className="text-sm text-muted-foreground">
+                        - {[clubConfig?.club_name, currentEvent?.event_name].filter(Boolean).join(" - ")}
+                    </span>
+                )}
+            </div>
 
 {/* Rangée du haut — 4 cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
@@ -62,14 +87,24 @@ export function AdminDashboard() {
                         <CardTitle className="flex items-center gap-2 text-sm">
                             <UserSwitchIcon size={16} className="text-gray-500" />
                             Mouvements joueurs
+                            <button
+                                onClick={() => setMovementFilter(movementFilter === "active" ? "inactive" : "active")}
+                                className={`ml-auto p-1 rounded-md transition-colors ${
+                                    movementFilter === "active"
+                                        ? "text-green-500 hover:text-green-600"
+                                        : "text-red-400 hover:text-red-500"
+                                }`}
+                                title={movementFilter === "active" ? "Inscrits" : "Désinscrits"}
+                            >
+                                <FilterIcon size={14} />
+                            </button>
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex flex-col items-center justify-center py-6 text-gray-400">
-                            <UserSwitchIcon size={28} className="mb-3" />
-                            <p className="text-sm text-center">Nouvelles inscriptions et désinscriptions pour la série en cours</p>
-                            <p className="text-xs mt-1">À venir</p>
-                        </div>
+                        <PlayerMovementsFeed
+                            movements={filteredMovements}
+                            loading={playerMovements.loading}
+                        />
                     </CardContent>
                 </Card>
 

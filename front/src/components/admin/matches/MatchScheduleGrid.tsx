@@ -231,7 +231,7 @@ export function MatchScheduleGrid({
                         <button onClick={() => setDropError(null)} className="text-red-400 hover:text-red-600 ml-2">&times;</button>
                     </div>
                 )}
-                <ScrollArea className="flex-1 min-h-0" type="always">
+                <ScrollArea className="flex-1 min-h-0" type="auto">
                     <div className="space-y-6">
                         {sortedDates.map(date => {
                             const dayMatches = matchesByDate.get(date) || []

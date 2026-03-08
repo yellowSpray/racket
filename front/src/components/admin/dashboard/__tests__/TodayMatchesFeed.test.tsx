@@ -49,8 +49,8 @@ describe('TodayMatchesFeed', () => {
 
         render(<TodayMatchesFeed matches={matches} matchDate="2026-03-08" loading={false} />)
 
-        expect(screen.getByText('19:00')).toBeInTheDocument()
-        expect(screen.getByText('19:30')).toBeInTheDocument()
+        expect(screen.getAllByText('19:00').length).toBeGreaterThanOrEqual(1)
+        expect(screen.getAllByText('19:30').length).toBeGreaterThanOrEqual(1)
         // Both mobile and desktop render, so multiple elements expected
         expect(screen.getAllByText('Alice Martin').length).toBeGreaterThanOrEqual(1)
         expect(screen.getAllByText('Claire Roy').length).toBeGreaterThanOrEqual(1)

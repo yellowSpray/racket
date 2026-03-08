@@ -34,7 +34,7 @@ export function DataTable<TData, TValue>({
     })
 
     return (
-        <ScrollArea className="rounded-md border h-full" type="always">
+        <ScrollArea className="rounded-md border h-full" type="auto">
             <Table>
                 <TableHeader className="sticky top-0 z-10 bg-background">
                     {table.getHeaderGroups().map((headerGroup) => (
