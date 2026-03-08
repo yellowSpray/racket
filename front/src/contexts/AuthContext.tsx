@@ -15,6 +15,13 @@ export function AuthProvider({ children }: { children: ReactNode}) {
     const [profile, setProfile] = useState<UserProfile | null>(null)
     const [isLoading, setIsLoading] = useState<boolean>(true)
     const isFetchingProfile = useRef(false)
+    const profileRef = useRef<UserProfile | null>(null)
+
+    // Wrapper pour garder le ref synchronisé avec le state
+    const updateProfile = (p: UserProfile | null) => {
+        profileRef.current = p
+        setProfile(p)
+    }
 
     useEffect(() => {
 
@@ -59,12 +66,25 @@ export function AuthProvider({ children }: { children: ReactNode}) {
 
         initializeAuth();
 
+        // --- DEBUG : tracer les événements réseau et visibilité ---                                                                                           
+            const onOnline = () => logger.info("AuthContext.debug", "🟢 navigator: + online")        
+            const onOffline = () => logger.info("AuthContext.debug", "🔴 +navigator: offline")                  
+            const onVisibility = () => logger.info("AuthContext.debug", `👁 +visibilitychange: ${document.visibilityState}`)
+            window.addEventListener("online", onOnline)                
+            window.addEventListener("offline", onOffline)                                                                                                           
+            document.addEventListener("visibilitychange", onVisibility)                                                                                             
+        // --- FIN DEBUG --- 
+
         // Écoute les changements d'authentification
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, session) => {
 
+                logger.info("AuthContext.debug", `onAuthStateChange: event="${event}", session=${session ? "valide" : "null"}, -online=${navigator.onLine}, visibility=${document.visibilityState}`)                                 
+          
+
                 // Ignore TOKEN_REFRESHED
                 if (event === 'TOKEN_REFRESHED') {
+                    logger.info("AuthContext", `TOKEN_REFRESHED — session ${session ? "valide" : "null"}, token expire à ${session?.expires_at ? new Date(session.expires_at * 1000).toLocaleTimeString() : "??"}`)
                     if (mounted) setSession(session)
                     return;
                 }
@@ -84,10 +104,12 @@ export function AuthProvider({ children }: { children: ReactNode}) {
                 setSession(session)
 
                 if (session && event === 'SIGNED_IN') {
+                    // Skip si c'est le même user (re-validation au retour sur l'onglet)
+                    if (profileRef.current?.id === session.user.id) return
                     isFetchingProfile.current = false
                     await fetchProfile(session.user.id)
                 } else if (!session && event === 'SIGNED_OUT') {
-                    setProfile(null)
+                    updateProfile(null)
                     isFetchingProfile.current = false
                     setIsLoading(false)
                 }
@@ -123,13 +145,13 @@ export function AuthProvider({ children }: { children: ReactNode}) {
             if (error) {
                 endLog({ error: error.message })
                 // Ne pas effacer un profil existant sur une erreur transitoire
-                if (!profile) setProfile(null);
+                if (!profileRef.current) updateProfile(null);
             } else if (!data) {
                 endLog({ error: "Profil non trouvé" })
-                setProfile(null);
+                updateProfile(null);
             } else {
                 endLog()
-                setProfile(data);
+                updateProfile(data);
             }
 
         } catch (err) {
@@ -141,7 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode}) {
                 return fetchProfile(userId, retries - 1)
             }
             // Plus de retries : garder le profil existant s'il y en a un
-            if (!profile) setProfile(null);
+            if (!profileRef.current) updateProfile(null);
         } finally {
             isFetchingProfile.current = false
             setIsLoading(false);
