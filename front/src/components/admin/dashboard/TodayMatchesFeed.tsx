@@ -54,7 +54,7 @@ export function TodayMatchesFeed({ matches, matchDate, loading }: TodayMatchesFe
         <div className="flex flex-col h-full min-h-0">
             <div className="flex-1 min-h-0">
                 <ScrollArea className="h-full" type="auto">
-                    <div className="flex flex-col gap-4 pr-3">
+                    <div className="flex flex-col gap-4">
                         {Array.from(timeSlots.entries()).map(([time, slotMatches]) => (
                             <div key={time}>
                                 {/* Desktop : table avec header heure */}

@@ -11,7 +11,7 @@ function ScrollArea({
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
-      className={cn("relative", className)}
+      className={cn("relative [&:has([data-slot=scroll-area-scrollbar][data-state=visible])>[data-slot=scroll-area-viewport]>div]:pr-3", className)}
       {...props}
     >
       <ScrollAreaPrimitive.Viewport

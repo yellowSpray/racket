@@ -95,7 +95,7 @@ export function UserDraws() {
                     {clubName && <span className="text-sm text-muted-foreground">- {clubName}</span>}
                 </div>
                 <ScrollArea className="flex-1 min-h-0" type="auto">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pr-3">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                         {groups.map(group => (
                             <DrawTable
                                 key={group.id}
@@ -137,7 +137,7 @@ export function UserDraws() {
                 )}
 
                 {tab === "tous" && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pr-3">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                         {groups.map(group => (
                             <DrawTable
                                 key={group.id}

@@ -15,8 +15,10 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useClubConfig } from "@/hooks/useClubConfig"
 import { TodayMatchesFeed } from "@/components/admin/dashboard/TodayMatchesFeed"
 import { PlayerMovementsFeed } from "@/components/admin/dashboard/PlayerMovementsFeed"
+import { UnpaidPaymentsFeed } from "@/components/admin/dashboard/UnpaidPaymentsFeed"
 import { useTodayMatches } from "@/hooks/useTodayMatches"
 import { usePlayerMovements } from "@/hooks/usePlayerMovements"
+import { useUnpaidPayments } from "@/hooks/useUnpaidPayments"
 import { formatDateLabel } from "@/lib/formatDateLabel"
 
 type MovementFilter = "active" | "inactive"
@@ -65,6 +67,7 @@ export function AdminDashboard() {
     }, [profile?.club_id, fetchClubConfig])
     const todayMatches = useTodayMatches(currentEvent?.id ?? null)
     const playerMovements = usePlayerMovements(currentEvent?.id ?? null, currentEvent?.club_id ?? null)
+    const unpaidPayments = useUnpaidPayments(profile?.club_id ?? null)
     const [movementFilter, setMovementFilter] = useState<MovementFilter>("active")
 
     const filteredMovements = playerMovements.movements.filter((m) => m.status === movementFilter)
@@ -79,7 +82,7 @@ export function AdminDashboard() {
                 )}
             </div>
 
-{/* Rangée du haut — 4 cards */}
+            {/* Rangée du haut — 4 cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                 {/* Mouvements joueurs */}
                 <Card>
@@ -114,14 +117,21 @@ export function AdminDashboard() {
                         <CardTitle className="flex items-center gap-2 text-sm">
                             <CreditCardIcon size={16} className="text-gray-500" />
                             Paiements
+                            {unpaidPayments.payments.length > 0 && (
+                                <Badge
+                                    variant="unpaid"
+                                    className="ml-auto text-xs px-2 py-0.5"
+                                >
+                                    {unpaidPayments.payments.length}
+                                </Badge>
+                            )}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex flex-col items-center justify-center py-6 text-gray-400">
-                            <CreditCardIcon size={28} className="mb-3" />
-                            <p className="text-sm text-center">Statut des paiements joueurs pour la série en cours</p>
-                            <p className="text-xs mt-1">À venir</p>
-                        </div>
+                        <UnpaidPaymentsFeed
+                            payments={unpaidPayments.payments}
+                            loading={unpaidPayments.loading}
+                        />
                     </CardContent>
                 </Card>
 

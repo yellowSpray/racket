@@ -30,7 +30,7 @@ export function PlayerMovementsFeed({ movements, loading }: PlayerMovementsFeedP
 
     return (
         <ScrollArea className="h-full max-h-48" type="auto">
-            <div className="pr-3">
+            <div>
                 <Table>
                     <TableBody>
                         {movements.map((m) => (
