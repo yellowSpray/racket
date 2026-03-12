@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/toggle-group"
 import { Field, FieldLabel, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input"
-import { ZapIcon, UserGroupIcon, EuroIcon } from 'hugeicons-react';
+import { ZapIcon, UserGroupIcon, EuroIcon, Add01Icon } from 'hugeicons-react';
 import type { PlayerType } from "@/types/player";
 
 interface EditPlayersProps {
@@ -79,9 +79,6 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, open: controll
         if(open) {
             setIsSubmitting(false) // reset
             if(mode === "edit" && playerData) {
-                // mode edition donc on charge les données
-                // mode edition donc on charge les données
-
                 setFormData({
                     first_name: playerData.first_name,
                     last_name: playerData.last_name,
@@ -358,7 +355,10 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, open: controll
         <Dialog open={open} onOpenChange={setOpen}>
             {!isControlled && (
                 <DialogTrigger asChild>
-                    <Button variant="default">Ajouter un joueur</Button>
+                    <Button variant="default" size="lg">
+                        <Add01Icon stroke="2"/>
+                        Ajouter
+                    </Button>
                 </DialogTrigger>
             )}
                 <DialogContent>

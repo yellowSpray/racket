@@ -1,6 +1,11 @@
 export type PlayerStatus = "active" | "inactive" | "member" | "visitor"
 export type PaymentStatus = "paid" | "unpaid"
 
+export type PlayerPayment = {
+    event_name: string
+    status: PaymentStatus
+}
+
 export type PlayerType = {
     id: string
     first_name: string
@@ -12,6 +17,7 @@ export type PlayerType = {
     unavailable: string[]
     status: PlayerStatus[]
     payment_status?: PaymentStatus
+    payments: PlayerPayment[]
     power_ranking: number
     box: string
 }

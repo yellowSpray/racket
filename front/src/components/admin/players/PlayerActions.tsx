@@ -7,33 +7,20 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { MoreHorizontalIcon, PencilEdit01Icon, UserRemove01Icon } from "hugeicons-react";
+import { MoreHorizontalIcon, PencilEdit01Icon } from "hugeicons-react";
 import type { PlayerType } from "@/types/player";
 
-export function PlayerActions({ player, updatePlayer, removePlayer, canRemove }: {
+export function PlayerActions({ player, updatePlayer }: {
     player: PlayerType
     updatePlayer: (id: string, data: Partial<PlayerType>) => Promise<void>
-    removePlayer: (id: string) => Promise<void>
-    canRemove: boolean
 }) {
     const [editOpen, setEditOpen] = useState(false)
-    const [removeOpen, setRemoveOpen] = useState(false)
 
     return (
         <>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
+                    <Button variant="icon" className="border-0" size="icon">
                         <MoreHorizontalIcon />
                     </Button>
                 </DropdownMenuTrigger>
@@ -41,14 +28,6 @@ export function PlayerActions({ player, updatePlayer, removePlayer, canRemove }:
                     <DropdownMenuItem onSelect={() => setEditOpen(true)}>
                         <PencilEdit01Icon /> Modifier
                     </DropdownMenuItem>
-                    {canRemove && (
-                        <DropdownMenuItem
-                            variant="destructive"
-                            onSelect={() => setRemoveOpen(true)}
-                        >
-                            <UserRemove01Icon /> Retirer
-                        </DropdownMenuItem>
-                    )}
                 </DropdownMenuContent>
             </DropdownMenu>
 
@@ -59,23 +38,6 @@ export function PlayerActions({ player, updatePlayer, removePlayer, canRemove }:
                 open={editOpen}
                 onOpenChange={setEditOpen}
             />
-
-            <AlertDialog open={removeOpen} onOpenChange={setRemoveOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Retirer le joueur</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Voulez-vous vraiment retirer {player.first_name} {player.last_name} de cet événement ? Le compte du joueur ne sera pas supprimé.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Annuler</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => removePlayer(player.id)}>
-                            Retirer
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
         </>
     )
 }

@@ -35,7 +35,7 @@ export function DataTable<TData, TValue>({
 
     return (
         <ScrollArea className="rounded-md border h-full" type="auto">
-            <Table>
+            <Table className="w-full">
                 <TableHeader className="sticky top-0 z-10 bg-background">
                     {table.getHeaderGroups().map((headerGroup) => (
                         <TableRow key={headerGroup.id}>
@@ -43,6 +43,8 @@ export function DataTable<TData, TValue>({
                                 return (
                                     <TableHead
                                         key={header.id}
+                                        colSpan={header.colSpan}
+                                        style={{ minWidth: header.column.columnDef.minSize }}
                                         className={`${header.column.columnDef.meta?.className || ''} ${header.column.getCanSort() ? 'cursor-pointer select-none hover:bg-muted/50' : ''}`}
                                         onClick={header.column.getToggleSortingHandler()}
                                     >
@@ -77,6 +79,7 @@ export function DataTable<TData, TValue>({
                                 {row.getVisibleCells().map((cell) => (
                                     <TableCell
                                         key={cell.id}
+                                        style={{ minWidth: cell.column.columnDef.minSize }}
                                         className={cell.column.columnDef.meta?.className}
                                     >
                                         {flexRender(cell.column.columnDef.cell, cell.getContext())}

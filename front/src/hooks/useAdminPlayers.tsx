@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabaseClient"
 import { useCallback, useEffect, useState } from "react"
-import type { PlayerType, PlayerStatus, PaymentStatus } from "@/types/player"
+import type { PlayerType, PlayerStatus, PaymentStatus, PlayerPayment } from "@/types/player"
 import { useAuth } from "@/contexts/AuthContext"
 import { handleHookError, withTimeout } from "@/lib/handleHookError"
 import { logger } from "@/lib/logger"
@@ -26,6 +26,7 @@ type SupabaseGroupPlayer = {
 
 type SupabasePayment = {
     status: PaymentStatus
+    events: { event_name: string }
 }
 
 type SupabasePlayer = {
@@ -88,6 +89,14 @@ export function useAdminPlayers() {
             // Récupérer le statut de paiement depuis la table payments (contexte événement)
             const paymentStatus = player.payments?.[0]?.status as PaymentStatus | undefined
 
+            // Mapper tous les paiements (toutes séries)
+            const payments: PlayerPayment[] = (player.payments || [])
+                .filter(p => p.events?.event_name)
+                .map(p => ({
+                    event_name: p.events.event_name,
+                    status: p.status,
+                }))
+
             // Récupérer le nom du groupe (box) si disponible
             const groupName = player.group_players?.[0]?.groups?.group_name || ""
 
@@ -103,6 +112,7 @@ export function useAdminPlayers() {
                 unavailable: player.absences?.map((d: SupabaseAbsence) => d.absent_date) || [],
                 status: sortedStatus,
                 payment_status: paymentStatus,
+                payments,
                 power_ranking: player.power_ranking ?? 0,
                 box: groupName,
             }
@@ -122,7 +132,7 @@ export function useAdminPlayers() {
             const { data, error: fetchError } = await withTimeout(
                 supabase
                     .from("profiles")
-                    .select("*, player_status(status), schedule(arrival, departure), absences(absent_date)")
+                    .select("*, player_status(status), schedule(arrival, departure), absences(absent_date), payments(status, events(event_name))")
                     .order("created_at", { ascending: false }),
                 "useAdminPlayers.fetchAll"
             )

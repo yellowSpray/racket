@@ -16,17 +16,11 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
   DropdownMenuItem: ({ children, onSelect }: { children: React.ReactNode, onSelect?: () => void }) => <button onClick={onSelect}>{children}</button>,
 }))
 
-// Mock alert-dialog
-vi.mock('@/components/ui/alert-dialog', () => ({
-  AlertDialog: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  AlertDialogTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  AlertDialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  AlertDialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  AlertDialogFooter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  AlertDialogTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  AlertDialogDescription: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  AlertDialogAction: ({ children, onClick }: { children: React.ReactNode, onClick?: () => void }) => <button onClick={onClick}>{children}</button>,
-  AlertDialogCancel: ({ children }: { children: React.ReactNode }) => <button>{children}</button>,
+// Mock tooltip
+vi.mock('@/components/ui/tooltip', () => ({
+  Tooltip: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  TooltipTrigger: ({ children, asChild }: { children: React.ReactNode, asChild?: boolean }) => <div data-testid="tooltip-trigger">{children}</div>,
+  TooltipContent: ({ children }: { children: React.ReactNode }) => <div data-testid="tooltip-content">{children}</div>,
 }))
 
 const makePlayer = (overrides: Partial<PlayerType> = {}): PlayerType => ({
@@ -39,6 +33,7 @@ const makePlayer = (overrides: Partial<PlayerType> = {}): PlayerType => ({
   departure: '22:00',
   unavailable: [],
   status: ['active', 'member'],
+  payments: [],
   power_ranking: 5,
   box: '',
   ...overrides,
@@ -46,18 +41,16 @@ const makePlayer = (overrides: Partial<PlayerType> = {}): PlayerType => ({
 
 describe('PlayerColumns', () => {
   const mockUpdatePlayer = vi.fn()
-  const mockRemovePlayer = vi.fn()
 
   it('returns an array of column definitions', () => {
-    const cols = columns(mockUpdatePlayer, mockRemovePlayer, true)
+    const cols = columns(mockUpdatePlayer)
     expect(Array.isArray(cols)).toBe(true)
     expect(cols.length).toBeGreaterThan(0)
   })
 
   it('includes expected column headers', () => {
-    const cols = columns(mockUpdatePlayer, mockRemovePlayer, true)
+    const cols = columns(mockUpdatePlayer)
     const headers = cols.map(c => c.header)
-    expect(headers).toContain('Boxes')
     expect(headers).toContain('Prénom Nom')
     expect(headers).toContain('Téléphone')
     expect(headers).toContain('Email')
@@ -65,14 +58,14 @@ describe('PlayerColumns', () => {
     expect(headers).toContain('Départ')
     expect(headers).toContain('Absence')
     expect(headers).toContain('Status')
+    expect(headers).toContain('Paiement')
     expect(headers).toContain('Force')
     expect(headers).toContain('Actions')
   })
 
   it('has a full_name accessor that concatenates first and last name', () => {
-    const cols = columns(mockUpdatePlayer, mockRemovePlayer, true)
+    const cols = columns(mockUpdatePlayer)
     const fullNameCol = cols.find(c => c.header === 'Prénom Nom')
-    // accessorFn should exist
     expect(fullNameCol).toBeDefined()
     if (fullNameCol && 'accessorFn' in fullNameCol && fullNameCol.accessorFn) {
       const result = fullNameCol.accessorFn(makePlayer(), 0)
@@ -81,7 +74,7 @@ describe('PlayerColumns', () => {
   })
 
   it('renders unavailable dates as badges in absence column', () => {
-    const cols = columns(mockUpdatePlayer, mockRemovePlayer, true)
+    const cols = columns(mockUpdatePlayer)
     const absenceCol = cols.find(c => c.header === 'Absence')
     expect(absenceCol).toBeDefined()
     if (absenceCol && 'cell' in absenceCol && absenceCol.cell) {
@@ -97,7 +90,7 @@ describe('PlayerColumns', () => {
   })
 
   it('renders status badges in status column', () => {
-    const cols = columns(mockUpdatePlayer, mockRemovePlayer, true)
+    const cols = columns(mockUpdatePlayer)
     const statusCol = cols.find(c => c.header === 'Status')
     expect(statusCol).toBeDefined()
     if (statusCol && 'cell' in statusCol && statusCol.cell) {
@@ -112,8 +105,8 @@ describe('PlayerColumns', () => {
     }
   })
 
-  it('renders the actions column with dropdown menu', () => {
-    const cols = columns(mockUpdatePlayer, mockRemovePlayer, true)
+  it('renders the actions column with edit option', () => {
+    const cols = columns(mockUpdatePlayer)
     const actionsCol = cols.find(c => c.header === 'Actions')
     expect(actionsCol).toBeDefined()
     if (actionsCol && 'cell' in actionsCol && actionsCol.cell) {
@@ -124,12 +117,64 @@ describe('PlayerColumns', () => {
       }
       render(<CellComponent row={mockRow} />)
       expect(screen.getByText('Modifier')).toBeInTheDocument()
-      expect(screen.getAllByText('Retirer').length).toBeGreaterThanOrEqual(1)
     }
   })
 
   it('has 10 columns total', () => {
-    const cols = columns(mockUpdatePlayer, mockRemovePlayer, true)
+    const cols = columns(mockUpdatePlayer)
     expect(cols.length).toBe(10)
+  })
+
+  it('renders all payment badges when 2 or fewer', () => {
+    const cols = columns(mockUpdatePlayer)
+    const paymentCol = cols.find(c => c.header === 'Paiement')
+    expect(paymentCol).toBeDefined()
+    if (paymentCol && 'cell' in paymentCol && paymentCol.cell) {
+      const CellComponent = paymentCol.cell as React.FC<{ row: { original: PlayerType; getValue: ReturnType<typeof vi.fn> } }>
+      const mockRow = {
+        original: makePlayer({
+          payments: [
+            { event_name: 'Série 41', status: 'paid' },
+            { event_name: 'Série 42', status: 'unpaid' },
+          ],
+        }),
+        getValue: vi.fn(),
+      }
+      render(<CellComponent row={mockRow} />)
+      expect(screen.getByText('Série 41')).toBeInTheDocument()
+      expect(screen.getByText('Série 42')).toBeInTheDocument()
+      expect(screen.queryByText(/\+\d/)).not.toBeInTheDocument()
+    }
+  })
+
+  it('truncates payment badges and shows +N when more than 2', () => {
+    const cols = columns(mockUpdatePlayer)
+    const paymentCol = cols.find(c => c.header === 'Paiement')
+    expect(paymentCol).toBeDefined()
+    if (paymentCol && 'cell' in paymentCol && paymentCol.cell) {
+      const CellComponent = paymentCol.cell as React.FC<{ row: { original: PlayerType; getValue: ReturnType<typeof vi.fn> } }>
+      const mockRow = {
+        original: makePlayer({
+          payments: [
+            { event_name: 'Série 41', status: 'paid' },
+            { event_name: 'Série 42', status: 'unpaid' },
+            { event_name: 'Série 43', status: 'paid' },
+            { event_name: 'Série 44', status: 'unpaid' },
+          ],
+        }),
+        getValue: vi.fn(),
+      }
+      render(<CellComponent row={mockRow} />)
+      // Visible badges (also duplicated in tooltip)
+      expect(screen.getAllByText('Série 41').length).toBeGreaterThanOrEqual(1)
+      expect(screen.getAllByText('Série 42').length).toBeGreaterThanOrEqual(1)
+      // +N badge
+      expect(screen.getByText('+2')).toBeInTheDocument()
+      // Tooltip content with all badges
+      expect(screen.getByTestId('tooltip-content')).toBeInTheDocument()
+      // Hidden badges only appear in tooltip
+      expect(screen.getByText('Série 43')).toBeInTheDocument()
+      expect(screen.getByText('Série 44')).toBeInTheDocument()
+    }
   })
 })
