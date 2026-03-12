@@ -3,7 +3,7 @@ import Logo from "@/components/ui/logo"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/contexts/AuthContext"
-import { Notification03Icon, Moon02Icon, Sun03Icon, LoginCircle01Icon } from "hugeicons-react"
+import { Notification03Icon, Moon02Icon, Sun03Icon, ArrowDown01Icon } from "hugeicons-react"
 import { useEffect, useState } from "react"
 // import { supabase } from "@/lib/supabaseClient"
 
@@ -41,34 +41,32 @@ export default function Header() {
 
         {/* Right side */}
         {isAuthenticated && profile ? (
-          <div className="flex items-center gap-2">
-            <Button className="rounded-full bg-accent hover:bg-gray-200" onClick={() => setDarkMode(!darkMode)}>
+          <div className="flex items-center gap-4">
+            <Button variant="icon" size="icon" onClick={() => setDarkMode(!darkMode)}>
               {darkMode ? <Sun03Icon size={20} /> : <Moon02Icon size={20} />}
             </Button>
-            <Button className="rounded-full bg-accent relative hover:bg-gray-200">
+            <Button variant="icon" size="icon" className="relative">
               <Notification03Icon size={20} />
-              <span className="absolute top-2 right-3 w-2 h-2 bg-rose-500 rounded-full border border-white dark:border-slate-900" />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border border-white dark:border-slate-900" />
             </Button>
-            <button className="flex items-center gap-2 pr-4 pl-1 py-[4px] bg-accent rounded-xl hover:bg-gray-200 hover:text-accent-foreground transition-colors duration-200 ease-out">
+            <Button variant="outline" className="p-1">
               <Avatar>
                 <AvatarImage
                   src={profile?.avatar_url || "https://github.com/shadcn.png"}
                   alt={`${profile?.first_name} ${profile?.last_name}`}
                 />
               </Avatar>
-              <span className="text-sm font-medium">{`${profile?.first_name} ${profile?.last_name}`}</span>
-              <svg width="10" height="6" viewBox="0 0 10 6" fill="currentColor" className="text-muted-foreground">
-                <path d="M5 6L0 0h10L5 6z" />
-              </svg>
-            </button>
+              <span>{`${profile?.first_name} ${profile?.last_name}`}</span>
+              <ArrowDown01Icon size={20} />
+            </Button>
           </div>
         ) : ( 
           <div className="flex items-center gap-[15px]">
-            <Button variant="ghost" onClick={() => setDarkMode(!darkMode)}>
+            <Button variant="icon" size="icon" onClick={() => setDarkMode(!darkMode)}>
               {darkMode ? <Sun03Icon size={20} /> : <Moon02Icon size={20} />}
             </Button>
-            <Button asChild size="sm" className="text-sm shadow-none border-green-500 border-1 font-semibold">
-              <Link to="/auth"><LoginCircle01Icon size={16} /> Commencer</Link>
+            <Button asChild variant="default">
+              <Link to="/auth">Commencer</Link>
             </Button>
           </div>
         )}

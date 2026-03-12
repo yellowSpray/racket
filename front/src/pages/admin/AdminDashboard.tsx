@@ -72,8 +72,8 @@ export function AdminDashboard() {
 
     const filteredMovements = playerMovements.movements.filter((m) => m.status === movementFilter)
     return (
-        <div className="flex flex-col h-full min-h-0 gap-6">
-            <div className="flex items-center gap-3">
+        <div className="flex flex-col h-full min-h-0 gap-5">
+            <div className="flex items-center gap-2">
                 <h3 className="text-lg font-semibold">Dashboard</h3>
                 {(clubConfig || currentEvent) && (
                     <span className="text-sm text-muted-foreground">
@@ -82,10 +82,10 @@ export function AdminDashboard() {
                 )}
             </div>
 
-            {/* Rangée du haut — 4 cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+            {/* Grille 22 colonnes alignée sur le parent */}
+            <div className="flex-1 min-h-0 grid grid-cols-28 grid-rows-16 gap-5">
                 {/* Mouvements joueurs */}
-                <Card>
+                <Card className="col-span-7 row-span-7">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-sm">
                             <UserSwitchIcon size={16} className="text-gray-500" />
@@ -112,7 +112,7 @@ export function AdminDashboard() {
                 </Card>
 
                 {/* Paiements */}
-                <Card>
+                <Card className="col-span-7 row-span-7">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-sm">
                             <CreditCardIcon size={16} className="text-gray-500" />
@@ -135,25 +135,8 @@ export function AdminDashboard() {
                     </CardContent>
                 </Card>
 
-                {/* Présences confirmées */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-sm">
-                            <UserGroupIcon size={16} className="text-gray-500" />
-                            Présences
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-col items-center justify-center py-6 text-gray-400">
-                            <UserGroupIcon size={28} className="mb-3" />
-                            <p className="text-sm text-center">Joueurs ayant confirmé leur présence pour la prochaine date</p>
-                            <p className="text-xs mt-1">À venir</p>
-                        </div>
-                    </CardContent>
-                </Card>
-
                 {/* Alertes */}
-                <Card>
+                <Card className="col-span-7 row-span-7">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-sm">
                             <AlertCircleIcon size={16} className="text-gray-500" />
@@ -168,12 +151,26 @@ export function AdminDashboard() {
                         </div>
                     </CardContent>
                 </Card>
-            </div>
 
-            {/* Rangée du bas — 2 cards larges */}
-            <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-4 gap-6">
-                {/* Feed matchs du jour / lendemain */}
-                <Card className="lg:col-span-3 min-h-0">
+                {/* Présences */}
+                <Card className="col-span-7 row-span-4">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-sm">
+                            <UserGroupIcon size={16} className="text-gray-500" />
+                            Présences
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-1 flex items-center justify-center">
+                        <div className="flex flex-col items-center text-gray-400">
+                            <UserGroupIcon size={24} className="mb-2" />
+                            <p className="text-xs text-center">Confirmations de présence</p>
+                            <p className="text-xs mt-1">À venir</p>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Matchs du jour */}
+                <Card className="col-span-21 row-span-9 min-h-0">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-sm">
                             <Calendar03Icon size={16} className="text-gray-500" />
@@ -203,17 +200,17 @@ export function AdminDashboard() {
                 </Card>
 
                 {/* Scores en attente */}
-                <Card>
+                <Card className="col-span-7 col-start-22 row-start-5 row-span-12 min-h-0">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-sm">
                             <TaskEdit01Icon size={16} className="text-gray-500" />
                             Scores en attente
                         </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                            <TaskEdit01Icon size={32} className="mb-3" />
-                            <p className="text-sm text-center">Matchs joués dont les résultats n'ont pas encore été saisis ou validés</p>
+                    <CardContent className="flex-1 flex items-center justify-center">
+                        <div className="flex flex-col items-center text-gray-400">
+                            <TaskEdit01Icon size={28} className="mb-2" />
+                            <p className="text-xs text-center">Résultats à saisir</p>
                             <p className="text-xs mt-1">À venir</p>
                         </div>
                     </CardContent>
