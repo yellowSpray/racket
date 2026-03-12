@@ -20,6 +20,7 @@ const AdminDraws = lazy(() => import("@/pages/admin/AdminDraws").then(m => ({ de
 const AdminMatches = lazy(() => import("@/pages/admin/AdminMatches").then(m => ({ default: m.AdminMatches })))
 const AdminPlayers = lazy(() => import("@/pages/admin/AdminPlayers").then(m => ({ default: m.AdminPlayers })))
 const AdminSettings = lazy(() => import("@/pages/admin/AdminSettings").then(m => ({ default: m.AdminSettings })))
+const AdminEmail = lazy(() => import("@/pages/admin/AdminEmail").then(m => ({ default: m.AdminEmail })))
 
 function withSuspense(Component: React.LazyExoticComponent<React.ComponentType>) {
     return (
@@ -71,6 +72,7 @@ const router = createBrowserRouter([
                             { path: "draws", element: withSuspense(AdminDraws) },
                             { path: "matches", element: withSuspense(AdminMatches) },
                             { path: "players", element: withSuspense(AdminPlayers) },
+                            { path: "email", element: withSuspense(AdminEmail) },
                             { path: "settings", element: withSuspense(AdminSettings) }
                         ]
                     }
