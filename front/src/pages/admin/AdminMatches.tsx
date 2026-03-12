@@ -161,9 +161,9 @@ export function AdminMatches() {
 
     if (!currentEvent) {
         return (
-            <div className="h-full flex flex-col">
+            <div className="h-full flex flex-col min-h-0">
                 <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
                         <h3 className="text-lg font-semibold">Matchs</h3>
                         <EventSelector />
                     </div>
@@ -191,32 +191,32 @@ export function AdminMatches() {
         <div className="flex flex-col h-full min-h-0">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
                     <h3 className="text-lg font-semibold">Matchs</h3>
                     <EventSelector />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                     {hasMatches && (
-                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setViewMode(v => v === "grid" ? "list" : "grid")}>
-                            {viewMode === "grid" ? <ListViewIcon className="h-4 w-4" /> : <GridViewIcon className="h-4 w-4" />}
+                        <Button variant="icon" size="icon" onClick={() => setViewMode(v => v === "grid" ? "list" : "grid")}>
+                            {viewMode === "grid" ? <ListViewIcon /> : <GridViewIcon />}
                         </Button>
                     )}
                     {editMode ? (
                         <>
-                            <Button variant="outline" size="sm" onClick={handleCancelEditMode}>
-                                <Cancel01Icon className="mr-2 h-4 w-4" />
-                                Annuler
+                            <Button variant="icon" size="icon" onClick={handleCancelEditMode}>
+                                <Cancel01Icon />
                             </Button>
-                            <Button size="sm" onClick={handleSaveScores}>
-                                <FloppyDiskIcon className="mr-2 h-4 w-4" />
+                            <Button size="lg" onClick={handleSaveScores}>
+                                <FloppyDiskIcon />
                                 Enregistrer tout
                             </Button>
                         </>
                     ) : (
                         <>
                             {hasMatches && (
-                                <Button size="icon" className="h-8 w-8" onClick={handleEnterEditMode}>
-                                    <PencilEdit01Icon className="h-4 w-4" />
+                                <Button size="lg" onClick={handleEnterEditMode}>
+                                    <PencilEdit01Icon />
+                                    Modifier
                                 </Button>
                             )}
                         </>

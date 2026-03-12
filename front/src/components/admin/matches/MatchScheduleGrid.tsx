@@ -57,10 +57,6 @@ function parseSlotId(id: string): { date: string; time: string; court: string } 
     return { date: parts[1], time: parts[2], court: parts[3] }
 }
 
-// ---------------------------------------------------------------------------
-// DraggableMatch — wraps a match cell that can be dragged
-// ---------------------------------------------------------------------------
-
 function DraggableMatch({
     match,
     editMode,
@@ -95,10 +91,6 @@ function DraggableMatch({
     )
 }
 
-// ---------------------------------------------------------------------------
-// DroppableSlot — wraps an empty cell that accepts a dropped match
-// ---------------------------------------------------------------------------
-
 function DroppableSlot({ id }: { id: string }) {
     const { setNodeRef, isOver } = useDroppable({ id })
 
@@ -114,10 +106,6 @@ function DroppableSlot({ id }: { id: string }) {
     )
 }
 
-// ---------------------------------------------------------------------------
-// MatchScheduleGrid
-// ---------------------------------------------------------------------------
-
 export function MatchScheduleGrid({
     matches,
     event,
@@ -127,6 +115,7 @@ export function MatchScheduleGrid({
     onMatchDrop,
     playerConstraints,
 }: MatchScheduleGridProps) {
+    const dndEnabled = !!onMatchDrop
     const [activeMatch, setActiveMatch] = useState<Match | null>(null)
     const [dropError, setDropError] = useState<string | null>(null)
 
@@ -188,7 +177,6 @@ export function MatchScheduleGrid({
         const slot = parseSlotId(overId)
         if (!slot) return
 
-        // Validate constraints if available
         if (playerConstraints && draggedMatch) {
             const p1 = draggedMatch.player1
             const p2 = draggedMatch.player2
@@ -218,92 +206,110 @@ export function MatchScheduleGrid({
         })
     }
 
+    const gridContent = (
+        <div className="flex flex-col h-full min-h-0 overflow-hidden">
+            {dropError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded mb-2 text-sm flex items-center justify-between">
+                    <span>{dropError}</span>
+                    <button onClick={() => setDropError(null)} className="text-red-400 hover:text-red-600 ml-2">&times;</button>
+                </div>
+            )}
+            <ScrollArea className="flex-1 min-h-0" type="auto">
+                <div className="space-y-6">
+                    {sortedDates.map(date => {
+                        const dayMatches = matchesByDate.get(date) || []
+                        const label = formatDateLabel(date)
+
+                        return (
+                            <div key={date}>
+                                <div>
+                                    <div className="overflow-x-auto bg-card border-gray-200 border-1 rounded-xl">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead colSpan={courts.length + 1} className="text-center text-xs font-semibold uppercase">
+                                                        {label}
+                                                    </TableHead>
+                                                </TableRow>
+                                                <TableRow>
+                                                    <TableHead className="w-20 text-center bg-gray-50 font-bold">
+                                                        Heure
+                                                    </TableHead>
+                                                    {courts.map(court => (
+                                                        <TableHead
+                                                            key={court}
+                                                            className="text-center bg-gray-50 font-bold min-w-[140px]"
+                                                        >
+                                                            {court}
+                                                        </TableHead>
+                                                    ))}
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {timeSlots.map(time => (
+                                                    <TableRow key={time}>
+                                                        <TableCell className="text-center font-medium bg-gray-50">
+                                                            {time}
+                                                        </TableCell>
+                                                        {courts.map(court => {
+                                                            const m = findMatch(dayMatches, time, court)
+                                                            return (
+                                                                <TableCell
+                                                                    key={court}
+                                                                    className="text-center border-l p-1"
+                                                                >
+                                                                    {m ? (
+                                                                        dndEnabled ? (
+                                                                            <DraggableMatch
+                                                                                match={m}
+                                                                                editMode={editMode}
+                                                                                scoreValue={pendingScores?.get(m.id)}
+                                                                                onScoreChange={(v) => onScoreChange?.(m.id, v)}
+                                                                            />
+                                                                        ) : (
+                                                                            <MatchCell
+                                                                                match={m}
+                                                                                editMode={editMode}
+                                                                                scoreValue={pendingScores?.get(m.id)}
+                                                                                onScoreChange={(v) => onScoreChange?.(m.id, v)}
+                                                                            />
+                                                                        )
+                                                                    ) : (
+                                                                        dndEnabled ? (
+                                                                            <DroppableSlot id={slotId(date, time, court)} />
+                                                                        ) : (
+                                                                            <div className="py-2 text-center text-gray-300">—</div>
+                                                                        )
+                                                                    )}
+                                                                </TableCell>
+                                                            )
+                                                        })}
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                    <p className="text-sm text-gray-500 mt-2">
+                                        {dayMatches.length} match{dayMatches.length > 1 ? 's' : ''} programmé{dayMatches.length > 1 ? 's' : ''}
+                                    </p>
+                                </div>
+                            </div>
+                        )
+                    })}
+                </div>
+            </ScrollArea>
+        </div>
+    )
+
+    if (!dndEnabled) return gridContent
+
     return (
         <DndContext
             sensors={sensors}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
         >
-            <div className="flex flex-col h-full min-h-0 overflow-hidden">
-                {dropError && (
-                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded mb-2 text-sm flex items-center justify-between">
-                        <span>{dropError}</span>
-                        <button onClick={() => setDropError(null)} className="text-red-400 hover:text-red-600 ml-2">&times;</button>
-                    </div>
-                )}
-                <ScrollArea className="flex-1 min-h-0" type="auto">
-                    <div className="space-y-6">
-                        {sortedDates.map(date => {
-                            const dayMatches = matchesByDate.get(date) || []
-                            const label = formatDateLabel(date)
-
-                            return (
-                                <div key={date}>
-                                    <div>
-                                        <div className="overflow-x-auto border-gray-200 border-1 rounded-xl">
-                                            <Table>
-                                                <TableHeader>
-                                                    <TableRow>
-                                                        <TableHead colSpan={courts.length + 1} className="text-center text-xs font-semibold uppercase">
-                                                            {label}
-                                                        </TableHead>
-                                                    </TableRow>
-                                                    <TableRow>
-                                                        <TableHead className="w-20 text-center bg-gray-50 font-bold">
-                                                            Heure
-                                                        </TableHead>
-                                                        {courts.map(court => (
-                                                            <TableHead
-                                                                key={court}
-                                                                className="text-center bg-gray-50 font-bold min-w-[140px]"
-                                                            >
-                                                                {court}
-                                                            </TableHead>
-                                                        ))}
-                                                    </TableRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    {timeSlots.map(time => (
-                                                        <TableRow key={time}>
-                                                            <TableCell className="text-center font-medium bg-gray-50">
-                                                                {time}
-                                                            </TableCell>
-                                                            {courts.map(court => {
-                                                                const m = findMatch(dayMatches, time, court)
-                                                                return (
-                                                                    <TableCell
-                                                                        key={court}
-                                                                        className="text-center border-l p-1"
-                                                                    >
-                                                                        {m ? (
-                                                                            <DraggableMatch
-                                                                                match={m}
-                                                                                editMode={editMode}
-                                                                                scoreValue={pendingScores?.get(m.id)}
-                                                                                onScoreChange={m ? (v) => onScoreChange?.(m.id, v) : undefined}
-                                                                            />
-                                                                        ) : (
-                                                                            <DroppableSlot id={slotId(date, time, court)} />
-                                                                        )}
-                                                                    </TableCell>
-                                                                )
-                                                            })}
-                                                        </TableRow>
-                                                    ))}
-                                                </TableBody>
-                                            </Table>
-                                        </div>
-                                        <p className="text-sm text-gray-500 mt-2">
-                                            {dayMatches.length} match{dayMatches.length > 1 ? 's' : ''} programmé{dayMatches.length > 1 ? 's' : ''}
-                                        </p>
-                                    </div>
-                                </div>
-                            )
-                        })}
-                    </div>
-                </ScrollArea>
-            </div>
-
+            {gridContent}
             <DragOverlay>
                 {activeMatch && (
                     <div className="bg-white shadow-lg rounded-md border-2 border-green-400 px-3 py-2 opacity-90">

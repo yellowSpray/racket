@@ -7,11 +7,9 @@ import { useMatches } from "@/hooks/useMatches"
 import { useClubConfig } from "@/hooks/useClubConfig"
 import { useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router"
-import { Settings01Icon, PencilEdit02Icon, HashtagIcon, StarIcon, Download04Icon, SquareLock01Icon } from "hugeicons-react"
+import { Settings01Icon, PencilEdit02Icon, HashtagIcon, StarIcon, Download01Icon, SquareLock01Icon } from "hugeicons-react"
 import { Button } from "@/components/ui/button"
 import { DrawTable } from "@/components/admin/draws/DrawTable"
-// import { CreateGroupsDialog } from "@/components/admin/draws/CreateGroupsDialog"
-import { ManageGroupDialog } from "@/components/admin/draws/ManageGroupsDialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
     AlertDialog,
@@ -34,9 +32,6 @@ export function AdminDraws () {
     const { groups, loading, fetchGroupsByEvent } = useGroups()
     const { matches, fetchMatchesByEvent, closeEvent, error: matchError } = useMatches()
     const { scoringRules, fetchClubConfig } = useClubConfig()
-    const [selectedGroupId, setSelectedGroupsId] = useState<string | null>(null)
-    // const [createDialogOpen, setCreateDialogOpen] = useState(false)
-    const [manageDialogOpen, setManageDialogOpen] = useState(false)
     const [displayMode, setDisplayMode] = useState<"score" | "points">("score")
     const [closing, setClosing] = useState(false)
     const navigate = useNavigate()
@@ -77,13 +72,6 @@ export function AdminDraws () {
         fetchClubConfig(clubId)
     }, [clubId, fetchClubConfig])
 
-    // selectionner le premier groupe par default
-    useEffect(() => {
-        if(groups.length > 0 && !selectedGroupId) {
-            setSelectedGroupsId(groups[0].id)
-        }
-    }, [groups, selectedGroupId])
-
     if(loading) {
         return <DrawSkeleton />
     }
@@ -116,34 +104,32 @@ export function AdminDraws () {
         <div className="flex flex-col h-full min-h-0">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
                     <h3 className="text-lg font-semibold">Tableaux</h3>
                     <EventSelector />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                     <Button
                         variant="outline"
                         size="icon"
-                        className="h-8 w-8"
                         onClick={() => setDisplayMode(prev => prev === "score" ? "points" : "score")}
                     >
                         {displayMode === "score" ? (
-                            <StarIcon className="h-4 w-4" />
+                            <StarIcon />
                         ) : (
-                            <HashtagIcon className="h-4 w-4" />
+                            <HashtagIcon />
                         )}
                     </Button>
                     {groups.length > 0 && (
                         <>
-                            <Button size="sm" variant="outline" onClick={handleExportPdf}>
-                                <Download04Icon className="mr-1 h-4 w-4" />
-                                Export pdf
+                            <Button variant="outline" size="icon" onClick={handleExportPdf}>
+                                <Download01Icon />
                             </Button>
                             {!isCompleted && (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <Button size="sm" disabled={closing}>
-                                            <SquareLock01Icon className="mr-1 h-4 w-4" />
+                                        <Button size="lg" disabled={closing}>
+                                            <SquareLock01Icon size={20} />
                                             {closing ? "Clôture..." : "Clôturer"}
                                         </Button>
                                     </AlertDialogTrigger>
@@ -164,10 +150,10 @@ export function AdminDraws () {
                                 </AlertDialog>
                             )}
                             {isCompleted && (
-                                <span className="text-sm text-green-600 font-medium flex items-center gap-1">
-                                    <SquareLock01Icon className="h-3.5 w-3.5" />
+                                <Button variant="default" size="lg">
+                                    <SquareLock01Icon size={20} />
                                     Clôturé
-                                </span>
+                                </Button>
                             )}
                         </>
                     )}
@@ -209,14 +195,6 @@ export function AdminDraws () {
                     </div>
                 </ScrollArea>
             )}
-
-            {/* dialog de gestion */}
-            <ManageGroupDialog
-                open={manageDialogOpen}
-                onOpenChange={setManageDialogOpen}
-                groups={groups}
-                onRefresh={() => currentEvent && fetchGroupsByEvent(currentEvent.id)}
-            />
         </div>
     )
 }
