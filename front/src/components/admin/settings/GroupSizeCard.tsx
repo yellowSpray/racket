@@ -5,17 +5,23 @@ import { Button } from "@/components/ui/button"
 import { PencilEdit01Icon, Tick02Icon, Loading03Icon, UserGroupIcon } from "hugeicons-react"
 
 interface GroupSizeCardProps {
+    defaultMinPlayers: number
     defaultMaxPlayers: number
-    onSave: (data: { default_max_players_per_group: number }) => Promise<boolean>
+    onSave: (data: { default_min_players_per_group: number; default_max_players_per_group: number }) => Promise<boolean>
 }
 
-export function GroupSizeCard({ defaultMaxPlayers, onSave }: GroupSizeCardProps) {
+export function GroupSizeCard({ defaultMinPlayers, defaultMaxPlayers, onSave }: GroupSizeCardProps) {
 
+    const [minPlayers, setMinPlayers] = useState(defaultMinPlayers)
     const [maxPlayers, setMaxPlayers] = useState(defaultMaxPlayers)
     const [error, setError] = useState<string | null>(null)
     const [editing, setEditing] = useState(false)
     const [saving, setSaving] = useState(false)
     const [saved, setSaved] = useState(false)
+
+    useEffect(() => {
+        setMinPlayers(defaultMinPlayers)
+    }, [defaultMinPlayers])
 
     useEffect(() => {
         setMaxPlayers(defaultMaxPlayers)
@@ -29,13 +35,16 @@ export function GroupSizeCard({ defaultMaxPlayers, onSave }: GroupSizeCardProps)
         }
 
         setError(null)
-        if (maxPlayers < 2 || maxPlayers > 10) {
-            setError("Le nombre doit être entre 2 et 10")
+        if (minPlayers < 2 || maxPlayers > 10 || minPlayers > maxPlayers) {
+            setError("Le minimum doit être entre 2 et 10, et inférieur ou égal au maximum")
             return
         }
 
         setSaving(true)
-        const success = await onSave({ default_max_players_per_group: maxPlayers })
+        const success = await onSave({
+            default_min_players_per_group: minPlayers,
+            default_max_players_per_group: maxPlayers,
+        })
         setSaving(false)
 
         if (success) {
@@ -45,22 +54,26 @@ export function GroupSizeCard({ defaultMaxPlayers, onSave }: GroupSizeCardProps)
         }
     }
 
+    const handleSliderChange = (values: number[]) => {
+        setMinPlayers(values[0])
+        setMaxPlayers(values[1])
+        setSaved(false)
+    }
+
     return (
         <Card>
             <CardHeader>
-                <div className="flex items-start gap-3">
-                    <div className="flex items-center justify-center h-9 w-9 shrink-0 rounded-lg bg-muted text-muted-foreground">
-                        <UserGroupIcon className="h-5 w-5" />
-                    </div>
-                    <div className="grid gap-1">
-                        <CardTitle>Taille des groupes</CardTitle>
-                        <CardDescription>
-                            {editing
-                                ? "Les modifications s'appliqueront au prochain événement"
-                                : "Joueurs par groupe par défaut"
-                            }
-                        </CardDescription>
-                    </div>
+                <div className="flex flex-col items-start gap-3">
+                    <CardTitle className="flex flex-row items-center gap-2">
+                        <UserGroupIcon size={16} className="text-foreground" />
+                        Taille des groupes
+                    </CardTitle>
+                    <CardDescription>
+                        {editing
+                            ? "Les modifications s'appliqueront au prochain événement"
+                            : "Joueurs par groupe par défaut"
+                        }
+                    </CardDescription>
                 </div>
                 <CardAction>
                     <Button
@@ -85,19 +98,26 @@ export function GroupSizeCard({ defaultMaxPlayers, onSave }: GroupSizeCardProps)
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
                 <div className="flex flex-col gap-6 flex-1 bg-muted/50 rounded-lg p-5 justify-center">
-                    <div className="text-center">
-                        <span className="text-4xl font-bold">{maxPlayers}</span>
-                        <p className="text-sm text-muted-foreground mt-1">joueurs par groupe</p>
+                    <div className="flex items-center justify-center gap-6">
+                        <div className="text-center">
+                            <span className="text-xs text-muted-foreground font-medium">Min</span>
+                            <p className="text-4xl font-bold">{minPlayers}</p>
+                        </div>
+                        <span className="text-muted-foreground text-lg mt-4">–</span>
+                        <div className="text-center">
+                            <span className="text-xs text-muted-foreground font-medium">Max</span>
+                            <p className="text-4xl font-bold">{maxPlayers}</p>
+                        </div>
                     </div>
+                    <p className="text-sm text-muted-foreground text-center -mt-2">joueurs par groupe</p>
                     <div className="flex items-center gap-3 w-3/4 mx-auto">
                         <span className="text-xs text-muted-foreground">2</span>
                         <Slider
-                            id="max_players"
                             min={2}
                             max={10}
                             step={1}
-                            value={[maxPlayers]}
-                            onValueChange={(value) => { setMaxPlayers(value[0]); setSaved(false) }}
+                            value={[minPlayers, maxPlayers]}
+                            onValueChange={handleSliderChange}
                             disabled={!editing}
                             aria-label="Joueurs par groupe"
                         />
