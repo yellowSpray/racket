@@ -60,19 +60,17 @@ export function PromotionRulesCard({ promotionRules, defaultPromotion, onSave }:
     return (
         <Card>
             <CardHeader>
-                <div className="flex items-start gap-3">
-                    <div className="flex items-center justify-center h-9 w-9 shrink-0 rounded-lg bg-muted text-muted-foreground">
-                        <ArrowUpDownIcon className="h-5 w-5" />
-                    </div>
-                    <div className="grid gap-1">
-                        <CardTitle>Montées / Descentes</CardTitle>
-                        <CardDescription>
-                            {editing
-                                ? "Les modifications s'appliqueront au prochain événement"
-                                : "Joueurs promus ou relégués par série"
-                            }
-                        </CardDescription>
-                    </div>
+                <div className="flex flex-col items-start gap-3">
+                    <CardTitle className="flex flex-row items-center gap-2">
+                        <ArrowUpDownIcon size={16} className="text-foreground" />
+                        Montées / Descentes
+                    </CardTitle>
+                    <CardDescription>
+                        {editing
+                            ? "Les modifications s'appliqueront au prochain événement"
+                            : "Joueurs promus ou relégués par série"
+                        }
+                    </CardDescription>
                 </div>
                 <CardAction>
                     <Button

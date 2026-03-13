@@ -88,7 +88,7 @@ export function AdminDashboard() {
                 <Card className="col-span-7 row-span-7">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-sm">
-                            <UserSwitchIcon size={16} className="text-gray-500" />
+                            <UserSwitchIcon size={16} className="text-foreground" />
                             Mouvements joueurs
                             <button
                                 onClick={() => setMovementFilter(movementFilter === "active" ? "inactive" : "active")}
@@ -115,7 +115,7 @@ export function AdminDashboard() {
                 <Card className="col-span-7 row-span-7">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-sm">
-                            <CreditCardIcon size={16} className="text-gray-500" />
+                            <CreditCardIcon size={16} className="text-foreground" />
                             Paiements
                             {unpaidPayments.payments.length > 0 && (
                                 <Badge
@@ -139,7 +139,7 @@ export function AdminDashboard() {
                 <Card className="col-span-7 row-span-7">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-sm">
-                            <AlertCircleIcon size={16} className="text-gray-500" />
+                            <AlertCircleIcon size={16} className="text-foreground" />
                             Alertes
                         </CardTitle>
                     </CardHeader>
@@ -156,7 +156,7 @@ export function AdminDashboard() {
                 <Card className="col-span-7 row-span-4">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-sm">
-                            <UserGroupIcon size={16} className="text-gray-500" />
+                            <UserGroupIcon size={16} className="text-foreground" />
                             Présences
                         </CardTitle>
                     </CardHeader>
@@ -173,7 +173,7 @@ export function AdminDashboard() {
                 <Card className="col-span-21 row-span-9 min-h-0">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-sm">
-                            <Calendar03Icon size={16} className="text-gray-500" />
+                            <Calendar03Icon size={16} className="text-foreground" />
                             Matchs du jour
                             {todayMatches.matchDate && (
                                 <span className="text-xs text-muted-foreground font-normal ml-1">
@@ -203,7 +203,7 @@ export function AdminDashboard() {
                 <Card className="col-span-7 col-start-22 row-start-5 row-span-12 min-h-0">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-sm">
-                            <TaskEdit01Icon size={16} className="text-gray-500" />
+                            <TaskEdit01Icon size={16} className="text-foreground" />
                             Scores en attente
                         </CardTitle>
                     </CardHeader>

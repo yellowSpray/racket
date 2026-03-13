@@ -73,19 +73,17 @@ export function ScoringRulesCard({ scoringRules, defaultScoring, onSave }: Scori
     return (
         <Card>
             <CardHeader>
-                <div className="flex items-start gap-3">
-                    <div className="flex items-center justify-center h-9 w-9 shrink-0 rounded-lg bg-muted text-muted-foreground">
-                        <Award01Icon className="h-5 w-5" />
-                    </div>
-                    <div className="grid gap-1">
-                        <CardTitle>Règles de pointage</CardTitle>
-                        <CardDescription>
-                            {editing
-                                ? "Les modifications s'appliqueront au prochain événement"
-                                : "Points attribués selon le résultat du match"
-                            }
-                        </CardDescription>
-                    </div>
+                <div className="flex flex-col items-start gap-3">
+                    <CardTitle className="flex flex-row items-center gap-2">
+                        <Award01Icon size={16} className="text-foreground" />
+                        Règles de pointage
+                    </CardTitle>
+                    <CardDescription>
+                        {editing
+                            ? "Les modifications s'appliqueront au prochain événement"
+                            : "Points attribués selon le résultat du match"
+                        }
+                    </CardDescription>
                 </div>
                 <CardAction>
                     <Button
