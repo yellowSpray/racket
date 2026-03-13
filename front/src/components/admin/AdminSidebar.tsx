@@ -17,7 +17,7 @@ export function AdminSideBar() {
   return (
     <>
       {/* Navigation */}
-      <nav className="w-full flex-1 flex flex-col items-center justify-between pt-2">
+      <nav className="w-full flex-1 flex flex-col items-center justify-between pt-3">
         <ul className="space-y-4">
           {menuItems.map((item) => {
             const Icon = item.icon;
@@ -31,7 +31,7 @@ export function AdminSideBar() {
                     ${isActive ? "bg-primary border-primary text-foreground" : "text-gray-500 hover:bg-border hover:text-foreground"}
                   `}
                 >
-                  <Icon size={20} strokeWidth={2} />
+                  <Icon size={17} strokeWidth={2} />
                   {/* <span className="hidden 2xl:inline text-sm">{item.title}</span> */}
                 </Link>
               </li>
@@ -45,7 +45,7 @@ export function AdminSideBar() {
             ${location.pathname === "/admin/settings" ? "bg-primary border-primary text-foreground" : "text-gray-500 hover:bg-border hover:text-foreground"}
           `}
         >
-          <Settings01Icon size={20} strokeWidth={2} />
+          <Settings01Icon size={17} strokeWidth={2} />
           {/* <span className="hidden 2xl:inline text-sm">Paramètres</span> */}
         </Link>
       </nav>

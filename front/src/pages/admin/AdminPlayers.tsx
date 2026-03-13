@@ -77,9 +77,8 @@ export function AdminPlayers() {
                     </span>
                 </div>
 
-                {/* Droite : Actions + Filtres */}
+                {/* Droite : Ajout */}
                 <div className="flex flex-row items-center gap-4">
-                    {/* Bouton Ajouter */}
                     <EditPlayers mode="create" onSave={addPlayer} />
                 </div>
 

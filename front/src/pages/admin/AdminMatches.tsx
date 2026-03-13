@@ -195,19 +195,19 @@ export function AdminMatches() {
                     <h3 className="text-lg font-semibold">Matchs</h3>
                     <EventSelector />
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-4">
                     {hasMatches && (
                         <Button variant="icon" size="icon" onClick={() => setViewMode(v => v === "grid" ? "list" : "grid")}>
-                            {viewMode === "grid" ? <ListViewIcon /> : <GridViewIcon />}
+                            {viewMode === "grid" ? <ListViewIcon size="20" strokeWidth={2} /> : <GridViewIcon size="20" strokeWidth={2} />}
                         </Button>
                     )}
                     {editMode ? (
                         <>
                             <Button variant="icon" size="icon" onClick={handleCancelEditMode}>
-                                <Cancel01Icon />
+                                <Cancel01Icon size="20" strokeWidth={2} />
                             </Button>
                             <Button size="lg" onClick={handleSaveScores}>
-                                <FloppyDiskIcon />
+                                <FloppyDiskIcon size="20" strokeWidth={2} />
                                 Enregistrer tout
                             </Button>
                         </>
@@ -215,7 +215,7 @@ export function AdminMatches() {
                         <>
                             {hasMatches && (
                                 <Button size="lg" onClick={handleEnterEditMode}>
-                                    <PencilEdit01Icon />
+                                    <PencilEdit01Icon size="20" strokeWidth={2} />
                                     Modifier
                                 </Button>
                             )}

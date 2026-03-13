@@ -108,22 +108,22 @@ export function AdminDraws () {
                     <h3 className="text-lg font-semibold">Tableaux</h3>
                     <EventSelector />
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-4">
                     <Button
-                        variant="outline"
+                        variant="icon"
                         size="icon"
                         onClick={() => setDisplayMode(prev => prev === "score" ? "points" : "score")}
                     >
                         {displayMode === "score" ? (
-                            <StarIcon />
+                            <StarIcon size="20" strokeWidth={2} />
                         ) : (
-                            <HashtagIcon />
+                            <HashtagIcon size="20" strokeWidth={2} />
                         )}
                     </Button>
                     {groups.length > 0 && (
                         <>
                             <Button variant="outline" size="icon" onClick={handleExportPdf}>
-                                <Download01Icon />
+                                <Download01Icon size="20" strokeWidth={2} />
                             </Button>
                             {!isCompleted && (
                                 <AlertDialog>
@@ -151,7 +151,7 @@ export function AdminDraws () {
                             )}
                             {isCompleted && (
                                 <Button variant="default" size="lg">
-                                    <SquareLock01Icon size={20} />
+                                    <SquareLock01Icon size={20} strokeWidth={2} />
                                     Clôturé
                                 </Button>
                             )}

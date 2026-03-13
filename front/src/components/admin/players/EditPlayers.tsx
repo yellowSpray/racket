@@ -356,7 +356,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, open: controll
             {!isControlled && (
                 <DialogTrigger asChild>
                     <Button variant="default" size="lg">
-                        <Add01Icon stroke="2"/>
+                        <Add01Icon size="20" strokeWidth={2}/>
                         Ajouter
                     </Button>
                 </DialogTrigger>

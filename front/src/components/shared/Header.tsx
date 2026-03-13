@@ -31,7 +31,7 @@ export default function Header() {
   // }
 
   return (
-    <header className="p-8 flex items-center justify-between gap-4">
+    <header className="px-8 pt-8 pb-4 flex items-center justify-between gap-4 border-b-border border-1">
 
         {/* Left side */}
         <Link to="/" className="text-primary flex items-center gap-2 pl-3">
@@ -43,13 +43,13 @@ export default function Header() {
         {isAuthenticated && profile ? (
           <div className="flex items-center gap-4">
             <Button variant="icon" size="icon" onClick={() => setDarkMode(!darkMode)}>
-              {darkMode ? <Sun03Icon size={20} /> : <Moon02Icon size={20} />}
+              {darkMode ? <Sun03Icon size={20} strokeWidth={2} /> : <Moon02Icon size={20} strokeWidth={2} />}
             </Button>
             <Button variant="icon" size="icon" className="relative">
-              <Notification03Icon size={20} />
+              <Notification03Icon size={20} strokeWidth={2} />
               <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border border-white dark:border-slate-900" />
             </Button>
-            <Button variant="outline" className="p-1">
+            <Button variant="outline" className="py-1 pl-1 pr-2">
               <Avatar>
                 <AvatarImage
                   src={profile?.avatar_url || "https://github.com/shadcn.png"}
@@ -61,7 +61,7 @@ export default function Header() {
             </Button>
           </div>
         ) : ( 
-          <div className="flex items-center gap-[15px]">
+          <div className="flex items-center gap-4">
             <Button variant="icon" size="icon" onClick={() => setDarkMode(!darkMode)}>
               {darkMode ? <Sun03Icon size={20} /> : <Moon02Icon size={20} />}
             </Button>
