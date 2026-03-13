@@ -36,6 +36,11 @@ export interface ClubConfig {
   club_name: string
   club_address?: string
   club_email?: string
+  default_min_players_per_group: number
   default_max_players_per_group: number
   visitor_fee: number
+  default_start_time: string
+  default_end_time: string
+  default_number_of_courts: number
+  default_match_duration: number
 }

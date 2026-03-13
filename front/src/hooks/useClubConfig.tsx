@@ -42,7 +42,7 @@ export function useClubConfig() {
             const [clubRes, scoringRes, promotionRes] = await Promise.all([
                 supabase
                     .from("clubs")
-                    .select("id, club_name, club_address, club_email, default_max_players_per_group, visitor_fee")
+                    .select("id, club_name, club_address, club_email, default_min_players_per_group, default_max_players_per_group, visitor_fee, default_start_time, default_end_time, default_number_of_courts, default_match_duration")
                     .eq("id", clubId)
                     .single(),
                 supabase
@@ -76,12 +76,12 @@ export function useClubConfig() {
         }
     }, [])
 
-    const updateClubDefaults = async (clubId: string, data: { default_max_players_per_group: number }) => {
+    const updateClubDefaults = async (clubId: string, data: Partial<Omit<ClubConfig, 'id' | 'club_name'>>) => {
         setError(null)
 
         const { error: updateError } = await supabase
             .from("clubs")
-            .update({ default_max_players_per_group: data.default_max_players_per_group })
+            .update(data)
             .eq("id", clubId)
 
         if (updateError) {

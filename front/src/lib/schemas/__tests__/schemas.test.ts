@@ -445,7 +445,13 @@ describe('promotionRulesSchema', () => {
 describe('clubConfigSchema', () => {
   const validClubConfig = {
     club_name: 'Squash Club Paris',
+    default_min_players_per_group: 3,
     default_max_players_per_group: 4,
+    visitor_fee: 5,
+    default_start_time: '19:00',
+    default_end_time: '23:00',
+    default_number_of_courts: 4,
+    default_match_duration: 30,
   }
 
   it('accepts valid club config with required fields only', () => {

@@ -219,11 +219,23 @@ CREATE UNIQUE INDEX IF NOT EXISTS uniq_player_status_per_profile ON public.playe
 
 -- Ajout du nombre par defaut de joueurs par groupe sur la table clubs
 ALTER TABLE public.clubs
+  ADD COLUMN IF NOT EXISTS default_min_players_per_group int not null default 3;
+ALTER TABLE public.clubs
   ADD COLUMN IF NOT EXISTS default_max_players_per_group int not null default 5;
 
 -- Tarif visiteur par defaut du club
 ALTER TABLE public.clubs
   ADD COLUMN IF NOT EXISTS visitor_fee numeric(10,2) not null default 0;
+
+-- Parametres par defaut pour la creation d'evenements
+ALTER TABLE public.clubs
+  ADD COLUMN IF NOT EXISTS default_start_time time not null default '19:00';
+ALTER TABLE public.clubs
+  ADD COLUMN IF NOT EXISTS default_end_time time not null default '23:00';
+ALTER TABLE public.clubs
+  ADD COLUMN IF NOT EXISTS default_number_of_courts int not null default 4;
+ALTER TABLE public.clubs
+  ADD COLUMN IF NOT EXISTS default_match_duration int not null default 30;
 
 -- TABLE SCORING_RULES : Regles de pointage par club (1 ligne par club)
 -- score_points est un tableau JSON d'entrées {score, winner_points, loser_points}

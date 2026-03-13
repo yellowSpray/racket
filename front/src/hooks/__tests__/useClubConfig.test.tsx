@@ -68,7 +68,13 @@ describe('useClubConfig', () => {
                 club_name: 'Test Club',
                 club_address: '123 St',
                 club_email: 'test@club.com',
+                default_min_players_per_group: 3,
                 default_max_players_per_group: 4,
+                visitor_fee: 5,
+                default_start_time: '19:00',
+                default_end_time: '23:00',
+                default_number_of_courts: 4,
+                default_match_duration: 30,
             }
             const scoringData = {
                 id: 's1',
@@ -182,6 +188,7 @@ describe('useClubConfig', () => {
 
             await act(async () => {
                 returnVal = await result.current.updateClubDefaults('c1', {
+                    default_min_players_per_group: 3,
                     default_max_players_per_group: 6,
                 })
             })
@@ -190,6 +197,7 @@ describe('useClubConfig', () => {
             expect(result.current.error).toBeNull()
             expect(mockSupabase.from).toHaveBeenCalledWith('clubs')
             expect(mockSupabase._builder.update).toHaveBeenCalledWith({
+                default_min_players_per_group: 3,
                 default_max_players_per_group: 6,
             })
         })
@@ -202,6 +210,7 @@ describe('useClubConfig', () => {
 
             await act(async () => {
                 returnVal = await result.current.updateClubDefaults('c1', {
+                    default_min_players_per_group: 3,
                     default_max_players_per_group: 6,
                 })
             })
