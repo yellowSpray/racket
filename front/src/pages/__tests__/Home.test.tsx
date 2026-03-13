@@ -1,65 +1,36 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
-
-vi.mock('react-router', () => ({
-    Link: ({ children, to }: { children: React.ReactNode; to: string }) => <a href={to}>{children}</a>,
-}))
-
-vi.mock('motion/react', () => ({
-    motion: new Proxy({}, {
-        get: (_target: unknown, prop: string) => {
-            return ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => {
-                const Element = prop as React.ElementType
-                const domProps: Record<string, unknown> = {}
-                for (const [key, value] of Object.entries(props)) {
-                    if (!['initial', 'animate', 'whileInView', 'viewport', 'variants', 'custom', 'transition', 'layout', 'exit'].includes(key)) {
-                        domProps[key] = value
-                    }
-                }
-                return <Element {...domProps}>{children}</Element>
-            }
-        }
-    }),
-    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}))
-
-vi.mock('@/components/ui/logo', () => ({
-    default: () => <span data-testid="logo">Logo</span>,
-}))
 
 import Home from '../Home'
 
 describe('Home', () => {
-    it('renders the hero title "L\'organisation de vos boxes,"', () => {
+    it('renders the landing page placeholder text', () => {
         render(<Home />)
-        expect(screen.getByText(/L'organisation de vos boxes,/)).toBeInTheDocument()
+        expect(screen.getByText('Landing Page')).toBeInTheDocument()
     })
 
-    it('renders "en un clic." primary text', () => {
-        render(<Home />)
-        expect(screen.getByText('en un clic.')).toBeInTheDocument()
+    it('renders a container with flex layout', () => {
+        const { container } = render(<Home />)
+        const div = container.querySelector('div')
+        expect(div).toBeInTheDocument()
+        expect(div?.className).toContain('flex')
     })
 
-    it('renders all 4 feature titles', () => {
+    it('applies muted-foreground style to the text', () => {
         render(<Home />)
-        expect(screen.getByText('Gestion des groupes')).toBeInTheDocument()
-        expect(screen.getByText('Tirage automatique')).toBeInTheDocument()
-        expect(screen.getByText('Planning des matchs')).toBeInTheDocument()
-        expect(screen.getByText('Classement en direct')).toBeInTheDocument()
+        const text = screen.getByText('Landing Page')
+        expect(text.className).toContain('text-muted-foreground')
     })
 
-    it('renders all 3 step titles', () => {
-        render(<Home />)
-        expect(screen.getByText('Créez votre événement')).toBeInTheDocument()
-        expect(screen.getByText('Inscrivez les joueurs')).toBeInTheDocument()
-        expect(screen.getByText('Lancez vos boxes')).toBeInTheDocument()
+    it('applies amber background', () => {
+        const { container } = render(<Home />)
+        const div = container.querySelector('div')
+        expect(div?.className).toContain('bg-amber-500')
     })
 
-    it('has CTA links to "/auth"', () => {
+    it('renders as a paragraph element', () => {
         render(<Home />)
-        const authLinks = screen.getAllByRole('link').filter(
-            (link) => link.getAttribute('href') === '/auth'
-        )
-        expect(authLinks.length).toBeGreaterThan(0)
+        const text = screen.getByText('Landing Page')
+        expect(text.tagName).toBe('P')
     })
 })

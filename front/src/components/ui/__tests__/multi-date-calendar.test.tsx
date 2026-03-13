@@ -85,11 +85,9 @@ describe('MultiDateCalendar', () => {
 
         expect(screen.getByText('Janvier 2025')).toBeInTheDocument()
 
-        // Click next month button (ChevronRight)
+        // Click next month button (second nav button in header)
         const buttons = screen.getAllByRole('button')
-        // The next month button is the second navigation button in the header
-        const nextButton = buttons.find(btn => btn.querySelector('.lucide-chevron-right'))!
-        fireEvent.click(nextButton)
+        fireEvent.click(buttons[1])
 
         expect(screen.getByText('Février 2025')).toBeInTheDocument()
     })
@@ -98,10 +96,9 @@ describe('MultiDateCalendar', () => {
         const onChange = vi.fn()
         render(<MultiDateCalendar selectedDates={[]} onChange={onChange} />)
 
-        // Click prev month button (ChevronLeft)
+        // Click prev month button (first nav button in header)
         const buttons = screen.getAllByRole('button')
-        const prevButton = buttons.find(btn => btn.querySelector('.lucide-chevron-left'))!
-        fireEvent.click(prevButton)
+        fireEvent.click(buttons[0])
 
         expect(screen.getByText('Décembre 2024')).toBeInTheDocument()
     })
@@ -115,8 +112,7 @@ describe('MultiDateCalendar', () => {
         expect(screen.getByText('Décembre 2025')).toBeInTheDocument()
 
         const buttons = screen.getAllByRole('button')
-        const nextButton = buttons.find(btn => btn.querySelector('.lucide-chevron-right'))!
-        fireEvent.click(nextButton)
+        fireEvent.click(buttons[1])
 
         expect(screen.getByText('Janvier 2026')).toBeInTheDocument()
     })
