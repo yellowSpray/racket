@@ -81,7 +81,7 @@ export function usePlayerMovements(eventId: string | null, clubId: string | null
             const { data: prevPlayers, error: prevPlayersError } = await withTimeout(
                 supabase
                     .from("event_players")
-                    .select("profile_id, profiles!inner(id, first_name, last_name)")
+                    .select("profile_id, registered_at, profiles!inner(id, first_name, last_name)")
                     .eq("event_id", prevEvent.id),
                 "usePlayerMovements.prevPlayers"
             )

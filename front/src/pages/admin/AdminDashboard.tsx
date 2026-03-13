@@ -177,7 +177,7 @@ export function AdminDashboard() {
                             Matchs du jour
                             {todayMatches.matchDate && (
                                 <span className="text-xs text-muted-foreground font-normal ml-1">
-                                    - {formatDateLabel(todayMatches.matchDate, todayMatches.isToday)}
+                                    {formatDateLabel(todayMatches.matchDate, todayMatches.isToday)}
                                 </span>
                             )}
                             {todayMatches.matches.length > 0 && (

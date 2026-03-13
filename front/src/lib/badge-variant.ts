@@ -12,9 +12,9 @@ export const badgeVariants = cva(
         visitor:
           "border-transparent bg-amber-500 text-gray-50",
         active:
-          "text-green-500 border-2 border-primary",
+          "text-green-500 border-1 border-green-300 bg-green-500/10",
         inactive:
-          "text-gray-500 border-2",
+          "text-gray-500 border-1 border-gray-300 bg-gray-500/10",
         paid:
           "border-transparent bg-green-500 text-gray-50",
         unpaid:

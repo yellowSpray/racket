@@ -38,16 +38,18 @@ export function PlayerMovementsFeed({ movements, loading }: PlayerMovementsFeedP
                                 <TableCell className="text-sm truncate py-1.5">
                                     {m.firstName} {m.lastName}
                                 </TableCell>
-                                <TableCell className="py-1.5">
-                                    <Badge
-                                        variant={m.status === "active" ? "active" : "inactive"}
-                                        className="text-[10px] px-1.5 py-0"
-                                    >
-                                        {m.status === "active" ? "Inscrit" : "Désinscrit"}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell className="text-xs text-muted-foreground text-right whitespace-nowrap py-1.5">
-                                    {formatRelativeTime(m.updatedAt)}
+                                <TableCell className="text-right whitespace-nowrap py-1.5">
+                                    <div className="flex items-center justify-end gap-2">
+                                        <Badge
+                                            variant={m.status === "active" ? "active" : "inactive"}
+                                            className="text-[10px] px-1.5 py-0"
+                                        >
+                                            {m.status === "active" ? "Inscrit" : "Désinscrit"}
+                                        </Badge>
+                                        <span className="text-xs text-muted-foreground">
+                                            {formatRelativeTime(m.updatedAt)}
+                                        </span>
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         ))}
