@@ -51,21 +51,29 @@ Event Fest automates the entire box lifecycle: import players, calculate ranking
 
 * Secure authentication with role-based access (user / admin / superadmin)
 * Player registration / unregistration for events
-* Player roster management (add, edit, deactivate)
+* Player roster management (add, edit, deactivate) with global search filter
 * Group / draw management with auto-distribution and multiple configuration choices
-* Event settings and configuration
+* Event settings and configuration (visitor fees, event defaults, club defaults)
+* Club members management in settings
 * Round-robin table display with groups and match details (date, time, court)
 * Multi-constraint scheduling engine (player availability, arrival/departure windows, court slots, bye optimization)
+* Drag & drop match scheduling with constraint validation and unplaced matches panel
 * Smart absence management (soft constraints with bye/absence alignment for odd groups)
 * Configurable scoring engine (per-club score-to-points mapping, including ABS handling)
 * Configurable promotion/relegation rules (customizable promoted/relegated counts per club)
 * Ranking engine with full standings computation (points, set diff, head-to-head tiebreakers)
 * Promotion/relegation engine (automatic moves based on standings and club rules)
 * Elo rating engine for player power ranking updates
+* Event close workflow with batch Elo updates
 * "Box precedent" wizard: generate new groups from previous event standings with automatic redistribution by power ranking
 * Previous box preview with promotion/relegation indicators and unregistered player detection
 * Drag & drop group management for proposed groups (with new player highlighting)
-* Vitest + TDD test suite (600+ tests)
+* Admin dashboard with today's matches feed, player movements feed, and unpaid payments feed
+* PDF export for draw tables
+* Match list view with grid/list toggle
+* Player pages with routes, sidebar and DrawTable integration
+* Default profile pictures for squash and tennis players
+* Vitest + TDD test suite (770+ tests)
 
 ### In Progress (MVP — Phase 1)
 
@@ -124,13 +132,17 @@ Event-Fest/
 - [x] Event settings and configuration
 - [x] Group / draw management with distribution choices
 - [x] Multi-constraint scheduling engine
-- [x] Vitest + TDD setup (600+ tests)
+- [x] Vitest + TDD setup (770+ tests)
 - [x] Configurable scoring engine (score-to-points mapping)
 - [x] Configurable promotion/relegation rules
 - [x] Ranking engine (points, set diff, head-to-head)
 - [x] Promotion/relegation engine
 - [x] Elo rating engine
 - [x] "Box precedent" wizard (generate groups from previous event)
+- [x] Admin dashboard (today's matches, player movements, unpaid payments)
+- [x] PDF export for draw tables
+- [x] Player pages with DrawTable integration
+- [x] Club members management and event defaults settings
 - [ ] One-click new box workflow (final integration)
 - [ ] Smart Excel import
 
