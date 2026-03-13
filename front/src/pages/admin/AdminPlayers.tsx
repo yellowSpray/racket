@@ -12,12 +12,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Input } from "@/components/ui/input";
+import { Search01Icon } from "hugeicons-react";
 import { useEffect, useMemo, useState } from "react";
 
 export function AdminPlayers() {
 
     const { players, addPlayer, updatePlayer, loading, fetchPlayer } = usePlayers();
     const [statusFilter, setStatusFilter] = useState<string>("all")
+    const [searchFilter, setSearchFilter] = useState("")
 
     const columns = playerColumns(updatePlayer)
 
@@ -77,6 +80,17 @@ export function AdminPlayers() {
                     </span>
                 </div>
 
+                {/* Centre : Recherche */}
+                <div className="relative flex-1 max-w-sm">
+                    <Search01Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        value={searchFilter}
+                        onChange={(e) => setSearchFilter(e.target.value)}
+                        placeholder="Rechercher par nom, email ou téléphone..."
+                        className="pl-9 rounded-full h-10"
+                    />
+                </div>
+
                 {/* Droite : Ajout */}
                 <div className="flex flex-row items-center gap-4">
                     <EditPlayers mode="create" onSave={addPlayer} />
@@ -86,7 +100,7 @@ export function AdminPlayers() {
 
             {/* Tableau */}
             <div className="flex-1 min-h-0">
-                <DataTable columns={columns} data={filteredPlayers as PlayerType[]} />
+                <DataTable columns={columns} data={filteredPlayers as PlayerType[]} globalFilter={searchFilter} onGlobalFilterChange={setSearchFilter} />
             </div>
         </div>
     )

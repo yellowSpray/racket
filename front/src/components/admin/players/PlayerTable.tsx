@@ -1,4 +1,4 @@
-import { flexRender, getCoreRowModel, getSortedRowModel, useReactTable, type SortingState } from "@tanstack/react-table";
+import { flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type SortingState } from "@tanstack/react-table";
 import type { ColumnDef, RowData } from "@tanstack/react-table";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -15,22 +15,31 @@ declare module '@tanstack/react-table' {
 interface DataTableProps<TData, Tvalue> {
     columns: ColumnDef<TData, Tvalue>[]
     data: TData[]
+    globalFilter?: string
+    onGlobalFilterChange?: (value: string) => void
 }
 
 export function DataTable<TData, TValue>({
     columns,
-    data
+    data,
+    globalFilter: externalFilter,
+    onGlobalFilterChange: externalFilterChange,
 }: DataTableProps<TData, TValue>) {
-    
+
     const [sorting, setSorting] = useState<SortingState>([])
+    const [internalFilter, setInternalFilter] = useState("")
+    const globalFilter = externalFilter ?? internalFilter
+    const setGlobalFilter = externalFilterChange ?? setInternalFilter
 
     const table = useReactTable({
         data,
         columns,
         getCoreRowModel: getCoreRowModel(),
+        getFilteredRowModel: getFilteredRowModel(),
         getSortedRowModel: getSortedRowModel(),
         onSortingChange: setSorting,
-        state: { sorting },
+        onGlobalFilterChange: setGlobalFilter,
+        state: { sorting, globalFilter },
     })
 
     return (

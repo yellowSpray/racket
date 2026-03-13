@@ -27,18 +27,21 @@ export const columns = (
     {
         accessorKey: "arrival",
         header: "Arrivée",
+        enableGlobalFilter: false,
         meta: { className: "text-center" },
         minSize: 60,
     },
     {
         accessorKey: "departure",
         header: "Départ",
+        enableGlobalFilter: false,
         meta: { className: "text-center" },
         minSize: 60,
     },
     {
         accessorKey: "unavailable",
         header: "Absence",
+        enableGlobalFilter: false,
         meta: { className: "text-center" },
         minSize: 100,
         cell: ({ row }) => (
@@ -54,6 +57,7 @@ export const columns = (
     {
         id: "status",
         header: "Status",
+        enableGlobalFilter: false,
         meta: { className: "text-center" },
         minSize: 100,
         cell: ({ row }) => {
@@ -70,6 +74,7 @@ export const columns = (
     {
         id: "payment",
         header: "Paiement",
+        enableGlobalFilter: false,
         meta: { className: "text-center" },
         minSize: 120,
         cell: ({ row }) => {
@@ -103,6 +108,7 @@ export const columns = (
     {
         accessorKey: "power_ranking",
         header: "Force",
+        enableGlobalFilter: false,
         meta: { className: "text-center" },
         minSize: 50,
     },
