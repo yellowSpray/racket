@@ -4,6 +4,8 @@ import { useClubConfig } from "@/hooks/useClubConfig"
 import { ScoringRulesCard } from "./ScoringRulesCard"
 import { PromotionRulesCard } from "./PromotionRulesCard"
 import { GroupSizeCard } from "./GroupSizeCard"
+import { VisitorFeeCard } from "./VisitorFeeCard"
+import { EventDefaultsCard } from "./EventDefaultsCard"
 import { ClubConfigSkeleton } from "@/components/shared/skeletons/SettingsSkeleton"
 
 export function ClubConfigManager() {
@@ -65,7 +67,21 @@ export function ClubConfigManager() {
                 />
 
                 <GroupSizeCard
+                    defaultMinPlayers={clubConfig?.default_min_players_per_group ?? 3}
                     defaultMaxPlayers={clubConfig?.default_max_players_per_group ?? 5}
+                    onSave={(data) => updateClubDefaults(clubId, data)}
+                />
+
+                <VisitorFeeCard
+                    visitorFee={clubConfig?.visitor_fee ?? 0}
+                    onSave={(data) => updateClubDefaults(clubId, data)}
+                />
+
+                <EventDefaultsCard
+                    defaultStartTime={clubConfig?.default_start_time ?? "19:00"}
+                    defaultEndTime={clubConfig?.default_end_time ?? "23:00"}
+                    defaultNumberOfCourts={clubConfig?.default_number_of_courts ?? 4}
+                    defaultMatchDuration={clubConfig?.default_match_duration ?? 30}
                     onSave={(data) => updateClubDefaults(clubId, data)}
                 />
             </div>

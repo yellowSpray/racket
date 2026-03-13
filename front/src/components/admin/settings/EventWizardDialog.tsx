@@ -1,4 +1,5 @@
 import type { Event } from "@/types/event"
+import type { ClubDefaults } from "./EventDialog"
 import type { Group, SupabaseGroup } from "@/types/draw"
 import type { Match } from "@/types/match"
 import { useEffect, useState, useCallback } from "react"
@@ -30,9 +31,10 @@ interface EventWizardDialogProps {
     onOpenChange: (open: boolean) => void
     event: Event | null
     onSuccess: () => void
+    clubDefaults?: ClubDefaults
 }
 
-export function EventWizardDialog({ open, onOpenChange, event, onSuccess }: EventWizardDialogProps) {
+export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDefaults }: EventWizardDialogProps) {
     const [activeStep, setActiveStep] = useState(1)
     const [wizardEvent, setWizardEvent] = useState<Event | null>(null)
     const [groups, setGroups] = useState<Group[]>([])
@@ -193,6 +195,7 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess }: Even
                         <WizardStepConfig
                             event={wizardEvent}
                             onSave={handleConfigSave}
+                            clubDefaults={clubDefaults}
                         />
                     </StepperContent>
 

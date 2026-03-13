@@ -1,13 +1,30 @@
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { EventsManager } from "@/components/admin/settings/EventsManager"
 import { ClubConfigManager } from "@/components/admin/settings/ClubConfigManager"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/contexts/AuthContext"
 import { useClubConfig } from "@/hooks/useClubConfig"
+import type { ClubDefaults } from "@/components/admin/settings/EventDialog"
+
+/** Normalize Supabase time "19:00:00+00" → "19:00" */
+function formatTime(time: string | undefined): string | undefined {
+    if (!time) return undefined
+    return time.replace(/([+-]\d{2})$/, "").slice(0, 5)
+}
 
 export function AdminSettings () {
     const { profile } = useAuth()
     const { clubConfig, fetchClubConfig } = useClubConfig()
+
+    const clubDefaults = useMemo<ClubDefaults | undefined>(() => {
+        if (!clubConfig) return undefined
+        return {
+            startTime: formatTime(clubConfig.default_start_time) ?? "19:00",
+            endTime: formatTime(clubConfig.default_end_time) ?? "23:00",
+            numberOfCourts: clubConfig.default_number_of_courts,
+            matchDuration: clubConfig.default_match_duration,
+        }
+    }, [clubConfig])
 
     useEffect(() => {
         fetchClubConfig(profile?.club_id ?? null)
@@ -32,7 +49,7 @@ export function AdminSettings () {
                 </div>
                 <div className="flex-1 min-h-0 overflow-hidden rounded-md">
                     <TabsContent value="events" className="h-full">
-                        <EventsManager />
+                        <EventsManager clubDefaults={clubDefaults} />
                     </TabsContent>
 
                     <TabsContent value="clubs" className="h-full">

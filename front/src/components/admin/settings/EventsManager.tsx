@@ -1,6 +1,7 @@
 import { EventsSkeleton } from "@/components/shared/skeletons/SettingsSkeleton"
 import { useEvent } from "@/contexts/EventContext"
 import type { Event } from "@/types/event"
+import type { ClubDefaults } from "./EventDialog"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -16,7 +17,11 @@ import { PlusSignIcon, PencilEdit01Icon, Delete02Icon, Calendar03Icon } from "hu
 import { EventWizardDialog } from "./EventWizardDialog"
 import { DeleteEventDialog } from "./DeleteEventDialog"
 
-export function EventsManager() {
+interface EventsManagerProps {
+    clubDefaults?: ClubDefaults
+}
+
+export function EventsManager({ clubDefaults }: EventsManagerProps) {
     const {events, loading, fetchEvents} = useEvent()
     const [dialogOpen, setDialogOpen] = useState<boolean>(false)
     const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false)
@@ -177,6 +182,7 @@ export function EventsManager() {
                 onOpenChange={setDialogOpen}
                 event={selectedEvent}
                 onSuccess={handleSuccess}
+                clubDefaults={clubDefaults}
             />
 
             {/* Dialog de suppression */}

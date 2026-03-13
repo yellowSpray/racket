@@ -18,14 +18,22 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { MultiDateCalendar } from "@/components/ui/multi-date-calendar"
 
+export interface ClubDefaults {
+    startTime?: string
+    endTime?: string
+    numberOfCourts?: number
+    matchDuration?: number
+}
+
 interface EventDialogProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     event: Event | null
     onSuccess: () => void
+    clubDefaults?: ClubDefaults
 }
 
-export function EventDialog({ open, onOpenChange, event, onSuccess}: EventDialogProps) {
+export function EventDialog({ open, onOpenChange, event, onSuccess, clubDefaults}: EventDialogProps) {
     const { profile } = useAuth()
     const [loading, setLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
@@ -33,10 +41,10 @@ export function EventDialog({ open, onOpenChange, event, onSuccess}: EventDialog
 
     // form state
     const [eventName, setEventName] = useState<string>("")
-    const [startTime, setStartTime] = useState<string>("19:00")
-    const [endTime, setEndTime] = useState<string>("23:00")
-    const [numberOfCourts, setNumberOfCourts] = useState<number>(4)
-    const [matchDuration, setMatchDuration] = useState<number>(30)
+    const [startTime, setStartTime] = useState<string>(clubDefaults?.startTime ?? "19:00")
+    const [endTime, setEndTime] = useState<string>(clubDefaults?.endTime ?? "23:00")
+    const [numberOfCourts, setNumberOfCourts] = useState<number>(clubDefaults?.numberOfCourts ?? 4)
+    const [matchDuration, setMatchDuration] = useState<number>(clubDefaults?.matchDuration ?? 30)
     const [playingDates, setPlayingDates] = useState<string[]>([])
 
     // reset form open/close
@@ -51,10 +59,10 @@ export function EventDialog({ open, onOpenChange, event, onSuccess}: EventDialog
                 setPlayingDates(event.playing_dates || [])
             } else {
                 setEventName("")
-                setStartTime("19:00")
-                setEndTime("23:00")
-                setNumberOfCourts(4)
-                setMatchDuration(30)
+                setStartTime(clubDefaults?.startTime ?? "19:00")
+                setEndTime(clubDefaults?.endTime ?? "23:00")
+                setNumberOfCourts(clubDefaults?.numberOfCourts ?? 4)
+                setMatchDuration(clubDefaults?.matchDuration ?? 30)
                 setPlayingDates([])
             }
             setError(null)

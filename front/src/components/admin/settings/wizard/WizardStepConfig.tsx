@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { eventSchema } from "@/lib/schemas"
 import { validateFormData } from "@/lib/validation"
 import { intervalToMinutes, minutesToInterval } from "@/lib/utils"
+import type { ClubDefaults } from "../EventDialog"
 import { Calendar03Icon } from "hugeicons-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,19 +21,20 @@ function formatTimeForInput(time: string | null | undefined): string | null {
 interface WizardStepConfigProps {
     event: Event | null
     onSave: (savedEvent: Event) => void
+    clubDefaults?: ClubDefaults
 }
 
-export function WizardStepConfig({ event, onSave }: WizardStepConfigProps) {
+export function WizardStepConfig({ event, onSave, clubDefaults }: WizardStepConfigProps) {
     const { profile } = useAuth()
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
 
     const [eventName, setEventName] = useState("")
-    const [startTime, setStartTime] = useState("19:00")
-    const [endTime, setEndTime] = useState("23:00")
-    const [numberOfCourts, setNumberOfCourts] = useState(4)
-    const [matchDuration, setMatchDuration] = useState(30)
+    const [startTime, setStartTime] = useState(clubDefaults?.startTime ?? "19:00")
+    const [endTime, setEndTime] = useState(clubDefaults?.endTime ?? "23:00")
+    const [numberOfCourts, setNumberOfCourts] = useState(clubDefaults?.numberOfCourts ?? 4)
+    const [matchDuration, setMatchDuration] = useState(clubDefaults?.matchDuration ?? 30)
     const [playingDates, setPlayingDates] = useState<string[]>([])
 
     useEffect(() => {
