@@ -39,6 +39,7 @@ export interface ClubConfig {
   default_min_players_per_group: number
   default_max_players_per_group: number
   visitor_fee: number
+  open_to_visitors: boolean
   default_start_time: string
   default_end_time: string
   default_number_of_courts: number

@@ -42,7 +42,7 @@ export function useClubConfig() {
             const [clubRes, scoringRes, promotionRes] = await Promise.all([
                 supabase
                     .from("clubs")
-                    .select("id, club_name, club_address, club_email, default_min_players_per_group, default_max_players_per_group, visitor_fee, default_start_time, default_end_time, default_number_of_courts, default_match_duration")
+                    .select("id, club_name, club_address, club_email, default_min_players_per_group, default_max_players_per_group, visitor_fee, open_to_visitors, default_start_time, default_end_time, default_number_of_courts, default_match_duration")
                     .eq("id", clubId)
                     .single(),
                 supabase
