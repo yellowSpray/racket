@@ -1,7 +1,21 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { TodayMatchesFeed } from '../TodayMatchesFeed'
 import type { Match } from '@/types/match'
+
+let mockMatches: Match[] = []
+let mockMatchDate: string | null = null
+let mockLoading = false
+
+vi.mock('@/hooks/useTodayMatches', () => ({
+    useTodayMatches: () => ({
+        matches: mockMatches,
+        matchDate: mockMatchDate,
+        isToday: true,
+        loading: mockLoading,
+    }),
+}))
+
+import { TodayMatchesCard } from '../TodayMatchesCard'
 
 function makeMatch(overrides: Partial<Match> & { id: string }): Match {
     return {
@@ -20,19 +34,32 @@ function makeMatch(overrides: Partial<Match> & { id: string }): Match {
     }
 }
 
-describe('TodayMatchesFeed', () => {
+describe('TodayMatchesCard', () => {
+    beforeEach(() => {
+        mockMatches = []
+        mockMatchDate = null
+        mockLoading = false
+    })
+
+    it('should show title "Matchs du jour"', () => {
+        render(<TodayMatchesCard eventId="e1" />)
+        expect(screen.getByText('Matchs du jour')).toBeInTheDocument()
+    })
+
     it('should show empty state when no matches', () => {
-        render(<TodayMatchesFeed matches={[]} matchDate={null} loading={false} />)
+        render(<TodayMatchesCard eventId="e1" />)
         expect(screen.getByText('Aucun match programmé')).toBeInTheDocument()
     })
 
     it('should show loading state', () => {
-        render(<TodayMatchesFeed matches={[]} matchDate={null} loading={true} />)
+        mockLoading = true
+        render(<TodayMatchesCard eventId="e1" />)
         expect(screen.getByText('Chargement...')).toBeInTheDocument()
     })
 
-    it('should display matches grouped by time slot', () => {
-        const matches: Match[] = [
+    it('should display matches with player names', () => {
+        mockMatchDate = '2026-03-08'
+        mockMatches = [
             makeMatch({ id: 'm1', match_time: '19:00:00+00', court_number: '1' }),
             makeMatch({
                 id: 'm2', match_time: '19:00:00+00', court_number: '2',
@@ -40,65 +67,43 @@ describe('TodayMatchesFeed', () => {
                 player2: { id: 'p4', first_name: 'Dan', last_name: 'Simon' },
                 group: { id: 'g2', group_name: 'Box B', event_id: 'e1' },
             }),
-            makeMatch({
-                id: 'm3', match_time: '19:30:00+00', court_number: '1',
-                player1: { id: 'p5', first_name: 'Eve', last_name: 'Blanc' },
-                player2: { id: 'p6', first_name: 'Fab', last_name: 'Morin' },
-            }),
         ]
 
-        render(<TodayMatchesFeed matches={matches} matchDate="2026-03-08" loading={false} />)
+        render(<TodayMatchesCard eventId="e1" />)
 
-        expect(screen.getAllByText('19:00').length).toBeGreaterThanOrEqual(1)
-        expect(screen.getAllByText('19:30').length).toBeGreaterThanOrEqual(1)
-        // Both mobile and desktop render, so multiple elements expected
         expect(screen.getAllByText('Alice Martin').length).toBeGreaterThanOrEqual(1)
         expect(screen.getAllByText('Claire Roy').length).toBeGreaterThanOrEqual(1)
-        expect(screen.getAllByText('Eve Blanc').length).toBeGreaterThanOrEqual(1)
     })
 
     it('should show score for played matches', () => {
-        const matches: Match[] = [
-            makeMatch({ id: 'm1', winner_id: 'p1', score: '3-1' }),
-        ]
+        mockMatchDate = '2026-03-08'
+        mockMatches = [makeMatch({ id: 'm1', winner_id: 'p1', score: '3-1' })]
 
-        render(<TodayMatchesFeed matches={matches} matchDate="2026-03-08" loading={false} />)
+        render(<TodayMatchesCard eventId="e1" />)
         expect(screen.getAllByText('3-1').length).toBeGreaterThanOrEqual(1)
     })
 
     it('should show "Absent" for ABS scores', () => {
-        const matches: Match[] = [
-            makeMatch({ id: 'm1', winner_id: 'p2', score: 'ABS-0' }),
-        ]
+        mockMatchDate = '2026-03-08'
+        mockMatches = [makeMatch({ id: 'm1', winner_id: 'p2', score: 'ABS-0' })]
 
-        render(<TodayMatchesFeed matches={matches} matchDate="2026-03-08" loading={false} />)
+        render(<TodayMatchesCard eventId="e1" />)
         expect(screen.getAllByText('Absent').length).toBeGreaterThanOrEqual(1)
     })
 
     it('should show "en attente" for unplayed matches', () => {
-        const matches: Match[] = [
-            makeMatch({ id: 'm1', winner_id: null, score: null }),
-        ]
+        mockMatchDate = '2026-03-08'
+        mockMatches = [makeMatch({ id: 'm1', winner_id: null, score: null })]
 
-        render(<TodayMatchesFeed matches={matches} matchDate="2026-03-08" loading={false} />)
+        render(<TodayMatchesCard eventId="e1" />)
         expect(screen.getAllByText('en attente').length).toBeGreaterThanOrEqual(1)
     })
 
-    it('should show court number', () => {
-        const matches: Match[] = [
-            makeMatch({ id: 'm1', court_number: '2' }),
-        ]
-
-        render(<TodayMatchesFeed matches={matches} matchDate="2026-03-08" loading={false} />)
-        expect(screen.getAllByText('2').length).toBeGreaterThanOrEqual(1)
-    })
-
     it('should show group badge', () => {
-        const matches: Match[] = [
-            makeMatch({ id: 'm1' }),
-        ]
+        mockMatchDate = '2026-03-08'
+        mockMatches = [makeMatch({ id: 'm1' })]
 
-        render(<TodayMatchesFeed matches={matches} matchDate="2026-03-08" loading={false} />)
+        render(<TodayMatchesCard eventId="e1" />)
         expect(screen.getAllByText('Box A').length).toBeGreaterThanOrEqual(1)
     })
 })

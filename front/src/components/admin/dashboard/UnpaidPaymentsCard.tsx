@@ -1,15 +1,43 @@
-import type { UnpaidPayment } from "@/hooks/useUnpaidPayments"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 import { CreditCardIcon } from "hugeicons-react"
+import { useUnpaidPayments } from "@/hooks/useUnpaidPayments"
+import type { UnpaidPayment } from "@/hooks/useUnpaidPayments"
 
-interface UnpaidPaymentsFeedProps {
-    payments: UnpaidPayment[]
-    loading: boolean
+interface UnpaidPaymentsCardProps {
+    clubId: string | null
+    className?: string
 }
 
-export function UnpaidPaymentsFeed({ payments, loading }: UnpaidPaymentsFeedProps) {
+export function UnpaidPaymentsCard({ clubId, className }: UnpaidPaymentsCardProps) {
+    const { payments, loading } = useUnpaidPayments(clubId)
+
+    return (
+        <Card className={className}>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-sm">
+                    <CreditCardIcon size={16} className="text-foreground" />
+                    Paiements
+                    {payments.length > 0 && (
+                        <Badge
+                            variant="unpaid"
+                            className="ml-auto text-xs px-2 py-0.5"
+                        >
+                            {payments.length}
+                        </Badge>
+                    )}
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                <UnpaidPaymentsFeed payments={payments} loading={loading} />
+            </CardContent>
+        </Card>
+    )
+}
+
+function UnpaidPaymentsFeed({ payments, loading }: { payments: UnpaidPayment[]; loading: boolean }) {
     if (loading) {
         return (
             <div className="flex items-center justify-center py-8 text-gray-400">

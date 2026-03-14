@@ -1,22 +1,88 @@
-import type { Match } from "@/types/match"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Calendar03Icon, Clock01Icon } from "hugeicons-react"
+import { useTodayMatches } from "@/hooks/useTodayMatches"
+import { formatDateLabel } from "@/lib/formatDateLabel"
+import type { Match } from "@/types/match"
+
+function MatchProgressBadge({ played, total }: { played: number; total: number }) {
+    const allDone = played === total
+    const noneStarted = played === 0
+    return (
+        <Badge
+            variant="default"
+            className={`text-xs px-2 py-0.5 gap-1.5 ${
+                allDone
+                    ? "bg-green-500 text-white"
+                    : noneStarted
+                        ? "bg-gray-200 text-gray-700"
+                        : "bg-amber-100 text-amber-700 border border-amber-300"
+            }`}
+        >
+            <span className="relative flex h-2 w-2">
+                {!allDone && (
+                    <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${
+                        noneStarted ? "bg-gray-400" : "bg-amber-500"
+                    }`} />
+                )}
+                <span className={`relative inline-flex h-2 w-2 rounded-full ${
+                    allDone ? "bg-white" : noneStarted ? "bg-gray-500" : "bg-amber-500"
+                }`} />
+            </span>
+            {allDone
+                ? `${total} matchs terminés`
+                : noneStarted
+                    ? `${total} matchs à jouer`
+                    : `${played}/${total} joués`
+            }
+        </Badge>
+    )
+}
+
+interface TodayMatchesCardProps {
+    eventId: string | null
+    className?: string
+}
+
+export function TodayMatchesCard({ eventId, className }: TodayMatchesCardProps) {
+    const { matches, matchDate, isToday, loading } = useTodayMatches(eventId)
+
+    return (
+        <Card className={className}>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-sm">
+                    <Calendar03Icon size={16} className="text-foreground" />
+                    Matchs du jour
+                    {matchDate && (
+                        <span className="text-xs text-muted-foreground font-normal ml-1">
+                            {formatDateLabel(matchDate, isToday)}
+                        </span>
+                    )}
+                    {matches.length > 0 && (
+                        <span className="ml-auto">
+                            <MatchProgressBadge
+                                played={matches.filter(m => m.winner_id).length}
+                                total={matches.length}
+                            />
+                        </span>
+                    )}
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 min-h-0">
+                <MatchesFeed matches={matches} matchDate={matchDate} loading={loading} />
+            </CardContent>
+        </Card>
+    )
+}
 
 function formatTime(matchTime: string): string {
     const m = matchTime.match(/^(\d{2}:\d{2})/)
     return m ? m[1] : matchTime
 }
 
-
-interface TodayMatchesFeedProps {
-    matches: Match[]
-    matchDate: string | null
-    loading: boolean
-}
-
-export function TodayMatchesFeed({ matches, matchDate, loading }: TodayMatchesFeedProps) {
+function MatchesFeed({ matches, matchDate, loading }: { matches: Match[]; matchDate: string | null; loading: boolean }) {
     if (loading) {
         return (
             <div className="flex items-center justify-center py-8 text-gray-400">
