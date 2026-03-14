@@ -1,9 +1,10 @@
 import { Link, useLocation } from "react-router";
-import { Home01Icon, PencilEdit02Icon, Comment01Icon, Settings01Icon } from "hugeicons-react";
+import { Home01Icon, PencilEdit02Icon, Comment01Icon, Settings01Icon, Search01Icon } from "hugeicons-react";
 
 const menuItems = [
   { title: "Accueil", url: "/user", icon: Home01Icon },
   { title: "Tableaux", url: "/user/draws", icon: PencilEdit02Icon },
+  { title: "Découvrir", url: "/user/discover", icon: Search01Icon },
   { title: "Messages", url: "/user/messages", icon: Comment01Icon },
   { title: "Paramètres", url: "/user/settings", icon: Settings01Icon },
 ];

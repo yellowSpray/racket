@@ -14,6 +14,8 @@ const UserMatches = lazy(() => import("@/pages/user/UserMatches").then(m => ({ d
 const UserRankings = lazy(() => import("@/pages/user/UserRankings").then(m => ({ default: m.UserRankings })))
 const UserMessages = lazy(() => import("@/pages/user/UserMessages").then(m => ({ default: m.UserMessages })))
 const UserSettings = lazy(() => import("@/pages/user/UserSettings").then(m => ({ default: m.UserSettings })))
+const UserDiscover = lazy(() => import("@/pages/user/UserDiscover").then(m => ({ default: m.UserDiscover })))
+const EventInvite = lazy(() => import("@/pages/shared/EventInvite").then(m => ({ default: m.EventInvite })))
 const AdminPage = lazy(() => import("@/pages/admin/AdminPage"))
 const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard").then(m => ({ default: m.AdminDashboard })))
 const AdminDraws = lazy(() => import("@/pages/admin/AdminDraws").then(m => ({ default: m.AdminDraws })))
@@ -54,10 +56,13 @@ const router = createBrowserRouter([
                             { path: "draws", element: withSuspense(UserDraws) },
                             { path: "matches", element: withSuspense(UserMatches) },
                             { path: "rankings", element: withSuspense(UserRankings) },
+                            { path: "discover", element: withSuspense(UserDiscover) },
                             { path: "messages", element: withSuspense(UserMessages) },
                             { path: "settings", element: withSuspense(UserSettings) },
                         ]
-                    }
+                    },
+                    // Lien d'invitation (accessible par tous les rôles, sans sidebar)
+                    { path: "events/join/:token", element: withSuspense(EventInvite) },
                 ]
             },
             // Routes pour les admins

@@ -14,6 +14,8 @@ export interface Event {
   estimated_match_duration?: string
   playing_dates?: string[] | null
   status?: EventStatus
+  open_to_visitors?: boolean
+  invite_token?: string
   created_at?: string
   updated_at?: string
 };

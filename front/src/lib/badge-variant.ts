@@ -23,6 +23,10 @@ export const badgeVariants = cva(
           "text-green-500 border-2 border-green-500",
         pending:
           "text-amber-500 border-2 border-amber-500",
+        approved:
+          "border-transparent bg-green-500 text-gray-50",
+        rejected:
+          "border-transparent bg-red-500 text-gray-50",
       },
     },
     defaultVariants: {

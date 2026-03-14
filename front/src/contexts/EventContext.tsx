@@ -3,12 +3,14 @@ import type { Event, EventContextType } from "@/types/event";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { logger } from "@/lib/logger";
 import { withTimeout } from "@/lib/handleHookError";
+import { useAuth } from "@/contexts/AuthContext";
 
 const EventContext = createContext<EventContextType | undefined>(undefined)
 
 // Provider
 export function EventProvider({children}: {children: ReactNode}) {
-    
+
+    const { profile } = useAuth()
     const [currentEvent, setCurrentEvent] = useState<Event | null>(null)
     const [events, setEvents] = useState<Event[]>([])
     const [loading, setLoading] = useState<boolean>(true)
@@ -35,7 +37,14 @@ export function EventProvider({children}: {children: ReactNode}) {
                 return
             }
 
-            const eventsWithCount = (data || []).map(event => ({
+            // Filtrer pour ne garder que les events du club de l'utilisateur
+            // (la RLS retourne aussi les events ouverts d'autres clubs)
+            const userClubId = profile?.club_id
+            const filteredData = userClubId
+                ? (data || []).filter(event => event.club_id === userClubId)
+                : (data || [])
+
+            const eventsWithCount = filteredData.map(event => ({
                 ...event,
                 player_count: Array.isArray(event.event_players) && event.event_players.length >  0
                     ? event.event_players[0].count

@@ -42,6 +42,12 @@ vi.mock('@/lib/supabaseClient', () => ({
     supabase: mockSupabase,
 }))
 
+vi.mock('@/contexts/AuthContext', () => ({
+    useAuth: () => ({
+        profile: { id: 'u1', club_id: 'c1', first_name: 'Test', last_name: 'User', email: 'test@test.com', phone: '', role: 'user' as const },
+    }),
+}))
+
 import { EventProvider, useEvent } from '../EventContext'
 
 const mockEvents = [
