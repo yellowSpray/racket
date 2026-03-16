@@ -6,12 +6,12 @@ export function UserDashboard() {
     const { profile } = useAuth()
 
     return (
-        <div className="flex flex-col h-full min-h-0 gap-6">
+        <div className="flex flex-col h-full min-h-0 gap-5">
             <h3 className="text-lg font-semibold">Salut {profile?.first_name}</h3>
 
-            <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-fr">
+            <div className="flex-1 min-h-0 grid grid-cols-28 grid-rows-16 gap-5">
                 {/* Présence sociale */}
-                <Card>
+                <Card className="col-start-1 col-span-7 row-start-1 row-span-7">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-sm">
                             <UserGroupIcon size={16} className="text-gray-500" />
@@ -28,7 +28,7 @@ export function UserDashboard() {
                 </Card>
 
                 {/* Évolution dans les tableaux */}
-                <Card>
+                <Card className="col-start-8 col-span-7 row-start-1 row-span-7">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-sm">
                             <ChartIncreaseIcon size={16} className="text-gray-500" />
@@ -45,7 +45,7 @@ export function UserDashboard() {
                 </Card>
 
                 {/* Statistiques matchs */}
-                <Card>
+                <Card className="col-start-15 col-span-7 row-start-1 row-span-7">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-sm">
                             <BarChartIcon size={16} className="text-gray-500" />
@@ -62,7 +62,7 @@ export function UserDashboard() {
                 </Card>
 
                 {/* Feed matchs en cours */}
-                <Card>
+                <Card className="col-start-22 col-span-7 row-start-1 row-span-7">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-sm">
                             <Radio01Icon size={16} className="text-gray-500" />
@@ -79,7 +79,7 @@ export function UserDashboard() {
                 </Card>
 
                 {/* Mes matchs — saisie scores */}
-                <Card className="lg:col-span-2">
+                <Card className="col-start-1 col-span-28 row-start-8 row-span-9 min-h-0">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-sm">
                             <TaskEdit01Icon size={16} className="text-gray-500" />
