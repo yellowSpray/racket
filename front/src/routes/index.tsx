@@ -23,6 +23,7 @@ const AdminMatches = lazy(() => import("@/pages/admin/AdminMatches").then(m => (
 const AdminPlayers = lazy(() => import("@/pages/admin/AdminPlayers").then(m => ({ default: m.AdminPlayers })))
 const AdminSettings = lazy(() => import("@/pages/admin/AdminSettings").then(m => ({ default: m.AdminSettings })))
 const AdminEmail = lazy(() => import("@/pages/admin/AdminEmail").then(m => ({ default: m.AdminEmail })))
+const ProfilePage = lazy(() => import("@/pages/shared/ProfilePage").then(m => ({ default: m.ProfilePage })))
 
 function withSuspense(Component: React.LazyExoticComponent<React.ComponentType>) {
     return (
@@ -59,6 +60,7 @@ const router = createBrowserRouter([
                             { path: "discover", element: withSuspense(UserDiscover) },
                             { path: "messages", element: withSuspense(UserMessages) },
                             { path: "settings", element: withSuspense(UserSettings) },
+                            { path: "profile", element: withSuspense(ProfilePage) },
                         ]
                     },
                     // Lien d'invitation (accessible par tous les rôles, sans sidebar)
@@ -78,7 +80,8 @@ const router = createBrowserRouter([
                             { path: "matches", element: withSuspense(AdminMatches) },
                             { path: "players", element: withSuspense(AdminPlayers) },
                             { path: "email", element: withSuspense(AdminEmail) },
-                            { path: "settings", element: withSuspense(AdminSettings) }
+                            { path: "settings", element: withSuspense(AdminSettings) },
+                            { path: "profile", element: withSuspense(ProfilePage) }
                         ]
                     }
                 ]

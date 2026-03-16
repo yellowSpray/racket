@@ -3,7 +3,7 @@ import Logo from "@/components/ui/logo"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/contexts/AuthContext"
-import { Notification03Icon, Moon02Icon, Sun03Icon, ArrowDown01Icon } from "hugeicons-react"
+import { Notification03Icon, Moon02Icon, Sun03Icon } from "hugeicons-react"
 import { useEffect, useState } from "react"
 // import { supabase } from "@/lib/supabaseClient"
 
@@ -49,15 +49,16 @@ export default function Header() {
               <Notification03Icon size={20} strokeWidth={2} />
               <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border border-white dark:border-slate-900" />
             </Button>
-            <Button variant="outline" className="py-1 pl-1 pr-2">
-              <Avatar>
-                <AvatarImage
-                  src={profile?.avatar_url || "https://github.com/shadcn.png"}
-                  alt={`${profile?.first_name} ${profile?.last_name}`}
-                />
-              </Avatar>
-              <span>{`${profile?.first_name} ${profile?.last_name}`}</span>
-              <ArrowDown01Icon size={20} />
+            <Button variant="outline" className="py-1 pl-1 pr-2" asChild>
+              <Link to={profile?.role === "user" ? "/user/profile" : "/admin/profile"}>
+                <Avatar>
+                  <AvatarImage
+                    src={profile?.avatar_url || "https://github.com/shadcn.png"}
+                    alt={`${profile?.first_name} ${profile?.last_name}`}
+                  />
+                </Avatar>
+                <span>{`${profile?.first_name} ${profile?.last_name}`}</span>
+              </Link>
             </Button>
           </div>
         ) : ( 
