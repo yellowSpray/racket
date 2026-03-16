@@ -96,7 +96,7 @@ Deno.serve(async (req: Request) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
 
-    // Vérifier si l'email est déjà dans un profil du même club
+    // Vérifier si l'email a déjà un compte auth actif dans le même club
     const { data: existingMember } = await supabaseAdmin
       .from("profiles")
       .select("id, email")
@@ -105,10 +105,14 @@ Deno.serve(async (req: Request) => {
       .maybeSingle()
 
     if (existingMember) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Ce membre fait déjà partie de votre club" }),
-        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      )
+      // Vérifier si ce profil a un compte auth lié
+      const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(existingMember.id)
+      if (authUser?.user) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Ce membre a déjà un compte actif dans votre club" }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        )
+      }
     }
 
     // Envoyer l'invitation email via Supabase Auth Admin
