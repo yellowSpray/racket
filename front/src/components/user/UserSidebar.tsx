@@ -1,24 +1,25 @@
 import { Link, useLocation } from "react-router";
-import { Home01Icon, PencilEdit02Icon, Comment01Icon, Settings01Icon, Search01Icon } from "hugeicons-react";
+import { Home01Icon, PencilEdit02Icon, File01Icon, Comment01Icon, Settings01Icon, Search01Icon, Logout03Icon } from "hugeicons-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const menuItems = [
   { title: "Accueil", url: "/user", icon: Home01Icon },
   { title: "Tableaux", url: "/user/draws", icon: PencilEdit02Icon },
+  { title: "Matchs", url: "/user/matches", icon: File01Icon },
   { title: "Découvrir", url: "/user/discover", icon: Search01Icon },
   { title: "Messages", url: "/user/messages", icon: Comment01Icon },
-  { title: "Paramètres", url: "/user/settings", icon: Settings01Icon },
 ];
 
 export function UserSideBar() {
   const location = useLocation();
+  const { signOut } = useAuth();
 
   return (
-    <div className="h-full flex flex-col rounded-full bg-white border border-border">
-
+    <>
       {/* Navigation */}
-      <nav className="flex-1 flex flex-col items-center justify-between py-10 px-5 overflow-y-auto">
-        <ul className="space-y-7.5">
-          {menuItems.slice(0, -1).map((item) => {
+      <nav className="w-full flex-1 flex flex-col items-center justify-between pt-3">
+        <ul className="space-y-4">
+          {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = item.url === "/user"
               ? location.pathname === "/user"
@@ -28,34 +29,34 @@ export function UserSideBar() {
                 <Link
                   to={item.url}
                   className={`
-                    flex items-center justify-center p-2.5 rounded-full transition-colors
-                    ${isActive ? "bg-primary font-[600]" : "hover:bg-gray-100"}
+                    flex items-center justify-center p-3 rounded-full border-2 border-border transition-colors
+                    ${isActive ? "bg-primary border-primary text-foreground" : "text-gray-500 hover:bg-border hover:text-foreground"}
                   `}
                 >
-                  <Icon size={20} />
+                  <Icon size={17} strokeWidth={2} />
                 </Link>
               </li>
             );
           })}
         </ul>
-        {(() => {
-          const last = menuItems[menuItems.length - 1];
-          const Icon = last.icon;
-          const isActive = location.pathname.startsWith(last.url);
-          return (
-            <Link
-              to={last.url}
-              className={`
-                flex items-center justify-center p-2.5 rounded-full transition-colors
-                ${isActive ? "bg-primary font-[600]" : "hover:bg-gray-100"}
-              `}
-            >
-              <Icon size={20} />
-            </Link>
-          );
-        })()}
+        <div className="flex flex-col items-center gap-4">
+          <Link
+            to="/user/settings"
+            className={`
+              flex items-center justify-center p-3 rounded-full border-2 border-border transition-colors
+              ${location.pathname.startsWith("/user/settings") ? "bg-primary border-primary text-foreground" : "text-gray-500 hover:bg-border hover:text-foreground"}
+            `}
+          >
+            <Settings01Icon size={17} strokeWidth={2} />
+          </Link>
+          <button
+            onClick={signOut}
+            className="flex items-center justify-center p-3 rounded-full border-2 border-border transition-colors text-gray-500 hover:bg-red-50 hover:border-red-300 hover:text-red-500"
+          >
+            <Logout03Icon size={17} strokeWidth={2} />
+          </button>
+        </div>
       </nav>
-
-    </div>
+    </>
   );
 }

@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router";
-import { DashboardSquare02Icon, Settings01Icon, UserGroupIcon, File01Icon, LayoutTable02Icon, Mail01Icon } from "hugeicons-react";
+import { DashboardSquare02Icon, Settings01Icon, UserGroupIcon, File01Icon, LayoutTable02Icon, Mail01Icon, Logout03Icon } from "hugeicons-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 
 const menuItems = [
@@ -13,6 +14,7 @@ const menuItems = [
 export function AdminSideBar() {
 
   const location = useLocation()
+  const { signOut } = useAuth()
 
   return (
     <>
@@ -38,16 +40,23 @@ export function AdminSideBar() {
             );
           })}
         </ul>
-        <Link
-          to="/admin/settings"
-          className={`
-            flex items-center justify-center p-3 rounded-full border-2 border-border transition-colors
-            ${location.pathname === "/admin/settings" ? "bg-primary border-primary text-foreground" : "text-gray-500 hover:bg-border hover:text-foreground"}
-          `}
-        >
-          <Settings01Icon size={17} strokeWidth={2} />
-          {/* <span className="hidden 2xl:inline text-sm">Paramètres</span> */}
-        </Link>
+        <div className="flex flex-col items-center gap-4">
+          <Link
+            to="/admin/settings"
+            className={`
+              flex items-center justify-center p-3 rounded-full border-2 border-border transition-colors
+              ${location.pathname === "/admin/settings" ? "bg-primary border-primary text-foreground" : "text-gray-500 hover:bg-border hover:text-foreground"}
+            `}
+          >
+            <Settings01Icon size={17} strokeWidth={2} />
+          </Link>
+          <button
+            onClick={signOut}
+            className="flex items-center justify-center p-3 rounded-full border-2 border-border transition-colors text-gray-500 hover:bg-red-50 hover:border-red-300 hover:text-red-500"
+          >
+            <Logout03Icon size={17} strokeWidth={2} />
+          </button>
+        </div>
       </nav>
     </>
   );
