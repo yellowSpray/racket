@@ -14,8 +14,8 @@ export interface Match {
     pending_by?: string | null
     created_at?: string
     updated_at?: string
-    player1?: { id: string; first_name: string; last_name: string }
-    player2?: { id: string; first_name: string; last_name: string }
+    player1?: { id: string; first_name: string; last_name: string; avatar_url?: string }
+    player2?: { id: string; first_name: string; last_name: string; avatar_url?: string }
     group?: { id: string; group_name: string; event_id: string }
 }
 
