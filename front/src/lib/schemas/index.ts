@@ -6,3 +6,5 @@ export { promotionRulesSchema, type PromotionRulesFormData } from './promotion.s
 export { clubConfigSchema, type ClubConfigFormData } from './clubConfig.schema'
 export { courtSchema, type CourtFormData } from './court.schema'
 export { inviteMemberSchema, type InviteMemberFormData } from './inviteMember.schema'
+export { forgotPasswordSchema, type ForgotPasswordFormData } from './forgotPassword.schema'
+export { resetPasswordSchema, type ResetPasswordFormData } from './resetPassword.schema'

@@ -82,6 +82,14 @@ export function AuthProvider({ children }: { children: ReactNode}) {
                 logger.info("AuthContext.debug", `onAuthStateChange: event="${event}", session=${session ? "valide" : "null"}, -online=${navigator.onLine}, visibility=${document.visibilityState}`)                                 
           
 
+                // PASSWORD_RECOVERY : laisser la page ResetPassword gérer
+                if (event === 'PASSWORD_RECOVERY') {
+                    logger.info("AuthContext", "PASSWORD_RECOVERY — session prête pour reset")
+                    if (mounted) setSession(session)
+                    setIsLoading(false)
+                    return
+                }
+
                 // Ignore TOKEN_REFRESHED
                 if (event === 'TOKEN_REFRESHED') {
                     logger.info("AuthContext", `TOKEN_REFRESHED — session ${session ? "valide" : "null"}, token expire à ${session?.expires_at ? new Date(session.expires_at * 1000).toLocaleTimeString() : "??"}`)

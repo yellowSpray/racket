@@ -19,12 +19,13 @@ import { supabase } from '@/lib/supabaseClient'
 import { useNavigate } from "react-router";
 import { useAuth } from "@/contexts/AuthContext";
 
-type RegisterProps = {
+type LoginProps = {
   className?: string;
   toggle: () => void;
+  onForgotPassword: () => void;
 };
 
-export default function Login({className, toggle, ...props}: RegisterProps) {
+export default function Login({className, toggle, onForgotPassword, ...props}: LoginProps) {
 
     const navigate = useNavigate()
     const { profile, isAuthenticated, isLoading } = useAuth()
@@ -92,12 +93,14 @@ export default function Login({className, toggle, ...props}: RegisterProps) {
                             <Field>
                                 <div className="flex items-center">
                                     <FieldLabel htmlFor="password_login">Mot de passe</FieldLabel>
-                                    <a
-                                        href="#"
-                                        className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
+                                    <Button
+                                        variant="link"
+                                        type="button"
+                                        className="ml-auto"
+                                        onClick={onForgotPassword}
                                     >
                                         Mot de passe oublié ?
-                                    </a>
+                                    </Button>
                                 </div>
                                 <Input
                                     id="password_login"
