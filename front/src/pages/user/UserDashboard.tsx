@@ -1,99 +1,121 @@
+import { useEffect, useMemo } from "react"
 import { useAuth } from "@/contexts/AuthContext"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
-import { UserGroupIcon, ChartIncreaseIcon, BarChartIcon, Radio01Icon, TaskEdit01Icon } from "hugeicons-react"
+import { useEvent } from "@/contexts/EventContext"
+import { useMatches } from "@/hooks/useMatches"
+import { useGroups } from "@/hooks/useGroups"
+import { useClubConfig } from "@/hooks/useClubConfig"
+import { NextMatchCard } from "@/components/user/dashboard/NextMatchCard"
+import { EvolutionCard } from "@/components/user/dashboard/EvolutionCard"
+import { PresenceCard } from "@/components/user/dashboard/PresenceCard"
+import { UserStatsCard } from "@/components/user/dashboard/UserStatsCard"
+import { ScoreInputCard } from "@/components/user/dashboard/ScoreInputCard"
+import { MyDrawCard } from "@/components/user/dashboard/MyDrawCard"
+import { PlaceholderCard } from "@/components/user/dashboard/PlaceholderCard"
+import type { Match } from "@/types/match"
 
 export function UserDashboard() {
     const { profile } = useAuth()
+    const { currentEvent } = useEvent()
+    const { matches, fetchMatchesByEvent, submitPendingScore } = useMatches()
+    const { groups, fetchGroupsByEvent } = useGroups()
+    const { scoringRules, fetchClubConfig } = useClubConfig()
+
+    useEffect(() => {
+        if (currentEvent?.id) {
+            fetchMatchesByEvent(currentEvent.id)
+            fetchGroupsByEvent(currentEvent.id)
+        }
+    }, [currentEvent?.id, fetchMatchesByEvent, fetchGroupsByEvent])
+
+    useEffect(() => {
+        if (profile?.club_id) fetchClubConfig(profile.club_id)
+    }, [profile?.club_id, fetchClubConfig])
+
+    const myMatches = useMemo(() => {
+        if (!profile?.id) return []
+        return matches
+            .filter(m => m.player1_id === profile.id || m.player2_id === profile.id)
+            .sort((a, b) => {
+                if (a.match_date !== b.match_date) return a.match_date.localeCompare(b.match_date)
+                return (a.match_time || "").localeCompare(b.match_time || "")
+            })
+    }, [matches, profile?.id])
+
+    const { upcoming, played } = useMemo(() => {
+        const up: Match[] = []
+        const pl: Match[] = []
+        for (const m of myMatches) {
+            if (m.winner_id) pl.push(m)
+            else up.push(m)
+        }
+        return { upcoming: up, played: pl }
+    }, [myMatches])
+
+    const stats = useMemo(() => {
+        if (!profile?.id) return { total: 0, wins: 0, losses: 0, ratio: 0 }
+        let wins = 0, losses = 0
+        for (const m of played) {
+            if (m.score?.includes("ABS")) {
+                const isAbsent = (m.score.startsWith("ABS") && m.player1_id === profile.id) ||
+                    (m.score.endsWith("ABS") && m.player2_id === profile.id)
+                if (isAbsent) continue
+            }
+            if (m.winner_id === profile.id) wins++
+            else losses++
+        }
+        const decided = wins + losses
+        return {
+            total: myMatches.length,
+            wins,
+            losses,
+            ratio: decided > 0 ? Math.round((wins / decided) * 100) : 0
+        }
+    }, [played, myMatches.length, profile?.id])
+
+    const nextMatch = upcoming[0] ?? null
+
+    const myGroup = useMemo(() => {
+        if (!profile?.id || groups.length === 0) return null
+        return groups.find(g => g.players?.some(p => p.id === profile.id)) ?? null
+    }, [groups, profile?.id])
 
     return (
         <div className="flex flex-col h-full min-h-0 gap-5">
             <h3 className="text-lg font-semibold">Salut {profile?.first_name}</h3>
 
             <div className="flex-1 min-h-0 grid grid-cols-28 grid-rows-16 gap-5">
-                {/* Présence sociale */}
-                <Card className="col-start-1 col-span-7 row-start-1 row-span-7">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-sm">
-                            <UserGroupIcon size={16} className="text-gray-500" />
-                            Présence sociale
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-                            <UserGroupIcon size={32} className="mb-3" />
-                            <p className="text-sm text-center">Qui joue en même temps que vous ce soir</p>
-                            <p className="text-xs mt-1">À venir</p>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Évolution dans les tableaux */}
-                <Card className="col-start-8 col-span-7 row-start-1 row-span-7">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-sm">
-                            <ChartIncreaseIcon size={16} className="text-gray-500" />
-                            Évolution
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-                            <ChartIncreaseIcon size={32} className="mb-3" />
-                            <p className="text-sm text-center">Votre progression dans les tableaux au fil des séries</p>
-                            <p className="text-xs mt-1">À venir</p>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Statistiques matchs */}
-                <Card className="col-start-15 col-span-7 row-start-1 row-span-7">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-sm">
-                            <BarChartIcon size={16} className="text-gray-500" />
-                            Statistiques
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-                            <BarChartIcon size={32} className="mb-3" />
-                            <p className="text-sm text-center">Victoires, défaites, ratio, séries en cours</p>
-                            <p className="text-xs mt-1">À venir</p>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Feed matchs en cours */}
-                <Card className="col-start-22 col-span-7 row-start-1 row-span-7">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-sm">
-                            <Radio01Icon size={16} className="text-gray-500" />
-                            Matchs en cours
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-                            <Radio01Icon size={32} className="mb-3" />
-                            <p className="text-sm text-center">Matchs en direct avec terrains et horaires</p>
-                            <p className="text-xs mt-1">À venir</p>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Mes matchs — saisie scores */}
-                <Card className="col-start-1 col-span-28 row-start-8 row-span-9 min-h-0">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-sm">
-                            <TaskEdit01Icon size={16} className="text-gray-500" />
-                            Mes matchs — Saisie des scores
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-                            <TaskEdit01Icon size={32} className="mb-3" />
-                            <p className="text-sm text-center">Liste de vos matchs sur l'événement en cours pour saisir les résultats</p>
-                            <p className="text-xs mt-1">À venir</p>
-                        </div>
-                    </CardContent>
-                </Card>
+                <NextMatchCard
+                    className="col-start-1 col-span-7 row-start-1 row-span-7"
+                    nextMatch={nextMatch}
+                    myId={profile?.id ?? ""}
+                    totalMatches={myMatches.length}
+                />
+                <EvolutionCard
+                    className="col-start-8 col-span-13 row-start-1 row-span-7"
+                />
+                <PresenceCard
+                    className="col-start-21 col-span-8 row-start-1 row-span-2"
+                />
+                <UserStatsCard
+                    className="col-start-21 col-span-8 row-start-3 row-span-5"
+                    stats={stats}
+                />
+                <ScoreInputCard
+                    className="col-start-1 col-span-10 row-start-8 row-span-9 min-h-0"
+                    upcoming={upcoming}
+                    played={played}
+                    myId={profile?.id ?? ""}
+                    onSubmitScore={submitPendingScore}
+                />
+                <MyDrawCard
+                    className="col-start-11 col-span-10 row-start-8 row-span-9 min-h-0"
+                    myGroup={myGroup}
+                    matches={matches}
+                    scoringRules={scoringRules ?? undefined}
+                />
+                <PlaceholderCard
+                    className="col-start-21 col-span-8 row-start-8 row-span-9 min-h-0"
+                />
             </div>
         </div>
     )
