@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MoreHorizontalIcon } from "hugeicons-react"
 
 interface PlaceholderCardProps {

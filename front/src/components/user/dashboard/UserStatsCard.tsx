@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChartIcon, ChampionIcon, Cancel01Icon, PercentIcon, VolleyballIcon } from "hugeicons-react"
 
 export interface UserStats {
