@@ -31,6 +31,29 @@ function extractTime(value: string): string {
     return ""
 }
 
+/**
+ * Normalise un score du point de vue du joueur vers le format DB (toujours player1-player2).
+ * Ex: si isPlayer1=false et score="3-1" → "1-3" (inversé car c'est du point de vue player2)
+ */
+function normalizeScoreForDb(score: string, isPlayer1: boolean): string {
+    if (score === "ABS") return isPlayer1 ? "ABS-0" : "0-ABS"
+    if (isPlayer1) return score
+    const parts = score.split("-")
+    if (parts.length !== 2) return score
+    return `${parts[1]}-${parts[0]}`
+}
+
+/**
+ * Détermine le winner_id à partir d'un score normalisé (format player1-player2).
+ */
+function computeWinnerId(score: string, player1Id: string, player2Id: string): string | null {
+    if (score.startsWith("ABS")) return player2Id
+    if (score.endsWith("ABS")) return player1Id
+    const parts = score.split("-").map(Number)
+    if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1])) return null
+    return parts[0] > parts[1] ? player1Id : player2Id
+}
+
 export function useMatches() {
 
     const [matches, setMatches] = useState<Match[]>([])
@@ -209,21 +232,6 @@ export function useMatches() {
                 }
             }
 
-            // Log des contraintes utilisées
-            const constraintsWithValues = Array.from(constraints.entries()).filter(
-                ([, c]) => c.arrival || c.departure || c.unavailable.length > 0
-            )
-            if (constraintsWithValues.length > 0) {
-                console.log("[Scheduler] Contraintes joueurs :")
-                for (const [id, c] of constraintsWithValues) {
-                    const parts: string[] = []
-                    if (c.arrival) parts.push(`arrivée: ${c.arrival}`)
-                    if (c.departure) parts.push(`départ: ${c.departure}`)
-                    if (c.unavailable.length > 0) parts.push(`absences: ${c.unavailable.join(", ")}`)
-                    console.log(`  - ${id}: ${parts.join(" | ")}`)
-                }
-            }
-
             // 2. Construire la map d'absences pour l'optimisation des byes
             const absencesMap = new Map<string, string[]>()
             for (const [id, c] of constraints.entries()) {
@@ -243,8 +251,6 @@ export function useMatches() {
                 setError("Aucun match à générer (pas assez de joueurs dans les groupes)")
                 return null
             }
-
-            console.log(`[Scheduler] Génération: ${totalPairings} matchs, ${dates.length} dates, ${timeSlots.length} créneaux/jour, ${event.number_of_courts} terrains (${dates.length * timeSlots.length * event.number_of_courts} slots totaux)`)
 
             // 5. Assigner les créneaux horaires et terrains par date
             const { assignments, unplaced } = assignTimeSlotsForDates(
@@ -584,6 +590,114 @@ export function useMatches() {
         }
     }, [])
 
+    /**
+     * Soumet un score en attente de confirmation par l'adversaire.
+     * Relit le match depuis Supabase pour éviter les stale closures.
+     * Si l'adversaire a déjà soumis le même score → validé automatiquement.
+     * Si scores différents → conflit (les deux pending restent, admin tranche).
+     */
+    const submitPendingScore = useCallback(async (
+        matchId: string,
+        playerId: string,
+        score: string
+    ): Promise<"confirmed" | "pending" | "conflict" | false> => {
+        setError(null)
+
+        try {
+            // Relire le match depuis Supabase pour avoir l'état le plus récent
+            const { data: freshMatch, error: fetchErr } = await supabase
+                .from("matches")
+                .select("id, player1_id, player2_id, pending_score_p1, pending_score_p2")
+                .eq("id", matchId)
+                .single()
+
+            if (fetchErr || !freshMatch) {
+                setError("Match introuvable")
+                return false
+            }
+
+            const isPlayer1 = freshMatch.player1_id === playerId
+            const normalizedScore = normalizeScoreForDb(score, isPlayer1)
+            const otherPendingScore = isPlayer1 ? freshMatch.pending_score_p2 : freshMatch.pending_score_p1
+
+            const now = new Date().toISOString()
+            const myField = isPlayer1 ? "pending_score_p1" : "pending_score_p2"
+
+            // L'autre joueur a déjà soumis un score
+            if (otherPendingScore) {
+                if (otherPendingScore === normalizedScore) {
+                    // Même score → valider le match
+                    const winnerId = computeWinnerId(normalizedScore, freshMatch.player1_id, freshMatch.player2_id)
+                    const { error: updateError } = await supabase
+                        .from("matches")
+                        .update({
+                            [myField]: normalizedScore,
+                            score: normalizedScore,
+                            winner_id: winnerId,
+                            pending_at: null,
+                            pending_by: null,
+                            updated_at: now,
+                        })
+                        .eq("id", matchId)
+
+                    if (updateError) {
+                        handleHookError(updateError, setError, "useMatches.submitPending")
+                        return false
+                    }
+
+                    setMatches(prev => prev.map(m =>
+                        m.id === matchId
+                            ? { ...m, [myField]: normalizedScore, score: normalizedScore, winner_id: winnerId, pending_at: null, pending_by: null }
+                            : m
+                    ))
+                    return "confirmed"
+                } else {
+                    // Scores différents → conflit
+                    const { error: updateError } = await supabase
+                        .from("matches")
+                        .update({ [myField]: normalizedScore, updated_at: now })
+                        .eq("id", matchId)
+
+                    if (updateError) {
+                        handleHookError(updateError, setError, "useMatches.submitPending")
+                        return false
+                    }
+
+                    setMatches(prev => prev.map(m =>
+                        m.id === matchId ? { ...m, [myField]: normalizedScore } : m
+                    ))
+                    return "conflict"
+                }
+            }
+
+            // Premier à soumettre → pending
+            const { error: updateError } = await supabase
+                .from("matches")
+                .update({
+                    [myField]: normalizedScore,
+                    pending_at: now,
+                    pending_by: playerId,
+                    updated_at: now,
+                })
+                .eq("id", matchId)
+
+            if (updateError) {
+                handleHookError(updateError, setError, "useMatches.submitPending")
+                return false
+            }
+
+            setMatches(prev => prev.map(m =>
+                m.id === matchId
+                    ? { ...m, [myField]: normalizedScore, pending_at: now, pending_by: playerId }
+                    : m
+            ))
+            return "pending"
+        } catch (err) {
+            handleHookError(err, setError, "useMatches.submitPending")
+            return false
+        }
+    }, [])
+
     return {
         matches,
         unplacedMatches,
@@ -594,6 +708,7 @@ export function useMatches() {
         deleteMatchesByEvent,
         updateMatchResults,
         updateMatchSchedule,
+        submitPendingScore,
         applyEventElo,
         closeEvent,
     }
