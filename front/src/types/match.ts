@@ -8,6 +8,10 @@ export interface Match {
     court_number: string | null
     winner_id: string | null
     score: string | null
+    pending_score_p1?: string | null
+    pending_score_p2?: string | null
+    pending_at?: string | null
+    pending_by?: string | null
     created_at?: string
     updated_at?: string
     player1?: { id: string; first_name: string; last_name: string }

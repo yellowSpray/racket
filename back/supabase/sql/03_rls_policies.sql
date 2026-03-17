@@ -31,12 +31,31 @@ ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 -- POLICIES RLS - PROFILES
 -- ===================================
 
--- Chaque utilisateur peut voir son propre profil
-CREATE POLICY "Users can select their own profile"
+-- Chaque utilisateur peut voir son propre profil, les profils des participants aux mêmes événements,
+-- et les profils des inscrits aux mêmes événements (visiteurs pas encore assignés)
+CREATE POLICY "Users can select relevant profiles"
 ON public.profiles
 FOR SELECT
 TO public
-USING (auth.uid() = id);
+USING (
+  auth.uid() = id
+  OR id IN (
+    SELECT gp2.profile_id FROM public.group_players gp2
+    JOIN public.groups g2 ON g2.id = gp2.group_id
+    WHERE g2.event_id IN (
+      SELECT g.event_id FROM public.group_players gp
+      JOIN public.groups g ON g.id = gp.group_id
+      WHERE gp.profile_id = auth.uid()
+    )
+  )
+  OR id IN (
+    SELECT ep2.profile_id FROM public.event_players ep2
+    WHERE ep2.event_id IN (
+      SELECT ep.event_id FROM public.event_players ep
+      WHERE ep.profile_id = auth.uid()
+    )
+  )
+);
 
 -- Chaque utilisateur peut modifier son propre profil (sauf le role)
 CREATE POLICY "Users can update their own profile"
@@ -367,7 +386,7 @@ USING (
 -- POLICIES RLS - GROUP_PLAYERS (scoped via group -> event -> club)
 -- ===================================
 
--- Les utilisateurs voient les membres de leur club
+-- Tous les utilisateurs du club voient les group_players des événements de leur club
 CREATE POLICY "Users can see club group memberships"
 ON public.group_players
 FOR SELECT
@@ -375,11 +394,11 @@ TO public
 USING (
   auth.uid() = profile_id
   OR public.is_superadmin()
-  OR (public.is_admin() AND EXISTS (
+  OR EXISTS (
     SELECT 1 FROM public.groups g
     JOIN public.events e ON e.id = g.event_id
     WHERE g.id = group_id AND e.club_id = public.get_user_club_id()
-  ))
+  )
 );
 
 -- Les admins peuvent ajouter des joueurs aux groupes de leur club
@@ -414,7 +433,7 @@ USING (
 -- POLICIES RLS - MATCHES (scoped via group -> event -> club)
 -- ===================================
 
--- Les utilisateurs voient leurs propres matchs + admins voient les matchs du club
+-- Tous les utilisateurs du club voient les matchs des événements de leur club
 CREATE POLICY "Users can see club matches"
 ON public.matches
 FOR SELECT
@@ -422,11 +441,11 @@ TO public
 USING (
   auth.uid() IN (player1_id, player2_id)
   OR public.is_superadmin()
-  OR (public.is_admin() AND EXISTS (
+  OR EXISTS (
     SELECT 1 FROM public.groups g
     JOIN public.events e ON e.id = g.event_id
     WHERE g.id = group_id AND e.club_id = public.get_user_club_id()
-  ))
+  )
 );
 
 -- Les admins peuvent créer des matchs pour leur club

@@ -141,6 +141,10 @@ CREATE TABLE IF NOT EXISTS public.matches (
   court_number text,  -- Numéro du terrain
   winner_id uuid references public.profiles(id),  -- ID du gagnant
   score text,  -- Score du match (ex: "21-15, 21-18")
+  pending_score_p1 text,  -- Score soumis par player1 (en attente de confirmation)
+  pending_score_p2 text,  -- Score soumis par player2 (en attente de confirmation)
+  pending_at timestamp with time zone,  -- Date de la première soumission
+  pending_by uuid references public.profiles(id),  -- Qui a soumis en premier
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now()
 );
