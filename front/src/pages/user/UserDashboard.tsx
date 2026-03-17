@@ -89,6 +89,8 @@ export function UserDashboard() {
                     nextMatch={nextMatch}
                     myId={profile?.id ?? ""}
                     totalMatches={myMatches.length}
+                    myAvatarUrl={profile?.avatar_url}
+                    myName={profile ? `${profile.first_name} ${profile.last_name}` : undefined}
                 />
                 <EvolutionCard
                     className="col-start-8 col-span-13 row-start-1 row-span-7"
