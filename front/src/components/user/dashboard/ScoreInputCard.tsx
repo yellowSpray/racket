@@ -1,9 +1,9 @@
-import { useState } from "react"
+import React, { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { TaskEdit01Icon, MapPinIcon, PencilEdit01Icon, Tick02Icon, Cancel01Icon } from "hugeicons-react"
+// import { ScrollArea } from "@/components/ui/scroll-area"
+import { TaskEdit01Icon, Location01Icon, PencilEdit01Icon, Tick02Icon, Cancel01Icon } from "hugeicons-react"
 import { getOpponentName, getMatchResult, getMyScore } from "@/lib/matchUtils"
 import type { Match } from "@/types/match"
 
@@ -52,13 +52,9 @@ export function ScoreInputCard({ upcoming, played, myId, className, onSubmitScor
         setEditMode(false)
     }
 
-    // Matchs joués = validés + pending (regroupés)
-    const playedAndPending = [
-        ...upcoming.filter(m => m.pending_score_p1 || m.pending_score_p2),
-        ...played,
-    ]
-    // Matchs à jouer = sans pending ni résultat
-    const toPlay = upcoming.filter(m => !m.pending_score_p1 && !m.pending_score_p2)
+    // Tous les matchs triés par date
+    const allMatches = [...upcoming, ...played]
+        .sort((a, b) => new Date(a.match_date).getTime() - new Date(b.match_date).getTime())
 
     return (
         <Card className={`${className} flex flex-col`}>
@@ -66,25 +62,25 @@ export function ScoreInputCard({ upcoming, played, myId, className, onSubmitScor
                 <CardTitle className="flex items-center gap-2 text-sm">
                     <TaskEdit01Icon size={16} className="text-foreground" />
                     Mes matchs
+                    {needsInput > 0 && !editMode && (
+                        <span className="flex items-center justify-center size-5 rounded-full bg-amber-500 text-white text-[10px] font-bold">
+                            +{needsInput}
+                        </span>
+                    )}
                     <div className="flex items-center gap-2 ml-auto">
-                        {needsInput > 0 && !editMode && (
-                            <Badge variant="default" className="text-xs px-2 py-0.5 bg-amber-100 text-amber-700 border border-amber-300">
-                                {needsInput} à saisir
-                            </Badge>
-                        )}
                         {onSubmitScore && (
                             editMode ? (
                                 <div className="flex items-center gap-1">
-                                    <Button variant="outline" size="sm" onClick={handleCancel} disabled={saving}>
-                                        <Cancel01Icon size={14} />
+                                    <Button variant="icon" size="icon" onClick={handleCancel} disabled={saving}>
+                                        <Cancel01Icon />
                                     </Button>
-                                    <Button size="sm" onClick={handleSave} disabled={saving || pendingScores.size === 0}>
-                                        <Tick02Icon size={14} />
+                                    <Button size="icon" onClick={handleSave} disabled={saving || pendingScores.size === 0}>
+                                        <Tick02Icon />
                                     </Button>
                                 </div>
                             ) : (
-                                <Button variant="outline" size="sm" onClick={() => setEditMode(true)}>
-                                    <PencilEdit01Icon size={14} />
+                                <Button variant="icon" size="icon" onClick={() => setEditMode(true)}>
+                                    <PencilEdit01Icon />
                                 </Button>
                             )
                         )}
@@ -98,44 +94,22 @@ export function ScoreInputCard({ upcoming, played, myId, className, onSubmitScor
                         <p className="text-sm text-center">Aucun match programmé</p>
                     </div>
                 ) : (
-                    <ScrollArea className="h-full" type="auto">
-                        <div className="space-y-4 pr-2">
-                            {toPlay.length > 0 && (
-                                <div>
-                                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                                        À jouer ({toPlay.length})
-                                    </h4>
-                                    {toPlay.map(match => (
-                                        <MatchRow
-                                            key={match.id}
-                                            match={match}
-                                            myId={myId}
-                                            editMode={editMode}
-                                            pendingScore={pendingScores.get(match.id)}
-                                            onScoreChange={handleScoreChange}
-                                        />
-                                    ))}
-                                </div>
-                            )}
-                            {playedAndPending.length > 0 && (
-                                <div>
-                                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                                        Joués ({playedAndPending.length})
-                                    </h4>
-                                    {playedAndPending.map(match => (
-                                        <MatchRow
-                                            key={match.id}
-                                            match={match}
-                                            myId={myId}
-                                            editMode={editMode}
-                                            pendingScore={pendingScores.get(match.id)}
-                                            onScoreChange={handleScoreChange}
-                                        />
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </ScrollArea>
+                    <div className="flex flex-col justify-evenly h-full p-3 bg-muted/50 rounded-lg overflow-y-auto">
+                        {allMatches.map((match, index) => (
+                            <React.Fragment key={match.id}>
+                                <MatchRow
+                                    match={match}
+                                    myId={myId}
+                                    editMode={editMode}
+                                    pendingScore={pendingScores.get(match.id)}
+                                    onScoreChange={handleScoreChange}
+                                />
+                                {index < allMatches.length - 1 && (
+                                    <span className="block h-px bg-border mx-2" />
+                                )}
+                            </React.Fragment>
+                        ))}
+                    </div>
                 )}
             </CardContent>
         </Card>
@@ -185,22 +159,27 @@ function MatchRow({ match, myId, editMode, pendingScore, onScoreChange }: {
     const hasPending = match.pending_score_p1 || match.pending_score_p2
 
     return (
-        <div className="flex items-center gap-3 px-3 py-2 border-b border-border last:border-b-0">
-            <span className="text-xs text-muted-foreground shrink-0 w-14 text-center">
-                {new Date(match.match_date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+        <div className="flex items-center gap-3 xl:gap-4 py-2 xl:py-3">
+            <span className="shrink-0 w-14 xl:w-16 text-center flex flex-col leading-tight">
+                <span className="text-sm xl:text-base font-bold text-foreground">
+                    {new Date(match.match_date).getDate()}
+                </span>
+                <span className="text-[10px] xl:text-xs text-muted-foreground uppercase">
+                    {new Date(match.match_date).toLocaleDateString("fr-FR", { month: "short" })}
+                </span>
             </span>
-            <div className="w-px h-6 bg-border shrink-0" />
+            <div className="w-px h-6 xl:h-8 bg-border shrink-0" />
             <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">vs {opponent}</p>
+                <p className="text-sm xl:text-base font-medium truncate">vs {opponent}</p>
                 <div className="flex items-center gap-2 mt-0.5">
                     {match.group?.group_name && (
-                        <Badge variant="default" className="text-[10px] px-1.5 py-0">
+                        <Badge variant="default" className="text-[10px] xl:text-xs px-1.5 py-0">
                             {match.group.group_name}
                         </Badge>
                     )}
                     {match.court_number && (
-                        <span className="text-[11px] text-muted-foreground flex items-center gap-0.5">
-                            <MapPinIcon size={11} />
+                        <span className="text-[11px] xl:text-xs text-muted-foreground flex items-center gap-0.5">
+                            <Location01Icon size={11} />
                             {match.court_number}
                         </span>
                     )}
@@ -211,7 +190,7 @@ function MatchRow({ match, myId, editMode, pendingScore, onScoreChange }: {
                     <select
                         value={pendingScore ?? ""}
                         onChange={e => onScoreChange?.(match.id, e.target.value)}
-                        className="text-xs border rounded-md px-2 py-1 bg-background"
+                        className="text-xs xl:text-sm border rounded-md px-2 py-1 bg-background"
                     >
                         <option value="">—</option>
                         {SCORE_OPTIONS.map(opt => (
@@ -221,7 +200,7 @@ function MatchRow({ match, myId, editMode, pendingScore, onScoreChange }: {
                 ) : hasPending && !isValidated ? (
                     <>
                         {myPendingScore && (
-                            <span className="text-xs font-mono text-muted-foreground">{myPendingScore}</span>
+                            <span className="text-xs xl:text-sm font-mono text-muted-foreground">{myPendingScore}</span>
                         )}
                         {pendingStatus && (
                             <Badge variant={pendingStatus.variant}>{pendingStatus.label}</Badge>
@@ -232,7 +211,7 @@ function MatchRow({ match, myId, editMode, pendingScore, onScoreChange }: {
                 ) : (
                     <>
                         {score && (
-                            <span className="text-sm font-mono font-medium">{score}</span>
+                            <span className="text-sm xl:text-base font-mono font-medium">{score}</span>
                         )}
                         {result ? (
                             <Badge variant={result.variant}>{result.label}</Badge>
