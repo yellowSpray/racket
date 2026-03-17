@@ -10,7 +10,6 @@ const Auth = lazy(() => import("@/pages/auth/AuthPage"))
 const UserPage = lazy(() => import("@/pages/user/UserPage"))
 const UserDashboard = lazy(() => import("@/pages/user/UserDashboard").then(m => ({ default: m.UserDashboard })))
 const UserDraws = lazy(() => import("@/pages/user/UserDraws").then(m => ({ default: m.UserDraws })))
-const UserMatches = lazy(() => import("@/pages/user/UserMatches").then(m => ({ default: m.UserMatches })))
 const UserRankings = lazy(() => import("@/pages/user/UserRankings").then(m => ({ default: m.UserRankings })))
 const UserMessages = lazy(() => import("@/pages/user/UserMessages").then(m => ({ default: m.UserMessages })))
 const UserSettings = lazy(() => import("@/pages/user/UserSettings").then(m => ({ default: m.UserSettings })))
@@ -24,6 +23,7 @@ const AdminPlayers = lazy(() => import("@/pages/admin/AdminPlayers").then(m => (
 const AdminSettings = lazy(() => import("@/pages/admin/AdminSettings").then(m => ({ default: m.AdminSettings })))
 const AdminEmail = lazy(() => import("@/pages/admin/AdminEmail").then(m => ({ default: m.AdminEmail })))
 const ProfilePage = lazy(() => import("@/pages/shared/ProfilePage").then(m => ({ default: m.ProfilePage })))
+const ResetPassword = lazy(() => import("@/pages/auth/ResetPassword"))
 
 function withSuspense(Component: React.LazyExoticComponent<React.ComponentType>) {
     return (
@@ -44,6 +44,7 @@ const router = createBrowserRouter([
 
             // Page de connexion
             { path: "auth", element: withSuspense(Auth) },
+            { path: "auth/reset-password", element: withSuspense(ResetPassword) },
 
             // Routes pour les utilisateurs
             {
@@ -55,7 +56,6 @@ const router = createBrowserRouter([
                         children: [
                             { path: "", element: withSuspense(UserDashboard) },
                             { path: "draws", element: withSuspense(UserDraws) },
-                            { path: "matches", element: withSuspense(UserMatches) },
                             { path: "rankings", element: withSuspense(UserRankings) },
                             { path: "discover", element: withSuspense(UserDiscover) },
                             { path: "messages", element: withSuspense(UserMessages) },

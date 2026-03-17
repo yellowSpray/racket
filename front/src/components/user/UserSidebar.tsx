@@ -1,11 +1,10 @@
 import { Link, useLocation } from "react-router";
-import { Home01Icon, PencilEdit02Icon, File01Icon, Comment01Icon, Settings01Icon, Search01Icon, Logout03Icon } from "hugeicons-react";
+import { Home01Icon, PencilEdit02Icon, Comment01Icon, Settings01Icon, Search01Icon, Logout03Icon } from "hugeicons-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const menuItems = [
   { title: "Accueil", url: "/user", icon: Home01Icon },
   { title: "Tableaux", url: "/user/draws", icon: PencilEdit02Icon },
-  { title: "Matchs", url: "/user/matches", icon: File01Icon },
   { title: "Découvrir", url: "/user/discover", icon: Search01Icon },
   { title: "Messages", url: "/user/messages", icon: Comment01Icon },
 ];
