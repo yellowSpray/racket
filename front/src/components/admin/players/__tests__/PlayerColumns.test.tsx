@@ -42,15 +42,16 @@ const makePlayer = (overrides: Partial<PlayerType> = {}): PlayerType => ({
 describe('PlayerColumns', () => {
   const mockUpdatePlayer = vi.fn()
   const mockUpdatePaymentStatus = vi.fn()
+  const mockUpdateAbsences = vi.fn()
 
   it('returns an array of column definitions', () => {
-    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus)
+    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus, mockUpdateAbsences)
     expect(Array.isArray(cols)).toBe(true)
     expect(cols.length).toBeGreaterThan(0)
   })
 
   it('includes expected column headers', () => {
-    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus)
+    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus, mockUpdateAbsences)
     const headers = cols.map(c => c.header)
     expect(headers).toContain('Prénom Nom')
     expect(headers).toContain('Téléphone')
@@ -65,7 +66,7 @@ describe('PlayerColumns', () => {
   })
 
   it('has a full_name accessor that concatenates first and last name', () => {
-    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus)
+    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus, mockUpdateAbsences)
     const fullNameCol = cols.find(c => c.header === 'Prénom Nom')
     expect(fullNameCol).toBeDefined()
     if (fullNameCol && 'accessorFn' in fullNameCol && fullNameCol.accessorFn) {
@@ -75,7 +76,7 @@ describe('PlayerColumns', () => {
   })
 
   it('renders unavailable dates as badges in absence column', () => {
-    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus)
+    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus, mockUpdateAbsences)
     const absenceCol = cols.find(c => c.header === 'Absence')
     expect(absenceCol).toBeDefined()
     if (absenceCol && 'cell' in absenceCol && absenceCol.cell) {
@@ -91,7 +92,7 @@ describe('PlayerColumns', () => {
   })
 
   it('renders status badges in status column', () => {
-    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus)
+    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus, mockUpdateAbsences)
     const statusCol = cols.find(c => c.header === 'Status')
     expect(statusCol).toBeDefined()
     if (statusCol && 'cell' in statusCol && statusCol.cell) {
@@ -107,7 +108,7 @@ describe('PlayerColumns', () => {
   })
 
   it('renders the actions column with edit option', () => {
-    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus)
+    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus, mockUpdateAbsences)
     const actionsCol = cols.find(c => c.header === 'Actions')
     expect(actionsCol).toBeDefined()
     if (actionsCol && 'cell' in actionsCol && actionsCol.cell) {
@@ -122,12 +123,12 @@ describe('PlayerColumns', () => {
   })
 
   it('has 10 columns total', () => {
-    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus)
+    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus, mockUpdateAbsences)
     expect(cols.length).toBe(10)
   })
 
   it('renders all payment badges when 2 or fewer', () => {
-    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus)
+    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus, mockUpdateAbsences)
     const paymentCol = cols.find(c => c.header === 'Paiement')
     expect(paymentCol).toBeDefined()
     if (paymentCol && 'cell' in paymentCol && paymentCol.cell) {
@@ -149,7 +150,7 @@ describe('PlayerColumns', () => {
   })
 
   it('truncates payment badges and shows +N when more than 2', () => {
-    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus)
+    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus, mockUpdateAbsences)
     const paymentCol = cols.find(c => c.header === 'Paiement')
     expect(paymentCol).toBeDefined()
     if (paymentCol && 'cell' in paymentCol && paymentCol.cell) {

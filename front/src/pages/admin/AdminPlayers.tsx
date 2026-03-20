@@ -18,11 +18,11 @@ import { useEffect, useMemo, useState } from "react";
 
 export function AdminPlayers() {
 
-    const { players, addPlayer, updatePlayer, updatePaymentStatus, loading, fetchPlayer } = usePlayers();
+    const { players, addPlayer, updatePlayer, updatePaymentStatus, updateAbsences, loading, fetchPlayer } = usePlayers();
     const [statusFilter, setStatusFilter] = useState<string>("all")
     const [searchFilter, setSearchFilter] = useState("")
 
-    const columns = playerColumns(updatePlayer, updatePaymentStatus)
+    const columns = playerColumns(updatePlayer, updatePaymentStatus, updateAbsences)
 
     useEffect(() => {
         fetchPlayer()

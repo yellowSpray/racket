@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/toggle-group"
 import { Field, FieldLabel, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input"
+import { MultiDateCalendar } from "@/components/ui/multi-date-calendar"
 import { ZapIcon, UserGroupIcon, EuroIcon, Add01Icon } from 'hugeicons-react';
 import type { PlayerType, PaymentStatus } from "@/types/player";
 
@@ -36,6 +37,7 @@ interface EditPlayersProps {
     playerData?: PlayerType
     onSave?: (data: Partial<PlayerType>) => Promise<void>
     onPaymentChange?: (playerId: string, eventId: string, status: PaymentStatus) => Promise<void>
+    onAbsencesChange?: (playerId: string, dates: string[]) => Promise<void>
     open?: boolean
     onOpenChange?: (open: boolean) => void
 }
@@ -52,10 +54,9 @@ const initialFormData: Partial<PlayerType> = {
     unavailable: []
 }
 
+const STEPS = [1, 2, 3]
 
-export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChange, open: controlledOpen, onOpenChange }: EditPlayersProps) {
-
-    const steps = [ 1, 2, 3 ]
+export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChange, onAbsencesChange, open: controlledOpen, onOpenChange }: EditPlayersProps) {
     const [currentStep, setCurrentStep] = useState<number>(1)
     const [internalOpen, setInternalOpen] = useState(false)
 
@@ -71,6 +72,8 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
     // etat séparé pour les status joueur et paiement
     const [selected, setSelected] = useState<string[]>([])
     const [paymentStatus, setPaymentStatus] = useState<"paid" | "unpaid">("unpaid")
+    const [localPayments, setLocalPayments] = useState<Record<string, PaymentStatus>>({})
+    const [localAbsences, setLocalAbsences] = useState<string[]>([])
 
     // voir si le membre est actif dans l'event
     const isVisitor = selected.includes("visitor")
@@ -92,11 +95,17 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
                 })
                 setSelected(playerData.status || [])
                 setPaymentStatus(playerData.payment_status || "unpaid")
+                setLocalPayments(
+                    Object.fromEntries((playerData.payments || []).map(p => [p.event_id, p.status]))
+                )
+                setLocalAbsences(playerData.unavailable || [])
                 setCurrentStep(1)
             } else {
                 setFormData(initialFormData)
                 setSelected(["inactive", "visitor"])
                 setPaymentStatus("unpaid")
+                setLocalPayments({})
+                setLocalAbsences([])
                 setCurrentStep(1)
             }
         }
@@ -150,7 +159,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
 
     // handler pour le submit du formulaire
     const handleSave = async () => {
-        if (currentStep !== steps.length) return
+        if (currentStep !== STEPS.length) return
 
         setIsSubmitting(true)
         setFieldErrors({})
@@ -178,6 +187,31 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
 
         try {
             await onSave?.(finalData)
+
+            // Persister les changements de paiement per-event
+            if (mode === "edit" && playerData && onPaymentChange) {
+                const originalPayments = Object.fromEntries(
+                    (playerData.payments || []).map(p => [p.event_id, p.status])
+                )
+                const paymentUpdates = Object.entries(localPayments)
+                    .filter(([eventId, newStatus]) => originalPayments[eventId] !== newStatus)
+
+                await Promise.all(
+                    paymentUpdates.map(([eventId, newStatus]) =>
+                        onPaymentChange(playerData.id, eventId, newStatus)
+                    )
+                )
+            }
+
+            // Persister les changements d'absences
+            if (mode === "edit" && playerData && onAbsencesChange) {
+                const original = (playerData.unavailable || []).slice().sort().join(",")
+                const current = localAbsences.slice().sort().join(",")
+                if (original !== current) {
+                    await onAbsencesChange(playerData.id, localAbsences)
+                }
+            }
+
             setOpen(false)
         } catch {
             // erreur gérée par le parent
@@ -187,7 +221,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
     }
 
     const handleNext = () => {
-        if(currentStep < steps.length) {
+        if(currentStep < STEPS.length) {
             setCurrentStep(prev => prev + 1)
         }
     }
@@ -280,8 +314,11 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
                 </div>
                 <div className="grid grid-cols-1 gap-4">
                     <Field>
-                        <FieldLabel htmlFor="available">Absence</FieldLabel>
-                        <p className="text-sm text-gray-500">( Bientôt ! )</p>
+                        <FieldLabel>Absence</FieldLabel>
+                        <MultiDateCalendar
+                            selectedDates={localAbsences}
+                            onChange={setLocalAbsences}
+                        />
                     </Field>
                 </div>
             </FieldGroup>
@@ -303,16 +340,16 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
                             <ToggleGroupItem
                                 value="active"
                                 aria-label="Toggle active"
-                                className="data-[state=off]:bg-gray-100 data-[state=on]:bg-transparent data-[state=on]:*:[svg]:stroke-green-500 col-span-1"
+                                className="data-[state=off]:bg-gray-100 data-[state=off]:text-muted-foreground data-[state=on]:bg-transparent data-[state=on]:*:[svg]:text-green-500 col-span-1"
                             >
-                                <ZapIcon /> Actif
+                                <ZapIcon /> {selected.includes("active") ? "Actif" : "Inactif"}
                             </ToggleGroupItem>
                             <ToggleGroupItem
                                 value="member"
                                 aria-label="Toggle member"
-                                className="data-[state=off]:bg-gray-100 data-[state=on]:bg-transparent data-[state=on]:*:[svg]:stroke-green-500 col-span-1"
+                                className="data-[state=off]:bg-gray-100 data-[state=off]:text-muted-foreground data-[state=on]:bg-transparent data-[state=on]:*:[svg]:text-green-500 col-span-1"
                             >
-                                <UserGroupIcon /> Membre
+                                <UserGroupIcon /> {selected.includes("member") ? "Membre" : "Non-membre"}
                             </ToggleGroupItem>
                         </ToggleGroup>
                     </Field>
@@ -320,29 +357,32 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
                         <Field>
                             <FieldLabel>Paiement par série</FieldLabel>
                             <div className="space-y-2">
-                                {playerData.payments.map((payment) => (
-                                    <div key={payment.event_id} className="flex items-center justify-between gap-4">
-                                        <span className="text-sm truncate">{payment.event_name}</span>
-                                        <ToggleGroup
-                                            type="multiple"
-                                            variant="outline"
-                                            size="sm"
-                                            value={payment.status === "paid" ? ["paid"] : []}
-                                            onValueChange={(values) => {
-                                                const newStatus = values.includes("paid") ? "paid" : "unpaid"
-                                                onPaymentChange?.(playerData.id, payment.event_id, newStatus as PaymentStatus)
-                                            }}
-                                        >
-                                            <ToggleGroupItem
-                                                value="paid"
-                                                aria-label={`Toggle paid ${payment.event_name}`}
-                                                className="data-[state=off]:bg-gray-100 data-[state=on]:bg-transparent data-[state=on]:*:[svg]:stroke-green-500"
+                                {playerData.payments.map((payment) => {
+                                    const currentStatus = localPayments[payment.event_id] ?? payment.status
+                                    return (
+                                        <div key={payment.event_id} className="flex items-center justify-between gap-4">
+                                            <span className="text-sm truncate">{payment.event_name}</span>
+                                            <ToggleGroup
+                                                type="multiple"
+                                                variant="outline"
+                                                size="sm"
+                                                value={currentStatus === "paid" ? ["paid"] : []}
+                                                onValueChange={(values) => {
+                                                    const newStatus = values.includes("paid") ? "paid" : "unpaid"
+                                                    setLocalPayments(prev => ({ ...prev, [payment.event_id]: newStatus as PaymentStatus }))
+                                                }}
                                             >
-                                                <EuroIcon /> Payé
-                                            </ToggleGroupItem>
-                                        </ToggleGroup>
-                                    </div>
-                                ))}
+                                                <ToggleGroupItem
+                                                    value="paid"
+                                                    aria-label={`Toggle paid ${payment.event_name}`}
+                                                    className="data-[state=off]:bg-gray-100 data-[state=off]:text-muted-foreground data-[state=on]:bg-transparent data-[state=on]:*:[svg]:text-green-500"
+                                                >
+                                                    <EuroIcon /> {currentStatus === "paid" ? "Payé" : "Non payé"}
+                                                </ToggleGroupItem>
+                                            </ToggleGroup>
+                                        </div>
+                                    )
+                                })}
                             </div>
                         </Field>
                     )}
@@ -361,9 +401,9 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
                                 <ToggleGroupItem
                                     value="paid"
                                     aria-label="Toggle paid"
-                                    className="data-[state=off]:bg-gray-100 data-[state=on]:bg-transparent data-[state=on]:*:[svg]:stroke-green-500 col-span-1"
+                                    className="data-[state=off]:bg-gray-100 data-[state=off]:text-muted-foreground data-[state=on]:bg-transparent data-[state=on]:*:[svg]:text-green-500 col-span-1"
                                 >
-                                    <EuroIcon /> Payé
+                                    <EuroIcon /> {paymentStatus === "paid" ? "Payé" : "Non payé"}
                                 </ToggleGroupItem>
                             </ToggleGroup>
                         </Field>
@@ -373,7 +413,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
                         <Input 
                             id="power_ranking" 
                             type="number"
-                            value={formData.power_ranking || ""}
+                            value={formData.power_ranking ?? ""}
                             onChange={(e) => handleChangeInput('power_ranking', Number(e.target.value) || 0)}
                         />
                     </Field>
@@ -414,14 +454,12 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
                                 </DialogDescription>
                                 <div className="w-1/2 mx-auto flex flex-col items-center mt-6">
                                     <StepperNav>
-                                        {steps.map((step) => (
+                                        {STEPS.map((step) => (
                                             <StepperItem key={step} step={step}>
-                                                {/* TODO bug to fix , je crois que quand on clique dans le formulaire */}
-                                                {/* le trigger s'active et submit le formulaire automatiquement ...   */}
-                                                <StepperTrigger disabled> 
+                                                <StepperTrigger asChild>
                                                     <StepperIndicator>{step}</StepperIndicator>
                                                 </StepperTrigger>
-                                                {steps.length > step && 
+                                                {STEPS.length > step && 
                                                     <StepperSeparator className="group-data-[state=completed]/step:bg-primary"/>
                                                 }
                                             </StepperItem>
@@ -431,7 +469,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
                             </DialogHeader>
                             
                             <StepperPanel>
-                                {steps.map((step) => (
+                                {STEPS.map((step) => (
                                     <StepperContent key={step} value={step}>
                                         {fieldGroups[step]}
                                     </StepperContent>
@@ -439,31 +477,31 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
                             </StepperPanel>
 
                             <DialogFooter>
-                                <Button 
-                                    type="button"
-                                    variant="outline" 
-                                    disabled={currentStep === 1}
-                                    onClick={() => {
-                                        handlePrevious();
-                                    }}
-                                >
-                                    Précédent
-                                </Button>
-                                {currentStep === steps.length ? (
+                                {currentStep > 1 && (
                                     <Button
                                         type="button"
+                                        variant="outline"
+                                        size="lg"
+                                        onClick={handlePrevious}
+                                    >
+                                        Précédent
+                                    </Button>
+                                )}
+                                {currentStep === STEPS.length ? (
+                                    <Button
+                                        type="button"
+                                        size="lg"
                                         disabled={isSubmitting}
                                         onClick={handleSave}
                                     >
-                                        {isSubmitting ? "En cours..." : mode === "edit" ? "Sauvegarder" : "Créer le joueur"}
+                                        {isSubmitting ? "Sauvegarde..." : mode === "edit" ? "Sauvegarder" : "Créer le joueur"}
                                     </Button>                                
                                 ) : (
                                     <Button
                                         type="button"
                                         variant="outline"
-                                        onClick={() => {
-                                            handleNext();
-                                        }}
+                                        size="lg"
+                                        onClick={handleNext}
                                     >
                                         Suivant
                                     </Button>

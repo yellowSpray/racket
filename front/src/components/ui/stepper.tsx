@@ -281,7 +281,7 @@ function StepperIndicator({ children, className }: React.ComponentProps<'div'>) 
       data-slot="stepper-indicator"
       data-state={state}
       className={cn(
-        'relative flex items-center overflow-hidden justify-center size-6 shrink-0 border-background bg-accent text-accent-foreground rounded-full text-xs data-[state=completed]:bg-primary data-[state=completed]:text-primary-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground',
+        'relative flex items-center overflow-hidden justify-center size-6 shrink-0 border-background bg-muted text-muted-foreground rounded-full text-xs data-[state=completed]:bg-primary data-[state=completed]:text-primary-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground',
         className,
       )}
     >

@@ -7,6 +7,7 @@ import type { PlayerType, PaymentStatus } from "@/types/player";
 export const columns = (
     updatePlayer: (id: string, data: Partial<PlayerType>) => Promise<void>,
     updatePaymentStatus: (playerId: string, eventId: string, newStatus: PaymentStatus) => Promise<void>,
+    updateAbsences: (playerId: string, dates: string[]) => Promise<void>,
 ): ColumnDef<PlayerType>[] => [
     {
         accessorKey: "full_name",
@@ -124,6 +125,7 @@ export const columns = (
                 player={row.original}
                 updatePlayer={updatePlayer}
                 updatePaymentStatus={updatePaymentStatus}
+                updateAbsences={updateAbsences}
             />
         )
     }

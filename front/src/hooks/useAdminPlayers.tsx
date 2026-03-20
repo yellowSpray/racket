@@ -391,6 +391,41 @@ export function useAdminPlayers() {
         await refreshCurrentView()
     }
 
+    // mise à jour des absences d'un joueur
+    const updateAbsences = async (playerId: string, dates: string[]) => {
+        setError(null)
+
+        // Supprimer toutes les absences existantes
+        const { error: deleteError } = await supabase
+            .from("absences")
+            .delete()
+            .eq("profile_id", playerId)
+
+        if (deleteError) {
+            handleHookError(deleteError, setError, "useAdminPlayers.updateAbsences")
+            return
+        }
+
+        // Insérer les nouvelles absences
+        if (dates.length > 0) {
+            const rows = dates.map(date => ({
+                profile_id: playerId,
+                absent_date: date,
+            }))
+
+            const { error: insertError } = await supabase
+                .from("absences")
+                .insert(rows)
+
+            if (insertError) {
+                handleHookError(insertError, setError, "useAdminPlayers.updateAbsences")
+                return
+            }
+        }
+
+        await refreshCurrentView()
+    }
+
     // charger les joueurs au montage seulement
     useEffect(() => {
         fetchPlayer()
@@ -404,6 +439,7 @@ export function useAdminPlayers() {
         updatePlayer,
         removePlayerFromEvent,
         updatePaymentStatus,
+        updateAbsences,
         fetchPlayer,
         fetchPlayersByEvent
     }

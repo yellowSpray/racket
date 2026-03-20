@@ -115,3 +115,34 @@ GROUP BY
   e.id, e.event_name, g.group_name, p.id, p.first_name, p.last_name, 
   p.avatar_url, p.power_ranking, au.email, au.phone, 
   s.arrival, s.departure, pay.status, pay.amount;
+
+-- ===================================
+-- TRIGGER : NETTOYAGE DES ABSENCES APRES FIN D'EVENEMENT
+-- ===================================
+-- Quand un evenement passe en 'completed', supprime les absences globales
+-- (event_id IS NULL) dont la date tombe dans la plage de l'evenement,
+-- uniquement pour les joueurs inscrits a cet evenement.
+
+CREATE OR REPLACE FUNCTION public.cleanup_absences_on_event_complete()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  IF NEW.status = 'completed' AND (OLD.status IS DISTINCT FROM 'completed') THEN
+    DELETE FROM public.absences
+    WHERE event_id IS NULL
+      AND absent_date BETWEEN NEW.start_date AND NEW.end_date
+      AND profile_id IN (
+        SELECT profile_id FROM public.event_players WHERE event_id = NEW.id
+      );
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_cleanup_absences_on_event_complete ON public.events;
+CREATE TRIGGER trg_cleanup_absences_on_event_complete
+  AFTER UPDATE ON public.events
+  FOR EACH ROW
+  EXECUTE FUNCTION public.cleanup_absences_on_event_complete();
