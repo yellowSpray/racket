@@ -2,6 +2,7 @@ export type PlayerStatus = "active" | "inactive" | "member" | "visitor"
 export type PaymentStatus = "paid" | "unpaid"
 
 export type PlayerPayment = {
+    event_id: string
     event_name: string
     status: PaymentStatus
 }
@@ -29,6 +30,7 @@ export interface PlayersContextType {
     addPlayer: (player: Partial<PlayerType>) => Promise<void>;
     updatePlayer: (id: string, updates: Partial<PlayerType>) => Promise<void>;
     removePlayerFromEvent: (id: string) => Promise<void>;
+    updatePaymentStatus: (playerId: string, eventId: string, newStatus: PaymentStatus) => Promise<void>;
     fetchPlayer: () => Promise<void>;
     fetchPlayersByEvent: (id: string) => Promise<void>;
 }

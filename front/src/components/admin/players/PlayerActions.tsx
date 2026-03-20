@@ -8,11 +8,12 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontalIcon, PencilEdit01Icon } from "hugeicons-react";
-import type { PlayerType } from "@/types/player";
+import type { PlayerType, PaymentStatus } from "@/types/player";
 
-export function PlayerActions({ player, updatePlayer }: {
+export function PlayerActions({ player, updatePlayer, updatePaymentStatus }: {
     player: PlayerType
     updatePlayer: (id: string, data: Partial<PlayerType>) => Promise<void>
+    updatePaymentStatus: (playerId: string, eventId: string, newStatus: PaymentStatus) => Promise<void>
 }) {
     const [editOpen, setEditOpen] = useState(false)
 
@@ -35,6 +36,7 @@ export function PlayerActions({ player, updatePlayer }: {
                 mode="edit"
                 playerData={player}
                 onSave={(data) => updatePlayer(player.id, data)}
+                onPaymentChange={updatePaymentStatus}
                 open={editOpen}
                 onOpenChange={setEditOpen}
             />

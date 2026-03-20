@@ -26,6 +26,7 @@ type SupabaseGroupPlayer = {
 
 type SupabasePayment = {
     status: PaymentStatus
+    event_id: string
     events: { event_name: string }
 }
 
@@ -93,6 +94,7 @@ export function useAdminPlayers() {
             const payments: PlayerPayment[] = (player.payments || [])
                 .filter(p => p.events?.event_name)
                 .map(p => ({
+                    event_id: p.event_id,
                     event_name: p.events.event_name,
                     status: p.status,
                 }))
@@ -132,7 +134,7 @@ export function useAdminPlayers() {
             const { data, error: fetchError } = await withTimeout(
                 supabase
                     .from("profiles")
-                    .select("*, player_status(status), schedule(arrival, departure), absences(absent_date), payments(status, events(event_name))")
+                    .select("*, player_status(status), schedule(arrival, departure), absences(absent_date), payments(status, event_id, events(event_name))")
                     .order("created_at", { ascending: false }),
                 "useAdminPlayers.fetchAll"
             )
@@ -182,11 +184,10 @@ export function useAdminPlayers() {
                         absences(absent_date),
                         event_players!inner(event_id),
                         group_players!left(group_id, groups!inner(group_name, event_id)),
-                        payments(status)
+                        payments(status, event_id, events(event_name))
                     `)
                     .eq("event_players.event_id", eventId)
                     .eq("group_players.groups.event_id", eventId)
-                    .eq("payments.event_id", eventId)
                     .order("created_at", { ascending: false }),
                 "useAdminPlayers.fetchByEvent"
             )
@@ -248,6 +249,8 @@ export function useAdminPlayers() {
             p_payment_amount: 0
         }
 
+        console.log(`[Payment] ADD player="${player.first_name} ${player.last_name}" event=${currentEventId?.slice(0, 8)} | statuses=${JSON.stringify(rpcStatuses)} | payment=${isPaid ? 'paid' : 'unpaid'}`)
+
         // Pas de setState avant l'appel RPC pour éviter un re-render qui démonte le dialog
         const { data, error: rpcError } = await supabase.rpc('upsert_player', rpcParams)
 
@@ -290,6 +293,10 @@ export function useAdminPlayers() {
             if (playerStatuses.includes("visitor")) {
                 rpcStatuses.push(isPaid ? "paid" : "unpaid")
             }
+
+            const previousPayment = currentPlayer.payment_status || 'unpaid'
+            const newPayment = isPaid ? 'paid' : 'unpaid'
+            console.log(`[Payment] UPDATE player="${currentPlayer.first_name} ${currentPlayer.last_name}" event=${currentEventId?.slice(0, 8)} | ${previousPayment} → ${newPayment} | statuses=${JSON.stringify(rpcStatuses)}`)
 
             // Appel de la fonction PostgreSQL upsert_player
             const { data, error: rpcError } = await supabase.rpc('upsert_player', {
@@ -359,6 +366,31 @@ export function useAdminPlayers() {
         }
     }
 
+    // mise à jour du statut de paiement par événement
+    const updatePaymentStatus = async (playerId: string, eventId: string, newStatus: PaymentStatus) => {
+        setError(null)
+
+        const player = players.find(p => p.id === playerId)
+        console.log(`[Payment] UPDATE player="${player?.first_name} ${player?.last_name}" event=${eventId.slice(0, 8)} | → ${newStatus}`)
+
+        const { error: updateError } = await supabase
+            .from("payments")
+            .update({
+                status: newStatus,
+                paid_at: newStatus === "paid" ? new Date().toISOString() : null,
+                updated_at: new Date().toISOString()
+            })
+            .eq("profile_id", playerId)
+            .eq("event_id", eventId)
+
+        if (updateError) {
+            handleHookError(updateError, setError, "useAdminPlayers.updatePayment")
+            return
+        }
+
+        await refreshCurrentView()
+    }
+
     // charger les joueurs au montage seulement
     useEffect(() => {
         fetchPlayer()
@@ -371,6 +403,7 @@ export function useAdminPlayers() {
         addPlayer,
         updatePlayer,
         removePlayerFromEvent,
+        updatePaymentStatus,
         fetchPlayer,
         fetchPlayersByEvent
     }

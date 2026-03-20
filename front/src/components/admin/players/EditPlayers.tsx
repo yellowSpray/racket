@@ -29,12 +29,13 @@ import {
 import { Field, FieldLabel, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input"
 import { ZapIcon, UserGroupIcon, EuroIcon, Add01Icon } from 'hugeicons-react';
-import type { PlayerType } from "@/types/player";
+import type { PlayerType, PaymentStatus } from "@/types/player";
 
 interface EditPlayersProps {
     mode?: "edit" | "create"
     playerData?: PlayerType
     onSave?: (data: Partial<PlayerType>) => Promise<void>
+    onPaymentChange?: (playerId: string, eventId: string, status: PaymentStatus) => Promise<void>
     open?: boolean
     onOpenChange?: (open: boolean) => void
 }
@@ -52,7 +53,7 @@ const initialFormData: Partial<PlayerType> = {
 }
 
 
-export function EditPlayers ({ mode = "edit", playerData, onSave, open: controlledOpen, onOpenChange }: EditPlayersProps) {
+export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChange, open: controlledOpen, onOpenChange }: EditPlayersProps) {
 
     const steps = [ 1, 2, 3 ]
     const [currentStep, setCurrentStep] = useState<number>(1)
@@ -172,7 +173,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, open: controll
         const finalData: Partial<PlayerType> = {
             ...formData,
             status: selected as PlayerType["status"],
-            payment_status: isVisitor ? paymentStatus : undefined,
+            payment_status: mode === "create" && isVisitor ? paymentStatus : undefined,
         }
 
         try {
@@ -315,7 +316,37 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, open: controll
                             </ToggleGroupItem>
                         </ToggleGroup>
                     </Field>
-                    {isVisitor && (
+                    {isVisitor && mode === "edit" && playerData?.payments && playerData.payments.length > 0 && (
+                        <Field>
+                            <FieldLabel>Paiement par série</FieldLabel>
+                            <div className="space-y-2">
+                                {playerData.payments.map((payment) => (
+                                    <div key={payment.event_id} className="flex items-center justify-between gap-4">
+                                        <span className="text-sm truncate">{payment.event_name}</span>
+                                        <ToggleGroup
+                                            type="multiple"
+                                            variant="outline"
+                                            size="sm"
+                                            value={payment.status === "paid" ? ["paid"] : []}
+                                            onValueChange={(values) => {
+                                                const newStatus = values.includes("paid") ? "paid" : "unpaid"
+                                                onPaymentChange?.(playerData.id, payment.event_id, newStatus as PaymentStatus)
+                                            }}
+                                        >
+                                            <ToggleGroupItem
+                                                value="paid"
+                                                aria-label={`Toggle paid ${payment.event_name}`}
+                                                className="data-[state=off]:bg-gray-100 data-[state=on]:bg-transparent data-[state=on]:*:[svg]:stroke-green-500"
+                                            >
+                                                <EuroIcon /> Payé
+                                            </ToggleGroupItem>
+                                        </ToggleGroup>
+                                    </div>
+                                ))}
+                            </div>
+                        </Field>
+                    )}
+                    {isVisitor && mode === "create" && (
                         <Field>
                             <FieldLabel htmlFor="payment">Paiement</FieldLabel>
                             <ToggleGroup

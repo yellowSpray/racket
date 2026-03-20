@@ -2,10 +2,11 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { PlayerActions } from "@/components/admin/players/PlayerActions";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { PlayerType } from "@/types/player";
+import type { PlayerType, PaymentStatus } from "@/types/player";
 
 export const columns = (
     updatePlayer: (id: string, data: Partial<PlayerType>) => Promise<void>,
+    updatePaymentStatus: (playerId: string, eventId: string, newStatus: PaymentStatus) => Promise<void>,
 ): ColumnDef<PlayerType>[] => [
     {
         accessorKey: "full_name",
@@ -122,6 +123,7 @@ export const columns = (
             <PlayerActions
                 player={row.original}
                 updatePlayer={updatePlayer}
+                updatePaymentStatus={updatePaymentStatus}
             />
         )
     }
