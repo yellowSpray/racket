@@ -53,6 +53,7 @@ export function EventProvider({children}: {children: ReactNode}) {
 
             setEvents(eventsWithCount)
             logger.info("EventContext", `${eventsWithCount.length} événement(s) chargé(s)`)
+            eventsWithCount.forEach(e => logger.info("EventContext", `  → "${e.event_name}" status=${e.status ?? "undefined"}`))
 
             // Restaurer l'event sauvegardé ou sélectionner le plus récent
             if (eventsWithCount.length > 0) {

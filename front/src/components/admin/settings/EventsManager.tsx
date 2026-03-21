@@ -29,8 +29,20 @@ export function EventsManager({ clubDefaults }: EventsManagerProps) {
     
     // determiner le status de l'event(en cours, terminer, à venir)
     const getEventStatus = (event: Event) => {
+        if (event.status === "completed") {
+            return { label: "Terminé", variant: "default" as const }
+        }
+
         const today = new Date()
         today.setHours(0, 0, 0, 0)
+
+        // Vérifier la deadline si elle existe
+        if (event.deadline) {
+            const deadlineDate = new Date(event.deadline)
+            if (deadlineDate < today) {
+                return { label: "Terminé", variant: "default" as const }
+            }
+        }
 
         const startDate = new Date(event.start_date)
         const endDate = new Date(event.end_date)

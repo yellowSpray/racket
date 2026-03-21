@@ -285,6 +285,30 @@ describe('eventSchema', () => {
     expect(result.success).toBe(true)
   })
 
+  it('accepts valid deadline', () => {
+    const result = eventSchema.safeParse({
+      ...validEvent,
+      deadline: '2026-04-01',
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts undefined deadline', () => {
+    const result = eventSchema.safeParse({
+      ...validEvent,
+      deadline: undefined,
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts event without deadline field', () => {
+    const result = eventSchema.safeParse(validEvent)
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.deadline).toBeUndefined()
+    }
+  })
+
   it('rejects wrong type for number_of_courts (string instead of number)', () => {
     const result = eventSchema.safeParse({ ...validEvent, number_of_courts: '3' })
     expect(result.success).toBe(false)

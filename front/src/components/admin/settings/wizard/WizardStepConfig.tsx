@@ -36,6 +36,7 @@ export function WizardStepConfig({ event, onSave, clubDefaults }: WizardStepConf
     const [numberOfCourts, setNumberOfCourts] = useState(clubDefaults?.numberOfCourts ?? 4)
     const [matchDuration, setMatchDuration] = useState(clubDefaults?.matchDuration ?? 30)
     const [playingDates, setPlayingDates] = useState<string[]>([])
+    const [deadline, setDeadline] = useState("")
 
     useEffect(() => {
         if (event) {
@@ -45,6 +46,7 @@ export function WizardStepConfig({ event, onSave, clubDefaults }: WizardStepConf
             setNumberOfCourts(event.number_of_courts)
             setMatchDuration(intervalToMinutes(event.estimated_match_duration))
             setPlayingDates(event.playing_dates || [])
+            setDeadline(event.deadline || "")
         }
     }, [event])
 
@@ -73,6 +75,7 @@ export function WizardStepConfig({ event, onSave, clubDefaults }: WizardStepConf
             number_of_courts: numberOfCourts,
             estimated_match_duration: matchDuration || undefined,
             playing_dates: playingDates,
+            deadline: deadline || undefined,
         })
 
         if (!validation.success) {
@@ -82,12 +85,13 @@ export function WizardStepConfig({ event, onSave, clubDefaults }: WizardStepConf
         }
 
         try {
-            const { estimated_match_duration: durationMinutes, playing_dates: dates, ...restData } = validation.data
+            const { estimated_match_duration: durationMinutes, playing_dates: dates, deadline: deadlineValue, ...restData } = validation.data
             const eventData = {
                 club_id: profile?.club_id,
                 ...restData,
                 estimated_match_duration: durationMinutes ? minutesToInterval(durationMinutes) : null,
                 playing_dates: dates && dates.length > 0 ? dates : null,
+                deadline: deadlineValue || null,
             }
 
             if (event) {
@@ -204,6 +208,19 @@ export function WizardStepConfig({ event, onSave, clubDefaults }: WizardStepConf
                                 />
                                 {fieldErrors.estimated_match_duration && <p className="text-sm text-red-600">{fieldErrors.estimated_match_duration[0]}</p>}
                             </div>
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="deadline">Date limite</Label>
+                            <p className="text-xs text-muted-foreground">
+                                L'événement sera automatiquement marqué comme terminé après cette date.
+                            </p>
+                            <Input
+                                id="deadline"
+                                type="date"
+                                value={deadline}
+                                onChange={(e) => setDeadline(e.target.value)}
+                            />
                         </div>
 
                         {/* Jours sélectionnés */}

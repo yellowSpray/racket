@@ -13,6 +13,7 @@ export interface Event {
   player_count?: number
   estimated_match_duration?: string
   playing_dates?: string[] | null
+  deadline?: string | null
   status?: EventStatus
   open_to_visitors?: boolean
   invite_token?: string

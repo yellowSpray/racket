@@ -19,6 +19,7 @@ export const eventSchema = z
     playing_dates: z
       .array(z.string())
       .optional(),
+    deadline: z.string().optional(),
   })
   .check((ctx) => {
     if (
