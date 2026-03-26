@@ -1,5 +1,6 @@
 import type { Event } from "@/types/event"
 import { useState } from "react"
+import { useErrorHandler } from "@/hooks/useErrorHandler"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,27 +23,28 @@ interface DeleteEventDialogProps {
 export function DeleteEventDialog({open,onOpenChange,event,onSuccess}: DeleteEventDialogProps) {
     
     const [loading, setLoading] = useState<boolean>(false)
-    
+    const { errorMessage, handleError, clearError } = useErrorHandler()
+
     const handleDelete = async () => {
 
-        if(!event) return 
+        if(!event) return
         setLoading(true)
+        clearError()
 
         try {
-
             const { error } = await supabase
                 .from('events')
                 .delete()
                 .eq('id', event.id)
 
             if (error) {
-                console.error("Erreur suppression event", error)
+                handleError(error)
                 return
             }
 
             onSuccess()
         } catch (err) {
-            console.error("Erreur inattendue", err)
+            handleError(err)
         } finally {
             setLoading(false)
         }
@@ -60,6 +62,9 @@ export function DeleteEventDialog({open,onOpenChange,event,onSuccess}: DeleteEve
                         définitivement supprimé, ainsi que tous les tableaux, matchs et
                         inscriptions associés.
                     </AlertDialogDescription>
+                    {errorMessage && (
+                        <p className="text-sm text-destructive mt-2">{errorMessage}</p>
+                    )}
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel disabled={loading}>Annuler</AlertDialogCancel>

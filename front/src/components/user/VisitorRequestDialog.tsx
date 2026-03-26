@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useErrorHandler } from "@/hooks/useErrorHandler"
 import {
   Dialog,
   DialogContent,
@@ -36,7 +37,7 @@ export function VisitorRequestDialog({
   loading,
 }: VisitorRequestDialogProps) {
   const [message, setMessage] = useState("")
-  const [error, setError] = useState<string | null>(null)
+  const { errorMessage, handleError, clearError } = useErrorHandler()
 
   if (!event) {
     return (
@@ -51,13 +52,13 @@ export function VisitorRequestDialog({
   }
 
   const handleSubmit = async () => {
-    setError(null)
+    clearError()
     const result = await onSubmit(event.id, message || undefined)
     if (result.success) {
       setMessage("")
       onOpenChange(false)
     } else if (result.error) {
-      setError(result.error)
+      handleError(new Error(result.error))
     }
   }
 
@@ -91,8 +92,8 @@ export function VisitorRequestDialog({
             placeholder="Message pour l'organisateur (optionnel)"
           />
 
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
+          {errorMessage && (
+            <p className="text-sm text-destructive">{errorMessage}</p>
           )}
         </div>
 

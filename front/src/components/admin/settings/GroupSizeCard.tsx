@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useErrorHandler } from "@/hooks/useErrorHandler"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
@@ -14,7 +15,7 @@ export function GroupSizeCard({ defaultMinPlayers, defaultMaxPlayers, onSave }: 
 
     const [minPlayers, setMinPlayers] = useState(defaultMinPlayers)
     const [maxPlayers, setMaxPlayers] = useState(defaultMaxPlayers)
-    const [error, setError] = useState<string | null>(null)
+    const { errorMessage, handleError, clearError } = useErrorHandler()
     const [editing, setEditing] = useState(false)
     const [saving, setSaving] = useState(false)
     const [saved, setSaved] = useState(false)
@@ -34,9 +35,9 @@ export function GroupSizeCard({ defaultMinPlayers, defaultMaxPlayers, onSave }: 
             return
         }
 
-        setError(null)
+        clearError()
         if (minPlayers < 2 || maxPlayers > 10 || minPlayers > maxPlayers) {
-            setError("Le minimum doit être entre 2 et 10, et inférieur ou égal au maximum")
+            handleError(new Error("Le minimum doit être entre 2 et 10, et inférieur ou égal au maximum"))
             return
         }
 
@@ -123,7 +124,7 @@ export function GroupSizeCard({ defaultMinPlayers, defaultMaxPlayers, onSave }: 
                         />
                         <span className="text-xs text-muted-foreground">10</span>
                     </div>
-                    {error && <p className="text-sm text-red-600">{error}</p>}
+                    {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
                 </div>
             </CardContent>
         </Card>

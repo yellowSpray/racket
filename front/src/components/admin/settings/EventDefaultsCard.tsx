@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useErrorHandler } from "@/hooks/useErrorHandler"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -30,7 +31,7 @@ export function EventDefaultsCard({
     const [endTime, setEndTime] = useState(defaultEndTime)
     const [courts, setCourts] = useState(defaultNumberOfCourts)
     const [duration, setDuration] = useState(defaultMatchDuration)
-    const [error, setError] = useState<string | null>(null)
+    const { errorMessage, handleError, clearError } = useErrorHandler()
     const [editing, setEditing] = useState(false)
     const [saving, setSaving] = useState(false)
     const [saved, setSaved] = useState(false)
@@ -47,17 +48,17 @@ export function EventDefaultsCard({
             return
         }
 
-        setError(null)
+        clearError()
         if (startTime >= endTime) {
-            setError("L'heure de début doit être avant l'heure de fin")
+            handleError(new Error("L'heure de début doit être avant l'heure de fin"))
             return
         }
         if (courts < 1 || courts > 20) {
-            setError("Le nombre de terrains doit être entre 1 et 20")
+            handleError(new Error("Le nombre de terrains doit être entre 1 et 20"))
             return
         }
         if (duration < 5 || duration > 180) {
-            setError("La durée doit être entre 5 et 180 minutes")
+            handleError(new Error("La durée doit être entre 5 et 180 minutes"))
             return
         }
 
@@ -171,7 +172,7 @@ export function EventDefaultsCard({
                             </div>
                         </div>
                     </div>
-                    {error && <p className="text-sm text-red-600">{error}</p>}
+                    {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
                 </div>
             </CardContent>
         </Card>

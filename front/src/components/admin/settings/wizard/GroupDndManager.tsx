@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react"
+import { useErrorHandler } from "@/hooks/useErrorHandler"
 import {
     DndContext,
     DragOverlay,
@@ -36,7 +37,7 @@ export function GroupDndManager({ initialGroups, onFinish, onCancel }: GroupDndM
     const [localGroups, setLocalGroups] = useState<Group[]>(initialGroups)
     const [pendingMoves, setPendingMoves] = useState<PendingMove[]>([])
     const [saving, setSaving] = useState(false)
-    const [error, setError] = useState<string | null>(null)
+    const { errorMessage, handleError, clearError } = useErrorHandler()
     const [activePlayer, setActivePlayer] = useState<GroupPlayer | null>(null)
     const [overGroupId, setOverGroupId] = useState<string | null>(null)
 
@@ -113,7 +114,7 @@ export function GroupDndManager({ initialGroups, onFinish, onCancel }: GroupDndM
         if (!validation.valid) return
 
         setSaving(true)
-        setError(null)
+        clearError()
 
         try {
             // Deduplicate moves: track original → final position per player
@@ -147,7 +148,7 @@ export function GroupDndManager({ initialGroups, onFinish, onCancel }: GroupDndM
 
             onFinish(localGroups)
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Erreur lors de la sauvegarde")
+            handleError(err)
         } finally {
             setSaving(false)
         }
@@ -179,9 +180,9 @@ export function GroupDndManager({ initialGroups, onFinish, onCancel }: GroupDndM
                 </Alert>
             )}
 
-            {error && (
+            {errorMessage && (
                 <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
+                    <AlertDescription>{errorMessage}</AlertDescription>
                 </Alert>
             )}
 

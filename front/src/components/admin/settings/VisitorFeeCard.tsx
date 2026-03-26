@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useErrorHandler } from "@/hooks/useErrorHandler"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -12,7 +13,7 @@ interface VisitorFeeCardProps {
 export function VisitorFeeCard({ visitorFee, onSave }: VisitorFeeCardProps) {
 
     const [fee, setFee] = useState(visitorFee)
-    const [error, setError] = useState<string | null>(null)
+    const { errorMessage, handleError, clearError } = useErrorHandler()
     const [editing, setEditing] = useState(false)
     const [saving, setSaving] = useState(false)
     const [saved, setSaved] = useState(false)
@@ -28,9 +29,9 @@ export function VisitorFeeCard({ visitorFee, onSave }: VisitorFeeCardProps) {
             return
         }
 
-        setError(null)
+        clearError()
         if (fee < 0) {
-            setError("Le tarif ne peut pas être négatif")
+            handleError(new Error("Le tarif ne peut pas être négatif"))
             return
         }
 
@@ -104,7 +105,7 @@ export function VisitorFeeCard({ visitorFee, onSave }: VisitorFeeCardProps) {
                             className="text-center"
                         />
                     </div>
-                    {error && <p className="text-sm text-red-600">{error}</p>}
+                    {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
                 </div>
             </CardContent>
         </Card>
