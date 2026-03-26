@@ -31,7 +31,7 @@ export function EventDefaultsCard({
     const [endTime, setEndTime] = useState(defaultEndTime)
     const [courts, setCourts] = useState(defaultNumberOfCourts)
     const [duration, setDuration] = useState(defaultMatchDuration)
-    const { errorMessage, handleError, clearError } = useErrorHandler()
+    const { handleError, clearError } = useErrorHandler()
     const [editing, setEditing] = useState(false)
     const [saving, setSaving] = useState(false)
     const [saved, setSaved] = useState(false)
@@ -172,7 +172,6 @@ export function EventDefaultsCard({
                             </div>
                         </div>
                     </div>
-                    {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
                 </div>
             </CardContent>
         </Card>

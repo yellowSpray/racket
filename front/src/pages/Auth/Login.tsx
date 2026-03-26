@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
 import { supabase } from '@/lib/supabaseClient'
 import { useErrorHandler } from "@/hooks/useErrorHandler"
+import { toast } from "sonner"
 import { useNavigate } from "react-router";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -32,7 +33,7 @@ export default function Login({className, toggle, onForgotPassword, ...props}: L
     const { profile, isAuthenticated, isLoading } = useAuth()
 
     const [loading, setLoading] = useState<boolean>(false)
-    const { errorMessage, handleError, clearError } = useErrorHandler()
+    const { handleError, clearError } = useErrorHandler()
     const [email, setEmail] = useState<string>("")
     const [password, setPassword] = useState<string>("")
 
@@ -55,6 +56,8 @@ export default function Login({className, toggle, onForgotPassword, ...props}: L
 
         if(error) {
             handleError(error)
+        } else {
+            toast.success("Bienvenue !")
         }
 
         setLoading(false)
@@ -68,11 +71,6 @@ export default function Login({className, toggle, onForgotPassword, ...props}: L
                     <CardDescription>
                         Entrez vos identifiants pour accéder à votre compte
                     </CardDescription>
-                    { errorMessage && (
-                        <div className="text-destructive px-4 py-3">
-                            {errorMessage}
-                        </div>
-                    )}
 
                 </CardHeader>
                 <CardContent>

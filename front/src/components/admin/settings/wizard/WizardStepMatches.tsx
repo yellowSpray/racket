@@ -36,7 +36,7 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
     const [generating, setGenerating] = useState(false)
     const [confirmOpen, setConfirmOpen] = useState(false)
     const [confirmAction, setConfirmAction] = useState<"generate" | "delete">("generate")
-    const { errorMessage, handleError, clearError } = useErrorHandler()
+    const { handleError, clearError } = useErrorHandler()
 
     const matchCount = totalMatchCount(groups)
     const durationMin = intervalToMinutes(event.estimated_match_duration)
@@ -153,11 +153,6 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
 
     return (
         <div className="py-4">
-            {errorMessage && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-                    {errorMessage}
-                </div>
-            )}
 
             {warning && (
                 <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded mb-4">

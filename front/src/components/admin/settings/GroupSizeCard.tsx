@@ -15,7 +15,7 @@ export function GroupSizeCard({ defaultMinPlayers, defaultMaxPlayers, onSave }: 
 
     const [minPlayers, setMinPlayers] = useState(defaultMinPlayers)
     const [maxPlayers, setMaxPlayers] = useState(defaultMaxPlayers)
-    const { errorMessage, handleError, clearError } = useErrorHandler()
+    const { handleError, clearError } = useErrorHandler()
     const [editing, setEditing] = useState(false)
     const [saving, setSaving] = useState(false)
     const [saved, setSaved] = useState(false)
@@ -124,7 +124,6 @@ export function GroupSizeCard({ defaultMinPlayers, defaultMaxPlayers, onSave }: 
                         />
                         <span className="text-xs text-muted-foreground">10</span>
                     </div>
-                    {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
                 </div>
             </CardContent>
         </Card>

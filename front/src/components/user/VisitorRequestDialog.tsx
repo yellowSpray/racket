@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
+import { toast } from "sonner"
 import {
   Dialog,
   DialogContent,
@@ -37,7 +38,7 @@ export function VisitorRequestDialog({
   loading,
 }: VisitorRequestDialogProps) {
   const [message, setMessage] = useState("")
-  const { errorMessage, handleError, clearError } = useErrorHandler()
+  const { handleError, clearError } = useErrorHandler()
 
   if (!event) {
     return (
@@ -55,6 +56,7 @@ export function VisitorRequestDialog({
     clearError()
     const result = await onSubmit(event.id, message || undefined)
     if (result.success) {
+      toast.success("Demande envoyée")
       setMessage("")
       onOpenChange(false)
     } else if (result.error) {
@@ -92,9 +94,6 @@ export function VisitorRequestDialog({
             placeholder="Message pour l'organisateur (optionnel)"
           />
 
-          {errorMessage && (
-            <p className="text-sm text-destructive">{errorMessage}</p>
-          )}
         </div>
 
         <DialogFooter>

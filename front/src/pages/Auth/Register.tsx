@@ -3,6 +3,7 @@ import { registerSchema } from "@/lib/schemas"
 import { validateFormData } from "@/lib/validation"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
 import { ValidationError } from "@/lib/errors"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
     Card,
@@ -52,7 +53,7 @@ export default function Register({
     const { clubs , loadingClubs } = useClubs()
 
     const [loading, setLoading] = useState(false)
-    const { errorMessage, fieldErrors, handleError, clearError, getFieldError } = useErrorHandler()
+    const { handleError, clearError, getFieldError } = useErrorHandler()
     const [firstName, setFirstName] = useState("")
     const [lastName, setLastName] = useState("")
     const [phoneNumber, setPhoneNumber] = useState("")
@@ -61,27 +62,26 @@ export default function Register({
     const [password, setPassword] = useState("")
     const [confirmPassword, setConfirmPassword] = useState("")
     const [step, setStep] = useState(1)
-    const [stepErrors, setStepErrors] = useState<string[]>([])
 
     const validateStep1 = (): boolean => {
-        const errors: string[] = []
-        if (!firstName.trim()) errors.push("Le prénom est requis")
-        if (!lastName.trim()) errors.push("Le nom est requis")
-        if (!phoneNumber.trim()) errors.push("Le téléphone est requis")
-        if (!selectedClub) errors.push("Le club est requis")
-        setStepErrors(errors)
-        return errors.length === 0
+        const missing: string[] = []
+        if (!firstName.trim()) missing.push("prénom")
+        if (!lastName.trim()) missing.push("nom")
+        if (!phoneNumber.trim()) missing.push("téléphone")
+        if (!selectedClub) missing.push("club")
+        if (missing.length > 0) {
+            toast.error(`Le ${missing.join(" - ")} est requis`)
+        }
+        return missing.length === 0
     }
 
     const handleNext = () => {
         if (validateStep1()) {
-            setStepErrors([])
             setStep(2)
         }
     }
 
     const handleBack = () => {
-        setStepErrors([])
         setStep(1)
     }
 
@@ -95,7 +95,16 @@ export default function Register({
         })
 
         if (!validation.success) {
-            handleError(new ValidationError("Erreurs de validation", validation.fieldErrors))
+            const fields = Object.keys(validation.fieldErrors).map(k => {
+                const labels: Record<string, string> = {
+                    email: "email", password: "mot de passe", confirmPassword: "confirmation"
+                }
+                return labels[k] || k
+            })
+            handleError(new ValidationError(
+                `Le ${fields.join(" - ")} est requis`,
+                validation.fieldErrors
+            ))
             setLoading(false)
             return
         }
@@ -120,6 +129,8 @@ export default function Register({
                 return
             }
 
+            toast.success("Inscription réussie, vérifiez votre email")
+
         } catch (err) {
             handleError(err)
         } finally {
@@ -135,18 +146,6 @@ export default function Register({
                     <CardDescription>
                         Remplissez les informations ci-dessous pour créer votre compte
                     </CardDescription>
-                    { errorMessage && (
-                        <div className="text-destructive px-4 py-3">
-                            {errorMessage}
-                        </div>
-                    )}
-                    { stepErrors.length > 0 && (
-                        <div className="text-destructive px-4 py-3">
-                            {stepErrors.map((err, i) => (
-                                <p key={i} className="text-sm">{err}</p>
-                            ))}
-                        </div>
-                    )}
                 </CardHeader>
                 <CardContent>
                     <Stepper value={step} onValueChange={setStep}>

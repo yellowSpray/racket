@@ -6,6 +6,7 @@ import { eventSchema } from "@/lib/schemas"
 import { validateFormData } from "@/lib/validation"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
 import { ValidationError } from "@/lib/errors"
+import { toast } from "sonner"
 import { intervalToMinutes, minutesToInterval } from "@/lib/utils"
 import {
   Dialog,
@@ -38,7 +39,7 @@ interface EventDialogProps {
 export function EventDialog({ open, onOpenChange, event, onSuccess, clubDefaults}: EventDialogProps) {
     const { profile } = useAuth()
     const [loading, setLoading] = useState<boolean>(false)
-    const { errorMessage, handleError, clearError, getFieldError } = useErrorHandler()
+    const { handleError, clearError, getFieldError } = useErrorHandler()
 
     // form state
     const [eventName, setEventName] = useState<string>("")
@@ -134,6 +135,7 @@ export function EventDialog({ open, onOpenChange, event, onSuccess, clubDefaults
                 }
             }
 
+            toast.success(event ? "Événement modifié" : "Événement créé")
             onSuccess()
         } catch (err) {
             handleError(err)
@@ -241,12 +243,6 @@ export function EventDialog({ open, onOpenChange, event, onSuccess, clubDefaults
                             </div>
                         </div>
 
-                        {/* Erreur */}
-                        {errorMessage && (
-                            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-                                {errorMessage}
-                            </div>
-                        )}
                     </div>
                     <DialogFooter>
                         <Button

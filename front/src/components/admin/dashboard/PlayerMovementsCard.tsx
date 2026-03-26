@@ -92,7 +92,7 @@ function MovementsList({ movements, loading }: { movements: PlayerMovement[]; lo
 
     if (movements.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-6 text-gray-400">
+            <div className="h-full flex flex-col items-center justify-center py-6 text-gray-400">
                 <UserSwitchIcon size={28} className="mb-3" />
                 <p className="text-sm">Aucun mouvement récent</p>
             </div>

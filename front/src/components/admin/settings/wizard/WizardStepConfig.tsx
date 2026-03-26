@@ -6,6 +6,7 @@ import { eventSchema } from "@/lib/schemas"
 import { validateFormData } from "@/lib/validation"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
 import { ValidationError } from "@/lib/errors"
+import { toast } from "sonner"
 import { intervalToMinutes, minutesToInterval } from "@/lib/utils"
 import type { ClubDefaults } from "../EventDialog"
 import { Calendar03Icon } from "hugeicons-react"
@@ -29,7 +30,7 @@ interface WizardStepConfigProps {
 export function WizardStepConfig({ event, onSave, clubDefaults }: WizardStepConfigProps) {
     const { profile } = useAuth()
     const [loading, setLoading] = useState(false)
-    const { errorMessage, handleError, clearError, getFieldError } = useErrorHandler()
+    const { handleError, clearError, getFieldError } = useErrorHandler()
 
     const [eventName, setEventName] = useState("")
     const [startTime, setStartTime] = useState(clubDefaults?.startTime ?? "19:00")
@@ -106,7 +107,10 @@ export function WizardStepConfig({ event, onSave, clubDefaults }: WizardStepConf
                     handleError(updateError)
                     return
                 }
-                if (updated) onSave(updated)
+                if (updated) {
+                    toast.success("Événement modifié")
+                    onSave(updated)
+                }
             } else {
                 const { data: created, error: insertError } = await supabase
                     .from("events")
@@ -118,6 +122,7 @@ export function WizardStepConfig({ event, onSave, clubDefaults }: WizardStepConf
                     handleError(insertError)
                     return
                 }
+                toast.success("Événement créé")
                 onSave(created)
             }
         } catch (err) {
@@ -254,11 +259,6 @@ export function WizardStepConfig({ event, onSave, clubDefaults }: WizardStepConf
                     </div>
                 </div>
 
-                {errorMessage && (
-                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-                        {errorMessage}
-                    </div>
-                )}
             </div>
 
             <div className="flex justify-end pt-4">

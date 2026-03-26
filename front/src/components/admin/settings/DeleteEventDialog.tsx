@@ -1,6 +1,7 @@
 import type { Event } from "@/types/event"
 import { useState } from "react"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
+import { toast } from "sonner"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,7 +24,7 @@ interface DeleteEventDialogProps {
 export function DeleteEventDialog({open,onOpenChange,event,onSuccess}: DeleteEventDialogProps) {
     
     const [loading, setLoading] = useState<boolean>(false)
-    const { errorMessage, handleError, clearError } = useErrorHandler()
+    const { handleError, clearError } = useErrorHandler()
 
     const handleDelete = async () => {
 
@@ -42,6 +43,7 @@ export function DeleteEventDialog({open,onOpenChange,event,onSuccess}: DeleteEve
                 return
             }
 
+            toast.success("Événement supprimé")
             onSuccess()
         } catch (err) {
             handleError(err)
@@ -62,9 +64,6 @@ export function DeleteEventDialog({open,onOpenChange,event,onSuccess}: DeleteEve
                         définitivement supprimé, ainsi que tous les tableaux, matchs et
                         inscriptions associés.
                     </AlertDialogDescription>
-                    {errorMessage && (
-                        <p className="text-sm text-destructive mt-2">{errorMessage}</p>
-                    )}
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel disabled={loading}>Annuler</AlertDialogCancel>

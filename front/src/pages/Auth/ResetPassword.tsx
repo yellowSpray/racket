@@ -19,11 +19,12 @@ import { validateFormData } from "@/lib/validation"
 import { resetPasswordSchema } from "@/lib/schemas"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
 import { ValidationError } from "@/lib/errors"
+import { toast } from "sonner"
 
 export default function ResetPassword() {
     const navigate = useNavigate()
     const [loading, setLoading] = useState(false)
-    const { errorMessage, handleError, clearError, getFieldError } = useErrorHandler()
+    const { handleError, clearError, getFieldError } = useErrorHandler()
     const [password, setPassword] = useState("")
     const [confirmPassword, setConfirmPassword] = useState("")
 
@@ -47,6 +48,7 @@ export default function ResetPassword() {
             return
         }
 
+        toast.success("Mot de passe réinitialisé")
         navigate('/auth', { replace: true })
     }
 
@@ -58,11 +60,6 @@ export default function ResetPassword() {
                     <CardDescription>
                         Choisissez votre nouveau mot de passe
                     </CardDescription>
-                    {errorMessage && (
-                        <div className="text-destructive px-4 py-3">
-                            {errorMessage}
-                        </div>
-                    )}
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit}>

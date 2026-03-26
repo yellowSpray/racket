@@ -44,7 +44,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
 
     const [mode, setMode] = useState<CreationMode>("auto")
     const [numberOfGroups, setNumberOfGroups] = useState(3)
-    const { errorMessage, handleError, clearError } = useErrorHandler()
+    const { handleError, clearError } = useErrorHandler()
     const [managementMode, setManagementMode] = useState(false)
     const [creating, setCreating] = useState(false)
     const [selectedDistributionIndex, setSelectedDistributionIndex] = useState(0)
@@ -477,11 +477,6 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                         </>
                     )}
 
-                    {errorMessage && (
-                        <Alert variant="destructive">
-                            <AlertDescription>{errorMessage}</AlertDescription>
-                        </Alert>
-                    )}
 
                     <div className="flex gap-2">
                         {mode === "manual" && (
@@ -581,11 +576,6 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                         ))}
                     </div>
 
-                    {errorMessage && (
-                        <Alert variant="destructive">
-                            <AlertDescription>{errorMessage}</AlertDescription>
-                        </Alert>
-                    )}
                 </div>
             )}
 

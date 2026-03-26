@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input"
 import { useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
+import { toast } from "sonner"
 
 type ForgotPasswordProps = {
     className?: string
@@ -23,7 +24,7 @@ type ForgotPasswordProps = {
 
 export default function ForgotPassword({ className, onBack, ...props }: ForgotPasswordProps) {
     const [loading, setLoading] = useState(false)
-    const { errorMessage, handleError, clearError } = useErrorHandler()
+    const { handleError, clearError } = useErrorHandler()
     const [email, setEmail] = useState("")
     const [sent, setSent] = useState(false)
 
@@ -39,6 +40,7 @@ export default function ForgotPassword({ className, onBack, ...props }: ForgotPa
         if (error) {
             handleError(error)
         } else {
+            toast.success("Email de réinitialisation envoyé")
             setSent(true)
         }
 
@@ -53,11 +55,6 @@ export default function ForgotPassword({ className, onBack, ...props }: ForgotPa
                     <CardDescription>
                         Entrez votre adresse email pour recevoir un lien de réinitialisation
                     </CardDescription>
-                    {errorMessage && (
-                        <div className="text-destructive px-4 py-3">
-                            {errorMessage}
-                        </div>
-                    )}
                 </CardHeader>
                 <CardContent>
                     {sent ? (

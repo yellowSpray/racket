@@ -37,7 +37,7 @@ export function GroupDndManager({ initialGroups, onFinish, onCancel }: GroupDndM
     const [localGroups, setLocalGroups] = useState<Group[]>(initialGroups)
     const [pendingMoves, setPendingMoves] = useState<PendingMove[]>([])
     const [saving, setSaving] = useState(false)
-    const { errorMessage, handleError, clearError } = useErrorHandler()
+    const { handleError, clearError } = useErrorHandler()
     const [activePlayer, setActivePlayer] = useState<GroupPlayer | null>(null)
     const [overGroupId, setOverGroupId] = useState<string | null>(null)
 
@@ -180,11 +180,6 @@ export function GroupDndManager({ initialGroups, onFinish, onCancel }: GroupDndM
                 </Alert>
             )}
 
-            {errorMessage && (
-                <Alert variant="destructive">
-                    <AlertDescription>{errorMessage}</AlertDescription>
-                </Alert>
-            )}
 
             <DndContext
                 sensors={sensors}

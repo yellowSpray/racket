@@ -13,7 +13,7 @@ interface VisitorFeeCardProps {
 export function VisitorFeeCard({ visitorFee, onSave }: VisitorFeeCardProps) {
 
     const [fee, setFee] = useState(visitorFee)
-    const { errorMessage, handleError, clearError } = useErrorHandler()
+    const { handleError, clearError } = useErrorHandler()
     const [editing, setEditing] = useState(false)
     const [saving, setSaving] = useState(false)
     const [saved, setSaved] = useState(false)
@@ -105,7 +105,6 @@ export function VisitorFeeCard({ visitorFee, onSave }: VisitorFeeCardProps) {
                             className="text-center"
                         />
                     </div>
-                    {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
                 </div>
             </CardContent>
         </Card>
