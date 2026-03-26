@@ -9,6 +9,7 @@ export function useVisitorRequests() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
+    /** Récupère toutes les demandes visiteur de l'utilisateur courant avec les infos événement/club. */
     const fetchMyRequests = useCallback(async () => {
         setLoading(true)
         setError(null)
@@ -31,6 +32,7 @@ export function useVisitorRequests() {
         setLoading(false)
     }, [])
 
+    /** Récupère les demandes en attente pour un événement donné (vue admin). */
     const fetchPendingForEvent = useCallback(async (eventId: string) => {
         setLoading(true)
         setError(null)
@@ -55,6 +57,7 @@ export function useVisitorRequests() {
         setLoading(false)
     }, [])
 
+    /** Crée une demande de visite pour un événement via la fonction RPC. */
     const createRequest = useCallback(async (eventId: string, message?: string): Promise<{ success: boolean; error?: string }> => {
         const endLog = logger.start("useVisitorRequests.createRequest")
 
@@ -77,6 +80,7 @@ export function useVisitorRequests() {
         return { success: true }
     }, [])
 
+    /** Annule une demande de visite en passant son statut à "cancelled". */
     const cancelRequest = useCallback(async (requestId: string) => {
         setError(null)
         const endLog = logger.start("useVisitorRequests.cancelRequest")
@@ -94,6 +98,7 @@ export function useVisitorRequests() {
         }
     }, [])
 
+    /** Approuve ou refuse une demande visiteur via la fonction RPC (vue admin). */
     const reviewRequest = useCallback(async (requestId: string, decision: string): Promise<{ success: boolean; error?: string }> => {
         const endLog = logger.start("useVisitorRequests.reviewRequest")
 

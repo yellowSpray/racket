@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabaseClient"
-import type { Group, SupabaseGroup, SupabaseGroupPlayer } from "@/types/draw"
+import { transformGroups, type Group, type SupabaseGroup } from "@/types/draw"
 import { useCallback, useState } from "react"
 import { handleHookError, withTimeout } from "@/lib/handleHookError"
 import { logger } from "@/lib/logger"
@@ -10,9 +10,13 @@ export function useGroups() {
     const [loading, setLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
 
-    // fetch les groupes
+    /**
+     * Récupère les groupes d'un événement avec leurs joueurs.
+     * Charge via jointure group_players > profiles et transforme en Group[].
+     * Si eventId est null, réinitialise la liste.
+     */
     const fetchGroupsByEvent = useCallback(async (eventId: string | null) => {
-        
+
         if(!eventId) {
             setGroups([])
             return
@@ -23,6 +27,7 @@ export function useGroups() {
         const endLog = logger.start("useGroups.fetch")
 
         try {
+            // requête avec jointure group_players > profiles
             const { data, error: fetchError } = await withTimeout(
                 supabase
                     .from("groups")
@@ -50,25 +55,8 @@ export function useGroups() {
                 return
             }
 
-            // transformation des data
-            const transformedGroups = (data as SupabaseGroup[] || []).map(group => ({
-                id: group.id,
-                event_id: group.event_id,
-                group_name: group.group_name,
-                max_players: group.max_players,
-                created_at: group.created_at,
-                players: group.group_players
-                    ?.filter((gp: SupabaseGroupPlayer) => gp.profiles != null)
-                    .map((gp: SupabaseGroupPlayer) => ({
-                        id: gp.profiles.id,
-                        first_name: gp.profiles.first_name,
-                        last_name: gp.profiles.last_name,
-                        phone: gp.profiles.phone,
-                        power_ranking: gp.profiles.power_ranking ?? 0
-                    })) || []
-            }))
-
-            setGroups(transformedGroups)
+            // transformer les données brutes en objets Group
+            setGroups(transformGroups(data as SupabaseGroup[] || []))
             endLog()
 
         } catch (err) {
@@ -79,14 +67,17 @@ export function useGroups() {
         }
     }, [])
 
-    // creation des groupes vides
+    /**
+     * Crée N groupes vides nommés "Box 1", "Box 2", etc.
+     * Rafraîchit la liste après insertion.
+     */
     const createGroups = async (eventId: string, numberOfGroups: number, maxPlayersPerGroup: number) => {
 
         setLoading(true)
         setError(null)
 
         try {
-            // creation des groupes
+            // générer les groupes avec un nom séquentiel
             const groupsToCreate = Array.from({ length: numberOfGroups }, (_, i) => ({
                 event_id: eventId,
                 group_name: `Box ${i + 1}`,
@@ -113,7 +104,7 @@ export function useGroups() {
 
     }
 
-    // supprimer le groupe
+    /** Supprime un groupe et rafraîchit la liste. */
     const deleteGroup = async(groupId: string, eventId: string) => {
 
         setLoading(true)
@@ -140,14 +131,17 @@ export function useGroups() {
         }
     }
 
-    // assigner des joueurs à un groupe
+    /**
+     * Assigne une liste de joueurs à un groupe via group_players.
+     * Rafraîchit la liste après insertion.
+     */
     const assignPlayersToGroup = async (groupId: string, playerIds: string[], eventId: string) => {
-    
+
         setLoading(true)
         setError(null)
 
         try {
-            // Préparer les assignations
+            // préparer les lignes d'assignation
             const assignments = playerIds.map(playerId => ({
                 group_id: groupId,
                 profile_id: playerId
@@ -172,7 +166,7 @@ export function useGroups() {
         }
     }
 
-    // retirer un joueur d'un groupe
+    /** Retire un joueur d'un groupe et rafraîchit la liste. */
     const removePlayerFromGroup = async(groupId: string, playerId: string, eventId: string) => {
 
         setLoading(true)

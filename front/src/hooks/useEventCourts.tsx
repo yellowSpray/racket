@@ -10,6 +10,10 @@ export function useEventCourts() {
     const [loading, setLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
 
+    /**
+     * Charge les terrains d'un événement triés par ordre d'affichage.
+     * Si eventId est null, réinitialise la liste.
+     */
     const fetchCourts = useCallback(async (eventId: string | null) => {
         if (!eventId) {
             setCourts([])
@@ -43,9 +47,14 @@ export function useEventCourts() {
         }
     }, [])
 
+    /**
+     * Ajoute un terrain à l'événement.
+     * Le sort_order est automatiquement placé en dernière position.
+     */
     const addCourt = async (eventId: string, data: { court_name: string; available_from: string; available_to: string }) => {
         setError(null)
 
+        // placer le nouveau terrain en fin de liste
         const sortOrder = courts.length
 
         const { data: result, error: insertError } = await supabase
@@ -69,6 +78,7 @@ export function useEventCourts() {
         return true
     }
 
+    /** Met à jour le nom ou les horaires de disponibilité d'un terrain. */
     const updateCourt = async (courtId: string, data: { court_name?: string; available_from?: string; available_to?: string }) => {
         setError(null)
 
@@ -88,6 +98,7 @@ export function useEventCourts() {
         return true
     }
 
+    /** Supprime un terrain et le retire du state local. */
     const removeCourt = async (courtId: string) => {
         setError(null)
 
@@ -105,9 +116,15 @@ export function useEventCourts() {
         return true
     }
 
+    /**
+     * Initialise les terrains d'un événement en batch.
+     * Crée N terrains nommés "Terrain 1", "Terrain 2", etc.
+     * avec les mêmes horaires de disponibilité.
+     */
     const initCourts = async (eventId: string, numberOfCourts: number, availableFrom: string, availableTo: string) => {
         setError(null)
 
+        // générer les terrains avec un nom et un ordre séquentiel
         const courtsToCreate = Array.from({ length: numberOfCourts }, (_, i) => ({
             event_id: eventId,
             court_name: `Terrain ${i + 1}`,

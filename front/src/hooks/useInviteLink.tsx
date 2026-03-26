@@ -9,12 +9,17 @@ export function useInviteLink() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
+    /**
+     * Récupère les infos d'un événement à partir d'un token d'invitation.
+     * Appelle la fonction RPC get_event_by_invite_token côté Supabase.
+     */
     const fetchEventByToken = useCallback(async (token: string) => {
         setLoading(true)
         setError(null)
         setEventInfo(null)
 
         try {
+            // appel RPC pour résoudre le token en infos événement
             const { data, error: rpcError } = await supabase.rpc(
                 "get_event_by_invite_token",
                 { p_token: token }
@@ -25,6 +30,7 @@ export function useInviteLink() {
                 return
             }
 
+            // vérifier le retour de la fonction SQL
             if (!data.success) {
                 setError(data.error ?? "Erreur inconnue")
                 logger.error("fetchEventByToken", data.error)
@@ -39,6 +45,7 @@ export function useInviteLink() {
         }
     }, [])
 
+    /** Construit l'URL d'invitation publique à partir du token. */
     const getInviteUrl = useCallback((inviteToken: string): string => {
         return `${window.location.origin}/events/join/${inviteToken}`
     }, [])

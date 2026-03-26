@@ -62,6 +62,10 @@ export function useMatches() {
     const [loading, setLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
 
+    /**
+     * Récupère tous les matchs d'un événement avec les profils joueurs et le groupe.
+     * Filtre via les groupes de l'événement puis charge les matchs triés par date/heure.
+     */
     const fetchMatchesByEvent = useCallback(async (eventId: string | null) => {
         if (!eventId) {
             setMatches([])
@@ -319,6 +323,7 @@ export function useMatches() {
         }
     }
 
+    /** Supprime tous les matchs d'un événement via ses groupes. */
     const deleteMatchesByEvent = async (eventId: string) => {
         setError(null)
 
@@ -356,6 +361,10 @@ export function useMatches() {
         }
     }
 
+    /**
+     * Met à jour les résultats de plusieurs matchs en parallèle.
+     * Applique les changements en local après succès pour un retour immédiat.
+     */
     const updateMatchResults = useCallback(async (
         results: { matchId: string; winnerId: string | null; score: string }[]
     ): Promise<boolean> => {
@@ -564,6 +573,7 @@ export function useMatches() {
         }
     }
 
+    /** Met à jour le créneau (date, heure, terrain) d'un match. */
     const updateMatchSchedule = useCallback(async (
         matchId: string,
         updates: { match_date?: string; match_time?: string; court_number?: string }

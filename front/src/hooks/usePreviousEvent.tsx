@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabaseClient"
 import type { Event } from "@/types/event"
-import { transformGroups, type Group, type SupabaseGroup } from "@/types/draw"
+import { transformGroups, type Group } from "@/types/draw"
 import type { Match } from "@/types/match"
 import { useCallback, useState } from "react"
 import { logger } from "@/lib/logger"
@@ -11,6 +11,10 @@ export function usePreviousEvent() {
     const [previousMatches, setPreviousMatches] = useState<Match[]>([])
     const [loading, setLoading] = useState(false)
 
+    /**
+     * Récupère l'événement précédent d'un club avec ses groupes, joueurs et matchs.
+     * Exclut l'événement courant et prend le plus récent par end_date.
+     */
     const fetchPreviousEvent = useCallback(async (clubId: string | null, currentEventId: string | null) => {
         if (!clubId) {
             setPreviousEvent(null)

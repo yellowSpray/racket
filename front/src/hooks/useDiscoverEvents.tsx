@@ -4,6 +4,7 @@ import { handleHookError } from "@/lib/handleHookError"
 import { logger } from "@/lib/logger"
 import type { DiscoverableEvent } from "@/types/visitor"
 
+// type brut retourné par Supabase avant transformation
 interface RawDiscoverableEvent {
     id: string
     event_name: string
@@ -22,6 +23,11 @@ export function useDiscoverEvents() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
+    /**
+     * Récupère les événements découvrables (hors club de l'utilisateur).
+     * Charge en parallèle les événements avec infos club et le statut
+     * des demandes visiteur de l'utilisateur, puis fusionne les deux.
+     */
     const fetchDiscoverableEvents = useCallback(async (userClubId: string) => {
         setLoading(true)
         setError(null)
@@ -29,6 +35,7 @@ export function useDiscoverEvents() {
         try {
             const end = logger.start("useDiscoverEvents.fetch")
 
+            // charger les événements des autres clubs + les demandes visiteur en parallèle
             const [eventsResult, requestsResult] = await Promise.all([
                 supabase
                     .from("events")
@@ -51,8 +58,10 @@ export function useDiscoverEvents() {
             const rawEvents = (eventsResult.data as RawDiscoverableEvent[] | null) ?? []
             const requests = (requestsResult.data as { event_id: string; status: string }[] | null) ?? []
 
+            // construire une map event_id → statut de demande pour accès O(1)
             const requestMap = new Map(requests.map((r) => [r.event_id, r.status]))
 
+            // fusionner événements + statut de demande visiteur
             const merged: DiscoverableEvent[] = rawEvents.map((evt) => ({
                 id: evt.id,
                 event_name: evt.event_name,

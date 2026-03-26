@@ -3,16 +3,26 @@ import { supabase } from "@/lib/supabaseClient"
 import type { Match } from "@/types/match"
 import { withTimeout } from "@/lib/handleHookError"
 
+/** Retourne la date du jour au format YYYY-MM-DD. */
 function getToday(): string {
     return new Date().toISOString().slice(0, 10)
 }
 
+/**
+ * Charge les matchs du jour pour un événement, ou ceux de la prochaine
+ * date de jeu si aucun match n'est prévu aujourd'hui.
+ * Se recharge automatiquement quand eventId change.
+ */
 export function useTodayMatches(eventId: string | null) {
     const [matches, setMatches] = useState<Match[]>([])
     const [matchDate, setMatchDate] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
     const [isToday, setIsToday] = useState(false)
 
+    /**
+     * Récupère les matchs du jour. S'il n'y en a pas, cherche la prochaine
+     * date de jeu et charge les matchs correspondants.
+     */
     const fetchTodayMatches = useCallback(async () => {
         if (!eventId) {
             setMatches([])

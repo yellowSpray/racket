@@ -10,16 +10,26 @@ export interface PlayerMovement {
     updatedAt: string
 }
 
+// type brut retourné par Supabase pour les joueurs d'un événement
 interface EventPlayerRow {
     profile_id: string
     registered_at: string
     profiles: { id: string; first_name: string; last_name: string }
 }
 
+/**
+ * Compare les joueurs inscrits entre l'événement courant et le précédent
+ * pour identifier les arrivées (active) et les départs (inactive).
+ * Se recharge automatiquement quand eventId ou clubId change.
+ */
 export function usePlayerMovements(eventId: string | null, clubId: string | null) {
     const [movements, setMovements] = useState<PlayerMovement[]>([])
     const [loading, setLoading] = useState(false)
 
+    /**
+     * Récupère les mouvements de joueurs entre l'événement précédent et l'actuel.
+     * Nouveaux inscrits → active, anciens partis → inactive.
+     */
     const fetchMovements = useCallback(async () => {
         if (!eventId || !clubId) {
             setMovements([])

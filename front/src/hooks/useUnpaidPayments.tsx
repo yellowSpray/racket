@@ -10,6 +10,7 @@ export interface UnpaidPayment {
     eventName: string
 }
 
+// type brut retourné par Supabase avant transformation
 interface UnpaidPaymentRow {
     id: string
     profile_id: string
@@ -17,6 +18,10 @@ interface UnpaidPaymentRow {
     events: { event_name: string }
 }
 
+/**
+ * Charge les paiements impayés d'un club au montage.
+ * Filtre via la jointure events.club_id et transforme en objets lisibles.
+ */
 export function useUnpaidPayments(clubId: string | null) {
     const [payments, setPayments] = useState<UnpaidPayment[]>([])
     const [loading, setLoading] = useState(false)

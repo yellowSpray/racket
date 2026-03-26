@@ -4,6 +4,7 @@ import { useCallback, useState } from "react"
 import { handleHookError } from "@/lib/handleHookError"
 import { logger } from "@/lib/logger"
 
+// barème de points par défaut si aucune règle n'est configurée pour le club
 const DEFAULT_SCORING: Omit<ScoringRules, 'id' | 'club_id' | 'created_at' | 'updated_at'> = {
     score_points: [
         { score: "3-0", winner_points: 5, loser_points: 0 },
@@ -13,6 +14,7 @@ const DEFAULT_SCORING: Omit<ScoringRules, 'id' | 'club_id' | 'created_at' | 'upd
     ],
 }
 
+// règles de promotion/relégation par défaut (1 monté, 1 descendu)
 const DEFAULT_PROMOTION: Omit<PromotionRules, 'id' | 'club_id' | 'created_at' | 'updated_at'> = {
     promoted_count: 1,
     relegated_count: 1,
@@ -26,6 +28,11 @@ export function useClubConfig() {
     const [loading, setLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
 
+    /**
+     * Charge la configuration complète d'un club en parallèle :
+     * infos club, règles de scoring et règles de promotion/relégation.
+     * Si clubId est null, réinitialise tous les états.
+     */
     const fetchClubConfig = useCallback(async (clubId: string | null) => {
         if (!clubId) {
             setClubConfig(null)
@@ -39,6 +46,7 @@ export function useClubConfig() {
         const endLog = logger.start("useClubConfig.fetch")
 
         try {
+            // charger les 3 tables en parallèle
             const [clubRes, scoringRes, promotionRes] = await Promise.all([
                 supabase
                     .from("clubs")
@@ -76,6 +84,10 @@ export function useClubConfig() {
         }
     }, [])
 
+    /**
+     * Met à jour les paramètres par défaut du club (terrains, horaires, taille groupes, etc.).
+     * Applique la mise à jour en local sans re-fetch pour un retour immédiat.
+     */
     const updateClubDefaults = async (clubId: string, data: Partial<Omit<ClubConfig, 'id' | 'club_name'>>) => {
         setError(null)
 
@@ -89,13 +101,19 @@ export function useClubConfig() {
             return false
         }
 
+        // mise à jour optimiste du state local
         setClubConfig(prev => prev ? { ...prev, ...data } : prev)
         return true
     }
 
+    /**
+     * Crée ou met à jour les règles de scoring du club.
+     * Utilise un upsert sur club_id pour garantir l'unicité.
+     */
     const upsertScoringRules = async (clubId: string, data: Omit<ScoringRules, 'id' | 'club_id' | 'created_at' | 'updated_at'>) => {
         setError(null)
 
+        // upsert : crée si absent, met à jour si existant
         const { data: result, error: upsertError } = await supabase
             .from("scoring_rules")
             .upsert(
@@ -114,9 +132,14 @@ export function useClubConfig() {
         return true
     }
 
+    /**
+     * Crée ou met à jour les règles de promotion/relégation du club.
+     * Utilise un upsert sur club_id pour garantir l'unicité.
+     */
     const upsertPromotionRules = async (clubId: string, data: Omit<PromotionRules, 'id' | 'club_id' | 'created_at' | 'updated_at'>) => {
         setError(null)
 
+        // upsert : crée si absent, met à jour si existant
         const { data: result, error: upsertError } = await supabase
             .from("promotion_rules")
             .upsert(

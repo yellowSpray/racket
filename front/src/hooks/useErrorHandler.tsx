@@ -12,6 +12,10 @@ export function useErrorHandler() {
     fieldErrors: {},
   })
 
+  /**
+   * Convertit une erreur quelconque en AppError et extrait les
+   * erreurs par champ si c'est une ValidationError.
+   */
   const handleError = useCallback((error: unknown) => {
     const appError = toAppError(error)
     setState({
@@ -21,10 +25,12 @@ export function useErrorHandler() {
     })
   }, [])
 
+  /** Réinitialise l'état d'erreur (erreur globale + erreurs par champ). */
   const clearError = useCallback(() => {
     setState({ error: null, fieldErrors: {} })
   }, [])
 
+  /** Retourne le premier message d'erreur pour un champ donné, ou undefined. */
   const getFieldError = useCallback(
     (field: string): string | undefined => {
       return state.fieldErrors[field]?.[0]
