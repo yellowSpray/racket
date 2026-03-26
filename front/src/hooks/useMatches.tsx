@@ -495,9 +495,10 @@ export function useMatches() {
 
     /**
      * Cloture un evenement : verifie que tous les matchs sont joues,
-     * applique le Elo batch, puis passe le statut a 'completed'.
+     * puis passe le statut a 'completed'.
+     * L'ELO est applique automatiquement par le trigger trg_auto_elo_on_event_complete.
      */
-    const closeEvent = async (eventId: string): Promise<{ success: boolean; eloUpdated: number }> => {
+    const closeEvent = async (eventId: string): Promise<{ success: boolean }> => {
         setError(null)
 
         try {
@@ -509,12 +510,12 @@ export function useMatches() {
 
             if (groupsError) {
                 handleHookError(groupsError, setError, "useMatches.closeEvent")
-                return { success: false, eloUpdated: 0 }
+                return { success: false }
             }
 
             if (!groups || groups.length === 0) {
                 setError("Aucun groupe pour cet événement")
-                return { success: false, eloUpdated: 0 }
+                return { success: false }
             }
 
             const groupIds = groups.map(g => g.id)
@@ -527,24 +528,21 @@ export function useMatches() {
 
             if (matchesError) {
                 handleHookError(matchesError, setError, "useMatches.closeEvent")
-                return { success: false, eloUpdated: 0 }
+                return { success: false }
             }
 
             if (!allMatches || allMatches.length === 0) {
                 setError("Aucun match dans cet événement")
-                return { success: false, eloUpdated: 0 }
+                return { success: false }
             }
 
             const incomplete = allMatches.filter(m => !m.winner_id)
             if (incomplete.length > 0) {
                 setError(`${incomplete.length} match(s) sans résultat. Complétez tous les matchs avant de clôturer.`)
-                return { success: false, eloUpdated: 0 }
+                return { success: false }
             }
 
-            // 3. Appliquer le Elo batch
-            const eloUpdated = await applyEventElo(eventId)
-
-            // 4. Mettre le statut de l'event a 'completed'
+            // 3. Passer le statut a 'completed' (le trigger applique l'ELO automatiquement)
             const { error: statusError } = await supabase
                 .from("events")
                 .update({ status: "completed" })
@@ -552,13 +550,13 @@ export function useMatches() {
 
             if (statusError) {
                 handleHookError(statusError, setError, "useMatches.closeEvent")
-                return { success: false, eloUpdated: 0 }
+                return { success: false }
             }
 
-            return { success: true, eloUpdated }
+            return { success: true }
         } catch (err) {
             handleHookError(err, setError, "useMatches.closeEvent")
-            return { success: false, eloUpdated: 0 }
+            return { success: false }
         }
     }
 

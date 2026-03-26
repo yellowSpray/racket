@@ -418,54 +418,33 @@ describe('useMatches', () => {
     })
 
     describe('closeEvent', () => {
-        it('should return eloUpdated count and set status to completed', async () => {
-            const completedMatches = [
+        it('should set status to completed when all matches are played', async () => {
+            const allMatches = [
                 { id: 'm1', player1_id: 'p1', player2_id: 'p2', winner_id: 'p1', score: '3-1' },
-            ]
-            const allMatches = completedMatches // all have winner_id
-            const profiles = [
-                { id: 'p1', power_ranking: 1500 },
-                { id: 'p2', power_ranking: 1500 },
             ]
 
             let callCount = 0
-            mockSupabase.from.mockImplementation((table: string) => {
+            mockSupabase.from.mockImplementation(() => {
                 callCount++
                 if (callCount === 1) {
-                    // fetch groups for checking completeness
                     mockSupabase._builder._resolve([{ id: 'g1' }])
                 } else if (callCount === 2) {
-                    // fetch all matches to check completeness
                     mockSupabase._builder._resolve(allMatches)
-                } else if (callCount === 3) {
-                    // applyEventElo: groups
-                    mockSupabase._builder._resolve([{ id: 'g1' }])
-                } else if (callCount === 4) {
-                    // applyEventElo: completed matches
-                    mockSupabase._builder._resolve(completedMatches)
-                } else if (callCount === 5) {
-                    // applyEventElo: profiles
-                    mockSupabase._builder._resolve(profiles)
-                } else if (table === 'events') {
-                    // update event status
-                    mockSupabase._builder._resolve(null)
                 } else {
-                    // profile updates
+                    // update event status
                     mockSupabase._builder._resolve(null)
                 }
                 return mockSupabase._builder
             })
 
             const { result } = renderHook(() => useMatches())
-            let returnVal: { success: boolean; eloUpdated: number } | undefined
+            let returnVal: { success: boolean } | undefined
 
             await act(async () => {
                 returnVal = await result.current.closeEvent('e1')
             })
 
             expect(returnVal?.success).toBe(true)
-            expect(returnVal?.eloUpdated).toBeGreaterThanOrEqual(0)
-            // Verify event status was updated
             expect(mockSupabase.from).toHaveBeenCalledWith('events')
             expect(mockSupabase._builder.update).toHaveBeenCalled()
         })
@@ -488,7 +467,7 @@ describe('useMatches', () => {
             })
 
             const { result } = renderHook(() => useMatches())
-            let returnVal: { success: boolean; eloUpdated: number } | undefined
+            let returnVal: { success: boolean } | undefined
 
             await act(async () => {
                 returnVal = await result.current.closeEvent('e1')
@@ -511,7 +490,7 @@ describe('useMatches', () => {
             })
 
             const { result } = renderHook(() => useMatches())
-            let returnVal: { success: boolean; eloUpdated: number } | undefined
+            let returnVal: { success: boolean } | undefined
 
             await act(async () => {
                 returnVal = await result.current.closeEvent('e1')
@@ -522,12 +501,8 @@ describe('useMatches', () => {
         })
 
         it('should set error when event status update fails', async () => {
-            const completedMatches = [
+            const allMatches = [
                 { id: 'm1', player1_id: 'p1', player2_id: 'p2', winner_id: 'p1', score: '3-0' },
-            ]
-            const profiles = [
-                { id: 'p1', power_ranking: 1500 },
-                { id: 'p2', power_ranking: 1500 },
             ]
 
             let callCount = 0
@@ -536,13 +511,7 @@ describe('useMatches', () => {
                 if (callCount === 1) {
                     mockSupabase._builder._resolve([{ id: 'g1' }])
                 } else if (callCount === 2) {
-                    mockSupabase._builder._resolve(completedMatches)
-                } else if (callCount === 3) {
-                    mockSupabase._builder._resolve([{ id: 'g1' }])
-                } else if (callCount === 4) {
-                    mockSupabase._builder._resolve(completedMatches)
-                } else if (callCount === 5) {
-                    mockSupabase._builder._resolve(profiles)
+                    mockSupabase._builder._resolve(allMatches)
                 } else if (table === 'events') {
                     mockSupabase._builder._reject('Status update failed')
                 } else {
@@ -552,7 +521,7 @@ describe('useMatches', () => {
             })
 
             const { result } = renderHook(() => useMatches())
-            let returnVal: { success: boolean; eloUpdated: number } | undefined
+            let returnVal: { success: boolean } | undefined
 
             await act(async () => {
                 returnVal = await result.current.closeEvent('e1')
