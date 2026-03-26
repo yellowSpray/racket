@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import type { JSX } from "react"
 import { playerSchema } from "@/lib/schemas"
 import { validateFormData } from "@/lib/validation"
+import { useErrorHandler } from "@/hooks/useErrorHandler"
+import { ValidationError } from "@/lib/errors"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -64,7 +66,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
     const open = isControlled ? controlledOpen : internalOpen
     const setOpen = isControlled ? (v: boolean) => onOpenChange?.(v) : setInternalOpen
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
+    const { handleError, clearError, getFieldError } = useErrorHandler()
 
     // etat controlé du formulaire
     const [formData, setFormData] = useState<Partial<PlayerType>>(initialFormData)
@@ -162,7 +164,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
         if (currentStep !== STEPS.length) return
 
         setIsSubmitting(true)
-        setFieldErrors({})
+        clearError()
 
         const validation = validateFormData(playerSchema, {
             ...formData,
@@ -170,7 +172,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
         })
 
         if (!validation.success) {
-            setFieldErrors(validation.fieldErrors)
+            handleError(new ValidationError("Erreurs de validation", validation.fieldErrors))
             // retour au step 1 si erreur sur les champs d'identité
             if (validation.fieldErrors.first_name || validation.fieldErrors.last_name || validation.fieldErrors.phone || validation.fieldErrors.email) {
                 setCurrentStep(1)
@@ -246,7 +248,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
                             value={formData.first_name || ""}
                             onChange={(e) => handleChangeInput("first_name", e.target.value)}
                         />
-                        {fieldErrors.first_name && <p className="text-sm text-red-600">{fieldErrors.first_name[0]}</p>}
+                        {getFieldError('first_name') && <p className="text-sm text-red-600">{getFieldError('first_name')}</p>}
                     </Field>
                     <Field>
                         <FieldLabel htmlFor="lastname">Nom</FieldLabel>
@@ -258,7 +260,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
                             value={formData.last_name || ""}
                             onChange={(e) => handleChangeInput("last_name", e.target.value)}
                         />
-                        {fieldErrors.last_name && <p className="text-sm text-red-600">{fieldErrors.last_name[0]}</p>}
+                        {getFieldError('last_name') && <p className="text-sm text-red-600">{getFieldError('last_name')}</p>}
                     </Field>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -272,7 +274,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
                             value={formData.phone || ""}
                             onChange={(e) => handleChangeInput("phone", e.target.value)}
                         />
-                        {fieldErrors.phone && <p className="text-sm text-red-600">{fieldErrors.phone[0]}</p>}
+                        {getFieldError('phone') && <p className="text-sm text-red-600">{getFieldError('phone')}</p>}
                     </Field>
                     <Field>
                         <FieldLabel htmlFor="email">Email</FieldLabel>
@@ -284,7 +286,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
                             value={formData.email || ""}
                             onChange={(e) => handleChangeInput("email", e.target.value)}
                         />
-                        {fieldErrors.email && <p className="text-sm text-red-600">{fieldErrors.email[0]}</p>}
+                        {getFieldError('email') && <p className="text-sm text-red-600">{getFieldError('email')}</p>}
                     </Field>
                 </div>
             </FieldGroup>

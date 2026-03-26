@@ -5,6 +5,8 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { validateFormData } from "@/lib/validation"
 import { promotionRulesSchema } from "@/lib/schemas/promotion.schema"
+import { useErrorHandler } from "@/hooks/useErrorHandler"
+import { ValidationError } from "@/lib/errors"
 import { Badge } from "@/components/ui/badge"
 import type { PromotionRules } from "@/types/settings"
 import { PencilEdit01Icon, Tick02Icon, Loading03Icon, ArrowUpDownIcon, ChartIncreaseIcon, ChartDecreaseIcon } from "hugeicons-react"
@@ -19,7 +21,7 @@ export function PromotionRulesCard({ promotionRules, defaultPromotion, onSave }:
 
     const [promotedCount, setPromotedCount] = useState(defaultPromotion.promoted_count)
     const [relegatedCount, setRelegatedCount] = useState(defaultPromotion.relegated_count)
-    const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
+    const { handleError, clearError, getFieldError } = useErrorHandler()
     const [editing, setEditing] = useState(false)
     const [saving, setSaving] = useState(false)
     const [saved, setSaved] = useState(false)
@@ -38,11 +40,11 @@ export function PromotionRulesCard({ promotionRules, defaultPromotion, onSave }:
             return
         }
 
-        setFieldErrors({})
+        clearError()
         const data = { promoted_count: promotedCount, relegated_count: relegatedCount }
         const result = validateFormData(promotionRulesSchema, data)
         if (!result.success) {
-            setFieldErrors(result.fieldErrors)
+            handleError(new ValidationError("Erreurs de validation", result.fieldErrors))
             return
         }
 
@@ -109,8 +111,8 @@ export function PromotionRulesCard({ promotionRules, defaultPromotion, onSave }:
                             onChange={(e) => { setPromotedCount(parseInt(e.target.value, 10) || 0); setSaved(false) }}
                             disabled={!editing}
                         />
-                        {fieldErrors.promoted_count && (
-                            <p className="text-sm text-red-600">{fieldErrors.promoted_count[0]}</p>
+                        {getFieldError('promoted_count') && (
+                            <p className="text-sm text-red-600">{getFieldError('promoted_count')}</p>
                         )}
                     </div>
                     <div className="grid gap-2 bg-orange-50 rounded-lg p-3 flex-1">
@@ -127,8 +129,8 @@ export function PromotionRulesCard({ promotionRules, defaultPromotion, onSave }:
                             onChange={(e) => { setRelegatedCount(parseInt(e.target.value, 10) || 0); setSaved(false) }}
                             disabled={!editing}
                         />
-                        {fieldErrors.relegated_count && (
-                            <p className="text-sm text-red-600">{fieldErrors.relegated_count[0]}</p>
+                        {getFieldError('relegated_count') && (
+                            <p className="text-sm text-red-600">{getFieldError('relegated_count')}</p>
                         )}
                     </div>
                 </div>

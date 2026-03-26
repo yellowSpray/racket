@@ -4,6 +4,8 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { validateFormData } from "@/lib/validation"
 import { scoringRulesSchema } from "@/lib/schemas/scoring.schema"
+import { useErrorHandler } from "@/hooks/useErrorHandler"
+import { ValidationError } from "@/lib/errors"
 import type { ScorePointsEntry } from "@/types/settings"
 import { PencilEdit01Icon, Tick02Icon, Loading03Icon, Award01Icon } from "hugeicons-react"
 
@@ -23,7 +25,7 @@ const SCORE_LABELS: Record<string, string> = {
 export function ScoringRulesCard({ scoringRules, defaultScoring, onSave }: ScoringRulesCardProps) {
 
     const [scorePoints, setScorePoints] = useState<ScorePointsEntry[]>(defaultScoring.score_points)
-    const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
+    const { handleError, clearError, getFieldError } = useErrorHandler()
     const [editing, setEditing] = useState(false)
     const [saving, setSaving] = useState(false)
     const [saved, setSaved] = useState(false)
@@ -51,11 +53,11 @@ export function ScoringRulesCard({ scoringRules, defaultScoring, onSave }: Scori
         }
 
         // En mode édition → enregistrer
-        setFieldErrors({})
+        clearError()
         const data = { score_points: scorePoints }
         const result = validateFormData(scoringRulesSchema, data)
         if (!result.success) {
-            setFieldErrors(result.fieldErrors)
+            handleError(new ValidationError("Erreurs de validation", result.fieldErrors))
             return
         }
 
@@ -143,8 +145,8 @@ export function ScoringRulesCard({ scoringRules, defaultScoring, onSave }: Scori
                         ))}
                     </tbody>
                 </table>
-                {fieldErrors.score_points && (
-                    <p className="text-sm text-red-600 mt-2">{fieldErrors.score_points[0]}</p>
+                {getFieldError('score_points') && (
+                    <p className="text-sm text-red-600 mt-2">{getFieldError('score_points')}</p>
                 )}
             </CardContent>
         </Card>
