@@ -93,6 +93,7 @@ describe('playerSchema', () => {
     })
     expect(result.success).toBe(true)
   })
+
 })
 
 // ──────────────────────────────────────────────

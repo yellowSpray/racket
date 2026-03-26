@@ -266,6 +266,18 @@ export function useAdminPlayers() {
             }
         }
 
+        // LOG: afficher les inscriptions event_players
+        const { data: epData } = await supabase
+            .from("event_players")
+            .select("profile_id, event_id, profiles(first_name, last_name), events(event_name)")
+            .order("registered_at", { ascending: false })
+        console.table((epData || []).map((ep: any) => ({
+            joueur: `${ep.profiles?.first_name} ${ep.profiles?.last_name}`,
+            evenement: ep.events?.event_name,
+            event_id: ep.event_id?.slice(0, 8),
+            profile_id: ep.profile_id?.slice(0, 8),
+        })))
+
         await refreshCurrentView()
 
     }
@@ -327,6 +339,18 @@ export function useAdminPlayers() {
                     return
                 }
             }
+
+            // LOG: afficher les inscriptions event_players
+            const { data: epData } = await supabase
+                .from("event_players")
+                .select("profile_id, event_id, profiles(first_name, last_name), events(event_name)")
+                .order("registered_at", { ascending: false })
+            console.table((epData || []).map((ep: any) => ({
+                joueur: `${ep.profiles?.first_name} ${ep.profiles?.last_name}`,
+                evenement: ep.events?.event_name,
+                event_id: ep.event_id?.slice(0, 8),
+                profile_id: ep.profile_id?.slice(0, 8),
+            })))
 
             // rafraîchir la vue actuelle (filtrée ou complète)
             await refreshCurrentView()

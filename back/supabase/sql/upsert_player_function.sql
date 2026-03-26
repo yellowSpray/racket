@@ -192,6 +192,17 @@ BEGIN
   END IF;
 
   -- ===================================
+  -- ETAPE 5: INSCRIPTION A L'EVENEMENT
+  -- ===================================
+
+  -- Inscrire uniquement si le joueur est actif
+  IF p_event_id IS NOT NULL AND 'active' = ANY(p_statuses) THEN
+    INSERT INTO public.event_players (event_id, profile_id)
+    VALUES (p_event_id, v_profile_id)
+    ON CONFLICT (event_id, profile_id) DO NOTHING;
+  END IF;
+
+  -- ===================================
   -- RETOUR DU RESULTAT
   -- ===================================
   
