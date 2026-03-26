@@ -6,6 +6,7 @@ import { useGroups } from "@/hooks/useGroups"
 import { useMatches } from "@/hooks/useMatches"
 import { useClubConfig } from "@/hooks/useClubConfig"
 import { useEffect, useRef, useState } from "react"
+import { toast } from "sonner"
 import { useNavigate } from "react-router"
 import { Settings01Icon, PencilEdit02Icon, HashtagIcon, StarIcon, Download01Icon, SquareLock01Icon } from "hugeicons-react"
 import { Button } from "@/components/ui/button"
@@ -52,6 +53,7 @@ export function AdminDraws () {
         const result = await closeEvent(currentEvent.id)
         setClosing(false)
         if (result.success) {
+            toast.success("Événement clôturé")
             fetchEvents()
         }
     }
