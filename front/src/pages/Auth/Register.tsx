@@ -1,6 +1,8 @@
 import { useState } from "react"
 import { registerSchema } from "@/lib/schemas"
 import { validateFormData } from "@/lib/validation"
+import { useErrorHandler } from "@/hooks/useErrorHandler"
+import { ValidationError } from "@/lib/errors"
 import { Button } from "@/components/ui/button"
 import {
     Card,
@@ -50,8 +52,7 @@ export default function Register({
     const { clubs , loadingClubs } = useClubs()
 
     const [loading, setLoading] = useState(false)
-    const [error, setError] = useState("")
-    const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
+    const { errorMessage, fieldErrors, handleError, clearError, getFieldError } = useErrorHandler()
     const [firstName, setFirstName] = useState("")
     const [lastName, setLastName] = useState("")
     const [phoneNumber, setPhoneNumber] = useState("")
@@ -87,15 +88,14 @@ export default function Register({
     const handleSubmitRegister = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
         e.preventDefault()
         setLoading(true)
-        setError("")
-        setFieldErrors({})
+        clearError()
 
         const validation = validateFormData(registerSchema, {
             firstName, lastName, phoneNumber, selectedClub, email, password, confirmPassword
         })
 
         if (!validation.success) {
-            setFieldErrors(validation.fieldErrors)
+            handleError(new ValidationError("Erreurs de validation", validation.fieldErrors))
             setLoading(false)
             return
         }
@@ -115,13 +115,13 @@ export default function Register({
             });
 
             if(error){
-                setError(error.message)
+                handleError(error)
                 setLoading(false)
                 return
             }
 
-        } catch {
-            setError("Une erreur inattendue est survenue")
+        } catch (err) {
+            handleError(err)
         } finally {
             setLoading(false)
         }
@@ -135,9 +135,9 @@ export default function Register({
                     <CardDescription>
                         Remplissez les informations ci-dessous pour créer votre compte
                     </CardDescription>
-                    { error && (
+                    { errorMessage && (
                         <div className="text-destructive px-4 py-3">
-                            {error}
+                            {errorMessage}
                         </div>
                     )}
                     { stepErrors.length > 0 && (
@@ -181,7 +181,7 @@ export default function Register({
                                                 onChange={(e) => setFirstName(e.target.value)}
                                                 disabled={loading}
                                             />
-                                            {fieldErrors.firstName && <p className="text-sm text-destructive">{fieldErrors.firstName[0]}</p>}
+                                            {getFieldError('firstName') && <p className="text-sm text-destructive">{getFieldError('firstName')}</p>}
                                         </Field>
                                         <Field>
                                             <FieldLabel htmlFor="last_name">Nom</FieldLabel>
@@ -194,7 +194,7 @@ export default function Register({
                                                 onChange={(e) => setLastName(e.target.value)}
                                                 disabled={loading}
                                             />
-                                            {fieldErrors.lastName && <p className="text-sm text-destructive">{fieldErrors.lastName[0]}</p>}
+                                            {getFieldError('lastName') && <p className="text-sm text-destructive">{getFieldError('lastName')}</p>}
                                         </Field>
                                     </div>
                                     <Field>
@@ -208,7 +208,7 @@ export default function Register({
                                             onChange={(e) => setPhoneNumber(e.target.value)}
                                             disabled={loading}
                                         />
-                                        {fieldErrors.phoneNumber && <p className="text-sm text-destructive">{fieldErrors.phoneNumber[0]}</p>}
+                                        {getFieldError('phoneNumber') && <p className="text-sm text-destructive">{getFieldError('phoneNumber')}</p>}
                                     </Field>
                                     <Field>
                                         <FieldLabel htmlFor="club">
@@ -234,7 +234,7 @@ export default function Register({
                                                 )}
                                             </SelectContent>
                                         </Select>
-                                        {fieldErrors.selectedClub && <p className="text-sm text-destructive">{fieldErrors.selectedClub[0]}</p>}
+                                        {getFieldError('selectedClub') && <p className="text-sm text-destructive">{getFieldError('selectedClub')}</p>}
                                     </Field>
                                     <Field>
                                         <Button
@@ -261,7 +261,7 @@ export default function Register({
                                             onChange={(e) => setEmail(e.target.value)}
                                             disabled={loading}
                                         />
-                                        {fieldErrors.email && <p className="text-sm text-destructive">{fieldErrors.email[0]}</p>}
+                                        {getFieldError('email') && <p className="text-sm text-destructive">{getFieldError('email')}</p>}
                                     </Field>
                                     <Field>
                                         <FieldLabel htmlFor="password">Mot de passe</FieldLabel>
@@ -273,7 +273,7 @@ export default function Register({
                                             onChange={(e) => setPassword(e.target.value)}
                                             disabled={loading}
                                         />
-                                        {fieldErrors.password && <p className="text-sm text-destructive">{fieldErrors.password[0]}</p>}
+                                        {getFieldError('password') && <p className="text-sm text-destructive">{getFieldError('password')}</p>}
                                     </Field>
                                     <Field>
                                         <FieldLabel htmlFor="passwordConfirm">Confirmer le mot de passe</FieldLabel>
@@ -285,7 +285,7 @@ export default function Register({
                                             onChange={(e) => setConfirmPassword(e.target.value)}
                                             disabled={loading}
                                         />
-                                        {fieldErrors.confirmPassword && <p className="text-sm text-destructive">{fieldErrors.confirmPassword[0]}</p>}
+                                        {getFieldError('confirmPassword') && <p className="text-sm text-destructive">{getFieldError('confirmPassword')}</p>}
                                     </Field>
                                     <div className="flex gap-2">
                                         <Button

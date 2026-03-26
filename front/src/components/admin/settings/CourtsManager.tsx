@@ -3,6 +3,8 @@ import { useEventCourts } from "@/hooks/useEventCourts"
 import { useEvent } from "@/contexts/EventContext"
 import { validateFormData } from "@/lib/validation"
 import { courtSchema } from "@/lib/schemas/court.schema"
+import { useErrorHandler } from "@/hooks/useErrorHandler"
+import { ValidationError } from "@/lib/errors"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -27,7 +29,7 @@ export function CourtsManager() {
     const [courtName, setCourtName] = useState("")
     const [availableFrom, setAvailableFrom] = useState("19:00")
     const [availableTo, setAvailableTo] = useState("23:00")
-    const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
+    const { handleError, clearError, getFieldError } = useErrorHandler()
     const [saving, setSaving] = useState(false)
 
     useEffect(() => {
@@ -46,12 +48,12 @@ export function CourtsManager() {
 
     const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault()
-        setFieldErrors({})
+        clearError()
 
         const data = { court_name: courtName, available_from: availableFrom, available_to: availableTo }
         const result = validateFormData(courtSchema, data)
         if (!result.success) {
-            setFieldErrors(result.fieldErrors)
+            handleError(new ValidationError("Erreurs de validation", result.fieldErrors))
             return
         }
 
@@ -196,8 +198,8 @@ export function CourtsManager() {
                                     onChange={(e) => setCourtName(e.target.value)}
                                     placeholder={`Terrain ${courts.length + 1}`}
                                 />
-                                {fieldErrors.court_name && (
-                                    <p className="text-sm text-red-600">{fieldErrors.court_name[0]}</p>
+                                {getFieldError('court_name') && (
+                                    <p className="text-sm text-red-600">{getFieldError('court_name')}</p>
                                 )}
                             </div>
                             <div className="grid gap-2">
@@ -208,8 +210,8 @@ export function CourtsManager() {
                                     value={availableFrom}
                                     onChange={(e) => setAvailableFrom(e.target.value)}
                                 />
-                                {fieldErrors.available_from && (
-                                    <p className="text-sm text-red-600">{fieldErrors.available_from[0]}</p>
+                                {getFieldError('available_from') && (
+                                    <p className="text-sm text-red-600">{getFieldError('available_from')}</p>
                                 )}
                             </div>
                             <div className="grid gap-2">
@@ -220,14 +222,14 @@ export function CourtsManager() {
                                     value={availableTo}
                                     onChange={(e) => setAvailableTo(e.target.value)}
                                 />
-                                {fieldErrors.available_to && (
-                                    <p className="text-sm text-red-600">{fieldErrors.available_to[0]}</p>
+                                {getFieldError('available_to') && (
+                                    <p className="text-sm text-red-600">{getFieldError('available_to')}</p>
                                 )}
                             </div>
                         </div>
                         <div className="flex gap-2">
                             <Button type="submit" disabled={saving}>Ajouter</Button>
-                            <Button type="button" variant="outline" onClick={() => { setShowAddForm(false); setFieldErrors({}) }}>
+                            <Button type="button" variant="outline" onClick={() => { setShowAddForm(false); clearError() }}>
                                 Annuler
                             </Button>
                         </div>

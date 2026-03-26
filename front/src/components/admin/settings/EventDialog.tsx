@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { eventSchema } from "@/lib/schemas"
 import { validateFormData } from "@/lib/validation"
+import { useErrorHandler } from "@/hooks/useErrorHandler"
+import { ValidationError } from "@/lib/errors"
 import { intervalToMinutes, minutesToInterval } from "@/lib/utils"
 import {
   Dialog,
@@ -36,8 +38,7 @@ interface EventDialogProps {
 export function EventDialog({ open, onOpenChange, event, onSuccess, clubDefaults}: EventDialogProps) {
     const { profile } = useAuth()
     const [loading, setLoading] = useState<boolean>(false)
-    const [error, setError] = useState<string | null>(null)
-    const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
+    const { errorMessage, handleError, clearError, getFieldError } = useErrorHandler()
 
     // form state
     const [eventName, setEventName] = useState<string>("")
@@ -65,8 +66,7 @@ export function EventDialog({ open, onOpenChange, event, onSuccess, clubDefaults
                 setMatchDuration(clubDefaults?.matchDuration ?? 30)
                 setPlayingDates([])
             }
-            setError(null)
-            setFieldErrors({})
+            clearError()
         }
     }, [open, event])
 
@@ -78,11 +78,10 @@ export function EventDialog({ open, onOpenChange, event, onSuccess, clubDefaults
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
-        setError(null)
-        setFieldErrors({})
+        clearError()
 
         if (playingDates.length === 0) {
-            setError("Sélectionnez au moins une date de jeu")
+            handleError(new Error("Sélectionnez au moins une date de jeu"))
             setLoading(false)
             return
         }
@@ -99,7 +98,7 @@ export function EventDialog({ open, onOpenChange, event, onSuccess, clubDefaults
         })
 
         if (!validation.success) {
-            setFieldErrors(validation.fieldErrors)
+            handleError(new ValidationError("Erreurs de validation", validation.fieldErrors))
             setLoading(false)
             return
         }
@@ -120,7 +119,7 @@ export function EventDialog({ open, onOpenChange, event, onSuccess, clubDefaults
                     .eq("id", event.id)
 
                 if(updateError) {
-                    setError(updateError.message)
+                    handleError(updateError)
                     return
                 }
             } else {
@@ -130,14 +129,14 @@ export function EventDialog({ open, onOpenChange, event, onSuccess, clubDefaults
                     .select()
 
                 if(insertError) {
-                    setError(insertError.message)
+                    handleError(insertError)
                     return
                 }
             }
 
             onSuccess()
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Erreur inconnue")
+            handleError(err)
         } finally {
             setLoading(false)
         }
@@ -172,7 +171,7 @@ export function EventDialog({ open, onOpenChange, event, onSuccess, clubDefaults
                                 value={eventName}
                                 onChange={(e) => setEventName(e.target.value)}
                             />
-                            {fieldErrors.event_name && <p className="text-sm text-red-600">{fieldErrors.event_name[0]}</p>}
+                            {getFieldError('event_name') && <p className="text-sm text-red-600">{getFieldError('event_name')}</p>}
                         </div>
 
                         {/* Calendrier des jours de jeu */}
@@ -224,7 +223,7 @@ export function EventDialog({ open, onOpenChange, event, onSuccess, clubDefaults
                                     value={numberOfCourts}
                                     onChange={(e) => setNumberOfCourts(parseInt(e.target.value))}
                                 />
-                                {fieldErrors.number_of_courts && <p className="text-sm text-red-600">{fieldErrors.number_of_courts[0]}</p>}
+                                {getFieldError('number_of_courts') && <p className="text-sm text-red-600">{getFieldError('number_of_courts')}</p>}
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="match_duration">
@@ -238,14 +237,14 @@ export function EventDialog({ open, onOpenChange, event, onSuccess, clubDefaults
                                     value={matchDuration}
                                     onChange={(e) => setMatchDuration(parseInt(e.target.value) || 30)}
                                 />
-                                {fieldErrors.estimated_match_duration && <p className="text-sm text-red-600">{fieldErrors.estimated_match_duration[0]}</p>}
+                                {getFieldError('estimated_match_duration') && <p className="text-sm text-red-600">{getFieldError('estimated_match_duration')}</p>}
                             </div>
                         </div>
 
                         {/* Erreur */}
-                        {error && (
+                        {errorMessage && (
                             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-                                {error}
+                                {errorMessage}
                             </div>
                         )}
                     </div>

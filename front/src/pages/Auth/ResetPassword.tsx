@@ -17,23 +17,23 @@ import { useNavigate } from "react-router"
 import { supabase } from "@/lib/supabaseClient"
 import { validateFormData } from "@/lib/validation"
 import { resetPasswordSchema } from "@/lib/schemas"
+import { useErrorHandler } from "@/hooks/useErrorHandler"
+import { ValidationError } from "@/lib/errors"
 
 export default function ResetPassword() {
     const navigate = useNavigate()
     const [loading, setLoading] = useState(false)
-    const [error, setError] = useState("")
-    const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
+    const { errorMessage, handleError, clearError, getFieldError } = useErrorHandler()
     const [password, setPassword] = useState("")
     const [confirmPassword, setConfirmPassword] = useState("")
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        setError("")
-        setFieldErrors({})
+        clearError()
 
         const validation = validateFormData(resetPasswordSchema, { password, confirmPassword })
         if (!validation.success) {
-            setFieldErrors(validation.fieldErrors)
+            handleError(new ValidationError("Erreurs de validation", validation.fieldErrors))
             return
         }
 
@@ -42,7 +42,7 @@ export default function ResetPassword() {
         const { error } = await supabase.auth.updateUser({ password })
 
         if (error) {
-            setError(error.message)
+            handleError(error)
             setLoading(false)
             return
         }
@@ -58,9 +58,9 @@ export default function ResetPassword() {
                     <CardDescription>
                         Choisissez votre nouveau mot de passe
                     </CardDescription>
-                    {error && (
+                    {errorMessage && (
                         <div className="text-destructive px-4 py-3">
-                            {error}
+                            {errorMessage}
                         </div>
                     )}
                 </CardHeader>
@@ -78,9 +78,9 @@ export default function ResetPassword() {
                                     disabled={loading}
                                     required
                                 />
-                                {fieldErrors.password && (
+                                {getFieldError('password') && (
                                     <FieldDescription className="text-destructive">
-                                        {fieldErrors.password[0]}
+                                        {getFieldError('password')}
                                     </FieldDescription>
                                 )}
                             </Field>
@@ -95,9 +95,9 @@ export default function ResetPassword() {
                                     disabled={loading}
                                     required
                                 />
-                                {fieldErrors.confirmPassword && (
+                                {getFieldError('confirmPassword') && (
                                     <FieldDescription className="text-destructive">
-                                        {fieldErrors.confirmPassword[0]}
+                                        {getFieldError('confirmPassword')}
                                     </FieldDescription>
                                 )}
                             </Field>
