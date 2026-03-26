@@ -1,4 +1,4 @@
-export type EventStatus = 'active' | 'completed'
+export type EventStatus = 'upcoming' | 'active' | 'completed'
 
 export interface Event {
   id: string

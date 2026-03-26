@@ -27,32 +27,15 @@ export function EventsManager({ clubDefaults }: EventsManagerProps) {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false)
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
     
-    // determiner le status de l'event(en cours, terminer, à venir)
     const getEventStatus = (event: Event) => {
-        if (event.status === "completed") {
-            return { label: "Terminé", variant: "default" as const }
-        }
-
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
-
-        // Vérifier la deadline si elle existe
-        if (event.deadline) {
-            const deadlineDate = new Date(event.deadline)
-            if (deadlineDate < today) {
+        switch (event.status) {
+            case "completed":
                 return { label: "Terminé", variant: "default" as const }
-            }
-        }
-
-        const startDate = new Date(event.start_date)
-        const endDate = new Date(event.end_date)
-
-        if(endDate < today) {
-            return { label: "Terminé", variant: "default" as const }
-        } else if (startDate > today){
-            return { label: "À venir", variant: "inactive" as const}
-        } else {
-            return { label: "En cours", variant: "active" as const}
+            case "upcoming":
+                return { label: "À venir", variant: "inactive" as const }
+            case "active":
+            default:
+                return { label: "En cours", variant: "active" as const }
         }
     }
 
