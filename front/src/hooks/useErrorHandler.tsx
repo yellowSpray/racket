@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { type AppError, toAppError, ValidationError } from '@/lib/errors'
+import { toast } from 'sonner'
 
 interface ErrorState {
   error: AppError | null
@@ -13,8 +14,9 @@ export function useErrorHandler() {
   })
 
   /**
-   * Convertit une erreur quelconque en AppError et extrait les
-   * erreurs par champ si c'est une ValidationError.
+   * Convertit une erreur quelconque en AppError, extrait les erreurs par champ
+   * si c'est une ValidationError, et affiche un toast d'erreur.
+   * Les ValidationError n'affichent pas de toast (les erreurs par champ suffisent).
    */
   const handleError = useCallback((error: unknown) => {
     const appError = toAppError(error)
@@ -23,6 +25,9 @@ export function useErrorHandler() {
       fieldErrors:
         appError instanceof ValidationError ? appError.fieldErrors : {},
     })
+
+    // toast pour toutes les erreurs
+    toast.error(appError.message)
   }, [])
 
   /** Réinitialise l'état d'erreur (erreur globale + erreurs par champ). */
