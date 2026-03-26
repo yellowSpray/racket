@@ -1,48 +1,12 @@
 import { supabase } from "@/lib/supabaseClient"
 import { useCallback, useEffect, useState } from "react"
-import type { PlayerType, PlayerStatus, PaymentStatus, PlayerPayment } from "@/types/player"
+import type {
+    PlayerType, PaymentStatus, PlayerPayment,
+    SupabasePlayer, SupabasePlayerStatus, SupabaseAbsence
+} from "@/types/player"
 import { useAuth } from "@/contexts/AuthContext"
 import { handleHookError, withTimeout } from "@/lib/handleHookError"
 import { logger } from "@/lib/logger"
-
-// Types pour les données Supabase
-type SupabasePlayerStatus = {
-    status: PlayerStatus
-}
-
-type SupabaseSchedule = {
-    arrival: string
-    departure: string
-}
-
-type SupabaseAbsence = {
-    absent_date: string
-}
-
-type SupabaseGroupPlayer = {
-    group_id: string
-    groups: { group_name: string }
-}
-
-type SupabasePayment = {
-    status: PaymentStatus
-    event_id: string
-    events: { event_name: string }
-}
-
-type SupabasePlayer = {
-    id: string
-    first_name: string
-    last_name: string
-    email: string
-    phone: string
-    power_ranking: number
-    player_status?: SupabasePlayerStatus[]
-    schedule?: SupabaseSchedule[]
-    absences?: SupabaseAbsence[]
-    group_players?: SupabaseGroupPlayer[]
-    payments?: SupabasePayment[]
-}
 
 export function useAdminPlayers() {
 
@@ -52,9 +16,15 @@ export function useAdminPlayers() {
     const [error, setError] = useState<string | null>(null)
     const [currentEventId, setCurrentEventId] = useState<string | null>(null)
 
-    // transformation commune
+    /**
+     * Transforme les données brutes Supabase en objets PlayerType exploitables.
+     * Extrait les horaires d'arrivée/départ depuis le schedule, trie les statuts
+     * joueur par priorité (member > visitor > active > inactive), récupère le
+     * paiement courant et l'historique multi-séries, et résout le groupe (box).
+     */
     const transformPlayerData = useCallback((data: SupabasePlayer[]): PlayerType[] => {
         return (data || []).map((player: SupabasePlayer) => {
+            // extraire les horaires d'arrivée et de départ depuis le schedule
             let arrivalTime = ""
             let departureTime = ""
 
@@ -87,10 +57,10 @@ export function useAdminPlayers() {
                     return indexA - indexB
                 })
 
-            // Récupérer le statut de paiement depuis la table payments (contexte événement)
+            // récupérer le statut de paiement de l'événement courant
             const paymentStatus = player.payments?.[0]?.status as PaymentStatus | undefined
 
-            // Mapper tous les paiements (toutes séries)
+            // mapper l'historique des paiements sur toutes les séries
             const payments: PlayerPayment[] = (player.payments || [])
                 .filter(p => p.events?.event_name)
                 .map(p => ({
@@ -99,9 +69,10 @@ export function useAdminPlayers() {
                     status: p.status,
                 }))
 
-            // Récupérer le nom du groupe (box) si disponible
+            // récupérer le nom du groupe (box) si disponible
             const groupName = player.group_players?.[0]?.groups?.group_name || ""
 
+            // assembler l'objet PlayerType final
             return {
                 id: player.id,
                 first_name: player.first_name,
@@ -121,7 +92,11 @@ export function useAdminPlayers() {
         })
     }, [])
 
-    // liste des joueurs
+    /**
+     * Récupère tous les joueurs du club sans filtre d'événement.
+     * Charge les profils avec leurs statuts, horaires, absences et paiements,
+     * puis les transforme en PlayerType via transformPlayerData.
+     */
     const fetchPlayer = useCallback(async () => {
 
         setLoading(true)
@@ -130,7 +105,7 @@ export function useAdminPlayers() {
         const endLog = logger.start("useAdminPlayers.fetchAll")
 
         try {
-
+            // requête avec jointures : statuts, schedule, absences et paiements
             const { data, error: fetchError } = await withTimeout(
                 supabase
                     .from("profiles")
@@ -145,6 +120,7 @@ export function useAdminPlayers() {
                 return
             }
 
+            // transformer les données brutes en objets PlayerType
             const transformedData = transformPlayerData(data as SupabasePlayer[])
             setPlayer(transformedData)
             endLog()
@@ -158,7 +134,11 @@ export function useAdminPlayers() {
 
     }, [transformPlayerData])
 
-    // filtre par event
+    /**
+     * Récupère les joueurs inscrits à un événement spécifique.
+     * Filtre via event_players et résout le groupe (box) de l'événement.
+     * Si eventId est null, retombe sur fetchPlayer (tous les joueurs).
+     */
     const fetchPlayersByEvent = useCallback(async (eventId: string | null) => {
 
         setLoading(true)
@@ -166,7 +146,7 @@ export function useAdminPlayers() {
         setCurrentEventId(eventId)
 
         try {
-            // si pas d'id, charge tout les joueurs
+            // si pas d'id, charger tous les joueurs sans filtre
             if(!eventId){
                 await fetchPlayer()
                 return
@@ -174,6 +154,7 @@ export function useAdminPlayers() {
 
             const endLog = logger.start(`useAdminPlayers.fetchByEvent(${eventId.slice(0, 8)})`)
 
+            // requête filtrée par event_players + jointure groupe de l'événement
             const { data, error: fetchError } = await withTimeout(
                 supabase
                     .from("profiles")
@@ -210,7 +191,10 @@ export function useAdminPlayers() {
 
     }, [transformPlayerData, fetchPlayer])
 
-    // fonction pour rafraîchir la vue actuelle
+    /**
+     * Rafraîchit la liste des joueurs selon le contexte actuel.
+     * Recharge par événement si un eventId est sélectionné, sinon tous les joueurs.
+     */
     const refreshCurrentView = useCallback(async () => {
         if(currentEventId) {
             await fetchPlayersByEvent(currentEventId)
@@ -219,19 +203,24 @@ export function useAdminPlayers() {
         }
     }, [currentEventId, fetchPlayer, fetchPlayersByEvent])
 
-    // creation d'un joueur
+    /**
+     * Crée un nouveau joueur via la fonction RPC upsert_player.
+     * Fusionne les statuts joueur et paiement dans un seul tableau pour le SQL,
+     * puis rafraîchit la vue après insertion.
+     */
     const addPlayer = async (player: Partial<PlayerType>) => {
 
-        // Séparer les statuts joueur du statut de paiement
+        // séparer les statuts joueur du statut de paiement
         const playerStatuses = (player.status || []) as string[]
         const isPaid = player.payment_status === "paid"
 
-        // Construire le tableau p_statuses avec paid/unpaid pour la logique paiement côté SQL
+        // ajouter paid/unpaid au tableau si le joueur est visiteur
         const rpcStatuses = [...playerStatuses]
         if (playerStatuses.includes("visitor")) {
             rpcStatuses.push(isPaid ? "paid" : "unpaid")
         }
 
+        // construire les paramètres pour la fonction RPC
         const rpcParams = {
             p_profile_id: null,
             p_first_name: player.first_name || '',
@@ -249,9 +238,7 @@ export function useAdminPlayers() {
             p_payment_amount: 0
         }
 
-        console.log(`[Payment] ADD player="${player.first_name} ${player.last_name}" event=${currentEventId?.slice(0, 8)} | statuses=${JSON.stringify(rpcStatuses)} | payment=${isPaid ? 'paid' : 'unpaid'}`)
-
-        // Pas de setState avant l'appel RPC pour éviter un re-render qui démonte le dialog
+        // appel RPC (pas de setState avant pour éviter un re-render qui démonte le dialog)
         const { data, error: rpcError } = await supabase.rpc('upsert_player', rpcParams)
 
         if (rpcError) {
@@ -259,6 +246,7 @@ export function useAdminPlayers() {
             return
         }
 
+        // vérifier le retour de la fonction SQL
         if (data && typeof data === 'object' && 'success' in data) {
             if (!data.success) {
                 handleHookError(data.error as string, setError, "useAdminPlayers.add")
@@ -266,51 +254,38 @@ export function useAdminPlayers() {
             }
         }
 
-        // LOG: afficher les inscriptions event_players
-        const { data: epData } = await supabase
-            .from("event_players")
-            .select("profile_id, event_id, profiles(first_name, last_name), events(event_name)")
-            .order("registered_at", { ascending: false })
-        console.table((epData || []).map((ep: any) => ({
-            joueur: `${ep.profiles?.first_name} ${ep.profiles?.last_name}`,
-            evenement: ep.events?.event_name,
-            event_id: ep.event_id?.slice(0, 8),
-            profile_id: ep.profile_id?.slice(0, 8),
-        })))
-
         await refreshCurrentView()
 
     }
 
-    // mise à jour joueur
+    /**
+     * Met à jour un joueur existant via la fonction RPC upsert_player.
+     * Fusionne les nouvelles valeurs avec les données actuelles du joueur,
+     * reconstruit le tableau de statuts et rafraîchit la vue.
+     */
     const updatePlayer = async (id: string, updates: Partial<PlayerType>) => {
 
         setError(null)
 
         try {
-
-            // Récupérer le joueur actuel
+            // récupérer le joueur actuel pour fusionner les champs non modifiés
             const currentPlayer = players.find(p => p.id === id)
             if (!currentPlayer) {
                 setError("Joueur non trouvé")
                 return
             }
 
-            // Séparer les statuts joueur du statut de paiement
+            // séparer les statuts joueur du statut de paiement
             const playerStatuses = (updates.status || currentPlayer.status) as string[]
             const isPaid = (updates.payment_status ?? currentPlayer.payment_status) === "paid"
 
-            // Construire le tableau p_statuses avec paid/unpaid pour la logique paiement côté SQL
+            // ajouter paid/unpaid au tableau si le joueur est visiteur
             const rpcStatuses = [...playerStatuses]
             if (playerStatuses.includes("visitor")) {
                 rpcStatuses.push(isPaid ? "paid" : "unpaid")
             }
 
-            const previousPayment = currentPlayer.payment_status || 'unpaid'
-            const newPayment = isPaid ? 'paid' : 'unpaid'
-            console.log(`[Payment] UPDATE player="${currentPlayer.first_name} ${currentPlayer.last_name}" event=${currentEventId?.slice(0, 8)} | ${previousPayment} → ${newPayment} | statuses=${JSON.stringify(rpcStatuses)}`)
-
-            // Appel de la fonction PostgreSQL upsert_player
+            // appel RPC avec les champs fusionnés (updates + valeurs actuelles)
             const { data, error: rpcError } = await supabase.rpc('upsert_player', {
                 p_profile_id: id,
                 p_first_name: updates.first_name || currentPlayer.first_name,
@@ -333,6 +308,7 @@ export function useAdminPlayers() {
                 return
             }
 
+            // vérifier le retour de la fonction SQL
             if (data && typeof data === 'object' && 'success' in data) {
                 if (!data.success) {
                     handleHookError(data.error as string, setError, "useAdminPlayers.update")
@@ -340,19 +316,6 @@ export function useAdminPlayers() {
                 }
             }
 
-            // LOG: afficher les inscriptions event_players
-            const { data: epData } = await supabase
-                .from("event_players")
-                .select("profile_id, event_id, profiles(first_name, last_name), events(event_name)")
-                .order("registered_at", { ascending: false })
-            console.table((epData || []).map((ep: any) => ({
-                joueur: `${ep.profiles?.first_name} ${ep.profiles?.last_name}`,
-                evenement: ep.events?.event_name,
-                event_id: ep.event_id?.slice(0, 8),
-                profile_id: ep.profile_id?.slice(0, 8),
-            })))
-
-            // rafraîchir la vue actuelle (filtrée ou complète)
             await refreshCurrentView()
 
         } catch (err) {
@@ -360,7 +323,10 @@ export function useAdminPlayers() {
         }
     }
 
-    // retirer un joueur de l'événement courant
+    /**
+     * Retire un joueur de l'événement courant.
+     * Supprime l'entrée dans event_players et rafraîchit la liste.
+     */
     const removePlayerFromEvent = async (playerId: string) => {
         if (!currentEventId) {
             setError("Aucun événement sélectionné")
@@ -371,6 +337,7 @@ export function useAdminPlayers() {
         setError(null)
 
         try {
+            // supprimer l'inscription du joueur à l'événement
             const { error: deleteError } = await supabase
                 .from("event_players")
                 .delete()
@@ -390,13 +357,14 @@ export function useAdminPlayers() {
         }
     }
 
-    // mise à jour du statut de paiement par événement
+    /**
+     * Met à jour le statut de paiement d'un joueur pour un événement donné.
+     * Bascule entre paid/unpaid et enregistre la date de paiement si applicable.
+     */
     const updatePaymentStatus = async (playerId: string, eventId: string, newStatus: PaymentStatus) => {
         setError(null)
 
-        const player = players.find(p => p.id === playerId)
-        console.log(`[Payment] UPDATE player="${player?.first_name} ${player?.last_name}" event=${eventId.slice(0, 8)} | → ${newStatus}`)
-
+        // mettre à jour le paiement avec la date si payé, null sinon
         const { error: updateError } = await supabase
             .from("payments")
             .update({
@@ -415,11 +383,14 @@ export function useAdminPlayers() {
         await refreshCurrentView()
     }
 
-    // mise à jour des absences d'un joueur
+    /**
+     * Remplace les absences d'un joueur par un nouveau jeu de dates.
+     * Supprime toutes les absences existantes puis insère les nouvelles.
+     */
     const updateAbsences = async (playerId: string, dates: string[]) => {
         setError(null)
 
-        // Supprimer toutes les absences existantes
+        // supprimer toutes les absences existantes du joueur
         const { error: deleteError } = await supabase
             .from("absences")
             .delete()
@@ -430,7 +401,7 @@ export function useAdminPlayers() {
             return
         }
 
-        // Insérer les nouvelles absences
+        // insérer les nouvelles dates d'absence
         if (dates.length > 0) {
             const rows = dates.map(date => ({
                 profile_id: playerId,
