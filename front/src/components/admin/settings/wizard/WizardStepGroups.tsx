@@ -13,6 +13,7 @@ import { calculateGroupStandings } from "@/lib/rankingEngine"
 import { calculatePromotions } from "@/lib/promotionEngine"
 import { buildProposedGroups } from "@/lib/buildProposedGroups"
 import { useEffect, useState, useMemo } from "react"
+import { useErrorHandler } from "@/hooks/useErrorHandler"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -43,7 +44,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
 
     const [mode, setMode] = useState<CreationMode>("auto")
     const [numberOfGroups, setNumberOfGroups] = useState(3)
-    const [error, setError] = useState<string | null>(null)
+    const { errorMessage, handleError, clearError } = useErrorHandler()
     const [managementMode, setManagementMode] = useState(false)
     const [creating, setCreating] = useState(false)
     const [selectedDistributionIndex, setSelectedDistributionIndex] = useState(0)
@@ -144,7 +145,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
     const handleApplyFromPrevious = async () => {
         if (!proposedLocalGroups || proposedLocalGroups.length === 0) return
 
-        setError(null)
+        clearError()
         setCreating(true)
 
         try {
@@ -183,7 +184,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                 onGroupsChanged(transformed)
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Erreur lors de l'application")
+            handleError(err)
         } finally {
             setCreating(false)
         }
@@ -191,7 +192,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
 
     const handleCreateEmpty = async () => {
         if (mode !== "manual") return
-        setError(null)
+        clearError()
         setCreating(true)
 
         try {
@@ -208,7 +209,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                 onGroupsChanged(transformed)
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Erreur lors de la création")
+            handleError(err)
         } finally {
             setCreating(false)
         }
@@ -216,16 +217,16 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
 
     const handleGenerateAuto = async () => {
         if (activePlayers.length === 0) {
-            setError("Pas assez de joueurs actifs")
+            handleError(new Error("Pas assez de joueurs actifs"))
             return
         }
 
         if (!selectedDistribution) {
-            setError(optimalDistribution.message || "Distribution impossible")
+            handleError(new Error(optimalDistribution.message || "Distribution impossible"))
             return
         }
 
-        setError(null)
+        clearError()
         setCreating(true)
 
         try {
@@ -275,7 +276,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                 onGroupsChanged(transformed)
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Erreur lors de la génération")
+            handleError(err)
         } finally {
             setCreating(false)
         }
@@ -293,7 +294,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
             if (deleteError) throw new Error(deleteError.message)
             onGroupsChanged([])
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Erreur lors de la suppression")
+            handleError(err)
         } finally {
             setCreating(false)
         }
@@ -476,9 +477,9 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                         </>
                     )}
 
-                    {error && (
+                    {errorMessage && (
                         <Alert variant="destructive">
-                            <AlertDescription>{error}</AlertDescription>
+                            <AlertDescription>{errorMessage}</AlertDescription>
                         </Alert>
                     )}
 
@@ -580,9 +581,9 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                         ))}
                     </div>
 
-                    {error && (
+                    {errorMessage && (
                         <Alert variant="destructive">
-                            <AlertDescription>{error}</AlertDescription>
+                            <AlertDescription>{errorMessage}</AlertDescription>
                         </Alert>
                     )}
                 </div>

@@ -6,6 +6,7 @@ import { totalMatchCount, totalSlotCount, calculateTimeSlots, calculateDates } f
 import { analyzeUnplaced } from "@/lib/schedulerSuggestions"
 import { intervalToMinutes } from "@/lib/utils"
 import { useCallback, useMemo, useState } from "react"
+import { useErrorHandler } from "@/hooks/useErrorHandler"
 import { Button } from "@/components/ui/button"
 import { MatchScheduleGrid } from "@/components/admin/matches/MatchScheduleGrid"
 import { UnplacedMatchesPanel } from "@/components/admin/matches/UnplacedMatchesPanel"
@@ -35,7 +36,7 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
     const [generating, setGenerating] = useState(false)
     const [confirmOpen, setConfirmOpen] = useState(false)
     const [confirmAction, setConfirmAction] = useState<"generate" | "delete">("generate")
-    const [error, setError] = useState<string | null>(null)
+    const { errorMessage, handleError, clearError } = useErrorHandler()
 
     const matchCount = totalMatchCount(groups)
     const durationMin = intervalToMinutes(event.estimated_match_duration)
@@ -93,7 +94,7 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
 
     const doGenerate = async () => {
         setGenerating(true)
-        setError(null)
+        clearError()
         setWarning(null)
         try {
             if (hasMatches) {
@@ -102,7 +103,7 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
             const result = await generateMatches(event, groups)
 
             if (!result) {
-                setError("Impossible de générer les matchs. Vérifiez la configuration des créneaux et terrains.")
+                handleError(new Error("Impossible de générer les matchs. Vérifiez la configuration des créneaux et terrains."))
                 return
             }
 
@@ -117,7 +118,7 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
             const updatedMatches = await fetchMatchesForEvent(event.id)
             onMatchesChanged(updatedMatches)
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Erreur lors de la génération")
+            handleError(err)
         } finally {
             setGenerating(false)
         }
@@ -130,12 +131,12 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
 
     const doDelete = async () => {
         setGenerating(true)
-        setError(null)
+        clearError()
         try {
             await deleteMatchesByEvent(event.id)
             onMatchesChanged([])
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Erreur lors de la suppression")
+            handleError(err)
         } finally {
             setGenerating(false)
         }
@@ -152,9 +153,9 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
 
     return (
         <div className="py-4">
-            {error && (
+            {errorMessage && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-                    {error}
+                    {errorMessage}
                 </div>
             )}
 

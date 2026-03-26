@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
 import { supabase } from '@/lib/supabaseClient'
+import { useErrorHandler } from "@/hooks/useErrorHandler"
 import { useNavigate } from "react-router";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -31,7 +32,7 @@ export default function Login({className, toggle, onForgotPassword, ...props}: L
     const { profile, isAuthenticated, isLoading } = useAuth()
 
     const [loading, setLoading] = useState<boolean>(false)
-    const [error, setError] = useState<string>("")
+    const { errorMessage, handleError, clearError } = useErrorHandler()
     const [email, setEmail] = useState<string>("")
     const [password, setPassword] = useState<string>("")
 
@@ -45,7 +46,7 @@ export default function Login({className, toggle, onForgotPassword, ...props}: L
     const handleSubmit = async (e: React.FormEvent): Promise<void> => {
         e.preventDefault()
         setLoading(true)
-        setError("")
+        clearError()
 
         const { error } = await supabase.auth.signInWithPassword({
             email: email,
@@ -53,7 +54,7 @@ export default function Login({className, toggle, onForgotPassword, ...props}: L
         })
 
         if(error) {
-            setError(error.message)
+            handleError(error)
         }
 
         setLoading(false)
@@ -67,9 +68,9 @@ export default function Login({className, toggle, onForgotPassword, ...props}: L
                     <CardDescription>
                         Entrez vos identifiants pour accéder à votre compte
                     </CardDescription>
-                    { error && (
+                    { errorMessage && (
                         <div className="text-destructive px-4 py-3">
-                            {error}
+                            {errorMessage}
                         </div>
                     )}
 

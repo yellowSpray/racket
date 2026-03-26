@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
+import { useErrorHandler } from "@/hooks/useErrorHandler"
 
 type ForgotPasswordProps = {
     className?: string
@@ -22,21 +23,21 @@ type ForgotPasswordProps = {
 
 export default function ForgotPassword({ className, onBack, ...props }: ForgotPasswordProps) {
     const [loading, setLoading] = useState(false)
-    const [error, setError] = useState("")
+    const { errorMessage, handleError, clearError } = useErrorHandler()
     const [email, setEmail] = useState("")
     const [sent, setSent] = useState(false)
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
-        setError("")
+        clearError()
 
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
             redirectTo: `${window.location.origin}/auth/reset-password`,
         })
 
         if (error) {
-            setError(error.message)
+            handleError(error)
         } else {
             setSent(true)
         }
@@ -52,9 +53,9 @@ export default function ForgotPassword({ className, onBack, ...props }: ForgotPa
                     <CardDescription>
                         Entrez votre adresse email pour recevoir un lien de réinitialisation
                     </CardDescription>
-                    {error && (
+                    {errorMessage && (
                         <div className="text-destructive px-4 py-3">
-                            {error}
+                            {errorMessage}
                         </div>
                     )}
                 </CardHeader>
