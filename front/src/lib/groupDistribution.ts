@@ -1,11 +1,15 @@
 import type { GroupPlayer, Group } from "@/types/draw"
 
+/**
+ * Distribue les joueurs dans N groupes par tranches de ranking.
+ * Les joueurs les mieux classés vont dans le groupe 1, etc.
+ */
 export function distributePlayersByRanking(
-    players: GroupPlayer[], 
+    players: GroupPlayer[],
     numberOfGroups: number
 ): GroupPlayer[][] {
-    
-    // trier les joueurs par power_ranking
+
+    // trier les joueurs par power_ranking décroissant
     const sortedPlayers = [...players].sort((a, b) => {
         const rankA = a.power_ranking || 0
         const rankB = b.power_ranking || 0
@@ -28,7 +32,7 @@ export function distributePlayersByRanking(
     return groups
 } 
 
-// calcule la moyenne du power_ranking d'un groupe
+/** Calcule la moyenne du power_ranking d'un groupe de joueurs. */
 export function calculateGroupAverage(players: GroupPlayer[]): number {
     if (players.length === 0) return 0
 
@@ -39,7 +43,10 @@ export function calculateGroupAverage(players: GroupPlayer[]): number {
     return Math.round(sum / players.length)
 }    
 
-// suggestion de groupe pour nouveau joueur
+/**
+ * Suggère le meilleur groupe pour un joueur selon son ranking.
+ * Compare la moyenne de chaque groupe non plein et retourne le plus proche.
+ */
 export function suggestGroupForPlayer(
   playerRanking: number,
   groups: Group[]

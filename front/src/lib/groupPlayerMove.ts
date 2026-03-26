@@ -1,5 +1,6 @@
 import type { Group } from "@/types/draw"
 
+/** Déplace un joueur d'un groupe à un autre (state local, pas de requête). */
 export function movePlayerBetweenGroups(
     groups: Group[],
     playerId: string,
@@ -23,6 +24,7 @@ export function movePlayerBetweenGroups(
     })
 }
 
+/** Valide que les groupes ne sont pas vides et ne dépassent pas leur capacité max. */
 export function validateGroups(groups: Group[]): { valid: boolean; errors: string[] } {
     const errors: string[] = []
 

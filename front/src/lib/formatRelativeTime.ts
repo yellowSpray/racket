@@ -2,6 +2,7 @@ const MINUTE = 60
 const HOUR = 3600
 const DAY = 86400
 
+/** Formate une date en temps relatif (ex: "il y a 5 min", "hier", "il y a 3j"). */
 export function formatRelativeTime(dateString: string): string {
     const now = Date.now()
     const then = new Date(dateString).getTime()

@@ -1,6 +1,11 @@
 import html2canvas from "html2canvas-pro"
 import { jsPDF } from "jspdf"
 
+/**
+ * Exporte tous les tableaux [data-draw-table] d'un conteneur en PDF paysage A4.
+ * Clone chaque tableau hors du viewport pour une capture propre via html2canvas,
+ * puis les place centrés sur une page chacun.
+ */
 export async function exportTablesToPdf(container: HTMLElement, filename: string): Promise<void> {
     const tables = container.querySelectorAll<HTMLElement>("[data-draw-table]")
     if (tables.length === 0) return

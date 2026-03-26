@@ -1,3 +1,4 @@
+/** Formate une date en label lisible (ex: "lundi 24 mars"). */
 export function formatDateLabel(dateStr: string, isToday: boolean): string {
     const d = new Date(dateStr + "T00:00:00")
     const formatted = d.toLocaleDateString("fr-FR", {

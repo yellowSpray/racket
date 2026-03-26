@@ -1,17 +1,20 @@
 import type { Match } from "@/types/match"
 
+/** Formate une date en format long français (ex: "lundi 24 mars"). */
 export function formatDate(dateStr: string) {
     return new Date(dateStr).toLocaleDateString("fr-FR", {
         weekday: "long", day: "numeric", month: "long"
     })
 }
 
+/** Formate une date en format court français (ex: "lun. 24 mars"). */
 export function formatDateShort(dateStr: string) {
     return new Date(dateStr).toLocaleDateString("fr-FR", {
         weekday: "short", day: "numeric", month: "short"
     })
 }
 
+/** Retourne le nom de l'adversaire pour un match donné. */
 export function getOpponentName(match: Match, myId: string): string {
     if (match.player1_id === myId) {
         return match.player2
@@ -23,6 +26,7 @@ export function getOpponentName(match: Match, myId: string): string {
         : "Adversaire"
 }
 
+/** Retourne le résultat d'un match du point de vue du joueur (Victoire, Défaite, Absent). */
 export function getMatchResult(match: Match, myId: string): { label: string; variant: "active" | "inactive" | "pending" } | null {
     if (!match.winner_id) return null
     if (match.score?.includes("ABS")) {
@@ -34,6 +38,7 @@ export function getMatchResult(match: Match, myId: string): { label: string; var
     return { label: "Défaite", variant: "inactive" }
 }
 
+/** Retourne le score du point de vue du joueur (inverse si player2). */
 export function getMyScore(match: Match, myId: string): string | null {
     if (!match.score) return null
     const parts = match.score.split("-")

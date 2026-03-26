@@ -1,4 +1,7 @@
-
+/**
+ * Calcule la distribution optimale de joueurs en groupes.
+ * Essaie d'abord une répartition stricte (min-max), puis une relâchée si nécessaire.
+ */
 export function calculateOptimalDistribution(totalPlayers: number, maxPlayersPerGroup = 6): {
   numberOfGroups: number
   distribution: number[]
@@ -125,6 +128,7 @@ function buildLabel(distribution: number[]): string {
   return `${numGroups} groupes : ${distribution.join(', ')} joueurs`
 }
 
+/** Retourne toutes les distributions possibles (strictes puis relâchées) pour un nombre de joueurs. */
 export function calculateAllDistributions(
   totalPlayers: number,
   maxPlayersPerGroup = 6
@@ -205,6 +209,7 @@ function findAllDistributions(total: number, min: number, max: number): {
   return results
 }
 
+/** Raccourci : retourne la config recommandée avec une description textuelle. */
 export function suggestGroupConfiguration(totalPlayers: number, maxPlayersPerGroup = 6): {
   config: { numberOfGroups: number; playersPerGroup: number[] }
   description: string
