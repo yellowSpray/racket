@@ -85,17 +85,17 @@ export function VisitorRequestsPanel({ eventId, className }: VisitorRequestsPane
                     </div>
                 </CardTitle>
             </CardHeader>
-            <CardContent>
-                <Carousel setApi={setApi} opts={{ loop: false }}>
-                    <CarouselContent>
-                        <CarouselItem>
-                            <div className="h-full flex flex-col items-center justify-center py-6 text-gray-400">
+            <CardContent className="flex-1 min-h-0">
+                <Carousel setApi={setApi} opts={{ loop: false }} className="h-full">
+                    <CarouselContent className="h-full">
+                        <CarouselItem className="h-full">
+                            <div className="h-full flex flex-col items-center justify-center text-gray-400">
                                 <Clock01Icon size={28} className="mb-3" />
                                 <p className="text-sm text-center">Joueurs inscrits en attente d'un groupe</p>
                                 <p className="text-xs mt-1">À venir</p>
                             </div>
                         </CarouselItem>
-                        <CarouselItem>
+                        <CarouselItem className="h-full">
                             <VisitorRequestsList
                                 requests={requests}
                                 loading={loading}
@@ -120,7 +120,7 @@ function VisitorRequestsList({
 }) {
     if (loading) {
         return (
-            <div className="flex items-center justify-center py-8 text-gray-400">
+            <div className="h-full flex items-center justify-center text-gray-400">
                 <p className="text-sm">Chargement...</p>
             </div>
         )
@@ -128,7 +128,7 @@ function VisitorRequestsList({
 
     if (requests.length === 0) {
         return (
-            <div className="py-12 flex flex-col items-center justify-center text-gray-400">
+            <div className="h-full flex flex-col items-center justify-center text-gray-400">
                 <Clock01Icon size={28} className="mb-3" />
                 <p className="text-sm">Aucune demande en attente</p>
             </div>

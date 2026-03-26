@@ -30,7 +30,7 @@ export function UnpaidPaymentsCard({ clubId, className }: UnpaidPaymentsCardProp
                     )}
                 </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-1 min-h-0">
                 <UnpaidPaymentsFeed payments={payments} loading={loading} />
             </CardContent>
         </Card>
@@ -40,7 +40,7 @@ export function UnpaidPaymentsCard({ clubId, className }: UnpaidPaymentsCardProp
 function UnpaidPaymentsFeed({ payments, loading }: { payments: UnpaidPayment[]; loading: boolean }) {
     if (loading) {
         return (
-            <div className="flex items-center justify-center py-8 text-gray-400">
+            <div className="h-full flex items-center justify-center text-gray-400">
                 <p className="text-sm">Chargement...</p>
             </div>
         )
@@ -48,7 +48,7 @@ function UnpaidPaymentsFeed({ payments, loading }: { payments: UnpaidPayment[]; 
 
     if (payments.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-6 text-gray-400">
+            <div className="h-full flex flex-col items-center justify-center text-gray-400">
                 <CreditCardIcon size={28} className="mb-3" />
                 <p className="text-sm">Tous les paiements sont à jour</p>
             </div>

@@ -65,13 +65,13 @@ export function PlayerMovementsCard({ eventId, clubId, className }: PlayerMoveme
                     </div>
                 </CardTitle>
             </CardHeader>
-            <CardContent>
-                <Carousel setApi={setApi} opts={{ loop: false }}>
-                    <CarouselContent>
-                        <CarouselItem>
+            <CardContent className="flex-1 min-h-0">
+                <Carousel setApi={setApi} opts={{ loop: false }} className="h-full">
+                    <CarouselContent className="h-full">
+                        <CarouselItem className="h-full">
                             <MovementsList movements={activeMovements} loading={playerMovements.loading} />
                         </CarouselItem>
-                        <CarouselItem>
+                        <CarouselItem className="h-full">
                             <MovementsList movements={inactiveMovements} loading={playerMovements.loading} />
                         </CarouselItem>
                     </CarouselContent>
@@ -84,7 +84,7 @@ export function PlayerMovementsCard({ eventId, clubId, className }: PlayerMoveme
 function MovementsList({ movements, loading }: { movements: PlayerMovement[]; loading: boolean }) {
     if (loading) {
         return (
-            <div className="flex items-center justify-center py-8 text-gray-400">
+            <div className="h-full flex items-center justify-center text-gray-400">
                 <p className="text-sm">Chargement...</p>
             </div>
         )
@@ -92,7 +92,7 @@ function MovementsList({ movements, loading }: { movements: PlayerMovement[]; lo
 
     if (movements.length === 0) {
         return (
-            <div className="h-full flex flex-col items-center justify-center py-6 text-gray-400">
+            <div className="h-full flex flex-col items-center justify-center text-gray-400">
                 <UserSwitchIcon size={28} className="mb-3" />
                 <p className="text-sm">Aucun mouvement récent</p>
             </div>

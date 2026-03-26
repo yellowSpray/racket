@@ -85,7 +85,7 @@ function formatTime(matchTime: string): string {
 function MatchesFeed({ matches, matchDate, loading }: { matches: Match[]; matchDate: string | null; loading: boolean }) {
     if (loading) {
         return (
-            <div className="flex items-center justify-center py-8 text-gray-400">
+            <div className="h-full flex items-center justify-center text-gray-400">
                 <p className="text-sm">Chargement...</p>
             </div>
         )
@@ -93,7 +93,7 @@ function MatchesFeed({ matches, matchDate, loading }: { matches: Match[]; matchD
 
     if (!matchDate || matches.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+            <div className="h-full flex flex-col items-center justify-center text-gray-400">
                 <Calendar03Icon size={28} className="mb-3" />
                 <p className="text-sm">Aucun match programmé</p>
             </div>
