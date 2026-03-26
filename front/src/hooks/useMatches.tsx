@@ -58,6 +58,7 @@ export function useMatches() {
 
     const [matches, setMatches] = useState<Match[]>([])
     const [unplacedMatches, setUnplacedMatches] = useState<UnplacedMatch[]>([])
+    const [playerConstraints, setPlayerConstraints] = useState<Map<string, PlayerConstraints>>(new Map())
     const [loading, setLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
 
@@ -231,6 +232,9 @@ export function useMatches() {
                     }
                 }
             }
+
+            // exposer les contraintes pour l'affichage (MatchScheduleGrid)
+            setPlayerConstraints(constraints)
 
             // 2. Construire la map d'absences pour l'optimisation des byes
             const absencesMap = new Map<string, string[]>()
@@ -699,6 +703,7 @@ export function useMatches() {
     return {
         matches,
         unplacedMatches,
+        playerConstraints,
         loading,
         error,
         fetchMatchesByEvent,

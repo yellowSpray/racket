@@ -2,11 +2,10 @@ import type { Event } from "@/types/event"
 import type { Group } from "@/types/draw"
 import type { Match } from "@/types/match"
 import { useMatches } from "@/hooks/useMatches"
-import { usePlayerConstraints } from "@/hooks/usePlayerConstraints"
 import { totalMatchCount, totalSlotCount, calculateTimeSlots, calculateDates } from "@/lib/matchScheduler"
 import { analyzeUnplaced } from "@/lib/schedulerSuggestions"
 import { intervalToMinutes } from "@/lib/utils"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { MatchScheduleGrid } from "@/components/admin/matches/MatchScheduleGrid"
 import { UnplacedMatchesPanel } from "@/components/admin/matches/UnplacedMatchesPanel"
@@ -32,19 +31,11 @@ interface WizardStepMatchesProps {
 }
 
 export function WizardStepMatches({ event, groups, matches, onMatchesChanged, onPrevious, onFinish }: WizardStepMatchesProps) {
-    const { generateMatches, deleteMatchesByEvent, unplacedMatches, updateMatchSchedule } = useMatches()
-    const { constraints: playerConstraints, fetchConstraints } = usePlayerConstraints()
+    const { generateMatches, deleteMatchesByEvent, unplacedMatches, playerConstraints, updateMatchSchedule } = useMatches()
     const [generating, setGenerating] = useState(false)
     const [confirmOpen, setConfirmOpen] = useState(false)
     const [confirmAction, setConfirmAction] = useState<"generate" | "delete">("generate")
     const [error, setError] = useState<string | null>(null)
-
-    // Charger les contraintes joueurs
-    useEffect(() => {
-        if (groups.length > 0) {
-            fetchConstraints(event.id, groups)
-        }
-    }, [event.id, groups, fetchConstraints])
 
     const matchCount = totalMatchCount(groups)
     const durationMin = intervalToMinutes(event.estimated_match_duration)

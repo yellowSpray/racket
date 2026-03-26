@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useEvent } from "@/contexts/EventContext"
-import { useClubs } from "@/hooks/useClub"
 import { useGroups } from "@/hooks/useGroups"
 import { useMatches } from "@/hooks/useMatches"
 import { useClubConfig } from "@/hooks/useClubConfig"
@@ -15,9 +14,8 @@ export function UserDraws() {
     const { currentEvent } = useEvent()
     const { groups, fetchGroupsByEvent, loading: groupsLoading } = useGroups()
     const { matches, fetchMatchesByEvent, loading: matchesLoading } = useMatches()
-    const { scoringRules, fetchClubConfig } = useClubConfig()
-    const { clubs } = useClubs()
-    const clubName = clubs.find(c => c.id === profile?.club_id)?.club_name
+    const { clubConfig, scoringRules, fetchClubConfig } = useClubConfig()
+    const clubName = clubConfig?.club_name
 
     useEffect(() => {
         if (profile?.club_id) fetchClubConfig(profile.club_id)

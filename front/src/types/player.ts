@@ -1,6 +1,45 @@
 export type PlayerStatus = "active" | "inactive" | "member" | "visitor"
 export type PaymentStatus = "paid" | "unpaid"
 
+// Types de mapping Supabase → PlayerType
+export type SupabasePlayerStatus = {
+    status: PlayerStatus
+}
+
+export type SupabaseSchedule = {
+    arrival: string
+    departure: string
+}
+
+export type SupabaseAbsence = {
+    absent_date: string
+}
+
+export type SupabaseGroupPlayer = {
+    group_id: string
+    groups: { group_name: string }
+}
+
+export type SupabasePayment = {
+    status: PaymentStatus
+    event_id: string
+    events: { event_name: string }
+}
+
+export type SupabasePlayer = {
+    id: string
+    first_name: string
+    last_name: string
+    email: string
+    phone: string
+    power_ranking: number
+    player_status?: SupabasePlayerStatus[]
+    schedule?: SupabaseSchedule[]
+    absences?: SupabaseAbsence[]
+    group_players?: SupabaseGroupPlayer[]
+    payments?: SupabasePayment[]
+}
+
 export type PlayerPayment = {
     event_id: string
     event_name: string

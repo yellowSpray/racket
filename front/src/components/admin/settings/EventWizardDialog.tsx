@@ -1,6 +1,6 @@
 import type { Event } from "@/types/event"
 import type { ClubDefaults } from "./EventDialog"
-import type { Group, SupabaseGroup } from "@/types/draw"
+import { transformGroups, type Group, type SupabaseGroup } from "@/types/draw"
 import type { Match } from "@/types/match"
 import { useEffect, useState, useCallback } from "react"
 import { supabase } from "@/lib/supabaseClient"
@@ -229,21 +229,3 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
     )
 }
 
-function transformGroups(data: SupabaseGroup[]): Group[] {
-    return data.map(g => ({
-        id: g.id,
-        event_id: g.event_id,
-        group_name: g.group_name,
-        max_players: g.max_players,
-        created_at: g.created_at,
-        players: (g.group_players || [])
-            .filter(gp => gp.profiles)
-            .map(gp => ({
-                id: gp.profiles.id,
-                first_name: gp.profiles.first_name,
-                last_name: gp.profiles.last_name,
-                phone: gp.profiles.phone,
-                power_ranking: gp.profiles.power_ranking ?? 0,
-            })),
-    }))
-}
