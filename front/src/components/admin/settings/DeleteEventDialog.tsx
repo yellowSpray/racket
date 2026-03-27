@@ -70,7 +70,6 @@ export function DeleteEventDialog({open,onOpenChange,event,onSuccess}: DeleteEve
                     <AlertDialogAction
                         onClick={handleDelete}
                         disabled={loading}
-                        className="bg-red-600 hover:bg-red-700"
                     >
                         {loading ? "Suppression..." : "Supprimer"}
                     </AlertDialogAction>

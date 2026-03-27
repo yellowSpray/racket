@@ -96,7 +96,7 @@ export function EventsManager({ clubDefaults }: EventsManagerProps) {
                         <p className="text-muted-foreground mt-2">
                             Commencez par créer votre premier événement
                         </p>
-                        <Button onClick={handleCreate} className="mt-4">
+                        <Button onClick={handleCreate} size="lg" className="mt-4">
                             <PlusSignIcon className="mr-2 h-4 w-4" />
                             Créer un événement
                         </Button>

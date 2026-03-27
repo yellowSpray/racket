@@ -248,12 +248,13 @@ export function EventDialog({ open, onOpenChange, event, onSuccess, clubDefaults
                         <Button
                             type="button"
                             variant="outline"
+                            size="lg"
                             onClick={() => onOpenChange(false)}
                             disabled={loading}
                         >
                             Annuler
                         </Button>
-                        <Button type="submit" disabled={loading}>
+                        <Button type="submit" disabled={loading} size="lg">
                             {loading ? "Enregistrement..." : event ? "Modifier" : "Créer"}
                         </Button>
                     </DialogFooter>

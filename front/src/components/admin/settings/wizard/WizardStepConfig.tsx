@@ -262,7 +262,7 @@ export function WizardStepConfig({ event, onSave, clubDefaults }: WizardStepConf
             </div>
 
             <div className="flex justify-end pt-4">
-                <Button type="submit" disabled={loading}>
+                <Button type="submit" disabled={loading} size="lg">
                     {loading ? "Enregistrement..." : "Suivant"}
                 </Button>
             </div>

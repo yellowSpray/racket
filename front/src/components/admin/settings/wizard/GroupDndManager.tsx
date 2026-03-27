@@ -165,7 +165,7 @@ export function GroupDndManager({ initialGroups, onFinish, onCancel }: GroupDndM
                         Annuler
                     </Button>
                     <Button size="sm" onClick={handleFinish} disabled={!validation.valid || saving}>
-                        <Tick02Icon className="mr-2 h-4 w-4" />
+                        <Tick02Icon className="h-4 w-4" />
                         {saving ? "Sauvegarde..." : "Terminer"}
                     </Button>
                 </div>

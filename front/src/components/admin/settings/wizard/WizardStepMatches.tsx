@@ -183,7 +183,7 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
                         {matchCount} matchs à programmer sur {slotTotal} créneaux disponibles
                         ({dates.length} jour{dates.length > 1 ? "s" : ""} × {timeSlots.length} créneaux × {event.number_of_courts} terrain{event.number_of_courts > 1 ? "s" : ""})
                     </p>
-                    <Button className="mt-4" onClick={handleGenerate} disabled={generating}>
+                    <Button className="mt-4" size="lg" onClick={handleGenerate} disabled={generating}>
                         <SparklesIcon className="mr-2 h-4 w-4" />
                         {generating ? "Génération..." : "Générer les matchs"}
                     </Button>
@@ -196,11 +196,11 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
                         </p>
                         <div className="flex gap-2">
                             <Button variant="outline" size="sm" onClick={handleDelete} disabled={generating}>
-                                <Delete02Icon className="mr-2 h-4 w-4" />
+                                <Delete02Icon className="h-4 w-4" />
                                 Supprimer
                             </Button>
                             <Button size="sm" onClick={handleGenerate} disabled={generating}>
-                                <SparklesIcon className="mr-2 h-4 w-4" />
+                                <SparklesIcon className="h-4 w-4" />
                                 {generating ? "Génération..." : "Régénérer"}
                             </Button>
                         </div>
@@ -217,10 +217,10 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
 
             {/* Navigation */}
             <div className="flex justify-between pt-6">
-                <Button type="button" variant="outline" onClick={onPrevious}>
+                <Button type="button" size="lg" variant="outline" onClick={onPrevious}>
                     Précédent
                 </Button>
-                <Button type="button" onClick={onFinish}>
+                <Button type="button" size="lg" onClick={onFinish}>
                     Terminer
                 </Button>
             </div>
