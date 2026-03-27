@@ -31,6 +31,16 @@ export interface EventCourt {
   created_at?: string
 }
 
+export interface ClubCourt {
+  id: string
+  club_id: string
+  court_name: string
+  available_from: string
+  available_to: string
+  sort_order: number
+  created_at?: string
+}
+
 export interface ClubConfig {
   id: string
   club_name: string
