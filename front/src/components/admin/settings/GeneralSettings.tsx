@@ -1,55 +1,18 @@
-import { useEffect, useState } from "react"
-import { useAuth } from "@/contexts/AuthContext"
+import { useState } from "react"
 import { useEvent } from "@/contexts/EventContext"
-import { useClubConfig } from "@/hooks/useClubConfig"
 import { useInviteLink } from "@/hooks/useInviteLink"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Switch } from "@/components/ui/switch"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Link04Icon, Tick02Icon, Globe02Icon, RepeatIcon } from "hugeicons-react"
+import { Link04Icon, Tick02Icon } from "hugeicons-react"
 
 export function GeneralSettings() {
-    const { profile } = useAuth()
     const { currentEvent } = useEvent()
-    const { clubConfig, fetchClubConfig, updateClubDefaults } = useClubConfig()
     const { getInviteUrl } = useInviteLink()
-    const [saving, setSaving] = useState(false)
     const [copied, setCopied] = useState(false)
 
-    const clubId = profile?.club_id ?? null
-
-    useEffect(() => {
-        fetchClubConfig(clubId)
-    }, [clubId, fetchClubConfig])
-
-    const isOpen = clubConfig?.open_to_visitors ?? false
-    const isAutoRenew = clubConfig?.auto_renew_players ?? false
     const inviteUrl = currentEvent?.invite_token ? getInviteUrl(currentEvent.invite_token) : ""
-
-    const handleToggleVisitors = async (checked: boolean) => {
-        if (!clubId) return
-
-        setSaving(true)
-        await updateClubDefaults(clubId, { open_to_visitors: checked })
-        setSaving(false)
-        fetchClubConfig(clubId)
-    }
-
-    const handleToggleAutoRenew = async (checked: boolean) => {
-        console.log("[AutoRenew] toggle clicked", { checked, clubId, currentValue: clubConfig?.auto_renew_players })
-        if (!clubId) {
-            console.log("[AutoRenew] no clubId, aborting")
-            return
-        }
-
-        setSaving(true)
-        const result = await updateClubDefaults(clubId, { auto_renew_players: checked })
-        console.log("[AutoRenew] updateClubDefaults result:", result)
-        setSaving(false)
-        fetchClubConfig(clubId)
-    }
 
     const handleCopy = async () => {
         await navigator.clipboard.writeText(inviteUrl)
@@ -60,31 +23,18 @@ export function GeneralSettings() {
     return (
         <div className="flex flex-col gap-6 h-full overflow-y-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Card : Accès visiteurs */}
                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
+                    <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <Globe02Icon size={16} className="text-foreground" />
-                            Accès visiteurs
+                            <Link04Icon size={16} className="text-foreground" />
+                            Lien d'invitation
                         </CardTitle>
-                        <Switch
-                            id="open-to-visitors"
-                            checked={isOpen}
-                            onCheckedChange={handleToggleVisitors}
-                            disabled={saving}
-                            aria-label="Ouvert aux visiteurs"
-                        />
                     </CardHeader>
                     <CardContent className="flex flex-col gap-4 pt-4">
-                        <p className="text-xs text-gray-500">
-                            Permet aux joueurs d'autres clubs de découvrir les événements de votre club et demander à y participer. Si désactivé, aucun événement ne sera visible par les visiteurs.
-                        </p>
-
-                        {isOpen && inviteUrl && (
+                        {inviteUrl ? (
                             <div className="flex flex-col gap-2">
                                 <Label className="flex items-center gap-1.5 text-sm">
-                                    <Link04Icon size={14} />
-                                    Lien d'invitation ({currentEvent?.event_name})
+                                    {currentEvent?.event_name}
                                 </Label>
                                 <div className="flex items-center gap-2">
                                     <Input
@@ -109,29 +59,11 @@ export function GeneralSettings() {
                                     Partagez ce lien pour inviter des joueurs d'autres clubs.
                                 </p>
                             </div>
+                        ) : (
+                            <p className="text-xs text-muted-foreground">
+                                Sélectionnez un événement pour afficher le lien d'invitation.
+                            </p>
                         )}
-                    </CardContent>
-                </Card>
-
-                {/* Card : Renouvellement automatique */}
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle className="flex items-center gap-2">
-                            <RepeatIcon size={16} className="text-foreground" />
-                            Renouvellement des joueurs
-                        </CardTitle>
-                        <Switch
-                            id="auto-renew-players"
-                            checked={isAutoRenew}
-                            onCheckedChange={handleToggleAutoRenew}
-                            disabled={saving}
-                            aria-label="Renouvellement automatique"
-                        />
-                    </CardHeader>
-                    <CardContent className="flex flex-col gap-4 pt-4">
-                        <p className="text-xs text-gray-500">
-                            Les joueurs inscrits à un événement seront automatiquement inscrits au prochain événement créé. Si désactivé, vous devrez ajouter les joueurs manuellement.
-                        </p>
                     </CardContent>
                 </Card>
             </div>
