@@ -100,7 +100,7 @@ function MovementsList({ movements, loading }: { movements: PlayerMovement[]; lo
     }
 
     return (
-        <ScrollArea className="h-full max-h-48" type="auto">
+        <ScrollArea className="h-full" type="auto">
             <div>
                 <Table>
                     <TableBody>

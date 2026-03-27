@@ -56,7 +56,7 @@ function UnpaidPaymentsFeed({ grouped, loading }: { grouped: GroupedUnpaidPaymen
     }
 
     return (
-        <ScrollArea className="h-full max-h-48" type="auto">
+        <ScrollArea className="h-full" type="auto">
             <Table>
                 <TableBody>
                     {grouped.map((p) => (
@@ -65,8 +65,13 @@ function UnpaidPaymentsFeed({ grouped, loading }: { grouped: GroupedUnpaidPaymen
                                 {p.firstName} {p.lastName}
                             </TableCell>
                             <TableCell className="text-right py-1.5">
-                                <div className="flex flex-wrap justify-end gap-1">
-                                    {p.events.map((eventName) => (
+                                <div className="flex flex-wrap items-center justify-end gap-1">
+                                    {p.events.length > 2 && (
+                                        <Badge className="text-[10px] px-1.5 py-0">
+                                            +{p.events.length - 2}
+                                        </Badge>
+                                    )}
+                                    {p.events.slice(-2).map((eventName) => (
                                         <Badge
                                             key={eventName}
                                             variant="unpaid"
