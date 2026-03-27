@@ -1,5 +1,5 @@
 import type { Event } from "@/types/event"
-import { transformGroups, type Group, type GroupPlayer, type SupabaseGroup } from "@/types/draw"
+import { transformGroups, type Group, type GroupPlayer } from "@/types/draw"
 import type { GroupStandings, PromotionResult } from "@/types/ranking"
 import { useGroups } from "@/hooks/useGroups"
 import { usePlayers } from "@/contexts/PlayersContext"
@@ -23,7 +23,7 @@ import { PreviousBoxPreview } from "./PreviousBoxPreview"
 import { ProposedGroups } from "./ProposedGroups"
 import { Badge } from "@/components/ui/badge"
 import { validateGroups } from "@/lib/groupPlayerMove"
-import { InformationCircleIcon, SparklesIcon, Settings01Icon, ArrowLeftRightIcon, Delete02Icon, UserGroupIcon, Award01Icon } from "hugeicons-react"
+import { InformationCircleIcon, SparklesIcon, Settings01Icon, ArrowLeftRightIcon, Delete02Icon, UserGroupIcon, Award01Icon, Tick02Icon } from "hugeicons-react"
 
 interface WizardStepGroupsProps {
     event: Event
@@ -58,12 +58,12 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
         }
     }, [profile?.club_id, fetchClubConfig])
 
-    // Fetch previous event when switching to "previous" mode
+    // Fetch previous event au mount pour savoir s'il existe
     useEffect(() => {
-        if (mode === "previous" && profile?.club_id && !previousEvent && !prevLoading) {
+        if (profile?.club_id && !previousEvent && !prevLoading) {
             fetchPreviousEvent(profile.club_id, event.id)
         }
-    }, [mode, profile?.club_id, event.id, previousEvent, prevLoading, fetchPreviousEvent])
+    }, [profile?.club_id, event.id, previousEvent, prevLoading, fetchPreviousEvent])
 
     // Calculate standings and promotions from previous event data
     const effectiveScoringRules = useMemo(
@@ -307,34 +307,71 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
             {!hasGroups ? (
                 /* Mode creation de groupes */
                 <div className="grid gap-4">
-                    <div className="flex items-center gap-2">
-                        <Button
-                            type="button"
-                            variant={mode === "auto" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => { setMode("auto"); setProposedLocalGroups(null) }}
-                        >
-                            <SparklesIcon className="mr-2 h-4 w-4" />
-                            Auto
-                        </Button>
-                        <Button
-                            type="button"
-                            variant={mode === "manual" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => { setMode("manual"); setProposedLocalGroups(null) }}
-                        >
-                            <Settings01Icon className="mr-2 h-4 w-4" />
-                            Manuel
-                        </Button>
-                        <Button
-                            type="button"
-                            variant={mode === "previous" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setMode("previous")}
-                        >
-                            <Award01Icon className="mr-2 h-4 w-4" />
-                            Box precedent
-                        </Button>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Button
+                                type="button"
+                                variant={mode === "auto" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => { setMode("auto"); setProposedLocalGroups(null) }}
+                            >
+                                <SparklesIcon className="h-4 w-4" />
+                                Auto
+                            </Button>
+                            <Button
+                                type="button"
+                                variant={mode === "manual" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => { setMode("manual"); setProposedLocalGroups(null) }}
+                            >
+                                <Settings01Icon className="h-4 w-4" />
+                                Manuel
+                            </Button>
+                            {previousEvent && (
+                                <Button
+                                    type="button"
+                                    variant={mode === "previous" ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => setMode("previous")}
+                                >
+                                    <Award01Icon className="h-4 w-4" />
+                                    Box precedent
+                                </Button>
+                            )}
+                        </div>
+                        {mode === "manual" && (
+                            <Button 
+                                type="button" 
+                                size="sm" 
+                                onClick={handleCreateEmpty} 
+                                disabled={isLoading}
+                            >
+                                <Tick02Icon className="h-5 w-5" />
+                                Valider
+                            </Button>
+                        )}
+                        {mode === "auto" && (
+                            <Button
+                                type="button"
+                                size="sm"
+                                onClick={handleGenerateAuto}
+                                disabled={isLoading || !selectedDistribution || totalPlayers === 0}
+                            >
+                                <Tick02Icon className="h-5 w-5" />
+                                Valider
+                            </Button>
+                        )}
+                        {mode === "previous" && proposedLocalGroups && proposedLocalGroups.length > 0 && (
+                            <Button
+                                type="button"
+                                size="sm"
+                                onClick={handleApplyFromPrevious}
+                                disabled={isLoading}
+                            >
+                                <Tick02Icon className="h-5 w-5" />
+                                Valider
+                            </Button>
+                        )}
                     </div>
 
                     {mode === "auto" && (
@@ -403,19 +440,9 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                         </Alert>
                     )}
 
-                    {mode === "previous" && (
+                    {mode === "previous" && previousEvent && (
                         <div className="space-y-4">
-                            {prevLoading ? (
-                                <Alert>
-                                    <InformationCircleIcon className="h-4 w-4" />
-                                    <AlertDescription>Chargement du box precedent...</AlertDescription>
-                                </Alert>
-                            ) : !previousEvent ? (
-                                <Alert variant="destructive">
-                                    <InformationCircleIcon className="h-4 w-4" />
-                                    <AlertDescription>Aucun box precedent trouve pour ce club.</AlertDescription>
-                                </Alert>
-                            ) : previousStandings.length === 0 ? (
+                            {previousStandings.length === 0 ? (
                                 <Alert>
                                     <InformationCircleIcon className="h-4 w-4" />
                                     <AlertDescription>
@@ -478,33 +505,6 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                     )}
 
 
-                    <div className="flex gap-2">
-                        {mode === "manual" && (
-                            <Button type="button" onClick={handleCreateEmpty} disabled={isLoading}>
-                                Créer vides
-                            </Button>
-                        )}
-                        {mode === "auto" && (
-                            <Button
-                                type="button"
-                                onClick={handleGenerateAuto}
-                                disabled={isLoading || !selectedDistribution || totalPlayers === 0}
-                            >
-                                <SparklesIcon className="mr-2 h-4 w-4" />
-                                Générer automatiquement
-                            </Button>
-                        )}
-                        {mode === "previous" && proposedLocalGroups && proposedLocalGroups.length > 0 && (
-                            <Button
-                                type="button"
-                                onClick={handleApplyFromPrevious}
-                                disabled={isLoading}
-                            >
-                                <Award01Icon className="mr-2 h-4 w-4" />
-                                Appliquer les groupes
-                            </Button>
-                        )}
-                    </div>
                 </div>
             ) : managementMode ? (
                 /* Mode gestion drag-and-drop */
@@ -527,19 +527,19 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                         <div className="flex gap-2">
                             <Button
                                 variant="outline"
-                                size="sm"
+                                size="lg"
                                 onClick={() => setManagementMode(true)}
                             >
-                                <ArrowLeftRightIcon className="mr-2 h-4 w-4" />
+                                <ArrowLeftRightIcon className="h-4 w-4" />
                                 Gérer les groupes
                             </Button>
                             <Button
                                 variant="outline"
-                                size="sm"
+                                size="lg"
                                 onClick={handleDeleteGroups}
                                 disabled={isLoading}
                             >
-                                <Delete02Icon className="mr-2 h-4 w-4" />
+                                <Delete02Icon className="h-4 w-4" />
                                 Supprimer
                             </Button>
                         </div>
@@ -582,11 +582,12 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
             {/* Navigation (caché en mode management) */}
             {!managementMode && (
                 <div className="flex justify-between pt-6">
-                    <Button type="button" variant="outline" onClick={onPrevious}>
+                    <Button type="button" size="lg" variant="outline" onClick={onPrevious}>
                         Précédent
                     </Button>
                     <Button
                         type="button"
+                        size="lg"
                         onClick={onNext}
                         disabled={!hasGroups || !hasPlayers || !validateGroups(groups).valid}
                     >

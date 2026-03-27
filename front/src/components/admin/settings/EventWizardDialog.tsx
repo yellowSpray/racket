@@ -1,6 +1,6 @@
 import type { Event } from "@/types/event"
 import type { ClubDefaults } from "./EventDialog"
-import { transformGroups, type Group, type SupabaseGroup } from "@/types/draw"
+import { transformGroups, type Group } from "@/types/draw"
 import type { Match } from "@/types/match"
 import { useEffect, useState, useCallback } from "react"
 import { supabase } from "@/lib/supabaseClient"
