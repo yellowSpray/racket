@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react"
 import { EventsManager } from "@/components/admin/settings/EventsManager"
 import { ClubConfigManager } from "@/components/admin/settings/ClubConfigManager"
 import { UsersManager } from "@/components/admin/settings/UsersManager"
-import { GeneralSettings } from "@/components/admin/settings/GeneralSettings"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -67,7 +66,6 @@ export function AdminSettings () {
                             </Button>
                         )}
                         <TabsList className="h-10 rounded-full">
-                            <TabsTrigger value="general">Général</TabsTrigger>
                             <TabsTrigger value="events">Événements</TabsTrigger>
                             <TabsTrigger value="clubs">Mon club</TabsTrigger>
                             <TabsTrigger value="users">Utilisateurs</TabsTrigger>
@@ -92,9 +90,6 @@ export function AdminSettings () {
                         />
                     </TabsContent>
 
-                    <TabsContent value="general" className="h-full">
-                        <GeneralSettings />
-                    </TabsContent>
                 </div>
             </Tabs>
         </div>

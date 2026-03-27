@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { cn } from "@/lib/utils"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -13,6 +14,7 @@ interface ScoringRulesCardProps {
     scoringRules: { score_points: ScorePointsEntry[] } | null
     defaultScoring: { score_points: ScorePointsEntry[] }
     onSave: (data: { score_points: ScorePointsEntry[] }) => Promise<boolean>
+    className?: string
 }
 
 const SCORE_LABELS: Record<string, string> = {
@@ -22,7 +24,7 @@ const SCORE_LABELS: Record<string, string> = {
     "ABS": "ABS",
 }
 
-export function ScoringRulesCard({ scoringRules, defaultScoring, onSave }: ScoringRulesCardProps) {
+export function ScoringRulesCard({ scoringRules, defaultScoring, onSave, className }: ScoringRulesCardProps) {
 
     const [scorePoints, setScorePoints] = useState<ScorePointsEntry[]>(defaultScoring.score_points)
     const { handleError, clearError, getFieldError } = useErrorHandler()
@@ -73,7 +75,7 @@ export function ScoringRulesCard({ scoringRules, defaultScoring, onSave }: Scori
     }
 
     return (
-        <Card>
+        <Card className={cn(className)}>
             <CardHeader>
                 <div className="flex flex-col items-start gap-3">
                     <CardTitle className="flex flex-row items-center gap-2">

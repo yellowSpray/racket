@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { cn } from "@/lib/utils"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,9 +16,10 @@ interface PromotionRulesCardProps {
     promotionRules: PromotionRules | null
     defaultPromotion: Omit<PromotionRules, 'id' | 'club_id' | 'created_at' | 'updated_at'>
     onSave: (data: Omit<PromotionRules, 'id' | 'club_id' | 'created_at' | 'updated_at'>) => Promise<boolean>
+    className?: string
 }
 
-export function PromotionRulesCard({ promotionRules, defaultPromotion, onSave }: PromotionRulesCardProps) {
+export function PromotionRulesCard({ promotionRules, defaultPromotion, onSave, className }: PromotionRulesCardProps) {
 
     const [promotedCount, setPromotedCount] = useState(defaultPromotion.promoted_count)
     const [relegatedCount, setRelegatedCount] = useState(defaultPromotion.relegated_count)
@@ -60,7 +62,7 @@ export function PromotionRulesCard({ promotionRules, defaultPromotion, onSave }:
     }
 
     return (
-        <Card>
+        <Card className={cn(className)}>
             <CardHeader>
                 <div className="flex flex-col items-start gap-3">
                     <CardTitle className="flex flex-row items-center gap-2">
