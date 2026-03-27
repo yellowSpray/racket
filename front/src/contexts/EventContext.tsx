@@ -23,6 +23,9 @@ export function EventProvider({children}: {children: ReactNode}) {
         const endLog = logger.start("EventContext.fetchEvents")
 
         try {
+            // Mettre a jour les statuts avant de charger
+            await supabase.rpc("update_event_statuses")
+
             const {data, error: fetchError} = await withTimeout(
                 supabase
                     .from("events")
