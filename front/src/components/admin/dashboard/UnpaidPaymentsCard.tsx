@@ -4,7 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 import { CreditCardIcon } from "hugeicons-react"
 import { useUnpaidPayments } from "@/hooks/useUnpaidPayments"
-import type { UnpaidPayment } from "@/hooks/useUnpaidPayments"
+import type { GroupedUnpaidPayment } from "@/hooks/useUnpaidPayments"
 
 interface UnpaidPaymentsCardProps {
     clubId: string | null
@@ -12,7 +12,7 @@ interface UnpaidPaymentsCardProps {
 }
 
 export function UnpaidPaymentsCard({ clubId, className }: UnpaidPaymentsCardProps) {
-    const { payments, loading } = useUnpaidPayments(clubId)
+    const { grouped, loading } = useUnpaidPayments(clubId)
 
     return (
         <Card className={className}>
@@ -20,24 +20,24 @@ export function UnpaidPaymentsCard({ clubId, className }: UnpaidPaymentsCardProp
                 <CardTitle className="flex items-center gap-2 text-sm">
                     <CreditCardIcon size={16} className="text-foreground" />
                     Paiements
-                    {payments.length > 0 && (
+                    {grouped.length > 0 && (
                         <Badge
                             variant="unpaid"
                             className="ml-auto text-xs px-2 py-0.5"
                         >
-                            {payments.length}
+                            {grouped.length}
                         </Badge>
                     )}
                 </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 min-h-0">
-                <UnpaidPaymentsFeed payments={payments} loading={loading} />
+                <UnpaidPaymentsFeed grouped={grouped} loading={loading} />
             </CardContent>
         </Card>
     )
 }
 
-function UnpaidPaymentsFeed({ payments, loading }: { payments: UnpaidPayment[]; loading: boolean }) {
+function UnpaidPaymentsFeed({ grouped, loading }: { grouped: GroupedUnpaidPayment[]; loading: boolean }) {
     if (loading) {
         return (
             <div className="h-full flex items-center justify-center text-gray-400">
@@ -46,7 +46,7 @@ function UnpaidPaymentsFeed({ payments, loading }: { payments: UnpaidPayment[]; 
         )
     }
 
-    if (payments.length === 0) {
+    if (grouped.length === 0) {
         return (
             <div className="h-full flex flex-col items-center justify-center text-gray-400">
                 <CreditCardIcon size={28} className="mb-3" />
@@ -59,18 +59,23 @@ function UnpaidPaymentsFeed({ payments, loading }: { payments: UnpaidPayment[]; 
         <ScrollArea className="h-full max-h-48" type="auto">
             <Table>
                 <TableBody>
-                    {payments.map((p) => (
-                        <TableRow key={p.id}>
+                    {grouped.map((p) => (
+                        <TableRow key={p.profileId}>
                             <TableCell className="text-sm truncate py-1.5">
                                 {p.firstName} {p.lastName}
                             </TableCell>
                             <TableCell className="text-right py-1.5">
-                                <Badge
-                                    variant="unpaid"
-                                    className="text-[10px] px-1.5 py-0"
-                                >
-                                    {p.eventName}
-                                </Badge>
+                                <div className="flex flex-wrap justify-end gap-1">
+                                    {p.events.map((eventName) => (
+                                        <Badge
+                                            key={eventName}
+                                            variant="unpaid"
+                                            className="text-[10px] px-1.5 py-0"
+                                        >
+                                            {eventName}
+                                        </Badge>
+                                    ))}
+                                </div>
                             </TableCell>
                         </TableRow>
                     ))}

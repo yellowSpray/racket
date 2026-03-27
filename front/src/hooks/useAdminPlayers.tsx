@@ -60,7 +60,7 @@ export function useAdminPlayers() {
             // récupérer le statut de paiement de l'événement courant
             const paymentStatus = player.payments?.[0]?.status as PaymentStatus | undefined
 
-            // mapper l'historique des paiements sur toutes les séries
+            // mapper l'historique des paiements sur toutes les séries (du plus ancien au plus récent)
             const payments: PlayerPayment[] = (player.payments || [])
                 .filter(p => p.events?.event_name)
                 .map(p => ({
@@ -68,6 +68,7 @@ export function useAdminPlayers() {
                     event_name: p.events.event_name,
                     status: p.status,
                 }))
+                .sort((a, b) => a.event_name.localeCompare(b.event_name, 'fr'))
 
             // récupérer le nom du groupe (box) si disponible
             const groupName = player.group_players?.[0]?.groups?.group_name || ""

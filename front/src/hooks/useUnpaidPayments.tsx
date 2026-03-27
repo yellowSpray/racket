@@ -10,6 +10,14 @@ export interface UnpaidPayment {
     eventName: string
 }
 
+export interface GroupedUnpaidPayment {
+    profileId: string
+    firstName: string
+    lastName: string
+    events: string[]
+    count: number
+}
+
 // type brut retourné par Supabase avant transformation
 interface UnpaidPaymentRow {
     id: string
@@ -72,5 +80,27 @@ export function useUnpaidPayments(clubId: string | null) {
         fetchUnpaidPayments()
     }, [fetchUnpaidPayments])
 
-    return { payments, loading }
+    // Grouper par joueur, trier du plus endetté au moins endetté
+    const grouped: GroupedUnpaidPayment[] = []
+    const map = new Map<string, GroupedUnpaidPayment>()
+    for (const p of payments) {
+        const existing = map.get(p.profileId)
+        if (existing) {
+            existing.events.push(p.eventName)
+            existing.count++
+        } else {
+            const entry: GroupedUnpaidPayment = {
+                profileId: p.profileId,
+                firstName: p.firstName,
+                lastName: p.lastName,
+                events: [p.eventName],
+                count: 1,
+            }
+            map.set(p.profileId, entry)
+            grouped.push(entry)
+        }
+    }
+    grouped.sort((a, b) => b.count - a.count)
+
+    return { payments, grouped, loading }
 }

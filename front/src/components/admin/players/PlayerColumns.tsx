@@ -82,27 +82,27 @@ export const columns = (
         cell: ({ row }) => {
             const { payments } = row.original
             if (!payments || payments.length === 0) return <span className="text-gray-400">-</span>
-            const visible = payments.slice(0, 2)
-            const hidden = payments.slice(2)
+            const hidden = payments.slice(0, -2)
+            const visible = payments.slice(-2)
             return (
-                <div className="flex flex-wrap gap-1 justify-center">
-                    {visible.map((p, i) => (
-                        <Badge key={i} variant={p.status}>{p.event_name}</Badge>
-                    ))}
+                <div className="flex flex-wrap gap-1 justify-center items-center">
                     {hidden.length > 0 && (
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <span><Badge className="cursor-pointer">+{hidden.length}</Badge></span>
                             </TooltipTrigger>
-                            <TooltipContent>
-                                <div className="flex flex-col gap-1">
-                                    {payments.map((p, i) => (
-                                        <Badge key={i} variant={p.status}>{p.event_name}</Badge>
+                            <TooltipContent side="left" className="bg-gray-300 border-gray-400">
+                                <div className="flex gap-1">
+                                    {hidden.map((p, i) => (
+                                        <Badge key={i} variant={p.status} className="z-100">{p.event_name}</Badge>
                                     ))}
                                 </div>
                             </TooltipContent>
                         </Tooltip>
                     )}
+                    {visible.map((p, i) => (
+                        <Badge key={i} variant={p.status}>{p.event_name}</Badge>
+                    ))}
                 </div>
             )
         },
