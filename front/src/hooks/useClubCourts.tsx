@@ -10,6 +10,13 @@ export function useClubCourts() {
     const [loading, setLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
 
+    const syncDefaultCount = async (clubId: string, count: number) => {
+        await supabase
+            .from("clubs")
+            .update({ default_number_of_courts: count })
+            .eq("id", clubId)
+    }
+
     const fetchClubCourts = useCallback(async (clubId: string | null) => {
         if (!clubId) {
             setCourts([])
@@ -33,7 +40,12 @@ export function useClubCourts() {
                 return
             }
 
-            setCourts(data || [])
+            const courtsList = data || []
+            setCourts(courtsList)
+            // Synchroniser default_number_of_courts avec le nombre reel de terrains
+            if (courtsList.length > 0) {
+                await syncDefaultCount(clubId, courtsList.length)
+            }
             endLog()
         } catch (err) {
             endLog({ error: err instanceof Error ? err.message : "Erreur inconnue" })
@@ -42,6 +54,7 @@ export function useClubCourts() {
             setLoading(false)
         }
     }, [])
+
 
     const addClubCourt = async (clubId: string, data: { court_name: string; available_from: string; available_to: string }) => {
         setError(null)
@@ -65,7 +78,9 @@ export function useClubCourts() {
             return false
         }
 
-        setCourts(prev => [...prev, result])
+        const updated = [...courts, result]
+        setCourts(updated)
+        await syncDefaultCount(clubId, updated.length)
         return true
     }
 
@@ -101,7 +116,11 @@ export function useClubCourts() {
             return false
         }
 
-        setCourts(prev => prev.filter(c => c.id !== courtId))
+        const updated = courts.filter(c => c.id !== courtId)
+        setCourts(updated)
+        // Trouver le club_id depuis le terrain supprime
+        const removed = courts.find(c => c.id === courtId)
+        if (removed) await syncDefaultCount(removed.club_id, updated.length)
         return true
     }
 
@@ -127,6 +146,7 @@ export function useClubCourts() {
         }
 
         setCourts(data || [])
+        await syncDefaultCount(clubId, numberOfCourts)
         return true
     }
 
