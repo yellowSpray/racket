@@ -50,11 +50,17 @@ Event Fest automates the entire box lifecycle: import players, calculate ranking
 ### Completed
 
 * Secure authentication with role-based access (user / admin / superadmin)
+* Forgot password and reset password flows
+* User profile page with role-based routing
 * Player registration / unregistration for events
 * Player roster management (add, edit, deactivate) with global search filter
+* Absence management UI in player editor
+* Auto-registration of active players to new events
+* Auto-renewal of active players between events
 * Group / draw management with auto-distribution and multiple configuration choices
-* Event settings and configuration (visitor fees, event defaults, club defaults)
-* Club members management in settings
+* Event settings and configuration (visitor fees, event defaults, club defaults, courts at club level with auto-copy)
+* Club members management in settings (invite, role change, remove)
+* 3-state event lifecycle (upcoming / active / completed) with automatic transitions via pg_cron
 * Round-robin table display with groups and match details (date, time, court)
 * Multi-constraint scheduling engine (player availability, arrival/departure windows, court slots, bye optimization)
 * Drag & drop match scheduling with constraint validation and unplaced matches panel
@@ -63,28 +69,34 @@ Event Fest automates the entire box lifecycle: import players, calculate ranking
 * Configurable promotion/relegation rules (customizable promoted/relegated counts per club)
 * Ranking engine with full standings computation (points, set diff, head-to-head tiebreakers)
 * Promotion/relegation engine (automatic moves based on standings and club rules)
-* Elo rating engine for player power ranking updates
-* Event close workflow with batch Elo updates
+* Elo rating engine with auto-apply via DB trigger on event completion
+* Event close workflow with automatic Elo updates
+* One-click box creation wizard (rankings + promotions + groups + schedule — in one click)
 * "Box precedent" wizard: generate new groups from previous event standings with automatic redistribution by power ranking
 * Previous box preview with promotion/relegation indicators and unregistered player detection
 * Drag & drop group management for proposed groups (with new player highlighting)
-* Admin dashboard with today's matches feed, player movements feed, and unpaid payments feed
+* Admin dashboard with today's matches feed, player movements feed, and unpaid payments feed (grouped by player with +N badges)
 * PDF export for draw tables
 * Match list view with grid/list toggle
-* Player pages with routes, sidebar and DrawTable integration
+* Player dashboard with real content (NextMatchCard, ScoreInputCard with pending score submission)
+* Player draws page reusing admin DrawTable with tabs
+* Cross-club visitor system (registration, open_to_visitors toggle, visitor fees, automatic payment creation)
+* Toast notifications via Sonner (replacing inline error messages)
+* Centralized error handling with useErrorHandler integrated across all components
+* JSDoc documentation on all hooks and utility functions
 * Default profile pictures for squash and tennis players
-* Vitest + TDD test suite (770+ tests)
+* SQL seed scripts for players, events, and random match scores
+* Vitest + TDD test suite (911 tests across 77 files)
 
 ### In Progress (MVP — Phase 1)
 
-* One-click new box workflow (rankings + promotions + groups + schedule — in one click)
 * Smart Excel import with auto-detection and column mapping
-* Admin preview before publishing
+* Player rankings and progression page (shell exists)
+* Player messages and settings pages
 
 ### Planned (Phase 2-4)
 
-* Player-entered results with opponent confirmation
-* Live results page during match nights (real-time)
+* Live results page during match nights (real-time via Supabase Realtime)
 * Complete player stats page (winrate, streaks, head-to-head)
 * Calendar sync (Google/Apple/Outlook)
 * Integrated communication center (replacing WhatsApp)
@@ -127,28 +139,33 @@ Event-Fest/
 
 ### Phase 1 — MVP (Target: 1 month)
 - [x] Base project structure (React 19 + TypeScript + Vite + shadcn/ui)
-- [x] Authentication and role management
-- [x] Player roster management
-- [x] Event settings and configuration
+- [x] Authentication and role management (login, register, forgot/reset password, profile)
+- [x] Player roster management with global search and absence UI
+- [x] Event settings and configuration (scoring, promo, courts, event defaults, visitor fees)
 - [x] Group / draw management with distribution choices
-- [x] Multi-constraint scheduling engine
-- [x] Vitest + TDD setup (770+ tests)
+- [x] Multi-constraint scheduling engine with DnD and conflict detection
+- [x] Vitest + TDD setup (911 tests across 77 files)
 - [x] Configurable scoring engine (score-to-points mapping)
 - [x] Configurable promotion/relegation rules
 - [x] Ranking engine (points, set diff, head-to-head)
 - [x] Promotion/relegation engine
-- [x] Elo rating engine
+- [x] Elo rating engine (auto-apply via DB trigger)
 - [x] "Box precedent" wizard (generate groups from previous event)
-- [x] Admin dashboard (today's matches, player movements, unpaid payments)
+- [x] One-click box creation wizard (complete workflow)
+- [x] Admin dashboard (today's matches, player movements, unpaid payments grouped by player)
 - [x] PDF export for draw tables
-- [x] Player pages with DrawTable integration
+- [x] Player dashboard with NextMatchCard and ScoreInputCard
 - [x] Club members management and event defaults settings
-- [ ] One-click new box workflow (final integration)
+- [x] Cross-club visitor system
+- [x] Auto-registration and auto-renewal of active players
+- [x] 3-state event lifecycle with pg_cron transitions
+- [x] Toast notifications and centralized error handling
 - [ ] Smart Excel import
+- [ ] Player rankings / messages / settings pages (content)
 
 ### Phase 2 — Growth
-- [ ] Player-entered results with confirmation
-- [ ] Auto re-registration (opt-out)
+- [x] Player-entered results (pending score submission)
+- [x] Auto re-registration (opt-out)
 - [ ] Live results page during match nights
 - [ ] Complete player stats page
 - [ ] Pre-match presence confirmation
