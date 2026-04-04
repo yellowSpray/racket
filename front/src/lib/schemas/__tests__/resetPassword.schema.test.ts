@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resetPasswordSchema } from './resetPassword.schema'
+import { resetPasswordSchema } from '../resetPassword.schema'
 
 describe('resetPasswordSchema', () => {
   it('accepte des mots de passe valides et identiques', () => {

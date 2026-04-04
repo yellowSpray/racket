@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
-const mockResetPasswordForEmail = vi.hoisted(() => vi.fn())
+const { mockResetPasswordForEmail, mockHandleError, mockClearError } = vi.hoisted(() => ({
+  mockResetPasswordForEmail: vi.fn(),
+  mockHandleError: vi.fn(),
+  mockClearError: vi.fn(),
+}))
 
 vi.mock('@/lib/supabaseClient', () => ({
   supabase: {
@@ -11,7 +15,19 @@ vi.mock('@/lib/supabaseClient', () => ({
   },
 }))
 
-import ForgotPassword from './ForgotPassword'
+vi.mock('@/hooks/useErrorHandler', () => ({
+  useErrorHandler: () => ({
+    handleError: mockHandleError,
+    clearError: mockClearError,
+    error: null,
+  }),
+}))
+
+vi.mock('sonner', () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
+}))
+
+import ForgotPassword from '../ForgotPassword'
 
 describe('ForgotPassword', () => {
   const mockOnBack = vi.fn()
@@ -60,10 +76,11 @@ describe('ForgotPassword', () => {
     })
   })
 
-  it('affiche une erreur si Supabase échoue', async () => {
+  it('appelle handleError si Supabase échoue', async () => {
+    const loginError = { message: 'User not found' }
     mockResetPasswordForEmail.mockResolvedValue({
       data: null,
-      error: { message: 'User not found' },
+      error: loginError,
     })
     render(<ForgotPassword onBack={mockOnBack} />)
 
@@ -71,7 +88,7 @@ describe('ForgotPassword', () => {
     fireEvent.click(screen.getByRole('button', { name: /envoyer le lien/i }))
 
     await waitFor(() => {
-      expect(screen.getByText('User not found')).toBeInTheDocument()
+      expect(mockHandleError).toHaveBeenCalledWith(loginError)
     })
   })
 

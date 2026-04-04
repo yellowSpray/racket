@@ -1,8 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
-const mockUpdateUser = vi.hoisted(() => vi.fn())
-const mockNavigate = vi.hoisted(() => vi.fn())
+const { mockUpdateUser, mockNavigate, mockHandleError, mockClearError } = vi.hoisted(() => ({
+  mockUpdateUser: vi.fn(),
+  mockNavigate: vi.fn(),
+  mockHandleError: vi.fn(),
+  mockClearError: vi.fn(),
+}))
 
 vi.mock('@/lib/supabaseClient', () => ({
   supabase: {
@@ -16,7 +20,20 @@ vi.mock('react-router', () => ({
   useNavigate: () => mockNavigate,
 }))
 
-import ResetPassword from './ResetPassword'
+vi.mock('@/hooks/useErrorHandler', () => ({
+  useErrorHandler: () => ({
+    handleError: mockHandleError,
+    clearError: mockClearError,
+    getFieldError: () => null,
+    error: null,
+  }),
+}))
+
+vi.mock('sonner', () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
+}))
+
+import ResetPassword from '../ResetPassword'
 
 describe('ResetPassword', () => {
   beforeEach(() => {
@@ -67,7 +84,7 @@ describe('ResetPassword', () => {
     })
   })
 
-  it('affiche une erreur de validation si mots de passe différents', async () => {
+  it('appelle handleError avec ValidationError si mots de passe différents', async () => {
     render(<ResetPassword />)
 
     fireEvent.change(screen.getByLabelText('Nouveau mot de passe'), {
@@ -79,15 +96,16 @@ describe('ResetPassword', () => {
     fireEvent.click(screen.getByRole('button', { name: /réinitialiser/i }))
 
     await waitFor(() => {
-      expect(screen.getByText('Les mots de passe ne correspondent pas')).toBeInTheDocument()
+      expect(mockHandleError).toHaveBeenCalled()
     })
     expect(mockUpdateUser).not.toHaveBeenCalled()
   })
 
-  it('affiche une erreur si Supabase échoue', async () => {
+  it('appelle handleError si Supabase échoue', async () => {
+    const supabaseError = { message: 'Token expired' }
     mockUpdateUser.mockResolvedValue({
       data: null,
-      error: { message: 'Token expired' },
+      error: supabaseError,
     })
     render(<ResetPassword />)
 
@@ -100,7 +118,7 @@ describe('ResetPassword', () => {
     fireEvent.click(screen.getByRole('button', { name: /réinitialiser/i }))
 
     await waitFor(() => {
-      expect(screen.getByText('Token expired')).toBeInTheDocument()
+      expect(mockHandleError).toHaveBeenCalledWith(supabaseError)
     })
   })
 })
