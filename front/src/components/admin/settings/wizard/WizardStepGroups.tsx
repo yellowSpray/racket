@@ -19,11 +19,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { GroupDndManager } from "./GroupDndManager"
-import { PreviousBoxPreview } from "./PreviousBoxPreview"
 import { ProposedGroups } from "./ProposedGroups"
 import { Badge } from "@/components/ui/badge"
 import { validateGroups } from "@/lib/groupPlayerMove"
-import { InformationCircleIcon, SparklesIcon, Settings01Icon, ArrowLeftRightIcon, Delete02Icon, UserGroupIcon, Award01Icon, Tick02Icon, ChartIncreaseIcon, ChartDecreaseIcon, UserRemove01Icon, UserAdd01Icon } from "hugeicons-react"
+import { InformationCircleIcon, SparklesIcon, Settings01Icon, ArrowLeftRightIcon, Delete02Icon, UserGroupIcon, Award01Icon, Tick02Icon, ChartIncreaseIcon, ChartDecreaseIcon, UserRemove01Icon } from "hugeicons-react"
 
 interface WizardStepGroupsProps {
     event: Event
@@ -247,11 +246,6 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
         return set
     }, [previousGroups, registeredPlayerIds])
 
-    // New player IDs set for column 3 highlighting
-    const newPlayerIds = useMemo(
-        () => new Set(newPlayers.map(p => p.id)),
-        [newPlayers]
-    )
 
     // Lookup playerId → points from previous standings
     const standingsPointsMap = useMemo(() => {
@@ -287,13 +281,11 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
 
             if (insertError) throw new Error(insertError.message)
 
-            for (let i = 0; i < proposedLocalGroups.length; i++) {
+            await Promise.all(proposedLocalGroups.map((group, i) => {
                 const groupId = createdGroupsData[i].id
-                const playerIds = (proposedLocalGroups[i].players || []).map(p => p.id)
-                if (playerIds.length > 0) {
-                    await assignPlayersToGroup(groupId, playerIds, event.id)
-                }
-            }
+                const playerIds = (group.players || []).map(p => p.id)
+                return playerIds.length > 0 ? assignPlayersToGroup(groupId, playerIds, event.id) : Promise.resolve()
+            }))
 
             const { data } = await supabase
                 .from("groups")
@@ -377,13 +369,11 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                 selectedDistribution.numberOfGroups
             )
 
-            for (let i = 0; i < distributedGroups.length; i++) {
+            await Promise.all(distributedGroups.map((players, i) => {
                 const groupId = createdGroupsData[i].id
-                const playerIds = distributedGroups[i].map(p => p.id)
-                if (playerIds.length > 0) {
-                    await assignPlayersToGroup(groupId, playerIds, event.id)
-                }
-            }
+                const playerIds = players.map(p => p.id)
+                return playerIds.length > 0 ? assignPlayersToGroup(groupId, playerIds, event.id) : Promise.resolve()
+            }))
 
             const { data } = await supabase
                 .from("groups")

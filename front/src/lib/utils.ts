@@ -17,3 +17,9 @@ export function minutesToInterval(minutes: number): string {
   const m = (minutes % 60).toString().padStart(2, '0')
   return `${h}:${m}:00`
 }
+
+/** Strips timezone offset from Supabase time values (e.g. "18:30:00+00" → "18:30") */
+export function formatTimeForInput(time: string | null | undefined): string | null {
+  if (!time) return null
+  return time.replace(/([+-]\d{2})$/, "").slice(0, 5)
+}

@@ -4,7 +4,7 @@ import { transformGroups, type Group } from "@/types/draw"
 import type { Match } from "@/types/match"
 import { useEffect, useState, useCallback } from "react"
 import { supabase } from "@/lib/supabaseClient"
-import { intervalToMinutes } from "@/lib/utils"
+import { intervalToMinutes, formatTimeForInput } from "@/lib/utils"
 import {
     Dialog,
     DialogContent,
@@ -27,12 +27,6 @@ import { WizardStepCalendar } from "./wizard/WizardStepCalendar"
 import { WizardStepGroups } from "./wizard/WizardStepGroups"
 import { WizardStepMatches } from "./wizard/WizardStepMatches"
 import { Tick02Icon } from "hugeicons-react"
-
-/** Strips timezone offset from Supabase time values (e.g. "18:30:00+00" → "18:30") */
-function formatTimeForInput(time: string | null | undefined): string | null {
-    if (!time) return null
-    return time.replace(/([+-]\d{2})$/, "").slice(0, 5)
-}
 
 interface EventWizardDialogProps {
     open: boolean

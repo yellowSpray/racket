@@ -1,6 +1,6 @@
 import type { Event } from "@/types/event"
 import type { WizardConfigData } from "./WizardStepConfig"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { useAuth } from "@/contexts/AuthContext"
 import { eventSchema } from "@/lib/schemas"
@@ -37,7 +37,7 @@ export function WizardStepCalendar({ event, configData, onSave, onPrevious }: Wi
         }
     }, [event])
 
-    const sortedDates = [...playingDates].sort()
+    const sortedDates = useMemo(() => [...playingDates].sort(), [playingDates])
     const startDate = sortedDates.length > 0 ? sortedDates[0] : ""
     const endDate = sortedDates.length > 0 ? sortedDates[sortedDates.length - 1] : ""
 

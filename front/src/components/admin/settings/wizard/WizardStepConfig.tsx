@@ -1,6 +1,6 @@
 import type { Event } from "@/types/event"
 import { useEffect, useState } from "react"
-import { intervalToMinutes } from "@/lib/utils"
+import { intervalToMinutes, formatTimeForInput } from "@/lib/utils"
 import type { ClubDefaults } from "../EventDialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,12 +12,6 @@ export interface WizardConfigData {
     endTime: string
     numberOfCourts: number
     matchDuration: number
-}
-
-/** Strips timezone offset from Supabase time values (e.g. "18:30:00+00" → "18:30") */
-function formatTimeForInput(time: string | null | undefined): string | null {
-    if (!time) return null
-    return time.replace(/([+-]\d{2})$/, "").slice(0, 5)
 }
 
 interface WizardStepConfigProps {
