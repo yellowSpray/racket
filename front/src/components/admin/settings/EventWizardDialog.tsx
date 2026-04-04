@@ -4,6 +4,7 @@ import { transformGroups, type Group } from "@/types/draw"
 import type { Match } from "@/types/match"
 import { useEffect, useState, useCallback } from "react"
 import { supabase } from "@/lib/supabaseClient"
+import { intervalToMinutes } from "@/lib/utils"
 import {
     Dialog,
     DialogContent,
@@ -21,10 +22,17 @@ import {
     StepperSeparator,
     StepperTitle,
 } from "@/components/ui/stepper"
-import { WizardStepConfig } from "./wizard/WizardStepConfig"
+import { WizardStepConfig, type WizardConfigData } from "./wizard/WizardStepConfig"
+import { WizardStepCalendar } from "./wizard/WizardStepCalendar"
 import { WizardStepGroups } from "./wizard/WizardStepGroups"
 import { WizardStepMatches } from "./wizard/WizardStepMatches"
 import { Tick02Icon } from "hugeicons-react"
+
+/** Strips timezone offset from Supabase time values (e.g. "18:30:00+00" → "18:30") */
+function formatTimeForInput(time: string | null | undefined): string | null {
+    if (!time) return null
+    return time.replace(/([+-]\d{2})$/, "").slice(0, 5)
+}
 
 interface EventWizardDialogProps {
     open: boolean
@@ -36,6 +44,7 @@ interface EventWizardDialogProps {
 
 export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDefaults }: EventWizardDialogProps) {
     const [activeStep, setActiveStep] = useState(1)
+    const [configData, setConfigData] = useState<WizardConfigData | null>(null)
     const [wizardEvent, setWizardEvent] = useState<Event | null>(null)
     const [groups, setGroups] = useState<Group[]>([])
     const [matches, setMatches] = useState<Match[]>([])
@@ -43,9 +52,10 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
     const isEditing = !!event
 
     // Determiner la completion des etapes
-    const step1Completed = !!wizardEvent
-    const step2Completed = groups.length > 0 && groups.some(g => (g.players || []).length > 0)
-    const step3Completed = matches.length > 0
+    const step1Completed = !!configData
+    const step2Completed = !!wizardEvent
+    const step3Completed = groups.length > 0 && groups.some(g => (g.players || []).length > 0)
+    const step4Completed = matches.length > 0
 
     const loadEventData = useCallback(async (eventId: string) => {
         // Charger les groupes
@@ -81,40 +91,53 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
         }
     }, [])
 
-    // Reset a l'ouverture
+    // Reset uniquement quand le dialog s'ouvre (pas a chaque re-render)
     useEffect(() => {
-        if (open) {
-            if (event) {
-                setWizardEvent(event)
-                setActiveStep(1)
-                // Charger groupes et matchs existants
-                loadEventData(event.id)
-            } else {
-                setWizardEvent(null)
-                setGroups([])
-                setMatches([])
-                setActiveStep(1)
-            }
+        if (!open) return
+
+        if (event) {
+            setWizardEvent(event)
+            setConfigData({
+                eventName: event.event_name,
+                startTime: formatTimeForInput(event.start_time) || "19:00",
+                endTime: formatTimeForInput(event.end_time) || "23:00",
+                numberOfCourts: event.number_of_courts,
+                matchDuration: intervalToMinutes(event.estimated_match_duration),
+            })
+            setActiveStep(1)
+            loadEventData(event.id)
+        } else {
+            setConfigData(null)
+            setWizardEvent(null)
+            setGroups([])
+            setMatches([])
+            setActiveStep(1)
         }
-    }, [open, event, loadEventData])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only on open/event change
+    }, [open, event])
 
     const handleStepChange = (step: number) => {
-        // En mode creation, empecher de sauter des etapes non completees
-        if (!isEditing && !step1Completed && step > 1) return
-        if (!isEditing && !step2Completed && step > 2) return
-
-        // En mode edition, permettre la navigation libre vers les etapes completees
-        if (isEditing) {
+        if (!isEditing) {
+            if (step > 1 && !step1Completed) return
+            if (step > 2 && !step2Completed) return
+            if (step > 3 && !step3Completed) return
+        } else {
             if (step === 2 && !step1Completed) return
             if (step === 3 && !step2Completed) return
+            if (step === 4 && !step3Completed) return
         }
 
         setActiveStep(step)
     }
 
-    const handleConfigSave = (savedEvent: Event) => {
-        setWizardEvent(savedEvent)
+    const handleConfigNext = (data: WizardConfigData) => {
+        setConfigData(data)
         setActiveStep(2)
+    }
+
+    const handleCalendarSave = (savedEvent: Event) => {
+        setWizardEvent(savedEvent)
+        setActiveStep(3)
     }
 
     const handleGroupsChanged = (updatedGroups: Group[]) => {
@@ -132,7 +155,6 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
 
     const handleClose = (isOpen: boolean) => {
         if (!isOpen && wizardEvent) {
-            // Un evenement a ete cree/modifie, rafraichir la liste
             onSuccess()
         }
         onOpenChange(isOpen)
@@ -140,15 +162,15 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className={`max-h-[90vh] overflow-y-auto bg-white transition-[max-width] ${activeStep === 3 ? 'sm:max-w-[95vw] lg:max-w-[1200px]' : 'sm:max-w-[700px]'}`}>
+            <DialogContent className={`max-h-[90vh] overflow-y-auto bg-white transition-[max-width] ${activeStep >= 3 ? 'sm:max-w-[95vw] lg:max-w-[1200px]' : 'sm:max-w-[700px]'}`}>
                 <DialogHeader>
                     <DialogTitle>
                         {isEditing ? "Modifier l'événement" : "Créer un événement"}
                     </DialogTitle>
                     <DialogDescription>
                         {isEditing
-                            ? "Modifiez la configuration, les groupes ou les matchs"
-                            : "Configurez votre événement en 3 étapes"
+                            ? "Modifiez la configuration, le calendrier, les groupes ou les matchs"
+                            : "Configurez votre événement en 4 étapes"
                         }
                     </DialogDescription>
                 </DialogHeader>
@@ -175,7 +197,7 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
                             <StepperTrigger>
                                 <StepperIndicator>2</StepperIndicator>
                             </StepperTrigger>
-                            <StepperTitle>Tableaux</StepperTitle>
+                            <StepperTitle>Calendrier</StepperTitle>
                             <StepperSeparator />
                         </StepperItem>
 
@@ -187,6 +209,18 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
                             <StepperTrigger>
                                 <StepperIndicator>3</StepperIndicator>
                             </StepperTrigger>
+                            <StepperTitle>Tableaux</StepperTitle>
+                            <StepperSeparator />
+                        </StepperItem>
+
+                        <StepperItem
+                            step={4}
+                            completed={step4Completed}
+                            disabled={!step3Completed}
+                        >
+                            <StepperTrigger>
+                                <StepperIndicator>4</StepperIndicator>
+                            </StepperTrigger>
                             <StepperTitle>Matchs</StepperTitle>
                         </StepperItem>
                     </StepperNav>
@@ -194,18 +228,18 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
                     <StepperContent value={1}>
                         <WizardStepConfig
                             event={wizardEvent}
-                            onSave={handleConfigSave}
+                            configData={configData}
+                            onNext={handleConfigNext}
                             clubDefaults={clubDefaults}
                         />
                     </StepperContent>
 
                     <StepperContent value={2}>
-                        {wizardEvent && (
-                            <WizardStepGroups
+                        {configData && (
+                            <WizardStepCalendar
                                 event={wizardEvent}
-                                groups={groups}
-                                onGroupsChanged={handleGroupsChanged}
-                                onNext={() => setActiveStep(3)}
+                                configData={configData}
+                                onSave={handleCalendarSave}
                                 onPrevious={() => setActiveStep(1)}
                             />
                         )}
@@ -213,12 +247,24 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
 
                     <StepperContent value={3}>
                         {wizardEvent && (
+                            <WizardStepGroups
+                                event={wizardEvent}
+                                groups={groups}
+                                onGroupsChanged={handleGroupsChanged}
+                                onNext={() => setActiveStep(4)}
+                                onPrevious={() => setActiveStep(2)}
+                            />
+                        )}
+                    </StepperContent>
+
+                    <StepperContent value={4}>
+                        {wizardEvent && (
                             <WizardStepMatches
                                 event={wizardEvent}
                                 groups={groups}
                                 matches={matches}
                                 onMatchesChanged={handleMatchesChanged}
-                                onPrevious={() => setActiveStep(2)}
+                                onPrevious={() => setActiveStep(3)}
                                 onFinish={handleFinish}
                             />
                         )}
@@ -228,4 +274,3 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
         </Dialog>
     )
 }
-
