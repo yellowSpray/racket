@@ -60,14 +60,15 @@ describe('ProposedGroups', () => {
         expect(badges).toHaveLength(2)
     })
 
-    it('renders header text', () => {
+    it('renders group content without header', () => {
         render(
             <ProposedGroups
                 groups={proposedGroups}
                 onGroupsChanged={() => {}}
             />
         )
-        expect(screen.getByText(/Nouveaux groupes/)).toBeInTheDocument()
+        // Header is now provided by the parent component
+        expect(screen.getByText('Box 1')).toBeInTheDocument()
     })
 
     it('renders empty state when no groups', () => {

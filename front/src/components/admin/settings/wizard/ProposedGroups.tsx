@@ -19,9 +19,10 @@ interface ProposedGroupsProps {
     groups: Group[]
     onGroupsChanged: (groups: Group[]) => void
     previousPlayerIds?: Set<string>
+    maxRows?: number
 }
 
-export function ProposedGroups({ groups, onGroupsChanged, previousPlayerIds }: ProposedGroupsProps) {
+export function ProposedGroups({ groups, onGroupsChanged, previousPlayerIds, maxRows }: ProposedGroupsProps) {
     const [activePlayer, setActivePlayer] = useState<GroupPlayer | null>(null)
     const [overGroupId, setOverGroupId] = useState<string | null>(null)
 
@@ -100,9 +101,6 @@ export function ProposedGroups({ groups, onGroupsChanged, previousPlayerIds }: P
 
     return (
         <div className="space-y-3">
-            <h4 className="text-sm font-semibold text-muted-foreground">
-                Nouveaux groupes proposes
-            </h4>
             <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
@@ -117,6 +115,7 @@ export function ProposedGroups({ groups, onGroupsChanged, previousPlayerIds }: P
                             group={group}
                             isOver={overGroupId === group.id}
                             previousPlayerIds={previousPlayerIds}
+                            maxRows={maxRows}
                         />
                     ))}
                 </div>
