@@ -29,7 +29,7 @@ export function DraggablePlayerItem({ player, id, isNew }: DraggablePlayerItemPr
         <div
             ref={setNodeRef}
             style={style}
-            className={`flex items-center justify-between text-sm px-2 py-1.5 rounded-md border cursor-grab ${
+            className={`flex items-center justify-between text-sm px-2 py-1.5 rounded-md border cursor-grab h-8 ${
                 isNew ? "bg-blue-50 border-blue-200" : "bg-white"
             }`}
             {...attributes}
