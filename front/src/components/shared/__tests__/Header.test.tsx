@@ -1,22 +1,12 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import Header from '../Header'
 
 // Mock dependencies
-const mockNavigate = vi.fn()
 vi.mock('react-router', () => ({
-  useNavigate: () => mockNavigate,
+  useNavigate: () => vi.fn(),
   useLocation: () => ({ pathname: '/admin' }),
   Link: ({ children, to }: { children: React.ReactNode; to: string }) => <a href={to}>{children}</a>,
-}))
-
-const mockSignOut = vi.fn().mockResolvedValue({})
-vi.mock('@/lib/supabaseClient', () => ({
-  supabase: {
-    auth: {
-      signOut: () => mockSignOut(),
-    },
-  },
 }))
 
 vi.mock('@/components/ui/logo', () => ({
@@ -33,65 +23,70 @@ describe('Header', () => {
     mockUseAuth.mockReturnValue({ profile: null, isAuthenticated: false })
     render(<Header />)
     expect(screen.getByTestId('logo')).toBeInTheDocument()
-    expect(screen.getByText('Logo name')).toBeInTheDocument()
+    expect(screen.getByText('volena')).toBeInTheDocument()
   })
 
-  it('renders login buttons when not authenticated', () => {
+  it('renders login button when not authenticated', () => {
     mockUseAuth.mockReturnValue({ profile: null, isAuthenticated: false })
     render(<Header />)
-    expect(screen.getByText('Se connecter')).toBeInTheDocument()
     expect(screen.getByText('Commencer')).toBeInTheDocument()
   })
 
-  it('does not show logout button when not authenticated', () => {
+  it('does not show profile link when not authenticated', () => {
     mockUseAuth.mockReturnValue({ profile: null, isAuthenticated: false })
     render(<Header />)
-    expect(screen.queryByText('Déconnexion')).not.toBeInTheDocument()
+    expect(screen.queryByText('Jean Dupont')).not.toBeInTheDocument()
   })
 
-  it('renders logout button when authenticated', () => {
+  it('renders profile link when authenticated', () => {
     mockUseAuth.mockReturnValue({
-      profile: { id: '1', role: 'admin' },
+      profile: { id: '1', role: 'admin', first_name: 'Jean', last_name: 'Dupont' },
       isAuthenticated: true,
     })
     render(<Header />)
-    expect(screen.getByText('Déconnexion')).toBeInTheDocument()
+    expect(screen.getByText('Jean Dupont')).toBeInTheDocument()
   })
 
-  it('does not show login buttons when authenticated', () => {
+  it('does not show login button when authenticated', () => {
     mockUseAuth.mockReturnValue({
-      profile: { id: '1', role: 'admin' },
+      profile: { id: '1', role: 'admin', first_name: 'Jean', last_name: 'Dupont' },
       isAuthenticated: true,
     })
     render(<Header />)
-    expect(screen.queryByText('Se connecter')).not.toBeInTheDocument()
     expect(screen.queryByText('Commencer')).not.toBeInTheDocument()
-  })
-
-  it('calls signOut and navigates on logout click', async () => {
-    mockUseAuth.mockReturnValue({
-      profile: { id: '1', role: 'admin' },
-      isAuthenticated: true,
-    })
-    render(<Header />)
-    fireEvent.click(screen.getByText('Déconnexion'))
-    // signOut is called
-    expect(mockSignOut).toHaveBeenCalled()
   })
 
   it('links logo to home page', () => {
     mockUseAuth.mockReturnValue({ profile: null, isAuthenticated: false })
     render(<Header />)
-    const homeLink = screen.getByText('Logo name').closest('a')
+    const homeLink = screen.getByText('volena').closest('a')
     expect(homeLink).toHaveAttribute('href', '/')
   })
 
-  it('links login buttons to /auth', () => {
+  it('links login button to /auth', () => {
     mockUseAuth.mockReturnValue({ profile: null, isAuthenticated: false })
     render(<Header />)
-    const loginLink = screen.getByText('Se connecter').closest('a')
-    expect(loginLink).toHaveAttribute('href', '/auth')
     const startLink = screen.getByText('Commencer').closest('a')
     expect(startLink).toHaveAttribute('href', '/auth')
+  })
+
+  it('links profile to correct route for admin', () => {
+    mockUseAuth.mockReturnValue({
+      profile: { id: '1', role: 'admin', first_name: 'Jean', last_name: 'Dupont' },
+      isAuthenticated: true,
+    })
+    render(<Header />)
+    const profileLink = screen.getByText('Jean Dupont').closest('a')
+    expect(profileLink).toHaveAttribute('href', '/admin/profile')
+  })
+
+  it('links profile to correct route for user', () => {
+    mockUseAuth.mockReturnValue({
+      profile: { id: '2', role: 'user', first_name: 'Marie', last_name: 'Martin' },
+      isAuthenticated: true,
+    })
+    render(<Header />)
+    const profileLink = screen.getByText('Marie Martin').closest('a')
+    expect(profileLink).toHaveAttribute('href', '/user/profile')
   })
 })

@@ -1,7 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { VisitorRequestDialog } from '../VisitorRequestDialog'
 import type { DiscoverableEvent } from '@/types/visitor'
+
+const mockHandleError = vi.fn()
+
+vi.mock('@/hooks/useErrorHandler', () => ({
+  useErrorHandler: () => ({
+    handleError: mockHandleError,
+    clearError: vi.fn(),
+    error: null,
+  }),
+}))
+
+vi.mock('sonner', () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
+}))
+
+import { VisitorRequestDialog } from '../VisitorRequestDialog'
 
 const makeEvent = (overrides: Partial<DiscoverableEvent> = {}): DiscoverableEvent => ({
   id: 'evt-1',
@@ -101,7 +116,7 @@ describe('VisitorRequestDialog', () => {
     expect(defaultProps.onOpenChange).toHaveBeenCalledWith(false)
   })
 
-  it('shows error message when onSubmit returns error', async () => {
+  it('calls handleError when onSubmit returns error', async () => {
     const onSubmit = vi.fn().mockResolvedValue({ success: false, error: 'Une erreur est survenue' })
     render(<VisitorRequestDialog {...defaultProps} onSubmit={onSubmit} />)
 
@@ -109,7 +124,7 @@ describe('VisitorRequestDialog', () => {
     fireEvent.click(submitButton)
 
     await waitFor(() => {
-      expect(screen.getByText('Une erreur est survenue')).toBeInTheDocument()
+      expect(mockHandleError).toHaveBeenCalledWith(new Error('Une erreur est survenue'))
     })
   })
 

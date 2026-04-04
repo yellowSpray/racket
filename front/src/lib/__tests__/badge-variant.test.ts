@@ -63,8 +63,9 @@ describe("badgeVariants", () => {
     it("should apply active-specific classes", () => {
       const result = badgeVariants({ variant: "active" });
       expect(result).toContain("text-green-500");
-      expect(result).toContain("border-2");
-      expect(result).toContain("border-primary");
+      expect(result).toContain("border-1");
+      expect(result).toContain("border-green-300");
+      expect(result).toContain("bg-green-500/10");
     });
 
     it("should not include border-transparent for active variant", () => {
@@ -77,7 +78,9 @@ describe("badgeVariants", () => {
     it("should apply inactive-specific classes", () => {
       const result = badgeVariants({ variant: "inactive" });
       expect(result).toContain("text-gray-500");
-      expect(result).toContain("border-2");
+      expect(result).toContain("border-1");
+      expect(result).toContain("border-gray-300");
+      expect(result).toContain("bg-gray-500/10");
     });
 
     it("should not include border-transparent for inactive variant", () => {

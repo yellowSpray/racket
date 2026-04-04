@@ -1,33 +1,33 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import type { UnpaidPayment } from '@/hooks/useUnpaidPayments'
+import type { GroupedUnpaidPayment } from '@/hooks/useUnpaidPayments'
 
-let mockPayments: UnpaidPayment[] = []
+let mockGrouped: GroupedUnpaidPayment[] = []
 let mockLoading = false
 
 vi.mock('@/hooks/useUnpaidPayments', () => ({
     useUnpaidPayments: () => ({
-        payments: mockPayments,
+        payments: [],
+        grouped: mockGrouped,
         loading: mockLoading,
-        error: null,
     }),
 }))
 
 import { UnpaidPaymentsCard } from '../UnpaidPaymentsCard'
 
-function makePayment(overrides: Partial<UnpaidPayment> & { id: string }): UnpaidPayment {
+function makeGrouped(overrides: Partial<GroupedUnpaidPayment> & { profileId: string }): GroupedUnpaidPayment {
     return {
-        profileId: 'p1',
         firstName: 'Alice',
         lastName: 'Martin',
-        eventName: 'Série 5',
+        events: ['Série 5'],
+        count: 1,
         ...overrides,
     }
 }
 
 describe('UnpaidPaymentsCard', () => {
     beforeEach(() => {
-        mockPayments = []
+        mockGrouped = []
         mockLoading = false
     })
 
@@ -43,9 +43,9 @@ describe('UnpaidPaymentsCard', () => {
     })
 
     it('should display player names', () => {
-        mockPayments = [
-            makePayment({ id: 'pay1', firstName: 'Alice', lastName: 'Martin' }),
-            makePayment({ id: 'pay2', profileId: 'p2', firstName: 'Bob', lastName: 'Dupont', eventName: 'Série 4' }),
+        mockGrouped = [
+            makeGrouped({ profileId: 'p1', firstName: 'Alice', lastName: 'Martin' }),
+            makeGrouped({ profileId: 'p2', firstName: 'Bob', lastName: 'Dupont', events: ['Série 4'], count: 1 }),
         ]
 
         render(<UnpaidPaymentsCard clubId="c1" />)
@@ -54,10 +54,10 @@ describe('UnpaidPaymentsCard', () => {
         expect(screen.getByText('Bob Dupont')).toBeInTheDocument()
     })
 
-    it('should show event name in badge for each payment', () => {
-        mockPayments = [
-            makePayment({ id: 'pay1', eventName: 'Série 4' }),
-            makePayment({ id: 'pay2', profileId: 'p2', eventName: 'Série 5' }),
+    it('should show event name in badge for each player', () => {
+        mockGrouped = [
+            makeGrouped({ profileId: 'p1', events: ['Série 4'], count: 1 }),
+            makeGrouped({ profileId: 'p2', firstName: 'Bob', lastName: 'Dupont', events: ['Série 5'], count: 1 }),
         ]
 
         render(<UnpaidPaymentsCard clubId="c1" />)
@@ -66,10 +66,10 @@ describe('UnpaidPaymentsCard', () => {
         expect(screen.getByText('Série 5')).toBeInTheDocument()
     })
 
-    it('should show count badge when there are unpaid payments', () => {
-        mockPayments = [
-            makePayment({ id: 'pay1' }),
-            makePayment({ id: 'pay2', profileId: 'p2' }),
+    it('should show count badge when there are unpaid players', () => {
+        mockGrouped = [
+            makeGrouped({ profileId: 'p1' }),
+            makeGrouped({ profileId: 'p2', firstName: 'Bob', lastName: 'Dupont' }),
         ]
 
         render(<UnpaidPaymentsCard clubId="c1" />)
@@ -80,5 +80,15 @@ describe('UnpaidPaymentsCard', () => {
     it('should show title "Paiements"', () => {
         render(<UnpaidPaymentsCard clubId="c1" />)
         expect(screen.getByText('Paiements')).toBeInTheDocument()
+    })
+
+    it('should show +N badge when player has more than 2 unpaid events', () => {
+        mockGrouped = [
+            makeGrouped({ profileId: 'p1', events: ['Série 3', 'Série 4', 'Série 5'], count: 3 }),
+        ]
+
+        render(<UnpaidPaymentsCard clubId="c1" />)
+
+        expect(screen.getByText('+1')).toBeInTheDocument()
     })
 })
