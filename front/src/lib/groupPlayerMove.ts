@@ -18,7 +18,7 @@ export function movePlayerBetweenGroups(
             return { ...g, players: (g.players || []).filter(p => p.id !== playerId) }
         }
         if (g.id === toGroupId) {
-            return { ...g, players: [...(g.players || []), player] }
+            return { ...g, players: [player, ...(g.players || [])] }
         }
         return g
     })
