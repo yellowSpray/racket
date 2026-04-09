@@ -21,8 +21,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { GroupDndManager } from "./GroupDndManager"
 import { ProposedGroups } from "./ProposedGroups"
 import { Badge } from "@/components/ui/badge"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { validateGroups } from "@/lib/groupPlayerMove"
-import { InformationCircleIcon, SparklesIcon, Settings01Icon, ArrowLeftRightIcon, Delete02Icon, UserGroupIcon, Award01Icon, Tick02Icon, ChartIncreaseIcon, ChartDecreaseIcon, UserRemove01Icon } from "hugeicons-react"
+import { InformationCircleIcon, SparklesIcon, Settings01Icon, ArrowLeftRightIcon, Delete02Icon, UserGroupIcon, Award01Icon, Tick02Icon, ChartIncreaseIcon, ChartDecreaseIcon, UserRemove01Icon, UserAdd01Icon } from "hugeicons-react"
 
 interface WizardStepGroupsProps {
     event: Event
@@ -35,8 +36,9 @@ interface WizardStepGroupsProps {
 type CreationMode = "auto" | "manual" | "previous"
 
 /** Static column showing groups with uniform row heights */
-function StaticGroupColumn({ title, groups, maxRows, renderPlayer, sortPlayers }: {
+function StaticGroupColumn({ title, titleExtra, groups, maxRows, renderPlayer, sortPlayers }: {
     title: string
+    titleExtra?: React.ReactNode
     groups: Group[]
     maxRows: number
     renderPlayer: (player: GroupPlayer, group: Group) => React.ReactNode
@@ -44,7 +46,10 @@ function StaticGroupColumn({ title, groups, maxRows, renderPlayer, sortPlayers }
 }) {
     return (
         <div className="space-y-3 min-w-0">
-            <h4 className="text-sm font-semibold text-muted-foreground truncate">{title}</h4>
+            <div className="flex items-center justify-between gap-2 mr-3">
+                <h4 className="text-sm font-semibold text-muted-foreground truncate ml-3">{title}</h4>
+                {titleExtra}
+            </div>
             {groups.map(group => {
                 const players = sortPlayers ? [...(group.players || [])].sort(sortPlayers) : (group.players || [])
                 const emptySlots = maxRows - players.length
@@ -195,28 +200,37 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
         })
     }, [previousGroups, previousStandings, previousMatches, promotionResult, registeredPlayerIds, maxPlayersPerGroup])
 
-    // Column 3: use buildProposedGroups with new players (handles optimal distribution + capacity) then sort like column 2
+    // Lookup playerId → points from previous standings
+    const standingsPointsMap = useMemo(() => {
+        const map = new Map<string, number>()
+        for (const group of previousStandings) {
+            for (const ps of group.standings) {
+                map.set(ps.playerId, ps.points)
+            }
+        }
+        return map
+    }, [previousStandings])
+
+    // Column 3: exact copy of column 2 (no new players, no departed players) — starting point for DnD adjustments
     const autoProposedGroups = useMemo(() => {
         if (previousStandings.length === 0 || previousMatches.length === 0) return null
-        const built = buildProposedGroups(previousGroups, previousStandings, promotionResult, registeredPlayerIds, newPlayers, maxPlayersPerGroup)
+        const built = buildProposedGroups(previousGroups, previousStandings, promotionResult, registeredPlayerIds, [], maxPlayersPerGroup)
         if (!built) return null
 
-        const newIds = new Set((newPlayers || []).map(p => p.id))
         return built.map(group => {
             const players = [...(group.players || [])]
             players.sort((a, b) => {
                 const order = (id: string) => {
-                    if (newIds.has(id)) return 2
                     const mt = moveMap.get(id)
-                    if (mt === "relegation") return -1
-                    if (mt === "promotion") return 1
-                    return 0
+                    if (mt === "relegation") return 0
+                    if (mt === "promotion") return 2
+                    return 1
                 }
                 return order(a.id) - order(b.id)
             })
             return { ...group, players }
         })
-    }, [previousGroups, previousStandings, previousMatches, promotionResult, registeredPlayerIds, newPlayers, maxPlayersPerGroup, moveMap])
+    }, [previousGroups, previousStandings, previousMatches, promotionResult, registeredPlayerIds, maxPlayersPerGroup, moveMap])
 
     // Set initial proposed groups from auto-computation (only when user hasn't modified via DnD)
     useEffect(() => {
@@ -246,17 +260,18 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
         return set
     }, [previousGroups, registeredPlayerIds])
 
-
-    // Lookup playerId → points from previous standings
-    const standingsPointsMap = useMemo(() => {
-        const map = new Map<string, number>()
-        for (const group of previousStandings) {
-            for (const ps of group.standings) {
-                map.set(ps.playerId, ps.points)
+    // Departed players with names (for column 2 badge tooltip)
+    const departedPlayers = useMemo(() => {
+        const result: GroupPlayer[] = []
+        for (const group of previousGroups) {
+            for (const player of group.players || []) {
+                if (!registeredPlayerIds.has(player.id)) {
+                    result.push(player)
+                }
             }
         }
-        return map
-    }, [previousStandings])
+        return result
+    }, [previousGroups, registeredPlayerIds])
 
     // Uniform row height based on max players per group
     const maxRows = maxPlayersPerGroup
@@ -287,16 +302,13 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                 return playerIds.length > 0 ? assignPlayersToGroup(groupId, playerIds, event.id) : Promise.resolve()
             }))
 
-            const { data } = await supabase
-                .from("groups")
-                .select("*, group_players(profile_id, profiles(id, first_name, last_name, phone, power_ranking))")
-                .eq("event_id", event.id)
-                .order("group_name")
-
-            if (data) {
-                const transformed = transformGroups(data)
-                onGroupsChanged(transformed)
-            }
+            // Build result directly from proposedLocalGroups to preserve player order
+            const transformed = proposedLocalGroups.map((group, i) => ({
+                ...group,
+                id: createdGroupsData[i].id,
+                event_id: event.id,
+            }))
+            onGroupsChanged(transformed)
         } catch (err) {
             handleError(err)
         } finally {
@@ -570,7 +582,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 max-h-[450px] overflow-y-auto">
                                         {/* Column 1: Previous event standings */}
                                         <StaticGroupColumn
-                                            title={`Classement — ${previousEvent.event_name}`}
+                                            title={`Classement - ${previousEvent.event_name}`}
                                             groups={previousGroups}
                                             maxRows={maxRows}
                                             sortPlayers={(a, b) => (standingsPointsMap.get(b.id) ?? 0) - (standingsPointsMap.get(a.id) ?? 0)}
@@ -602,6 +614,25 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                                         {afterPromotionGroups && (
                                             <StaticGroupColumn
                                                 title="Après promotions + départs"
+                                                titleExtra={
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Badge variant="inactive" className="cursor-default shrink-0">
+                                                                <UserRemove01Icon className="h-3 w-3 mr-1" />
+                                                                {departedPlayers.length}
+                                                            </Badge>
+                                                        </TooltipTrigger>
+                                                        {departedPlayers.length > 0 && (
+                                                            <TooltipContent className="bg-gray-300 text-gray-900">
+                                                                <div className="space-y-0.5">
+                                                                    {departedPlayers.map(p => (
+                                                                        <div key={p.id}>{p.first_name} {p.last_name}</div>
+                                                                    ))}
+                                                                </div>
+                                                            </TooltipContent>
+                                                        )}
+                                                    </Tooltip>
+                                                }
                                                 groups={afterPromotionGroups}
                                                 sortPlayers={(a, b) => {
                                                     const order = (id: string) => {
@@ -642,12 +673,36 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                                         {/* Column 3: Proposed groups with new players (DnD) */}
                                         {proposedLocalGroups && (
                                             <div className="space-y-3 min-w-0">
-                                                <h4 className="text-sm font-semibold text-muted-foreground truncate">Proposition</h4>
+                                                <div className="flex items-center justify-between gap-2 mr-3">
+                                                    <h4 className="text-sm font-semibold text-muted-foreground truncate ml-3">Proposition</h4>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Badge variant="inactive" className="cursor-default shrink-0">
+                                                                <UserAdd01Icon className="h-3 w-3 mr-1" />
+                                                                {newPlayers.length}
+                                                            </Badge>
+                                                        </TooltipTrigger>
+                                                        {newPlayers.length > 0 && (
+                                                            <TooltipContent className="bg-gray-300 text-gray-900">
+                                                                <div className="space-y-0.5">
+                                                                    {newPlayers.map(p => (
+                                                                        <div key={p.id} className="flex items-center justify-between gap-3">
+                                                                            <span>{p.first_name} {p.last_name}</span>
+                                                                            <span className="opacity-60">R{p.power_ranking || "-"}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </TooltipContent>
+                                                        )}
+                                                    </Tooltip>
+                                                </div>
                                                 <ProposedGroups
                                                     groups={proposedLocalGroups}
                                                     onGroupsChanged={setProposedLocalGroups}
                                                     previousPlayerIds={previousPlayerIds}
                                                     maxRows={maxRows}
+                                                    moveMap={moveMap}
+                                                    newPlayers={newPlayers}
                                                 />
                                             </div>
                                         )}
