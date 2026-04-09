@@ -232,7 +232,7 @@ export function MatchScheduleGrid({
                                                     </TableHead>
                                                 </TableRow>
                                                 <TableRow>
-                                                    <TableHead className="w-20 text-center bg-gray-50 font-bold">
+                                                    <TableHead className="w-12 text-center bg-gray-50 font-bold text-xs">
                                                         Heure
                                                     </TableHead>
                                                     {courts.map(court => (
@@ -248,7 +248,7 @@ export function MatchScheduleGrid({
                                             <TableBody>
                                                 {timeSlots.map(time => (
                                                     <TableRow key={time}>
-                                                        <TableCell className="text-center font-medium bg-gray-50">
+                                                        <TableCell className="text-center font-medium bg-gray-50 text-xs px-1 py-1 w-12">
                                                             {time}
                                                         </TableCell>
                                                         {courts.map(court => {
