@@ -20,11 +20,24 @@ interface ProposedGroupsProps {
     onGroupsChanged: (groups: Group[]) => void
     previousPlayerIds?: Set<string>
     maxRows?: number
+    moveMap?: Map<string, "promotion" | "relegation">
+    newPlayers?: GroupPlayer[]
 }
 
-export function ProposedGroups({ groups, onGroupsChanged, previousPlayerIds, maxRows }: ProposedGroupsProps) {
+export function ProposedGroups({ groups, onGroupsChanged, previousPlayerIds, maxRows, moveMap, newPlayers }: ProposedGroupsProps) {
     const [activePlayer, setActivePlayer] = useState<GroupPlayer | null>(null)
     const [overGroupId, setOverGroupId] = useState<string | null>(null)
+
+    const placedPlayerIds = new Set(groups.flatMap(g => (g.players || []).map(p => p.id)))
+    const availableNewPlayers = (newPlayers || []).filter(p => !placedPlayerIds.has(p.id))
+
+    const handleAddPlayer = (playerId: string, groupId: string) => {
+        const player = (newPlayers || []).find(p => p.id === playerId)
+        if (!player) return
+        onGroupsChanged(groups.map(g =>
+            g.id === groupId ? { ...g, players: [...(g.players || []), player] } : g
+        ))
+    }
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -116,6 +129,9 @@ export function ProposedGroups({ groups, onGroupsChanged, previousPlayerIds, max
                             isOver={overGroupId === group.id}
                             previousPlayerIds={previousPlayerIds}
                             maxRows={maxRows}
+                            moveMap={moveMap}
+                            availableNewPlayers={availableNewPlayers}
+                            onAddPlayer={(playerId) => handleAddPlayer(playerId, group.id)}
                         />
                     ))}
                 </div>
