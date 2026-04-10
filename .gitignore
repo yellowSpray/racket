@@ -49,3 +49,6 @@ docs/
 
 #screenshot inspiration
 screenshot/
+
+#sheet
+*.xlsx
