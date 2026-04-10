@@ -95,6 +95,16 @@ FOR INSERT
 TO public
 WITH CHECK (auth.uid() = id);
 
+-- Les admins peuvent supprimer les profils de leur club
+CREATE POLICY "Admins can delete club profiles"
+ON public.profiles
+FOR DELETE
+TO public
+USING (
+  public.is_superadmin()
+  OR (public.is_admin() AND club_id = public.get_user_club_id())
+);
+
 -- Les admins peuvent créer des profils pour leur club
 CREATE POLICY "Admins can insert club profiles"
 ON public.profiles
