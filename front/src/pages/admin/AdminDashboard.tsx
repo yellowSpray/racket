@@ -1,4 +1,5 @@
 import { useEffect } from "react"
+import { Navigate } from "react-router"
 import { useEvent } from "@/contexts/EventContext"
 import { useAuth } from "@/contexts/AuthContext"
 import { useClubConfig } from "@/hooks/useClubConfig"
@@ -12,12 +13,17 @@ import { VisitorRequestsPanel } from "@/components/admin/visitors/VisitorRequest
 
 export function AdminDashboard() {
     const { profile } = useAuth()
-    const { currentEvent } = useEvent()
+    const { currentEvent, events, loading: eventsLoading } = useEvent()
     const { clubConfig, fetchClubConfig } = useClubConfig()
 
     useEffect(() => {
         fetchClubConfig(profile?.club_id ?? null)
     }, [profile?.club_id, fetchClubConfig])
+
+    // Nouveau club sans event → onboarding guidé
+    if (!eventsLoading && events.length === 0) {
+        return <Navigate to="/admin/onboarding" replace />
+    }
 
     return (
         <div className="flex flex-col h-full min-h-0 gap-5">

@@ -22,6 +22,7 @@ const AdminMatches = lazy(() => import("@/pages/admin/AdminMatches").then(m => (
 const AdminPlayers = lazy(() => import("@/pages/admin/AdminPlayers").then(m => ({ default: m.AdminPlayers })))
 const AdminSettings = lazy(() => import("@/pages/admin/AdminSettings").then(m => ({ default: m.AdminSettings })))
 const AdminEmail = lazy(() => import("@/pages/admin/AdminEmail").then(m => ({ default: m.AdminEmail })))
+const AdminOnboarding = lazy(() => import("@/pages/admin/AdminOnboarding").then(m => ({ default: m.AdminOnboarding })))
 const ProfilePage = lazy(() => import("@/pages/shared/ProfilePage").then(m => ({ default: m.ProfilePage })))
 const ResetPassword = lazy(() => import("@/pages/auth/ResetPassword"))
 
@@ -76,6 +77,7 @@ const router = createBrowserRouter([
                         element: withSuspense(AdminPage),
                         children: [
                             { path: "", element: withSuspense(AdminDashboard) },
+                            { path: "onboarding", element: withSuspense(AdminOnboarding) },
                             { path: "draws", element: withSuspense(AdminDraws) },
                             { path: "matches", element: withSuspense(AdminMatches) },
                             { path: "players", element: withSuspense(AdminPlayers) },
