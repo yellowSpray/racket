@@ -459,6 +459,12 @@ function parseTimeToMinutes(t: string): number {
     return parseInt(match[1], 10) * 60 + parseInt(match[2], 10)
 }
 
+/** "00:00" ou vide = pas de contrainte de départ = fin de journée (1440 min) */
+function parseDepartureMinutes(departure: string | undefined): number {
+    if (!departure || departure === "00:00") return 24 * 60
+    return parseTimeToMinutes(departure)
+}
+
 /**
  * Calcule la fenêtre de disponibilité commune (intersection) pour deux joueurs sur une date.
  * Ne vérifie PAS les absences (gérées comme contrainte souple ailleurs).
@@ -474,8 +480,8 @@ function getAvailabilityWindow(
 
     const arrival1 = c1?.arrival ? parseTimeToMinutes(c1.arrival) : 0
     const arrival2 = c2?.arrival ? parseTimeToMinutes(c2.arrival) : 0
-    const departure1 = c1?.departure ? parseTimeToMinutes(c1.departure) : 24 * 60
-    const departure2 = c2?.departure ? parseTimeToMinutes(c2.departure) : 24 * 60
+    const departure1 = parseDepartureMinutes(c1?.departure)
+    const departure2 = parseDepartureMinutes(c2?.departure)
 
     return {
         start: Math.max(arrival1, arrival2),
@@ -527,8 +533,8 @@ export function validateMatchSlot(
     // Hard constraints: arrival / departure
     const arrival1 = c1?.arrival ? parseTimeToMinutes(c1.arrival) : 0
     const arrival2 = c2?.arrival ? parseTimeToMinutes(c2.arrival) : 0
-    const departure1 = c1?.departure ? parseTimeToMinutes(c1.departure) : 24 * 60
-    const departure2 = c2?.departure ? parseTimeToMinutes(c2.departure) : 24 * 60
+    const departure1 = parseDepartureMinutes(c1?.departure)
+    const departure2 = parseDepartureMinutes(c2?.departure)
 
     let valid = true
 
