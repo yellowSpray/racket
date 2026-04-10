@@ -12,17 +12,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search01Icon } from "hugeicons-react";
 import { useEffect, useMemo, useState } from "react";
 
 export function AdminPlayers() {
 
-    const { players, addPlayer, updatePlayer, updatePaymentStatus, updateAbsences, loading, fetchPlayer } = usePlayers();
+    const { players, addPlayer, updatePlayer, deletePlayer, updatePaymentStatus, updateAbsences, loading, fetchPlayer } = usePlayers();
     const [statusFilter, setStatusFilter] = useState<string>("all")
     const [searchFilter, setSearchFilter] = useState("")
+    const [selectedIds, setSelectedIds] = useState<string[]>([])
+    const [deleting, setDeleting] = useState(false)
 
     const columns = playerColumns(updatePlayer, updatePaymentStatus, updateAbsences)
+
+    const handleDeleteSelected = async () => {
+        console.log("[handleDeleteSelected] ids à supprimer:", selectedIds)
+        setDeleting(true)
+        await Promise.all(selectedIds.map((id) => deletePlayer(id)))
+        console.log("[handleDeleteSelected] done")
+        setSelectedIds([])
+        setDeleting(false)
+    }
 
     useEffect(() => {
         fetchPlayer()
@@ -91,8 +114,31 @@ export function AdminPlayers() {
                     />
                 </div>
 
-                {/* Droite : Ajout */}
-                <div className="flex flex-row items-center gap-4">
+                {/* Droite : Actions */}
+                <div className="flex flex-row items-center gap-2">
+                    {selectedIds.length > 0 && (
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm" disabled={deleting}>
+                                    Supprimer ({selectedIds.length})
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Supprimer {selectedIds.length} joueur{selectedIds.length > 1 ? "s" : ""} ?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Ces joueurs seront retirés de l'événement courant. Cette action est irréversible.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleDeleteSelected}>
+                                        Supprimer
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
                     <EditPlayers mode="create" onSave={addPlayer} />
                 </div>
 
@@ -100,7 +146,7 @@ export function AdminPlayers() {
 
             {/* Tableau */}
             <div className="flex-1 min-h-0">
-                <DataTable columns={columns} data={filteredPlayers as PlayerType[]} globalFilter={searchFilter} onGlobalFilterChange={setSearchFilter} />
+                <DataTable columns={columns} data={filteredPlayers as PlayerType[]} globalFilter={searchFilter} onGlobalFilterChange={setSearchFilter} onSelectionChange={setSelectedIds} />
             </div>
         </div>
     )

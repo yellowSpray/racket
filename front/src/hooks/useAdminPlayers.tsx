@@ -359,6 +359,41 @@ export function useAdminPlayers() {
     }
 
     /**
+     * Supprime définitivement un joueur du club (suppression du profil).
+     * Les entrées liées (event_players, player_status, schedule, absences) sont
+     * supprimées en cascade côté base de données.
+     */
+    const deletePlayer = async (playerId: string) => {
+        console.log("[deletePlayer] start", playerId)
+        setLoading(true)
+        setError(null)
+
+        try {
+            const { data, error: deleteError, status, statusText } = await supabase
+                .from("profiles")
+                .delete()
+                .eq("id", playerId)
+                .select()
+
+            console.log("[deletePlayer] response", { data, error: deleteError, status, statusText })
+
+            if (deleteError) {
+                console.error("[deletePlayer] error", deleteError)
+                handleHookError(deleteError, setError, "useAdminPlayers.delete")
+                setLoading(false)
+                return
+            }
+
+            console.log("[deletePlayer] success, refreshing...")
+            await refreshCurrentView()
+        } catch (err) {
+            console.error("[deletePlayer] caught exception", err)
+            handleHookError(err, setError, "useAdminPlayers.delete")
+            setLoading(false)
+        }
+    }
+
+    /**
      * Met à jour le statut de paiement d'un joueur pour un événement donné.
      * Bascule entre paid/unpaid et enregistre la date de paiement si applicable.
      */
@@ -433,6 +468,7 @@ export function useAdminPlayers() {
         error,
         addPlayer,
         updatePlayer,
+        deletePlayer,
         removePlayerFromEvent,
         updatePaymentStatus,
         updateAbsences,

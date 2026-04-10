@@ -68,6 +68,7 @@ export interface PlayersContextType {
     error: string | null;
     addPlayer: (player: Partial<PlayerType>) => Promise<void>;
     updatePlayer: (id: string, updates: Partial<PlayerType>) => Promise<void>;
+    deletePlayer: (id: string) => Promise<void>;
     removePlayerFromEvent: (id: string) => Promise<void>;
     updatePaymentStatus: (playerId: string, eventId: string, newStatus: PaymentStatus) => Promise<void>;
     updateAbsences: (playerId: string, dates: string[]) => Promise<void>;

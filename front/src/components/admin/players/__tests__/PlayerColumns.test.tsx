@@ -122,9 +122,9 @@ describe('PlayerColumns', () => {
     }
   })
 
-  it('has 10 columns total', () => {
+  it('has 11 columns total (including select checkbox)', () => {
     const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus, mockUpdateAbsences)
-    expect(cols.length).toBe(10)
+    expect(cols.length).toBe(11)
   })
 
   it('renders all payment badges when 2 or fewer', () => {

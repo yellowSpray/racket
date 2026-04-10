@@ -428,8 +428,8 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
         <Dialog open={open} onOpenChange={setOpen}>
             {!isControlled && (
                 <DialogTrigger asChild>
-                    <Button variant="default" size="lg">
-                        <Add01Icon size="20" strokeWidth={2}/>
+                    <Button variant="default" size="sm">
+                        <Add01Icon size="16" strokeWidth={2}/>
                         Ajouter
                     </Button>
                 </DialogTrigger>

@@ -1,4 +1,4 @@
-import { flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type SortingState } from "@tanstack/react-table";
+import { flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type SortingState, type RowSelectionState } from "@tanstack/react-table";
 import type { ColumnDef, RowData } from "@tanstack/react-table";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -12,21 +12,24 @@ declare module '@tanstack/react-table' {
     }
 }
 
-interface DataTableProps<TData, Tvalue> {
+interface DataTableProps<TData extends { id: string }, Tvalue> {
     columns: ColumnDef<TData, Tvalue>[]
     data: TData[]
     globalFilter?: string
     onGlobalFilterChange?: (value: string) => void
+    onSelectionChange?: (selectedIds: string[]) => void
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends { id: string }, TValue>({
     columns,
     data,
     globalFilter: externalFilter,
     onGlobalFilterChange: externalFilterChange,
+    onSelectionChange,
 }: DataTableProps<TData, TValue>) {
 
     const [sorting, setSorting] = useState<SortingState>([])
+    const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
     const [internalFilter, setInternalFilter] = useState("")
     const globalFilter = externalFilter ?? internalFilter
     const setGlobalFilter = externalFilterChange ?? setInternalFilter
@@ -39,7 +42,14 @@ export function DataTable<TData, TValue>({
         getSortedRowModel: getSortedRowModel(),
         onSortingChange: setSorting,
         onGlobalFilterChange: setGlobalFilter,
-        state: { sorting, globalFilter },
+        onRowSelectionChange: (updater) => {
+            const next = typeof updater === "function" ? updater(rowSelection) : updater
+            setRowSelection(next)
+            onSelectionChange?.(Object.keys(next).filter((k) => next[k]))
+        },
+        getRowId: (row) => row.id,
+        enableRowSelection: true,
+        state: { sorting, globalFilter, rowSelection },
     })
 
     return (

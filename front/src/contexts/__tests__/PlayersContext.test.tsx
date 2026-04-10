@@ -24,6 +24,7 @@ const mockPlayersData = vi.hoisted(() => {
         error: null,
         addPlayer: vi.fn(),
         updatePlayer: vi.fn(),
+        deletePlayer: vi.fn(),
         removePlayerFromEvent: vi.fn(),
         fetchPlayer: vi.fn(),
         fetchPlayersByEvent: vi.fn(),

@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { PlayerActions } from "@/components/admin/players/PlayerActions";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -9,6 +10,29 @@ export const columns = (
     updatePaymentStatus: (playerId: string, eventId: string, newStatus: PaymentStatus) => Promise<void>,
     updateAbsences: (playerId: string, dates: string[]) => Promise<void>,
 ): ColumnDef<PlayerType>[] => [
+    {
+        id: "select",
+        enableSorting: false,
+        enableGlobalFilter: false,
+        meta: { className: "w-10 pl-4" },
+        header: ({ table }) => (
+            <Checkbox
+                checked={
+                    table.getIsAllPageRowsSelected() ||
+                    (table.getIsSomePageRowsSelected() ? "indeterminate" : false)
+                }
+                onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
+                aria-label="Tout sélectionner"
+            />
+        ),
+        cell: ({ row }) => (
+            <Checkbox
+                checked={row.getIsSelected()}
+                onCheckedChange={(v) => row.toggleSelected(!!v)}
+                aria-label="Sélectionner"
+            />
+        ),
+    },
     {
         accessorKey: "full_name",
         header: "Prénom Nom",
