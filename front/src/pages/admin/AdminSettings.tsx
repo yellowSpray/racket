@@ -89,7 +89,6 @@ export function AdminSettings () {
                             onInviteOpenChange={setUsersInviteOpen}
                         />
                     </TabsContent>
-
                 </div>
             </Tabs>
         </div>

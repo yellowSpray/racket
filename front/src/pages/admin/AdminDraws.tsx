@@ -93,7 +93,7 @@ export function AdminDraws () {
                     <p className="text-gray-500 mt-3">
                         Créez un événement depuis les paramètres pour commencer
                     </p>
-                    <Button className="mt-6" size="sm" variant="outline" onClick={() => navigate("/admin/settings")}>
+                    <Button className="mt-6" size="lg" variant="outline" onClick={() => navigate("/admin/settings")}>
                         <Settings01Icon className="mr-2 h-4 w-4" />
                         Aller aux paramètres
                     </Button>
@@ -177,7 +177,7 @@ export function AdminDraws () {
                     <p className="text-gray-500 mt-2">
                         Créez des tableaux depuis les paramètres de l'événement
                     </p>
-                    <Button className="mt-4" variant="outline" onClick={() => navigate("/admin/settings")}>
+                    <Button className="mt-4" variant="outline" size="lg" onClick={() => navigate("/admin/settings")}>
                         <Settings01Icon className="mr-2 h-4 w-4" />
                         Aller aux paramètres
                     </Button>
