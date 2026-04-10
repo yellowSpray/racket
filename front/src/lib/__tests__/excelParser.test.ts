@@ -318,25 +318,32 @@ describe("parsePlayersFromSheet", () => {
         expect(players[0].status).toEqual(["active", "member"])
     })
 
-    it("active=active, member=no → status=['active']", () => {
+    it("active=active, member=no → status=['active', 'visitor']", () => {
         const mappingWithBool: ColumnMapping = { ...mapping, active: 5, member: 6 }
         const data = [["Alexandra", "Empain", "0498571931", "a@b.com", "", "active", "no"]]
         const players = parsePlayersFromSheet(data, mappingWithBool)
-        expect(players[0].status).toEqual(["active"])
+        expect(players[0].status).toEqual(["active", "visitor"])
     })
 
-    it("active=inactive, member=no → status=['active'] (défaut)", () => {
+    it("active=inactive, member=no → status=['inactive', 'visitor']", () => {
         const mappingWithBool: ColumnMapping = { ...mapping, active: 5, member: 6 }
         const data = [["Alexandra", "Empain", "0498571931", "a@b.com", "", "inactive", "no"]]
         const players = parsePlayersFromSheet(data, mappingWithBool)
-        expect(players[0].status).toEqual(["active"])
+        expect(players[0].status).toEqual(["inactive", "visitor"])
     })
 
-    it("active=oui, member=no → status=['active'] (valeur française)", () => {
+    it("active=inactive, member=yes → status=['inactive', 'member']", () => {
+        const mappingWithBool: ColumnMapping = { ...mapping, active: 5, member: 6 }
+        const data = [["Alexandra", "Empain", "0498571931", "a@b.com", "", "inactive", "yes"]]
+        const players = parsePlayersFromSheet(data, mappingWithBool)
+        expect(players[0].status).toEqual(["inactive", "member"])
+    })
+
+    it("active=oui, member=no → status=['active', 'visitor'] (valeur française)", () => {
         const mappingWithBool: ColumnMapping = { ...mapping, active: 5, member: 6 }
         const data = [["Alexandra", "Empain", "0498571931", "a@b.com", "", "oui", "no"]]
         const players = parsePlayersFromSheet(data, mappingWithBool)
-        expect(players[0].status).toEqual(["active"])
+        expect(players[0].status).toEqual(["active", "visitor"])
     })
 
     it("only active column mapped → works without member", () => {

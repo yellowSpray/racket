@@ -14,6 +14,7 @@ import {
     findHeaderRow,
     fuzzyMatchColumns,
     parsePlayersFromSheet,
+    excelTimeToHHMM,
     type ColumnMapping,
 } from "@/lib/excelParser"
 import { usePlayers } from "@/contexts/PlayersContext"
@@ -125,7 +126,7 @@ function UploadStage({ isDragging, onDragOver, onDragLeave, onDrop, onFileChange
             </div>
 
             <div className="flex justify-end">
-                <Button variant="ghost" onClick={onSkip}>Passer cette étape</Button>
+                <Button variant="outline" size="lg" onClick={onSkip}>Passer cette étape</Button>
             </div>
         </div>
     )
@@ -197,11 +198,19 @@ function MappingStage({
                     <tbody className="divide-y">
                         {previewRows.map((row, i) => (
                             <tr key={i} className="hover:bg-muted/30">
-                                {visibleCols.map(({ index }) => (
-                                    <td key={index} className="px-3 py-2 text-muted-foreground">
-                                        {String((row as unknown[])[index] ?? "") || "—"}
-                                    </td>
-                                ))}
+                                {visibleCols.map(({ index }) => {
+                                    const raw = (row as unknown[])[index]
+                                    const field = colToField[index]
+                                    const isTime = field === "arrival" || field === "departure"
+                                    const display = isTime && typeof raw === "number" && raw > 0 && raw < 1
+                                        ? excelTimeToHHMM(raw)
+                                        : String(raw ?? "")
+                                    return (
+                                        <td key={index} className="px-3 py-2 text-muted-foreground">
+                                            {display || "—"}
+                                        </td>
+                                    )
+                                })}
                             </tr>
                         ))}
                     </tbody>
@@ -219,10 +228,10 @@ function MappingStage({
             )}
 
             <div className="flex justify-between">
-                <Button variant="ghost" onClick={onBack}>Retour</Button>
+                <Button variant="outline" size="lg" onClick={onBack}>Retour</Button>
                 <div className="flex gap-3">
-                    <Button variant="outline" onClick={onSkip}>Passer</Button>
-                    <Button onClick={onImport} disabled={missingRequired.length > 0}>
+                    <Button variant="outline" size="lg" onClick={onSkip}>Passer</Button>
+                    <Button size="lg" onClick={onImport} disabled={missingRequired.length > 0}>
                         Importer {playerCount} joueur(s)
                         <ArrowRight className="size-4 ml-1" />
                     </Button>
@@ -264,7 +273,7 @@ function DoneStage({ successCount, errors, onNext }: { successCount: number; err
                     {errors > 0 && ` ${errors} erreur(s).`}
                 </p>
             </div>
-            <Button onClick={onNext}>
+            <Button onClick={onNext} size="lg">
                 Créer le premier événement
                 <ArrowRight className="size-4 ml-1" />
             </Button>

@@ -3,6 +3,8 @@
  * Supporte les fichiers .xlsx et .csv avec reconnaissance floue des colonnes.
  */
 
+import type { PlayerStatus } from "@/types/player"
+
 export interface ColumnMapping {
     first_name?: number
     last_name?: number
@@ -21,7 +23,7 @@ export interface RawPlayer {
     email?: string
     arrival?: string
     departure?: string
-    status: string[]
+    status: PlayerStatus[]
     power_ranking: number
 }
 
@@ -176,14 +178,14 @@ export function parsePlayersFromSheet(
             }
         }
 
-        const result: string[] = []
-        if (mapping.active !== undefined && parseBooleanCell(row[mapping.active])) {
-            result.push("active")
+        const result: PlayerStatus[] = []
+        if (mapping.active !== undefined) {
+            result.push(parseBooleanCell(row[mapping.active]) ? "active" : "inactive")
         }
-        if (mapping.member !== undefined && parseBooleanCell(row[mapping.member])) {
-            result.push("member")
+        if (mapping.member !== undefined) {
+            result.push(parseBooleanCell(row[mapping.member]) ? "member" : "visitor")
         }
-        const status = result.length > 0 ? result : ["active"]
+        const status: PlayerStatus[] = result.length > 0 ? result : ["active"]
 
         players.push({
             first_name: firstName,
