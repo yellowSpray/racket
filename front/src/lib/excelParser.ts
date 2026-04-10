@@ -9,7 +9,7 @@ export interface ColumnMapping {
     phone?: number
     email?: number
     arrival?: number
-    status?: number
+    departure?: number
     active?: number
     member?: number
 }
@@ -20,6 +20,7 @@ export interface RawPlayer {
     phone?: string
     email?: string
     arrival?: string
+    departure?: string
     status: string[]
     power_ranking: number
 }
@@ -30,8 +31,8 @@ const FIELD_KEYWORDS: Record<keyof ColumnMapping, string[]> = {
     last_name: ["nom", "lastname", "last", "surname"],
     phone: ["tel", "phone", "portable", "gsm", "mobile", "telephone"],
     email: ["email", "mail", "courriel"],
-    arrival: ["heure", "arrival", "arrivee", "debut", "time"],
-    status: ["statut", "etat", "role", "type"],
+    arrival: ["heure", "arrival", "arrivee", "arrivee", "debut"],
+    departure: ["depart", "departure", "fin", "end"],
     active: ["actif", "active"],
     member: ["membre", "member", "cotisant"],
 }
@@ -45,29 +46,6 @@ function normalize(str: string): string {
         .trim()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
-}
-
-/**
- * Convertit une valeur de statut texte en tableau de statuts système.
- * Accepte les valeurs françaises et anglaises, séparées par virgule.
- * Ex: "actif" → ["active"], "membre,actif" → ["member", "active"]
- * Défaut si vide ou non reconnu : ["active"]
- */
-export function parseStatus(raw: string): string[] {
-    const normalized = normalize(raw)
-    if (!normalized) return ["active"]
-
-    const parts = normalized.split(/[,;/]/).map((s) => s.trim()).filter(Boolean)
-    const result: string[] = []
-
-    for (const part of parts) {
-        if (part === "actif" || part === "active") result.push("active")
-        else if (part === "membre" || part === "member") result.push("member")
-        else if (part === "inactif" || part === "inactive") result.push("inactive")
-        else if (part === "visiteur" || part === "visitor") result.push("visitor")
-    }
-
-    return result.length > 0 ? result : ["active"]
 }
 
 /**
@@ -150,7 +128,8 @@ export function fuzzyMatchColumns(headers: string[]): ColumnMapping {
 /**
  * Extrait les joueurs depuis les données brutes d'un sheet Excel.
  * Filtre les lignes vides et applique le mapping de colonnes.
- * Le power_ranking est mis à 5 par défaut, le statut à ["active"] si absent.
+ * Le power_ranking est mis à 5 par défaut.
+ * Le statut est déduit des colonnes active/member (booléens).
  */
 export function parsePlayersFromSheet(
     data: unknown[][],
@@ -183,27 +162,28 @@ export function parsePlayersFromSheet(
 
         let arrival: string | undefined
         if (mapping.arrival !== undefined) {
-            const rawArrival = row[mapping.arrival]
-            if (typeof rawArrival === "number" && rawArrival > 0 && rawArrival < 1) {
-                arrival = excelTimeToHHMM(rawArrival)
+            const raw = row[mapping.arrival]
+            if (typeof raw === "number" && raw > 0 && raw < 1) {
+                arrival = excelTimeToHHMM(raw)
             }
         }
 
-        let status: string[]
-        if (mapping.active !== undefined || mapping.member !== undefined) {
-            const result: string[] = []
-            if (mapping.active !== undefined && parseBooleanCell(row[mapping.active])) {
-                result.push("active")
+        let departure: string | undefined
+        if (mapping.departure !== undefined) {
+            const raw = row[mapping.departure]
+            if (typeof raw === "number" && raw > 0 && raw < 1) {
+                departure = excelTimeToHHMM(raw)
             }
-            if (mapping.member !== undefined && parseBooleanCell(row[mapping.member])) {
-                result.push("member")
-            }
-            status = result.length > 0 ? result : ["active"]
-        } else if (mapping.status !== undefined) {
-            status = parseStatus(String(row[mapping.status] ?? ""))
-        } else {
-            status = ["active"]
         }
+
+        const result: string[] = []
+        if (mapping.active !== undefined && parseBooleanCell(row[mapping.active])) {
+            result.push("active")
+        }
+        if (mapping.member !== undefined && parseBooleanCell(row[mapping.member])) {
+            result.push("member")
+        }
+        const status = result.length > 0 ? result : ["active"]
 
         players.push({
             first_name: firstName,
@@ -211,6 +191,7 @@ export function parsePlayersFromSheet(
             phone,
             email,
             arrival,
+            departure,
             status,
             power_ranking: 5,
         })

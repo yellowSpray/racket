@@ -4,7 +4,6 @@ import {
     fuzzyMatchColumns,
     parsePlayersFromSheet,
     excelTimeToHHMM,
-    parseStatus,
     parseBooleanCell,
     type ColumnMapping,
 } from "../excelParser"
@@ -69,46 +68,73 @@ describe("findHeaderRow", () => {
     })
 })
 
-describe("parseStatus", () => {
-    it("returns ['active'] for empty string", () => {
-        expect(parseStatus("")).toEqual(["active"])
+describe("parseBooleanCell", () => {
+    it("boolean true → true", () => {
+        expect(parseBooleanCell(true)).toBe(true)
     })
 
-    it("maps 'actif' to active", () => {
-        expect(parseStatus("actif")).toEqual(["active"])
+    it("boolean false → false", () => {
+        expect(parseBooleanCell(false)).toBe(false)
     })
 
-    it("maps 'membre' to member", () => {
-        expect(parseStatus("membre")).toEqual(["member"])
+    it("number 1 → true", () => {
+        expect(parseBooleanCell(1)).toBe(true)
     })
 
-    it("maps 'active' (english) to active", () => {
-        expect(parseStatus("active")).toEqual(["active"])
+    it("number 0 → false", () => {
+        expect(parseBooleanCell(0)).toBe(false)
     })
 
-    it("maps 'member' (english) to member", () => {
-        expect(parseStatus("member")).toEqual(["member"])
+    it('"active" → true', () => {
+        expect(parseBooleanCell("active")).toBe(true)
     })
 
-    it("maps 'inactif' to inactive", () => {
-        expect(parseStatus("inactif")).toEqual(["inactive"])
+    it('"inactive" → false', () => {
+        expect(parseBooleanCell("inactive")).toBe(false)
     })
 
-    it("handles comma-separated values", () => {
-        expect(parseStatus("actif,membre")).toEqual(["active", "member"])
+    it('"yes" → true', () => {
+        expect(parseBooleanCell("yes")).toBe(true)
     })
 
-    it("handles semicolon-separated values", () => {
-        expect(parseStatus("actif;membre")).toEqual(["active", "member"])
+    it('"no" → false', () => {
+        expect(parseBooleanCell("no")).toBe(false)
     })
 
-    it("returns ['active'] for unrecognized value", () => {
-        expect(parseStatus("inconnu")).toEqual(["active"])
+    it('"oui" → true', () => {
+        expect(parseBooleanCell("oui")).toBe(true)
     })
 
-    it("is case-insensitive", () => {
-        expect(parseStatus("ACTIF")).toEqual(["active"])
-        expect(parseStatus("Membre")).toEqual(["member"])
+    it('"non" → false', () => {
+        expect(parseBooleanCell("non")).toBe(false)
+    })
+
+    it('"x" → true', () => {
+        expect(parseBooleanCell("x")).toBe(true)
+    })
+
+    it('"" → false', () => {
+        expect(parseBooleanCell("")).toBe(false)
+    })
+
+    it('"false" → false', () => {
+        expect(parseBooleanCell("false")).toBe(false)
+    })
+
+    it('"0" → false', () => {
+        expect(parseBooleanCell("0")).toBe(false)
+    })
+
+    it('"-" → false', () => {
+        expect(parseBooleanCell("-")).toBe(false)
+    })
+
+    it("case-insensitive: ACTIVE → true", () => {
+        expect(parseBooleanCell("ACTIVE")).toBe(true)
+    })
+
+    it("case-insensitive: INACTIVE → false", () => {
+        expect(parseBooleanCell("INACTIVE")).toBe(false)
     })
 })
 
@@ -148,10 +174,35 @@ describe("fuzzyMatchColumns", () => {
         expect(mapping.arrival).toBe(3)
     })
 
-    it("matches 'statut' to status", () => {
-        const headers = ["prenom", "nom", "statut"]
+    it("matches 'arrivée' (accentué) to arrival", () => {
+        const headers = ["prenom", "nom", "arrivée", "depart"]
         const mapping = fuzzyMatchColumns(headers)
-        expect(mapping.status).toBe(2)
+        expect(mapping.arrival).toBe(2)
+    })
+
+    it("matches 'depart' to departure", () => {
+        const headers = ["prenom", "nom", "arrivee", "depart"]
+        const mapping = fuzzyMatchColumns(headers)
+        expect(mapping.departure).toBe(3)
+    })
+
+    it("matches 'active' and 'member' columns", () => {
+        const headers = ["prenom", "nom", "active", "member"]
+        const mapping = fuzzyMatchColumns(headers)
+        expect(mapping.active).toBe(2)
+        expect(mapping.member).toBe(3)
+    })
+
+    it("matches 'actif' as active column", () => {
+        const headers = ["prenom", "nom", "actif", "membre"]
+        const mapping = fuzzyMatchColumns(headers)
+        expect(mapping.active).toBe(2)
+    })
+
+    it("matches 'membre' (français) as member column", () => {
+        const headers = ["prenom", "nom", "membre"]
+        const mapping = fuzzyMatchColumns(headers)
+        expect(mapping.member).toBe(2)
     })
 
     it("returns undefined for unrecognized columns", () => {
@@ -227,28 +278,37 @@ describe("parsePlayersFromSheet", () => {
         expect(players[0].arrival).toBeUndefined()
     })
 
+    it("parses departure column", () => {
+        const mappingWithDep: ColumnMapping = { ...mapping, departure: 5 }
+        const data = [["Alexandra", "Empain", "0498571931", "a@b.com", 0.8541666666666666, 0.9583333333333334]]
+        const players = parsePlayersFromSheet(data, mappingWithDep)
+        expect(players[0].arrival).toBe("20:30")
+        expect(players[0].departure).toBe("23:00")
+    })
+
+    it("departure undefined when column not in mapping", () => {
+        const data = [["Alexandra", "Empain", "0498571931", "a@b.com", ""]]
+        const players = parsePlayersFromSheet(data, mapping)
+        expect(players[0].departure).toBeUndefined()
+    })
+
+    it("departure undefined when cell is empty", () => {
+        const mappingWithDep: ColumnMapping = { ...mapping, departure: 5 }
+        const data = [["Alexandra", "Empain", "0498571931", "a@b.com", 0.8541666666666666, ""]]
+        const players = parsePlayersFromSheet(data, mappingWithDep)
+        expect(players[0].departure).toBeUndefined()
+    })
+
     it("sets default power_ranking to 5", () => {
         const data = [["Alexandra", "Empain", "0498571931", "a@b.com", ""]]
         const players = parsePlayersFromSheet(data, mapping)
         expect(players[0].power_ranking).toBe(5)
     })
 
-    it("defaults status to ['active'] when no status column", () => {
+    it("defaults status to ['active'] when no active/member columns", () => {
         const data = [["Alexandra", "Empain", "0498571931", "a@b.com", ""]]
         const players = parsePlayersFromSheet(data, mapping)
         expect(players[0].status).toEqual(["active"])
-    })
-
-    it("reads status from mapped column", () => {
-        const mappingWithStatus: ColumnMapping = { ...mapping, status: 5 }
-        const data = [["Alexandra", "Empain", "0498571931", "a@b.com", "", "membre"]]
-        const players = parsePlayersFromSheet(data, mappingWithStatus)
-        expect(players[0].status).toEqual(["member"])
-    })
-
-    it("returns empty array for empty data", () => {
-        const players = parsePlayersFromSheet([], mapping)
-        expect(players).toHaveLength(0)
     })
 
     it("reads active+member boolean columns (format réel)", () => {
@@ -272,6 +332,13 @@ describe("parsePlayersFromSheet", () => {
         expect(players[0].status).toEqual(["active"])
     })
 
+    it("active=oui, member=no → status=['active'] (valeur française)", () => {
+        const mappingWithBool: ColumnMapping = { ...mapping, active: 5, member: 6 }
+        const data = [["Alexandra", "Empain", "0498571931", "a@b.com", "", "oui", "no"]]
+        const players = parsePlayersFromSheet(data, mappingWithBool)
+        expect(players[0].status).toEqual(["active"])
+    })
+
     it("only active column mapped → works without member", () => {
         const mappingActiveOnly: ColumnMapping = { ...mapping, active: 5 }
         const data = [["Alexandra", "Empain", "0498571931", "a@b.com", "", "active"]]
@@ -279,101 +346,8 @@ describe("parsePlayersFromSheet", () => {
         expect(players[0].status).toEqual(["active"])
     })
 
-    it("active/member columns take priority over status column", () => {
-        const mappingBoth: ColumnMapping = { ...mapping, active: 5, member: 6, status: 7 }
-        const data = [["Alexandra", "Empain", "0498571931", "a@b.com", "", "active", "yes", "statut_ignoré"]]
-        const players = parsePlayersFromSheet(data, mappingBoth)
-        expect(players[0].status).toEqual(["active", "member"])
-    })
-})
-
-describe("parseBooleanCell", () => {
-    it("boolean true → true", () => {
-        expect(parseBooleanCell(true)).toBe(true)
-    })
-
-    it("boolean false → false", () => {
-        expect(parseBooleanCell(false)).toBe(false)
-    })
-
-    it("number 1 → true", () => {
-        expect(parseBooleanCell(1)).toBe(true)
-    })
-
-    it("number 0 → false", () => {
-        expect(parseBooleanCell(0)).toBe(false)
-    })
-
-    it('"active" → true', () => {
-        expect(parseBooleanCell("active")).toBe(true)
-    })
-
-    it('"inactive" → false', () => {
-        expect(parseBooleanCell("inactive")).toBe(false)
-    })
-
-    it('"yes" → true', () => {
-        expect(parseBooleanCell("yes")).toBe(true)
-    })
-
-    it('"no" → false', () => {
-        expect(parseBooleanCell("no")).toBe(false)
-    })
-
-    it('"oui" → true', () => {
-        expect(parseBooleanCell("oui")).toBe(true)
-    })
-
-    it('"non" → false', () => {
-        expect(parseBooleanCell("non")).toBe(false)
-    })
-
-    it('"x" → true', () => {
-        expect(parseBooleanCell("x")).toBe(true)
-    })
-
-    it('"" → false', () => {
-        expect(parseBooleanCell("")).toBe(false)
-    })
-
-    it('"false" → false', () => {
-        expect(parseBooleanCell("false")).toBe(false)
-    })
-
-    it('"0" → false', () => {
-        expect(parseBooleanCell("0")).toBe(false)
-    })
-
-    it('"-" → false', () => {
-        expect(parseBooleanCell("-")).toBe(false)
-    })
-
-    it("case-insensitive: ACTIVE → true", () => {
-        expect(parseBooleanCell("ACTIVE")).toBe(true)
-    })
-
-    it("case-insensitive: INACTIVE → false", () => {
-        expect(parseBooleanCell("INACTIVE")).toBe(false)
-    })
-})
-
-describe("fuzzyMatchColumns — active/member", () => {
-    it("matches 'active' and 'member' columns (format réel)", () => {
-        const headers = ["prenom", "nom", "active", "member"]
-        const mapping = fuzzyMatchColumns(headers)
-        expect(mapping.active).toBe(2)
-        expect(mapping.member).toBe(3)
-    })
-
-    it("matches 'actif' as active column", () => {
-        const headers = ["prenom", "nom", "actif", "membre"]
-        const mapping = fuzzyMatchColumns(headers)
-        expect(mapping.active).toBe(2)
-    })
-
-    it("matches 'membre' (français) as member column", () => {
-        const headers = ["prenom", "nom", "membre"]
-        const mapping = fuzzyMatchColumns(headers)
-        expect(mapping.member).toBe(2)
+    it("returns empty array for empty data", () => {
+        const players = parsePlayersFromSheet([], mapping)
+        expect(players).toHaveLength(0)
     })
 })
