@@ -5,7 +5,7 @@ import { UsersManager } from "@/components/admin/settings/UsersManager"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { UserAdd01Icon, Search01Icon } from "hugeicons-react"
+import { UserAdd01Icon, Search01Icon, Cancel01Icon } from "hugeicons-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useClubConfig } from "@/hooks/useClubConfig"
 import type { ClubDefaults } from "@/components/admin/settings/EventDialog"
@@ -54,8 +54,16 @@ export function AdminSettings () {
                                 value={usersSearch}
                                 onChange={(e) => setUsersSearch(e.target.value)}
                                 placeholder="Rechercher par nom ou email..."
-                                className="pl-9 rounded-full h-10"
+                                className="pl-9 pr-9 rounded-full h-10"
                             />
+                            {usersSearch && (
+                                <button
+                                    onClick={() => setUsersSearch("")}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                >
+                                    <Cancel01Icon className="h-4 w-4" />
+                                </button>
+                            )}
                         </div>
                     )}
                     <div className="flex items-center gap-3 shrink-0">

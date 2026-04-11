@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search01Icon } from "hugeicons-react";
+import { Search01Icon, Cancel01Icon } from "hugeicons-react";
 import { useEffect, useMemo, useState } from "react";
 
 export function AdminPlayers() {
@@ -35,8 +35,9 @@ export function AdminPlayers() {
     const [searchFilter, setSearchFilter] = useState("")
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [deleting, setDeleting] = useState(false)
+    const [editPlayer, setEditPlayer] = useState<PlayerType | null>(null)
 
-    const columns = playerColumns(updatePlayer, updatePaymentStatus, updateAbsences)
+    const columns = playerColumns()
 
     const handleDeleteSelected = async () => {
         console.log("[handleDeleteSelected] ids à supprimer:", selectedIds)
@@ -110,8 +111,16 @@ export function AdminPlayers() {
                         value={searchFilter}
                         onChange={(e) => setSearchFilter(e.target.value)}
                         placeholder="Rechercher par nom, email ou téléphone..."
-                        className="pl-9 rounded-full h-10"
+                        className="pl-9 pr-9 rounded-full h-10"
                     />
+                    {searchFilter && (
+                        <button
+                            onClick={() => setSearchFilter("")}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                            <Cancel01Icon className="h-4 w-4" />
+                        </button>
+                    )}
                 </div>
 
                 {/* Droite : Actions */}
@@ -145,9 +154,28 @@ export function AdminPlayers() {
             </div>
 
             {/* Tableau */}
-            <div className="flex-1 min-h-0">
-                <DataTable columns={columns} data={filteredPlayers as PlayerType[]} globalFilter={searchFilter} onGlobalFilterChange={setSearchFilter} onSelectionChange={setSelectedIds} />
+            <div className="flex flex-col h-full min-h-0">
+                <DataTable
+                    columns={columns}
+                    data={filteredPlayers as PlayerType[]}
+                    globalFilter={searchFilter}
+                    onGlobalFilterChange={setSearchFilter}
+                    onSelectionChange={setSelectedIds}
+                    onRowClick={(player) => setEditPlayer(player as PlayerType)}
+                />
             </div>
+
+            {editPlayer && (
+                <EditPlayers
+                    mode="edit"
+                    playerData={editPlayer}
+                    onSave={(data) => updatePlayer(editPlayer.id, data)}
+                    onPaymentChange={updatePaymentStatus}
+                    onAbsencesChange={updateAbsences}
+                    open={true}
+                    onOpenChange={(open) => { if (!open) setEditPlayer(null) }}
+                />
+            )}
         </div>
     )
 }

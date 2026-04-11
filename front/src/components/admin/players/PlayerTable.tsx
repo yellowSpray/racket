@@ -18,6 +18,7 @@ interface DataTableProps<TData extends { id: string }, Tvalue> {
     globalFilter?: string
     onGlobalFilterChange?: (value: string) => void
     onSelectionChange?: (selectedIds: string[]) => void
+    onRowClick?: (row: TData) => void
 }
 
 export function DataTable<TData extends { id: string }, TValue>({
@@ -26,6 +27,7 @@ export function DataTable<TData extends { id: string }, TValue>({
     globalFilter: externalFilter,
     onGlobalFilterChange: externalFilterChange,
     onSelectionChange,
+    onRowClick,
 }: DataTableProps<TData, TValue>) {
 
     const [sorting, setSorting] = useState<SortingState>([])
@@ -53,7 +55,7 @@ export function DataTable<TData extends { id: string }, TValue>({
     })
 
     return (
-        <ScrollArea className="rounded-md border h-full" type="auto">
+        <ScrollArea className="rounded-md border max-h-full" type="auto">
             <Table className="w-full">
                 <TableHeader className="sticky top-0 z-10 bg-background">
                     {table.getHeaderGroups().map((headerGroup) => (
@@ -94,12 +96,15 @@ export function DataTable<TData extends { id: string }, TValue>({
                             <TableRow
                                 key={row.id}
                                 data-state={row.getIsSelected() && "selected"}
+                                className={onRowClick ? "cursor-pointer" : ""}
+                                onClick={() => onRowClick?.(row.original)}
                             >
                                 {row.getVisibleCells().map((cell) => (
                                     <TableCell
                                         key={cell.id}
                                         style={{ minWidth: cell.column.columnDef.minSize }}
                                         className={cell.column.columnDef.meta?.className}
+                                        onClick={cell.column.id === "select" ? (e) => e.stopPropagation() : undefined}
                                     >
                                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                     </TableCell>

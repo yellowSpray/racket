@@ -1,15 +1,10 @@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { PlayerActions } from "@/components/admin/players/PlayerActions";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { PlayerType, PaymentStatus } from "@/types/player";
+import type { PlayerType } from "@/types/player";
 
-export const columns = (
-    updatePlayer: (id: string, data: Partial<PlayerType>) => Promise<void>,
-    updatePaymentStatus: (playerId: string, eventId: string, newStatus: PaymentStatus) => Promise<void>,
-    updateAbsences: (playerId: string, dates: string[]) => Promise<void>,
-): ColumnDef<PlayerType>[] => [
+export const columns = (): ColumnDef<PlayerType>[] => [
     {
         id: "select",
         enableSorting: false,
@@ -138,19 +133,4 @@ export const columns = (
         meta: { className: "text-center" },
         minSize: 50,
     },
-    {
-        id: "actions",
-        header: "Actions",
-        enableSorting: false,
-        meta: { className: "text-center" },
-        minSize: 60,
-        cell: ({row}) => (
-            <PlayerActions
-                player={row.original}
-                updatePlayer={updatePlayer}
-                updatePaymentStatus={updatePaymentStatus}
-                updateAbsences={updateAbsences}
-            />
-        )
-    }
 ]
