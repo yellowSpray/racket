@@ -10,6 +10,7 @@ export interface UserProfile {
     role: 'user' | 'admin' | 'superadmin';
     club_id: string | null,
     avatar_url?: string;
+    power_ranking?: number;
 }
 
 export interface AuthContextType {
