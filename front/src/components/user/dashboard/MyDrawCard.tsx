@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { LayoutTable02Icon } from "hugeicons-react"
 import { DrawTable } from "@/components/admin/draws/DrawTable"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import type { Group } from "@/types/draw"
 import type { Match } from "@/types/match"
 import type { ScoringRules } from "@/types/settings"
@@ -31,15 +30,13 @@ export function MyDrawCard({ myGroup, matches, scoringRules, className }: MyDraw
                     )}
                 </CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 min-h-0">
+            <CardContent className="flex-1 h-full">
                 {myGroup ? (
-                    <ScrollArea className="h-full" type="auto">
-                        <DrawTable
-                            group={myGroup}
-                            matches={groupMatches}
-                            scoringRules={scoringRules}
-                        />
-                    </ScrollArea>
+                    <DrawTable
+                        group={myGroup}
+                        matches={groupMatches}
+                        scoringRules={scoringRules}
+                    />
                 ) : (
                     <div className="flex flex-col items-center justify-center py-8 text-gray-400">
                         <LayoutTable02Icon size={32} className="mb-3" />
