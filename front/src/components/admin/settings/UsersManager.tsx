@@ -131,7 +131,8 @@ export function UsersManager({
     const handleResendInvite = async (member: ClubMember) => {
         setActionLoading(true)
         try {
-            await inviteMember(member.email, member.first_name, member.last_name)
+            // Passer l'id du profil existant pour éviter la création d'un doublon
+            await inviteMember(member.email, member.first_name, member.last_name, member.id)
             if (profile?.club_id) await fetchMembers(profile.club_id)
         } catch {
             // Error handled by caller

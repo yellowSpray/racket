@@ -59,6 +59,9 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
+  -- ON CONFLICT DO NOTHING : si un profil avec cet UUID existe déjà
+  -- (ex: profil importé Excel dont l'invite a été créée avec l'UUID existant),
+  -- on ne crée pas de doublon.
   INSERT INTO public.profiles (id, first_name, last_name, phone, club_id, role)
   VALUES (
     new.id,
@@ -67,7 +70,8 @@ BEGIN
     new.raw_user_meta_data->>'phone',
     nullif(new.raw_user_meta_data->>'club_id', '')::uuid,
     'user'
-  );
+  )
+  ON CONFLICT (id) DO NOTHING;
   RETURN new;
 END;
 $$;

@@ -9,6 +9,7 @@ interface InvitePayload {
   email: string
   first_name?: string
   last_name?: string
+  profile_id?: string  // UUID du profil existant (joueur importé sans compte auth)
 }
 
 Deno.serve(async (req: Request) => {
@@ -80,7 +81,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // Parser le body de la requête
-    const { email, first_name, last_name }: InvitePayload = await req.json()
+    const { email, first_name, last_name, profile_id }: InvitePayload = await req.json()
 
     if (!email || typeof email !== "string") {
       return new Response(
@@ -96,26 +97,73 @@ Deno.serve(async (req: Request) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
 
-    // Vérifier si l'email a déjà un compte auth actif dans le même club
-    const { data: existingMember } = await supabaseAdmin
-      .from("profiles")
-      .select("id, email")
-      .eq("email", email)
-      .eq("club_id", callerProfile.club_id)
-      .maybeSingle()
+    // Chercher un profil existant pour cet email dans ce club
+    // (joueur importé Excel ou créé manuellement, sans compte auth)
+    const profileQuery = profile_id
+      ? supabaseAdmin.from("profiles").select("id, first_name, last_name").eq("id", profile_id).eq("club_id", callerProfile.club_id).maybeSingle()
+      : supabaseAdmin.from("profiles").select("id, first_name, last_name").eq("email", email).eq("club_id", callerProfile.club_id).maybeSingle()
 
-    if (existingMember) {
-      // Vérifier si ce profil a un compte auth lié
-      const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(existingMember.id)
-      if (authUser?.user) {
+    const { data: existingProfile } = await profileQuery
+
+    if (existingProfile) {
+      // Vérifier si ce profil a déjà un compte auth actif
+      const { data: existingAuth } = await supabaseAdmin.auth.admin.getUserById(existingProfile.id)
+      if (existingAuth?.user?.email_confirmed_at) {
         return new Response(
           JSON.stringify({ success: false, error: "Ce membre a déjà un compte actif dans votre club" }),
           { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         )
       }
+
+      // Profil existant SANS compte auth confirmé :
+      // Créer l'auth user avec l'UUID du profil existant pour éviter le doublon.
+      // Le trigger handle_new_user fera ON CONFLICT DO NOTHING (profil déjà là).
+      if (!existingAuth?.user) {
+        const { error: createError } = await supabaseAdmin.auth.admin.createUser({
+          id: existingProfile.id,
+          email: email,
+          email_confirm: false,
+          user_metadata: {
+            club_id: callerProfile.club_id,
+            first_name: existingProfile.first_name || first_name || "",
+            last_name: existingProfile.last_name || last_name || "",
+          },
+        })
+        if (createError) {
+          return new Response(
+            JSON.stringify({ success: false, error: createError.message }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          )
+        }
+      }
+
+      // L'auth user existe maintenant (créé ci-dessus ou déjà là non confirmé).
+      // inviteUserByEmail sur un user existant renvoie juste l'email d'invitation, sans créer de doublon.
+      const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+        data: {
+          club_id: callerProfile.club_id,
+          first_name: existingProfile.first_name || first_name || "",
+          last_name: existingProfile.last_name || last_name || "",
+        },
+      })
+      if (inviteError) {
+        return new Response(
+          JSON.stringify({ success: false, error: inviteError.message }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        )
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "Invitation envoyée avec succès",
+          user_id: existingProfile.id,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
     }
 
-    // Envoyer l'invitation email via Supabase Auth Admin
+    // Aucun profil existant : flux standard — inviteUserByEmail crée l'auth user + le profil via trigger
     const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
       email,
       {

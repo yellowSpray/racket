@@ -32,13 +32,14 @@ export function useClubMembers() {
     }, [])
 
     /**
-     * Invite un nouveau membre via une Edge Function Supabase.
-     * Envoie un email d'invitation avec les infos de base du joueur.
+     * Invite un membre via l'Edge Function invite-member.
+     * Si profileId est fourni (joueur importé sans compte auth), l'auth user sera créé
+     * avec cet UUID pour éviter la création d'un profil doublon.
      */
-    const inviteMember = useCallback(async (email: string, firstName?: string, lastName?: string) => {
+    const inviteMember = useCallback(async (email: string, firstName?: string, lastName?: string, profileId?: string) => {
         // appel de l'Edge Function invite-member
         const { data, error: invokeError } = await supabase.functions.invoke('invite-member', {
-            body: { email, first_name: firstName, last_name: lastName },
+            body: { email, first_name: firstName, last_name: lastName, profile_id: profileId },
         })
 
         if (invokeError) {
