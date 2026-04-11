@@ -159,8 +159,8 @@ function MatchRow({ match, myId, editMode, pendingScore, onScoreChange }: {
     const hasPending = match.pending_score_p1 || match.pending_score_p2
 
     return (
-        <div className="flex items-center gap-3 xl:gap-4 py-2 xl:py-3">
-            <span className="shrink-0 w-14 xl:w-16 text-center flex flex-col leading-tight">
+        <div className="flex items-center py-2 xl:py-3">
+            <span className="shrink-0 w-12 xl:w-14 text-center flex flex-col leading-tight">
                 <span className="text-sm xl:text-base font-bold text-foreground">
                     {new Date(match.match_date).getDate()}
                 </span>
@@ -168,12 +168,12 @@ function MatchRow({ match, myId, editMode, pendingScore, onScoreChange }: {
                     {new Date(match.match_date).toLocaleDateString("fr-FR", { month: "short" })}
                 </span>
             </span>
-            <div className="w-px h-6 xl:h-8 bg-border shrink-0" />
+            <div className="w-px mr-4 h-6 xl:h-8 bg-border shrink-0" />
             <div className="flex-1 min-w-0">
-                <p className="text-sm xl:text-base font-medium truncate">vs {opponent}</p>
+                <p className="text-sm font-medium truncate">vs {opponent}</p>
                 <div className="flex items-center gap-2 mt-0.5">
                     {match.group?.group_name && (
-                        <Badge variant="default" className="text-[10px] xl:text-xs px-1.5 py-0">
+                        <Badge variant="default" className="text-[8px] xl:text-xs px-1.5 py-0">
                             {match.group.group_name}
                         </Badge>
                     )}

@@ -14,12 +14,10 @@ export function EvolutionCard({ className }: EvolutionCardProps) {
                     Évolution
                 </CardTitle>
             </CardHeader>
-            <CardContent>
-                <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-                    <ChartIncreaseIcon size={32} className="mb-3" />
-                    <p className="text-sm text-center">Votre progression dans les tableaux au fil des séries</p>
-                    <p className="text-xs mt-1">À venir</p>
-                </div>
+            <CardContent className="flex flex-col items-center justify-center py-8 text-gray-400 h-full">
+                <ChartIncreaseIcon size={32} className="mb-3" />
+                <p className="text-sm text-center">Votre progression dans les tableaux au fil des séries</p>
+                <p className="text-xs mt-1">À venir</p>
             </CardContent>
         </Card>
     )

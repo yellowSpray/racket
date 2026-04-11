@@ -22,33 +22,31 @@ export function UserStatsCard({ stats, className }: UserStatsCardProps) {
                     Statistiques
                 </CardTitle>
             </CardHeader>
-            <CardContent>
-                <div className="grid grid-cols-2 gap-3">
-                    <StatBlock
-                        icon={<ChampionIcon size={16} className="text-green-500" />}
-                        label="Victoires"
-                        value={stats.wins}
-                        color="text-green-600"
-                    />
-                    <StatBlock
-                        icon={<Cancel01Icon size={16} className="text-red-400" />}
-                        label="Défaites"
-                        value={stats.losses}
-                        color="text-red-500"
-                    />
-                    <StatBlock
-                        icon={<PercentIcon size={16} className="text-blue-500" />}
-                        label="Ratio"
-                        value={`${stats.ratio}%`}
-                        color="text-blue-600"
-                    />
-                    <StatBlock
-                        icon={<VolleyballIcon size={16} className="text-gray-400" />}
-                        label="Total"
-                        value={stats.total}
-                        color="text-foreground"
-                    />
-                </div>
+            <CardContent className="grid grid-cols-5 gap-3">
+                <StatBlock
+                    icon={<ChampionIcon size={16} className="text-green-500" />}
+                    label="Victoires"
+                    value={stats.wins}
+                    color="text-green-600"
+                />
+                <StatBlock
+                    icon={<Cancel01Icon size={16} className="text-red-400" />}
+                    label="Défaites"
+                    value={stats.losses}
+                    color="text-red-500"
+                />
+                <StatBlock
+                    icon={<PercentIcon size={16} className="text-blue-500" />}
+                    label="Ratio"
+                    value={`${stats.ratio}`}
+                    color="text-blue-600"
+                />
+                <StatBlock
+                    icon={<VolleyballIcon size={16} className="text-gray-400" />}
+                    label="Total"
+                    value={stats.total}
+                    color="text-foreground"
+                />
             </CardContent>
         </Card>
     )

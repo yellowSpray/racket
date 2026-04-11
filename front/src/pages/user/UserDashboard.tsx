@@ -6,11 +6,9 @@ import { useGroups } from "@/hooks/useGroups"
 import { useClubConfig } from "@/hooks/useClubConfig"
 import { NextMatchCard } from "@/components/user/dashboard/NextMatchCard"
 import { EvolutionCard } from "@/components/user/dashboard/EvolutionCard"
-import { PresenceCard } from "@/components/user/dashboard/PresenceCard"
 import { UserStatsCard } from "@/components/user/dashboard/UserStatsCard"
 import { ScoreInputCard } from "@/components/user/dashboard/ScoreInputCard"
 import { MyDrawCard } from "@/components/user/dashboard/MyDrawCard"
-import { PlaceholderCard } from "@/components/user/dashboard/PlaceholderCard"
 import type { Match } from "@/types/match"
 
 export function UserDashboard() {
@@ -92,31 +90,25 @@ export function UserDashboard() {
                     myAvatarUrl={profile?.avatar_url}
                     myName={profile ? `${profile.first_name} ${profile.last_name}` : undefined}
                 />
-                <EvolutionCard
-                    className="col-start-8 col-span-13 row-start-1 row-span-7"
-                />
-                <PresenceCard
-                    className="col-start-21 col-span-8 row-start-1 row-span-2"
-                />
                 <UserStatsCard
-                    className="col-start-21 col-span-8 row-start-3 row-span-5"
+                    className="col-start-21 col-span-8 row-start-1 row-span-4"
                     stats={stats}
                 />
                 <ScoreInputCard
-                    className="col-start-1 col-span-10 row-start-8 row-span-9 min-h-0"
+                    className="col-start-1 col-span-7 row-start-8 row-span-9 min-h-0"
                     upcoming={upcoming}
                     played={played}
                     myId={profile?.id ?? ""}
                     onSubmitScore={submitPendingScore}
                 />
                 <MyDrawCard
-                    className="col-start-11 col-span-10 row-start-8 row-span-9 min-h-0"
+                    className="col-start-8 col-span-13 row-start-1 row-span-16 min-h-0"
                     myGroup={myGroup}
                     matches={matches}
                     scoringRules={scoringRules ?? undefined}
                 />
-                <PlaceholderCard
-                    className="col-start-21 col-span-8 row-start-8 row-span-9 min-h-0"
+                <EvolutionCard
+                    className="col-start-21 col-span-8 row-start-5 row-span-12 min-h-0"
                 />
             </div>
         </div>
