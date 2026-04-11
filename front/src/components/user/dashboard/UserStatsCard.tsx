@@ -22,7 +22,7 @@ export function UserStatsCard({ stats, className }: UserStatsCardProps) {
                     Statistiques
                 </CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-5 gap-3">
+            <CardContent className="grid grid-cols-4 gap-3 my-auto">
                 <StatBlock
                     icon={<ChampionIcon size={16} className="text-green-500" />}
                     label="Victoires"

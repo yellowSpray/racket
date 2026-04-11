@@ -9,6 +9,8 @@ import { EvolutionCard } from "@/components/user/dashboard/EvolutionCard"
 import { UserStatsCard } from "@/components/user/dashboard/UserStatsCard"
 import { ScoreInputCard } from "@/components/user/dashboard/ScoreInputCard"
 import { MyDrawCard } from "@/components/user/dashboard/MyDrawCard"
+import { EloCard } from "@/components/user/dashboard/EloCard"
+import { EventInfoCard } from "@/components/user/dashboard/EventInfoCard"
 import type { Match } from "@/types/match"
 
 export function UserDashboard() {
@@ -16,7 +18,7 @@ export function UserDashboard() {
     const { currentEvent } = useEvent()
     const { matches, fetchMatchesByEvent, submitPendingScore } = useMatches()
     const { groups, fetchGroupsByEvent } = useGroups()
-    const { scoringRules, fetchClubConfig } = useClubConfig()
+    const { clubConfig, scoringRules, fetchClubConfig } = useClubConfig()
 
     useEffect(() => {
         if (currentEvent?.id) {
@@ -91,8 +93,12 @@ export function UserDashboard() {
                     myName={profile ? `${profile.first_name} ${profile.last_name}` : undefined}
                 />
                 <UserStatsCard
-                    className="col-start-21 col-span-8 row-start-1 row-span-4"
+                    className="col-start-21 col-span-6 row-start-1 row-span-4"
                     stats={stats}
+                />
+                <EloCard
+                    className="col-start-27 col-span-2 row-start-1 row-span-4"
+                    elo={profile?.power_ranking}
                 />
                 <ScoreInputCard
                     className="col-start-1 col-span-7 row-start-8 row-span-9 min-h-0"
@@ -102,13 +108,19 @@ export function UserDashboard() {
                     onSubmitScore={submitPendingScore}
                 />
                 <MyDrawCard
-                    className="col-start-8 col-span-13 row-start-1 row-span-16 min-h-0"
+                    className="col-start-8 col-span-13 row-start-5 row-span-12 min-h-0"
                     myGroup={myGroup}
                     matches={matches}
                     scoringRules={scoringRules ?? undefined}
                 />
                 <EvolutionCard
-                    className="col-start-21 col-span-8 row-start-5 row-span-12 min-h-0"
+                    className="col-start-8 col-span-13 row-start-1 row-span-4 min-h-0"
+                />
+                <EventInfoCard
+                    className="col-start-21 col-span-8 row-start-5 row-span-12"
+                    event={currentEvent}
+                    clubConfig={clubConfig}
+                    profileId={profile?.id ?? ""}
                 />
             </div>
         </div>
