@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { UserGroupIcon, PlusSignIcon, PencilEdit01Icon, Delete02Icon, SentIcon, ArrowUpDownIcon, ArrowUp01Icon, ArrowDown01Icon } from "hugeicons-react"
+import { toast } from "sonner"
 import { InviteMemberDialog } from "./InviteMemberDialog"
 import { ChangeRoleDialog } from "./ChangeRoleDialog"
 import { RemoveMemberDialog } from "./RemoveMemberDialog"
@@ -133,9 +134,10 @@ export function UsersManager({
         try {
             // Passer l'id du profil existant pour éviter la création d'un doublon
             await inviteMember(member.email, member.first_name, member.last_name, member.id)
+            toast.success(`Invitation envoyée à ${member.email}`)
             if (profile?.club_id) await fetchMembers(profile.club_id)
-        } catch {
-            // Error handled by caller
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Erreur lors de l'envoi")
         } finally {
             setActionLoading(false)
         }
