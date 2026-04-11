@@ -8,6 +8,7 @@ import { ScoringRulesCard } from "./ScoringRulesCard"
 import { PromotionRulesCard } from "./PromotionRulesCard"
 import { EventDefaultsCard } from "./EventDefaultsCard"
 import { ClubCourtsCard } from "./ClubCourtsCard"
+import { ClubLogoCard } from "./ClubLogoCard"
 import { ClubConfigSkeleton } from "@/components/shared/skeletons/SettingsSkeleton"
 
 export function ClubConfigManager() {
@@ -70,16 +71,24 @@ export function ClubConfigManager() {
     }
 
     return (
-        <div className="h-full grid grid-rows-2 grid-cols-3 gap-6">
-            <ScoringRulesCard
+        <div className="h-full grid grid-rows-3 grid-cols-3 gap-6">
+            <ClubLogoCard
                 className="row-span-1 row-start-1"
+                clubId={clubId}
+                logoUrl={clubConfig?.logo_url}
+                clubName={clubConfig?.club_name ?? ""}
+                onSaved={(url) => fetchClubConfig(clubId)}
+            />
+
+            <ScoringRulesCard
+                className="row-span-1 row-start-2"
                 scoringRules={scoringRules}
                 defaultScoring={defaultScoring}
                 onSave={(data) => upsertScoringRules(clubId, data)}
             />
 
             <EventDefaultsCard
-                className="row-span-2 row-start-1"
+                className="row-span-3 row-start-1"
                 defaultStartTime={clubConfig?.default_start_time ?? "19:00"}
                 defaultEndTime={clubConfig?.default_end_time ?? "23:00"}
                 defaultMatchDuration={clubConfig?.default_match_duration ?? 30}
@@ -96,7 +105,7 @@ export function ClubConfigManager() {
             />
 
             <ClubCourtsCard
-                className="row-span-2 row-start-1"
+                className="row-span-3 row-start-1"
                 courts={clubCourts}
                 loading={courtsLoading}
                 error={courtsError}
@@ -110,7 +119,7 @@ export function ClubConfigManager() {
             />
             
             <PromotionRulesCard
-                className="row-span-1 row-start-2"
+                className="row-span-1 row-start-3"
                 promotionRules={promotionRules}
                 defaultPromotion={defaultPromotion}
                 onSave={(data) => upsertPromotionRules(clubId, data)}

@@ -241,6 +241,15 @@ ALTER TABLE public.clubs
 ALTER TABLE public.clubs
   ADD COLUMN IF NOT EXISTS default_match_duration int not null default 30;
 
+-- Logo du club (URL publique Supabase Storage)
+ALTER TABLE public.clubs
+  ADD COLUMN IF NOT EXISTS logo_url text;
+
+-- Bucket Supabase Storage pour les logos de clubs (public)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('club-logos', 'club-logos', true)
+ON CONFLICT (id) DO NOTHING;
+
 -- TABLE SCORING_RULES : Regles de pointage par club (1 ligne par club)
 -- score_points est un tableau JSON d'entrées {score, winner_points, loser_points}
 CREATE TABLE IF NOT EXISTS public.scoring_rules (

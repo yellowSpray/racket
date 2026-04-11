@@ -46,6 +46,7 @@ export interface ClubConfig {
   club_name: string
   club_address?: string
   club_email?: string
+  logo_url?: string
   default_min_players_per_group: number
   default_max_players_per_group: number
   visitor_fee: number
