@@ -6,7 +6,6 @@ import { useClubConfig } from "@/hooks/useClubConfig"
 import { PlayerMovementsCard } from "@/components/admin/dashboard/PlayerMovementsCard"
 import { UnpaidPaymentsCard } from "@/components/admin/dashboard/UnpaidPaymentsCard"
 import { TodayMatchesCard } from "@/components/admin/dashboard/TodayMatchesCard"
-import { PresencesCard } from "@/components/admin/dashboard/PresencesCard"
 import { AlertsCard } from "@/components/admin/dashboard/AlertsCard"
 import { PendingScoresCard } from "@/components/admin/dashboard/PendingScoresCard"
 import { VisitorRequestsPanel } from "@/components/admin/visitors/VisitorRequestsPanel"
@@ -50,13 +49,15 @@ export function AdminDashboard() {
                     className="col-start-15 col-span-7 row-start-1 row-span-7"
                     eventId={currentEvent?.id ?? null}
                 />
-                <PresencesCard className="col-start-22 col-span-7 row-start-1 row-span-2" />
-                <AlertsCard className="col-start-22 col-span-7 row-start-3 row-span-5" />
+                <AlertsCard className="col-start-22 col-span-7 row-start-1 row-span-7" />
                 <TodayMatchesCard
                     className="col-start-1 col-span-21 row-start-8 row-span-9 min-h-0"
                     eventId={currentEvent?.id ?? null}
                 />
-                <PendingScoresCard className="col-start-22 col-span-7 row-start-8 row-span-9 min-h-0" />
+                <PendingScoresCard
+                    className="col-start-22 col-span-7 row-start-8 row-span-9 min-h-0"
+                    eventId={currentEvent?.id ?? null}
+                />
             </div>
         </div>
     )
