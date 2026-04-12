@@ -1,11 +1,11 @@
 import { Link, useLocation } from "react-router";
-import { Home01Icon, PencilEdit02Icon, Settings01Icon, Search01Icon, Logout03Icon } from "hugeicons-react";
+import { Home01Icon, LayoutTable02Icon, Settings01Icon, Building04Icon, Logout03Icon } from "hugeicons-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const menuItems = [
   { title: "Accueil", url: "/user", icon: Home01Icon },
-  { title: "Tableaux", url: "/user/draws", icon: PencilEdit02Icon },
-  { title: "Découvrir", url: "/user/discover", icon: Search01Icon },
+  { title: "Tableaux", url: "/user/draws", icon: LayoutTable02Icon },
+  { title: "Découvrir", url: "/user/discover", icon: Building04Icon },
 ];
 
 export function UserSideBar() {
