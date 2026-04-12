@@ -115,6 +115,7 @@ export function UserDashboard() {
                 />
                 <EvolutionCard
                     className="col-start-8 col-span-13 row-start-1 row-span-4 min-h-0"
+                    profileId={profile?.id}
                 />
                 <EventInfoCard
                     className="col-start-21 col-span-8 row-start-5 row-span-12"
