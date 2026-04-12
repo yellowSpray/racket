@@ -2,7 +2,7 @@ import React, { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-// import { ScrollArea } from "@/components/ui/scroll-area"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { TaskEdit01Icon, Location01Icon, PencilEdit01Icon, Tick02Icon, Cancel01Icon } from "hugeicons-react"
 import { getOpponentName, getMatchResult, getMyScore } from "@/lib/matchUtils"
 import type { Match } from "@/types/match"
@@ -94,22 +94,24 @@ export function ScoreInputCard({ upcoming, played, myId, className, onSubmitScor
                         <p className="text-sm text-center">Aucun match programmé</p>
                     </div>
                 ) : (
-                    <div className="flex flex-col justify-evenly h-full p-3 bg-muted/50 rounded-lg overflow-y-auto">
-                        {allMatches.map((match, index) => (
-                            <React.Fragment key={match.id}>
-                                <MatchRow
-                                    match={match}
-                                    myId={myId}
-                                    editMode={editMode}
-                                    pendingScore={pendingScores.get(match.id)}
-                                    onScoreChange={handleScoreChange}
-                                />
-                                {index < allMatches.length - 1 && (
-                                    <span className="block h-px bg-border mx-2" />
-                                )}
-                            </React.Fragment>
-                        ))}
-                    </div>
+                    <ScrollArea className="h-full rounded-lg bg-muted/50" type="auto">
+                        <div className="flex flex-col p-3">
+                            {allMatches.map((match, index) => (
+                                <React.Fragment key={match.id}>
+                                    <MatchRow
+                                        match={match}
+                                        myId={myId}
+                                        editMode={editMode}
+                                        pendingScore={pendingScores.get(match.id)}
+                                        onScoreChange={handleScoreChange}
+                                    />
+                                    {index < allMatches.length - 1 && (
+                                        <span className="block h-px bg-border mx-2" />
+                                    )}
+                                </React.Fragment>
+                            ))}
+                        </div>
+                    </ScrollArea>
                 )}
             </CardContent>
         </Card>
