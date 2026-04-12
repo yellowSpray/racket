@@ -245,6 +245,12 @@ ALTER TABLE public.clubs
 ALTER TABLE public.clubs
   ADD COLUMN IF NOT EXISTS logo_url text;
 
+-- Localisation du club (pour les filtres de découverte)
+ALTER TABLE public.clubs
+  ADD COLUMN IF NOT EXISTS country text;
+ALTER TABLE public.clubs
+  ADD COLUMN IF NOT EXISTS region text;
+
 -- Bucket Supabase Storage pour les logos de clubs (public)
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('club-logos', 'club-logos', true)
