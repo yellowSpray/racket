@@ -45,12 +45,12 @@ export function EventInfoCard({ event, clubConfig, profileId, className }: Event
 
             <CardContent className="flex-1 flex flex-col min-h-0">
                 {/* Photo — pleine largeur, 1/3 de la hauteur */}
-                <div className="flex-[2] w-full bg-primary/10 rounded-lg flex items-center justify-center overflow-hidden">
+                <div className="flex-[2] w-full bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
                     {clubConfig?.logo_url ? (
-                        <img src={clubConfig.logo_url} alt={clubConfig.club_name} className="w-full h-full object-cover" />
+                        <img src={clubConfig.logo_url} alt={clubConfig.club_name} className="w-50 object-center" />
                     ) : (
                         <span className="text-3xl font-bold text-primary">
-                            {clubConfig ? getClubInitials(clubConfig.club_name) : "—"}
+                            {clubConfig ? getClubInitials(clubConfig.club_name) : "-"}
                         </span>
                     )}
                 </div>
@@ -59,7 +59,7 @@ export function EventInfoCard({ event, clubConfig, profileId, className }: Event
                 <div className="flex-[2] flex flex-col gap-3 p-4">
                     {/* Club name + address */}
                     <div>
-                        <p className="text-sm font-semibold truncate">{clubConfig?.club_name ?? "—"}</p>
+                        <p className="text-sm font-semibold truncate">{clubConfig?.club_name ?? "-"}</p>
                         {clubConfig?.club_address && (
                             <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
                                 <Location01Icon size={11} />
