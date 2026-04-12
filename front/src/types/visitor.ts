@@ -33,7 +33,7 @@ export interface DiscoverableEvent {
   open_to_visitors: boolean
   invite_token: string
   club_id: string
-  clubs: { club_name: string; visitor_fee: number }
+  clubs: { club_name: string; visitor_fee: number; country?: string | null; region?: string | null }
   player_count?: number
   my_request_status?: VisitorRequestStatus | null
 }

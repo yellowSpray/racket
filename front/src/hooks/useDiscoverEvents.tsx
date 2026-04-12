@@ -14,7 +14,7 @@ interface RawDiscoverableEvent {
     open_to_visitors: boolean
     invite_token: string
     club_id: string
-    clubs: { club_name: string; visitor_fee: number }
+    clubs: { club_name: string; visitor_fee: number; country?: string | null; region?: string | null }
     event_players: { count: number }[]
 }
 
@@ -39,7 +39,7 @@ export function useDiscoverEvents() {
             const [eventsResult, requestsResult] = await Promise.all([
                 supabase
                     .from("events")
-                    .select("*, clubs(club_name, visitor_fee), event_players(count)")
+                    .select("*, clubs(club_name, visitor_fee, country, region), event_players(count)")
                     .neq("club_id", userClubId)
                     .order("start_date", { ascending: false }),
                 supabase
