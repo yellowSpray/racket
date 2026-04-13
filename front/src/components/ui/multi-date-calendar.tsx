@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils"
 interface MultiDateCalendarProps {
     selectedDates: string[]
     onChange: (dates: string[]) => void
+    disabled?: boolean
+    className?: string
 }
 
 const DAY_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
@@ -53,7 +55,7 @@ function getMonthGrid(year: number, month: number): (Date | null)[][] {
     return weeks
 }
 
-export function MultiDateCalendar({ selectedDates, onChange }: MultiDateCalendarProps) {
+export function MultiDateCalendar({ selectedDates, onChange, disabled = false, className }: MultiDateCalendarProps) {
     const [viewYear, setViewYear] = useState(() => new Date().getFullYear())
     const [viewMonth, setViewMonth] = useState(() => new Date().getMonth())
 
@@ -61,6 +63,7 @@ export function MultiDateCalendar({ selectedDates, onChange }: MultiDateCalendar
     const weeks = getMonthGrid(viewYear, viewMonth)
 
     const toggleDate = (date: Date) => {
+        if (disabled) return
         const iso = toISO(date)
         if (selectedSet.has(iso)) {
             onChange(selectedDates.filter(d => d !== iso))
@@ -90,9 +93,9 @@ export function MultiDateCalendar({ selectedDates, onChange }: MultiDateCalendar
 
 
     return (
-        <div className="border rounded-lg p-3 w-fit">
+        <div className={cn("border rounded-lg p-3 w-fit flex flex-col", className)}>
             {/* Header */}
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-center gap-4 mb-2">
                 <Button type="button" variant="ghost" size="sm" onClick={prevMonth} className="h-7 w-7 p-0">
                     <ArrowLeft01Icon className="h-4 w-4" />
                 </Button>
@@ -107,19 +110,19 @@ export function MultiDateCalendar({ selectedDates, onChange }: MultiDateCalendar
             {/* Day labels */}
             <div className="grid grid-cols-7 gap-2 mb-1">
                 {DAY_LABELS.map(label => (
-                    <div key={label} className="text-center text-xs text-muted-foreground font-medium py-1 w-8">
+                    <div key={label} className="text-center text-xs text-muted-foreground font-medium py-1">
                         {label}
                     </div>
                 ))}
             </div>
 
             {/* Date grid */}
-            <div className="grid gap-1">
+            <div className="flex-1 flex flex-col justify-between">
             {weeks.map((week, wi) => (
                 <div key={wi} className="grid grid-cols-7 gap-2">
                     {week.map((date, di) => {
                         if (!date) {
-                            return <div key={di} className="h-8 w-8" />
+                            return <div key={di} className="h-8" />
                         }
 
                         const iso = toISO(date)
@@ -131,9 +134,12 @@ export function MultiDateCalendar({ selectedDates, onChange }: MultiDateCalendar
                                 key={di}
                                 type="button"
                                 onClick={() => toggleDate(date)}
+                                disabled={disabled}
                                 className={cn(
-                                    "h-8 w-8 rounded-md text-sm transition-colors cursor-pointer",
-                                    !isSelected && "hover:bg-accent",
+                                    "h-8 w-full rounded-md text-sm transition-colors",
+                                    !disabled && "cursor-pointer",
+                                    disabled && "cursor-default opacity-60",
+                                    !isSelected && !disabled && "hover:bg-accent",
                                     isSelected && "bg-primary text-primary-foreground",
                                     isToday && !isSelected && "border border-primary",
                                 )}
