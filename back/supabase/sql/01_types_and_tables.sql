@@ -251,6 +251,10 @@ ALTER TABLE public.clubs
 ALTER TABLE public.clubs
   ADD COLUMN IF NOT EXISTS region text;
 
+-- Adresse du joueur (profil utilisateur)
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS address text;
+
 -- Bucket Supabase Storage pour les logos de clubs (public)
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('club-logos', 'club-logos', true)

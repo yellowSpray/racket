@@ -546,6 +546,20 @@ USING (
   ))
 );
 
+-- Les utilisateurs/admins peuvent supprimer leurs horaires
+CREATE POLICY "Users and admins can delete club schedules"
+ON public.schedule
+FOR DELETE
+TO public
+USING (
+  auth.uid() = profile_id
+  OR public.is_superadmin()
+  OR (public.is_admin() AND EXISTS (
+    SELECT 1 FROM public.profiles p
+    WHERE p.id = profile_id AND p.club_id = public.get_user_club_id()
+  ))
+);
+
 -- ===================================
 -- POLICIES RLS - ABSENCES (scoped via profile -> club)
 -- ===================================
