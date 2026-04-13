@@ -102,31 +102,31 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
     }
 
     return (
-        <div className="border border-gray-400 rounded-lg overflow-hidden h-full">
-            <Table className="w-full h-full [&_tr]:border-gray-400 data-draw-table">
+        <div className="rounded-lg overflow-hidden h-full border border-gray-400" data-draw-table>
+            <Table className="w-full h-full border-collapse">
                 <TableHeader>
                     <TableRow>
-                        <TableHead className="bg-blue-200 font-bold min-w-24 text-center">
+                        <TableHead className="bg-blue-200 font-bold min-w-24 text-center border-b border-gray-400">
                             {group.group_name}
                         </TableHead>
 
                         {slots.map((slot, index) => (
                             <TableHead
                                 key={index}
-                                className={`text-center font-bold text-xs min-w-12 border-x border-gray-400 ${!slot ? 'bg-gray-200': 'bg-yellow-100'}`}
+                                className={`text-center font-bold text-xs min-w-12 ${!slot ? 'bg-gray-200': 'bg-yellow-100'} border-b border-gray-400`}
                             >
                                 {getPlayerLetter(index)}
                             </TableHead>
                         ))}
 
-                        <TableHead className="bg-green-200 text-center font-bold min-w-12">Total</TableHead>
+                        <TableHead className="bg-green-200 text-center font-bold min-w-12 border-b border-gray-400">Total</TableHead>
                     </TableRow>
                 </TableHeader>
 
                 <TableBody>
                     {slots.map((player, rowIndex) => (
-                        <TableRow key={rowIndex} className="hover:bg-transparent">
-                            <TableCell className={`font-medium ${!player ? 'bg-gray-200' : 'bg-yellow-100'}`}>
+                        <TableRow key={rowIndex} className="group hover:bg-transparent">
+                            <TableCell className={`font-medium ${!player ? 'bg-gray-200' : 'bg-yellow-100'} border-b border-gray-400 group-last:border-b-0`}>
                                 {player ? (
                                     <div className="flex items-center px-1 py-0.5">
                                         <span className="font-bold text-xs shrink-0 w-4">{getPlayerLetter(rowIndex)}</span>
@@ -156,7 +156,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                     return (
                                         <TableCell
                                             key={colIndex}
-                                            className="bg-gray-400 p-2 border-x border-gray-400"
+                                            className="bg-gray-400 p-2 border-b border-gray-400 group-last:border-b-0"
                                         >
                                             <div className="invisible text-[10px]">
                                                 <div>-</div>
@@ -171,7 +171,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                     return (
                                         <TableCell
                                             key={colIndex}
-                                            className="bg-gray-200 p-2 border-x border-gray-400"
+                                            className="bg-gray-200 p-2 border-b border-gray-400 group-last:border-b-0"
                                         >
                                             <div className="invisible text-[10px]">
                                                 <div>-</div>
@@ -190,7 +190,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                 return (
                                     <TableCell
                                         key={colIndex}
-                                        className={`text-center text-xs p-2 border-x border-gray-400 transition-colors cursor-pointer
+                                        className={`text-center text-xs p-2 transition-colors cursor-pointer border-b border-gray-400 group-last:border-b-0
                                                 ${isAbsence
                                                     ? (isHovered ? 'bg-amber-100' : 'bg-amber-50')
                                                     : (isHovered ? 'bg-gray-200' : '')}
@@ -229,7 +229,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                             })}
 
                             {/* Cellule Total — points calculés */}
-                            <TableCell className="bg-green-100 text-center font-bold">
+                            <TableCell className="bg-green-100 text-center font-bold border-b border-gray-400 group-last:border-b-0">
                                 {player ? (pointsMap.get(player.id) ?? 0) : "-"}
                             </TableCell>
                         </TableRow>
