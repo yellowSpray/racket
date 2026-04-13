@@ -40,10 +40,13 @@ export function AdminDraws () {
 
     const handleExportPdf = async () => {
         if (!tablesRef.current) return
+        const toastId = toast.loading("Génération du PDF en cours...")
         try {
             await exportTablesToPdf(tablesRef.current, "tableaux.pdf")
+            toast.success("PDF téléchargé", { id: toastId })
         } catch (err) {
             console.error("Export PDF error:", err)
+            toast.error("Échec de l'export PDF", { id: toastId })
         }
     }
 
