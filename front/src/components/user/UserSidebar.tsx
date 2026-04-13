@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router";
-import { Home01Icon, LayoutTable02Icon, Settings01Icon, Building04Icon, Logout03Icon } from "hugeicons-react";
+import { Home01Icon, LayoutTable02Icon, Building04Icon, Logout03Icon } from "hugeicons-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const menuItems = [
@@ -38,15 +38,6 @@ export function UserSideBar() {
           })}
         </ul>
         <div className="flex flex-col items-center gap-4">
-          <Link
-            to="/user/settings"
-            className={`
-              flex items-center justify-center p-3 rounded-full border-2 border-border transition-colors
-              ${location.pathname.startsWith("/user/settings") ? "bg-primary border-primary text-foreground" : "text-gray-500 hover:bg-border hover:text-foreground"}
-            `}
-          >
-            <Settings01Icon size={17} strokeWidth={2} />
-          </Link>
           <button
             onClick={signOut}
             className="flex items-center justify-center p-3 rounded-full border-2 border-border transition-colors text-gray-500 hover:bg-red-50 hover:border-red-300 hover:text-red-500"
