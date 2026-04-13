@@ -11,6 +11,7 @@ export interface UserProfile {
     club_id: string | null,
     avatar_url?: string;
     power_ranking?: number;
+    address?: string;
 }
 
 export interface AuthContextType {
@@ -20,4 +21,5 @@ export interface AuthContextType {
     isLoading: boolean;
     isAuthenticated: boolean;
     signOut: () => Promise<void>;
+    refreshProfile: () => Promise<void>;
 }

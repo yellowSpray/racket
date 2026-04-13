@@ -187,13 +187,20 @@ export function AuthProvider({ children }: { children: ReactNode}) {
         }
     };
 
+    // Rafraîchit le profil depuis la base (utile après une mise à jour)
+    const refreshProfile = async () => {
+        const { data: { session: currentSession } } = await supabase.auth.getSession()
+        if (currentSession?.user.id) await fetchProfile(currentSession.user.id)
+    }
+
     const value: AuthContextType = {
         session,
         user: session?.user ?? null,
         profile,
         isLoading,
         isAuthenticated: !!session,
-        signOut
+        signOut,
+        refreshProfile
     }
 
     // affiche le loader
