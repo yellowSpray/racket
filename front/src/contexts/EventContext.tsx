@@ -66,10 +66,10 @@ export function EventProvider({children}: {children: ReactNode}) {
                 if (savedEvent) {
                     setCurrentEvent(savedEvent)
                 } else {
-                    // Pas de sauvegarde valide → sélectionner le plus récent
-                    const mostRecentEvent = eventsWithCount[0]
-                    setCurrentEvent(mostRecentEvent)
-                    localStorage.setItem("selectedEventId", mostRecentEvent.id)
+                    // Pas de sauvegarde valide → prioriser l'événement en cours, sinon le plus récent
+                    const defaultEvent = eventsWithCount.find(e => e.status === 'active') ?? eventsWithCount[0]
+                    setCurrentEvent(defaultEvent)
+                    localStorage.setItem("selectedEventId", defaultEvent.id)
                 }
             }
 
