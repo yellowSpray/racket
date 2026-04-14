@@ -59,9 +59,11 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
             (m.player1_id === id2 && m.player2_id === id1)
         )
 
+    const MONTHS = ['jan', 'fév', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoû', 'sep', 'oct', 'nov', 'déc']
+
     const formatDate = (dateStr: string) => {
         const [, month, day] = dateStr.split('-')
-        return `${day}/${month}`
+        return `${day}-${MONTHS[parseInt(month, 10) - 1]}`
     }
 
     const formatTime = (timeStr: string) => {
@@ -102,37 +104,37 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
     }
 
     return (
-        <div className="rounded-lg overflow-hidden h-full border border-gray-400" data-draw-table>
+        <div className="rounded-lg overflow-hidden h-full border border-foreground" data-draw-table>
             <Table className="w-full h-full border-collapse">
                 <TableHeader>
                     <TableRow>
-                        <TableHead className="bg-blue-200 font-bold min-w-24 text-center border-b border-gray-400">
+                        <TableHead className="bg-blue-200 font-bold min-w-24 text-center border-r border-b border-foreground">
                             {group.group_name}
                         </TableHead>
 
                         {slots.map((slot, index) => (
                             <TableHead
                                 key={index}
-                                className={`text-center font-bold text-xs min-w-12 ${!slot ? 'bg-gray-200': 'bg-yellow-100'} border-b border-gray-400`}
+                                className={`text-center font-bold text-xs min-w-12 ${!slot ? 'bg-gray-200': 'bg-yellow-100'} border-r border-b border-foreground`}
                             >
                                 {getPlayerLetter(index)}
                             </TableHead>
                         ))}
 
-                        <TableHead className="bg-green-200 text-center font-bold min-w-12 border-b border-gray-400">Total</TableHead>
+                        <TableHead className="bg-green-200 text-center font-bold min-w-12 border-b border-foreground">Total</TableHead>
                     </TableRow>
                 </TableHeader>
 
                 <TableBody>
                     {slots.map((player, rowIndex) => (
                         <TableRow key={rowIndex} className="group hover:bg-transparent">
-                            <TableCell className={`font-medium ${!player ? 'bg-gray-200' : 'bg-yellow-100'} border-b border-gray-400 group-last:border-b-0`}>
+                            <TableCell className={`font-medium ${!player ? 'bg-gray-200' : 'bg-yellow-100'} border-r border-b border-foreground group-last:border-b-0`}>
                                 {player ? (
                                     <div className="flex items-center px-1 py-0.5">
                                         <span className="font-bold text-xs shrink-0 w-4">{getPlayerLetter(rowIndex)}</span>
                                         <div className="flex-1 text-center min-w-0">
                                             <p className="text-xs truncate">{player.first_name} {player.last_name}</p>
-                                            <p className="text-[10px] text-gray-500 truncate">{player.phone}</p>
+                                            <p className="text-[10px] text-foreground truncate">{player.phone}</p>
                                         </div>
                                     </div>
                                 ) : (
@@ -156,7 +158,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                     return (
                                         <TableCell
                                             key={colIndex}
-                                            className="bg-gray-400 p-2 border-b border-gray-400 group-last:border-b-0"
+                                            className="bg-gray-400 p-2 border-r border-b border-foreground group-last:border-b-0"
                                         >
                                             <div className="invisible text-[10px]">
                                                 <div>-</div>
@@ -171,7 +173,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                     return (
                                         <TableCell
                                             key={colIndex}
-                                            className="bg-gray-200 p-2 border-b border-gray-400 group-last:border-b-0"
+                                            className="bg-gray-200 p-2 border-r border-b border-foreground group-last:border-b-0"
                                         >
                                             <div className="invisible text-[10px]">
                                                 <div>-</div>
@@ -190,7 +192,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                 return (
                                     <TableCell
                                         key={colIndex}
-                                        className={`text-center text-xs p-2 transition-colors cursor-pointer border-b border-gray-400 group-last:border-b-0
+                                        className={`text-center text-xs p-2 transition-colors cursor-pointer border-r border-b border-foreground group-last:border-b-0
                                                 ${isAbsence
                                                     ? (isHovered ? 'bg-amber-100' : 'bg-amber-50')
                                                     : (isHovered ? 'bg-gray-200' : '')}
@@ -214,8 +216,8 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                                 )
                                             ) : (
                                                 <div className="flex flex-col items-center gap-0.5">
-                                                    <div className="text-gray-500 text-[10px]">{formatDate(match.match_date)}</div>
-                                                    <div className="font-medium text-[10px]">{formatTime(match.match_time)}</div>
+                                                    <div className="text-foreground text-[10px]">{formatDate(match.match_date)}</div>
+                                                    <div className="font-bold text-[10px]">{formatTime(match.match_time)}</div>
                                                 </div>
                                             )
                                         ) : (
@@ -229,7 +231,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                             })}
 
                             {/* Cellule Total — points calculés */}
-                            <TableCell className="bg-green-100 text-center font-bold border-b border-gray-400 group-last:border-b-0">
+                            <TableCell className="bg-green-100 text-center font-bold border-b border-foreground group-last:border-b-0">
                                 {player ? (pointsMap.get(player.id) ?? 0) : "-"}
                             </TableCell>
                         </TableRow>
