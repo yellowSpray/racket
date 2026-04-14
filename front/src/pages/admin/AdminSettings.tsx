@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { EventsManager } from "@/components/admin/settings/EventsManager"
+import { EventParamsManager } from "@/components/admin/settings/EventParamsManager"
 import { ClubConfigManager } from "@/components/admin/settings/ClubConfigManager"
 import { UsersManager } from "@/components/admin/settings/UsersManager"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -19,7 +20,7 @@ function formatTime(time: string | undefined): string | undefined {
 export function AdminSettings () {
     const { profile } = useAuth()
     const { clubConfig, fetchClubConfig } = useClubConfig()
-    const [activeTab, setActiveTab] = useState("events")
+    const [activeTab, setActiveTab] = useState("manage")
     const [usersSearch, setUsersSearch] = useState("")
     const [usersInviteOpen, setUsersInviteOpen] = useState(false)
 
@@ -74,6 +75,7 @@ export function AdminSettings () {
                             </Button>
                         )}
                         <TabsList className="h-10 rounded-full">
+                            <TabsTrigger value="manage">Gestion</TabsTrigger>
                             <TabsTrigger value="events">Événements</TabsTrigger>
                             <TabsTrigger value="clubs">Mon club</TabsTrigger>
                             <TabsTrigger value="users">Utilisateurs</TabsTrigger>
@@ -82,6 +84,10 @@ export function AdminSettings () {
                 </div>
                 <div className="flex-1 min-h-0 overflow-hidden rounded-md">
                     <TabsContent value="events" className="h-full">
+                        <EventParamsManager />
+                    </TabsContent>
+
+                    <TabsContent value="manage" className="h-full">
                         <EventsManager clubDefaults={clubDefaults} />
                     </TabsContent>
 
