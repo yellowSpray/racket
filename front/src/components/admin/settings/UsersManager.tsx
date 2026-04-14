@@ -291,7 +291,7 @@ export function UsersManager({
                         <Table className="w-full">
                             <TableHeader className="sticky top-0 z-10 bg-background">
                                 {table.getHeaderGroups().map((headerGroup) => (
-                                    <TableRow key={headerGroup.id}>
+                                    <TableRow key={headerGroup.id} className="border-b border-gray-200 bg-gray-100">
                                         {headerGroup.headers.map((header) => (
                                             <TableHead
                                                 key={header.id}
@@ -320,7 +320,7 @@ export function UsersManager({
                             </TableHeader>
                             <TableBody>
                                 {table.getRowModel().rows.map((row) => (
-                                    <TableRow key={row.id}>
+                                    <TableRow key={row.id} className="border-b border-gray-200 last:border-b-0">
                                         {row.getVisibleCells().map((cell) => (
                                             <TableCell
                                                 key={cell.id}
