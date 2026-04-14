@@ -57,7 +57,7 @@ export function DataTable<TData extends { id: string }, TValue>({
     return (
         <ScrollArea className="rounded-md border max-h-full" type="auto">
             <Table className="w-full">
-                <TableHeader className="sticky top-0 z-10 bg-background">
+                <TableHeader className="sticky top-0 z-10 bg-gray-100 border-b border-gray-200">
                     {table.getHeaderGroups().map((headerGroup) => (
                         <TableRow key={headerGroup.id}>
                             {headerGroup.headers.map((header) => {
@@ -96,7 +96,7 @@ export function DataTable<TData extends { id: string }, TValue>({
                             <TableRow
                                 key={row.id}
                                 data-state={row.getIsSelected() && "selected"}
-                                className={onRowClick ? "cursor-pointer" : ""}
+                                className={`border-b border-gray-200 ${onRowClick ? "cursor-pointer" : ""}`}
                                 onClick={() => onRowClick?.(row.original)}
                             >
                                 {row.getVisibleCells().map((cell) => (

@@ -222,77 +222,75 @@ export function MatchScheduleGrid({
 
                         return (
                             <div key={date}>
-                                <div>
-                                    <div className="overflow-x-auto bg-card border-gray-200 border-1 rounded-xl">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead colSpan={courts.length + 1} className="text-center text-xs font-semibold uppercase">
-                                                        {label}
+                                <div className="overflow-x-auto border-gray-200 border-1 rounded-xl">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow className="border-b border-gray-200">
+                                                <TableHead colSpan={courts.length + 1} className="text-center text-[10px] font-semibold uppercase">
+                                                    {label}
+                                                </TableHead>
+                                            </TableRow>
+                                            <TableRow className="border-b border-gray-200 bg-gray-100">
+                                                <TableHead className="w-12 text-center font-bold text-xs border-r border-gray-200">
+                                                    Heure
+                                                </TableHead>
+                                                {courts.map(court => (
+                                                    <TableHead
+                                                        key={court}
+                                                        className="text-center font-bold min-w-[140px] border-r border-gray-200 last:border-r-0"
+                                                    >
+                                                        {court}
                                                     </TableHead>
-                                                </TableRow>
-                                                <TableRow>
-                                                    <TableHead className="w-12 text-center bg-gray-50 font-bold text-xs">
-                                                        Heure
-                                                    </TableHead>
-                                                    {courts.map(court => (
-                                                        <TableHead
-                                                            key={court}
-                                                            className="text-center bg-gray-50 font-bold min-w-[140px]"
-                                                        >
-                                                            {court}
-                                                        </TableHead>
-                                                    ))}
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {timeSlots.map(time => (
-                                                    <TableRow key={time}>
-                                                        <TableCell className="text-center font-medium bg-gray-50 text-xs px-1 py-1 w-12">
-                                                            {time}
-                                                        </TableCell>
-                                                        {courts.map(court => {
-                                                            const m = findMatch(dayMatches, time, court)
-                                                            return (
-                                                                <TableCell
-                                                                    key={court}
-                                                                    className="text-center border-l p-1"
-                                                                >
-                                                                    {m ? (
-                                                                        dndEnabled ? (
-                                                                            <DraggableMatch
-                                                                                match={m}
-                                                                                editMode={editMode}
-                                                                                scoreValue={pendingScores?.get(m.id)}
-                                                                                onScoreChange={(v) => onScoreChange?.(m.id, v)}
-                                                                            />
-                                                                        ) : (
-                                                                            <MatchCell
-                                                                                match={m}
-                                                                                editMode={editMode}
-                                                                                scoreValue={pendingScores?.get(m.id)}
-                                                                                onScoreChange={(v) => onScoreChange?.(m.id, v)}
-                                                                            />
-                                                                        )
-                                                                    ) : (
-                                                                        dndEnabled ? (
-                                                                            <DroppableSlot id={slotId(date, time, court)} />
-                                                                        ) : (
-                                                                            <div className="py-2 text-center text-gray-300">—</div>
-                                                                        )
-                                                                    )}
-                                                                </TableCell>
-                                                            )
-                                                        })}
-                                                    </TableRow>
                                                 ))}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
-                                    <p className="text-sm text-gray-500 mt-2">
-                                        {dayMatches.length} match{dayMatches.length > 1 ? 's' : ''} programmé{dayMatches.length > 1 ? 's' : ''}
-                                    </p>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {timeSlots.map(time => (
+                                                <TableRow key={time} className="border-b border-gray-200 last:border-0">
+                                                    <TableCell className="text-center font-medium text-xs px-1 py-1 w-12">
+                                                        {time}
+                                                    </TableCell>
+                                                    {courts.map(court => {
+                                                        const m = findMatch(dayMatches, time, court)
+                                                        return (
+                                                            <TableCell
+                                                                key={court}
+                                                                className="text-center border-l p-1"
+                                                            >
+                                                                {m ? (
+                                                                    dndEnabled ? (
+                                                                        <DraggableMatch
+                                                                            match={m}
+                                                                            editMode={editMode}
+                                                                            scoreValue={pendingScores?.get(m.id)}
+                                                                            onScoreChange={(v) => onScoreChange?.(m.id, v)}
+                                                                        />
+                                                                    ) : (
+                                                                        <MatchCell
+                                                                            match={m}
+                                                                            editMode={editMode}
+                                                                            scoreValue={pendingScores?.get(m.id)}
+                                                                            onScoreChange={(v) => onScoreChange?.(m.id, v)}
+                                                                        />
+                                                                    )
+                                                                ) : (
+                                                                    dndEnabled ? (
+                                                                        <DroppableSlot id={slotId(date, time, court)} />
+                                                                    ) : (
+                                                                        <div className="py-2 text-center text-gray-300">-</div>
+                                                                    )
+                                                                )}
+                                                            </TableCell>
+                                                        )
+                                                    })}
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
                                 </div>
+                                <p className="text-sm text-gray-500 mt-2">
+                                    {dayMatches.length} match{dayMatches.length > 1 ? 's' : ''} programmé{dayMatches.length > 1 ? 's' : ''}
+                                </p>
                             </div>
                         )
                     })}

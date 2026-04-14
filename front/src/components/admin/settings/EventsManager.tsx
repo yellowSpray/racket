@@ -107,7 +107,7 @@ export function EventsManager({ clubDefaults }: EventsManagerProps) {
                     <div className="border rounded-lg">
                         <Table>
                             <TableHeader>
-                                <TableRow>
+                                <TableRow className="border-b border-gray-200 bg-gray-100">
                                     <TableHead className="text-center">Nom</TableHead>
                                     <TableHead className="text-center">Date de début</TableHead>
                                     <TableHead className="text-center">Date de fin</TableHead>
@@ -124,7 +124,7 @@ export function EventsManager({ clubDefaults }: EventsManagerProps) {
                                     const status = getEventStatus(event)
                                     const playerCount = event.player_count || 0
                                     return (
-                                        <TableRow key={event.id}>
+                                        <TableRow key={event.id} className="border-b border-gray-200 last:border-b-0">
                                             <TableCell className="font-medium text-center">
                                                 {event.event_name}
                                             </TableCell>

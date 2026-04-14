@@ -37,7 +37,7 @@ function formatDateLabel(dateStr: string): string {
 }
 
 function formatTime(matchTime: string | null): string {
-    if (!matchTime) return "—"
+    if (!matchTime) return "-"
     const m = matchTime.match(/(\d{2}:\d{2})/)
     return m ? m[1] : matchTime
 }
@@ -58,9 +58,9 @@ function buildRestrictionsMap(players: PlayerType[]): Map<string, { arrival: str
 }
 
 function RestrictionDisplay({ restrictions, playerId }: { restrictions: Map<string, { arrival: string; departure: string }>; playerId: string | undefined }) {
-    if (!playerId) return <span>—</span>
+    if (!playerId) return <span>-</span>
     const r = restrictions.get(playerId)
-    if (!r || (!r.arrival && !r.departure)) return <span>—</span>
+    if (!r || (!r.arrival && !r.departure)) return <span>-</span>
     return (
         <span className="inline-flex items-center gap-1">
             {r.arrival && (
@@ -139,7 +139,7 @@ function ScoreEditor({ matchId, scoreValue, onScoreChange }: {
 }
 
 function ScoreDisplay({ match }: { match: Match }) {
-    if (!match.score) return <span className="text-gray-400">—</span>
+    if (!match.score) return <span className="text-gray-400">-</span>
     if (match.score === "WO") {
         return (
             <span className="inline-flex items-center text-xs px-1.5 py-0 rounded-full border border-amber-300 text-amber-600 font-medium">
@@ -189,73 +189,71 @@ export function MatchListView({ matches, players, editMode, pendingScores, onSco
                                             .sort((a, b) => (a.match_time || "").localeCompare(b.match_time || ""))
 
                                         return (
-                                            <div key={boxName}>
-                                                <div className="overflow-x-auto border border-gray-200 rounded-xl">
-                                                    <Table className="table-fixed w-full">
-                                                        <colgroup><col className="w-[8%]" /><col className="w-[7%]" /><col className="w-[18%]" /><col className="w-[9%]" /><col className="w-[4%]" /><col className="w-[18%]" /><col className="w-[9%]" /><col className="w-[7%]" /><col className="w-[10%]" /><col className="w-[10%]" /></colgroup>
-                                                        <TableHeader>
-                                                            <TableRow>
-                                                                <TableHead className="bg-gray-50 font-bold text-center">Date</TableHead>
-                                                                <TableHead className="bg-gray-50 font-bold text-center">Box</TableHead>
-                                                                <TableHead className="bg-gray-50 font-bold">Joueur A</TableHead>
-                                                                <TableHead className="bg-gray-50 font-bold text-center">Restr.</TableHead>
-                                                                <TableHead className="bg-gray-50 font-bold text-center">vs</TableHead>
-                                                                <TableHead className="bg-gray-50 font-bold">Joueur B</TableHead>
-                                                                <TableHead className="bg-gray-50 font-bold text-center">Restr.</TableHead>
-                                                                <TableHead className="bg-gray-50 font-bold text-center">Heure</TableHead>
-                                                                <TableHead className="bg-gray-50 font-bold text-center">Terrain</TableHead>
-                                                                <TableHead className="bg-gray-50 font-bold text-center">Score</TableHead>
-                                                            </TableRow>
-                                                        </TableHeader>
-                                                        <TableBody>
-                                                            {boxMatches.map(match => {
-                                                                const isP1Winner = match.winner_id === match.player1_id
-                                                                const isP2Winner = match.winner_id === match.player2_id
+                                            <div key={boxName} className="overflow-x-auto border border-gray-200 rounded-xl">
+                                                <Table className="table-fixed w-full">
+                                                    <colgroup><col className="w-[8%]" /><col className="w-[7%]" /><col className="w-[18%]" /><col className="w-[9%]" /><col className="w-[4%]" /><col className="w-[18%]" /><col className="w-[9%]" /><col className="w-[7%]" /><col className="w-[10%]" /><col className="w-[10%]" /></colgroup>
+                                                    <TableHeader>
+                                                        <TableRow className="border-b border-gray-200 bg-gray-100 font-bold text-xs">
+                                                            <TableHead className="font-bold text-center">Date</TableHead>
+                                                            <TableHead className="font-bold text-center">Box</TableHead>
+                                                            <TableHead className="font-bold">Joueur A</TableHead>
+                                                            <TableHead className="font-bold text-center">Restr.</TableHead>
+                                                            <TableHead className="font-bold text-center">vs</TableHead>
+                                                            <TableHead className="font-bold">Joueur B</TableHead>
+                                                            <TableHead className="font-bold text-center">Restr.</TableHead>
+                                                            <TableHead className="font-bold text-center">Heure</TableHead>
+                                                            <TableHead className="font-bold text-center">Terrain</TableHead>
+                                                            <TableHead className="font-bold text-center">Score</TableHead>
+                                                        </TableRow>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {boxMatches.map(match => {
+                                                            const isP1Winner = match.winner_id === match.player1_id
+                                                            const isP2Winner = match.winner_id === match.player2_id
 
-                                                                return (
-                                                                    <TableRow key={match.id}>
-                                                                        <TableCell className="text-center text-sm">
-                                                                            {formatDateLabel(date)}
-                                                                        </TableCell>
-                                                                        <TableCell className="text-center text-sm font-medium">
-                                                                            {boxName}
-                                                                        </TableCell>
-                                                                        <TableCell className={isP1Winner ? "font-bold text-green-600" : ""}>
-                                                                            {formatPlayerName(match.player1)}
-                                                                        </TableCell>
-                                                                        <TableCell className="text-center text-xs text-gray-500">
-                                                                            <RestrictionDisplay restrictions={restrictions} playerId={match.player1_id} />
-                                                                        </TableCell>
-                                                                        <TableCell className="text-center text-gray-400">vs</TableCell>
-                                                                        <TableCell className={isP2Winner ? "font-bold text-green-600" : ""}>
-                                                                            {formatPlayerName(match.player2)}
-                                                                        </TableCell>
-                                                                        <TableCell className="text-center text-xs text-gray-500">
-                                                                            <RestrictionDisplay restrictions={restrictions} playerId={match.player2_id} />
-                                                                        </TableCell>
-                                                                        <TableCell className="text-center">
-                                                                            {formatTime(match.match_time)}
-                                                                        </TableCell>
-                                                                        <TableCell className="text-center">
-                                                                            {match.court_number || "—"}
-                                                                        </TableCell>
-                                                                        <TableCell className="text-center">
-                                                                            {editMode ? (
-                                                                                <ScoreEditor
-                                                                                    matchId={match.id}
-                                                                                    scoreValue={pendingScores?.get(match.id)}
-                                                                                    onScoreChange={onScoreChange}
-                                                                                />
-                                                                            ) : (
-                                                                                <ScoreDisplay match={match} />
-                                                                            )}
-                                                                        </TableCell>
-                                                                    </TableRow>
-                                                                )
-                                                            })}
-                                                        </TableBody>
-                                                    </Table>
-                                                </div>
+                                                            return (
+                                                                <TableRow key={match.id} className="border-b border-gray-200 last:border-b-0">
+                                                                    <TableCell className="text-center text-sm">
+                                                                        {formatDateLabel(date)}
+                                                                    </TableCell>
+                                                                    <TableCell className="text-center text-sm font-medium">
+                                                                        {boxName}
+                                                                    </TableCell>
+                                                                    <TableCell className={isP1Winner ? "font-bold text-green-600" : ""}>
+                                                                        {formatPlayerName(match.player1)}
+                                                                    </TableCell>
+                                                                    <TableCell className="text-center text-xs text-gray-500">
+                                                                        <RestrictionDisplay restrictions={restrictions} playerId={match.player1_id} />
+                                                                    </TableCell>
+                                                                    <TableCell className="text-center text-gray-400">vs</TableCell>
+                                                                    <TableCell className={isP2Winner ? "font-bold text-green-600" : ""}>
+                                                                        {formatPlayerName(match.player2)}
+                                                                    </TableCell>
+                                                                    <TableCell className="text-center text-xs text-gray-500">
+                                                                        <RestrictionDisplay restrictions={restrictions} playerId={match.player2_id} />
+                                                                    </TableCell>
+                                                                    <TableCell className="text-center">
+                                                                        {formatTime(match.match_time)}
+                                                                    </TableCell>
+                                                                    <TableCell className="text-center">
+                                                                        {match.court_number || "-"}
+                                                                    </TableCell>
+                                                                    <TableCell className="text-center">
+                                                                        {editMode ? (
+                                                                            <ScoreEditor
+                                                                                matchId={match.id}
+                                                                                scoreValue={pendingScores?.get(match.id)}
+                                                                                onScoreChange={onScoreChange}
+                                                                            />
+                                                                        ) : (
+                                                                            <ScoreDisplay match={match} />
+                                                                        )}
+                                                                    </TableCell>
+                                                                </TableRow>
+                                                            )
+                                                        })}
+                                                    </TableBody>
+                                                </Table>
                                             </div>
                                         )
                                     })}
