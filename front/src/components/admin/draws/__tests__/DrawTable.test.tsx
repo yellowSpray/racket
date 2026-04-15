@@ -135,7 +135,7 @@ describe('DrawTable', () => {
     ]
     const matches = [makeMatch({ player1_id: 'p1', player2_id: 'p2', match_date: '2026-03-05', match_time: '19:30:00+00' })]
     render(<DrawTable group={makeGroup({ players, max_players: 2 })} matches={matches} />)
-    expect(screen.getAllByText('05/03').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('05-mars').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('19:30').length).toBeGreaterThanOrEqual(1)
   })
 
@@ -157,7 +157,7 @@ describe('DrawTable', () => {
     // Match stored with reversed player order
     const matches = [makeMatch({ player1_id: 'p2', player2_id: 'p1', match_date: '2026-04-10', match_time: '20:00:00+00' })]
     render(<DrawTable group={makeGroup({ players, max_players: 2 })} matches={matches} />)
-    expect(screen.getAllByText('10/04').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('10-avr.').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('20:00').length).toBeGreaterThanOrEqual(1)
   })
 

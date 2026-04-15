@@ -62,7 +62,6 @@ describe('PlayerColumns', () => {
     expect(headers).toContain('Status')
     expect(headers).toContain('Paiement')
     expect(headers).toContain('Force')
-    expect(headers).toContain('Actions')
   })
 
   it('has a full_name accessor that concatenates first and last name', () => {
@@ -107,24 +106,9 @@ describe('PlayerColumns', () => {
     }
   })
 
-  it('renders the actions column with edit option', () => {
+  it('has 10 columns total (including select checkbox, excluding actions)', () => {
     const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus, mockUpdateAbsences)
-    const actionsCol = cols.find(c => c.header === 'Actions')
-    expect(actionsCol).toBeDefined()
-    if (actionsCol && 'cell' in actionsCol && actionsCol.cell) {
-      const CellComponent = actionsCol.cell as React.FC<{ row: { original: PlayerType; getValue: ReturnType<typeof vi.fn> } }>
-      const mockRow = {
-        original: makePlayer(),
-        getValue: vi.fn(),
-      }
-      render(<CellComponent row={mockRow} />)
-      expect(screen.getByText('Modifier')).toBeInTheDocument()
-    }
-  })
-
-  it('has 11 columns total (including select checkbox)', () => {
-    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus, mockUpdateAbsences)
-    expect(cols.length).toBe(11)
+    expect(cols.length).toBe(10)
   })
 
   it('renders all payment badges when 2 or fewer', () => {

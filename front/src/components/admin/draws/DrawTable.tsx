@@ -59,7 +59,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
             (m.player1_id === id2 && m.player2_id === id1)
         )
 
-    const MONTHS = ['jan', 'fév', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoû', 'sep', 'oct', 'nov', 'déc']
+    const MONTHS = ['jan.', 'fév.', 'mars', 'avr.', 'mai', 'juin', 'juil', 'août', 'sept', 'oct.', 'nov.', 'déc.']
 
     const formatDate = (dateStr: string) => {
         const [, month, day] = dateStr.split('-')

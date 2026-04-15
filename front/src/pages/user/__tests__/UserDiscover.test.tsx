@@ -8,6 +8,14 @@ let mockEvents: DiscoverableEvent[] = []
 const mockFetchDiscoverableEvents = vi.fn()
 const mockCreateRequest = vi.fn()
 
+vi.mock('@/contexts/EventContext', () => ({
+    useEvent: () => ({
+        currentEvent: null,
+        events: [],
+        setCurrentEvent: vi.fn(),
+    }),
+}))
+
 vi.mock('@/contexts/AuthContext', () => ({
     useAuth: () => ({
         profile: {
@@ -147,7 +155,7 @@ describe('UserDiscover', () => {
         expect(screen.getByText('Tournoi Printemps')).toBeInTheDocument()
         expect(screen.getByText('Soiree Raquette')).toBeInTheDocument()
 
-        const searchInput = screen.getByPlaceholderText(/rechercher/i)
+        const searchInput = screen.getByPlaceholderText(/événement ou club/i)
         fireEvent.change(searchInput, { target: { value: 'Beta' } })
 
         expect(screen.queryByText('Tournoi Printemps')).not.toBeInTheDocument()
