@@ -239,21 +239,21 @@ export function calculateGroupStandings(
         }
     }
 
-    // Trier : points desc → diff sets → head-to-head → alphabétique
+    // Trier : points desc → head-to-head → diff sets → alphabétique
     const allStats = Array.from(statsMap.values())
     allStats.sort((a, b) => {
         // 1. Points décroissants
         if (b.points !== a.points) return b.points - a.points
 
-        // 2. Différence de sets
-        const aDiff = a.setsWon - a.setsLost
-        const bDiff = b.setsWon - b.setsLost
-        if (bDiff !== aDiff) return bDiff - aDiff
-
-        // 3. Head-to-head
+        // 2. Head-to-head
         const aVsB = a.headToHead.get(b.playerId)
         if (aVsB === "win") return -1
         if (aVsB === "loss") return 1
+
+        // 3. Différence de sets
+        const aDiff = a.setsWon - a.setsLost
+        const bDiff = b.setsWon - b.setsLost
+        if (bDiff !== aDiff) return bDiff - aDiff
 
         // 4. Alphabétique
         return a.playerName.localeCompare(b.playerName)

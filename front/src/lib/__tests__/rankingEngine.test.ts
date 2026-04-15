@@ -388,6 +388,38 @@ describe("calculateGroupStandings", () => {
         expect(bob.points).toBe(2)
     })
 
+    it("breaks ties by head-to-head before set difference", () => {
+        // 4 joueurs, scoring winner=loser=5pts pour garantir l'égalité de points.
+        // Alice bat Bob (h2h), mais Bob domine Charlie et Diana (meilleure diff jeux).
+        // Avec le bon ordre (h2h > jeux) : Alice doit passer avant Bob malgré sa pire diff jeux.
+        const fourPlayers = [
+            { id: "p1", first_name: "Alice", last_name: "Martin" },
+            { id: "p2", first_name: "Bob", last_name: "Dupont" },
+            { id: "p3", first_name: "Charlie", last_name: "Durand" },
+            { id: "p4", first_name: "Diana", last_name: "Petit" },
+        ]
+        const equalPtsRules = makeRules({
+            score_points: [
+                { score: "3-0", winner_points: 5, loser_points: 5 },
+                { score: "3-2", winner_points: 5, loser_points: 5 },
+            ],
+        })
+        const matches = [
+            makeMatch({ id: "m1", player1_id: "p1", player2_id: "p2", winner_id: "p1", score: "3-2" }), // Alice bat Bob → h2h Alice
+            makeMatch({ id: "m2", player1_id: "p3", player2_id: "p1", winner_id: "p3", score: "3-0" }), // Charlie détruit Alice
+            makeMatch({ id: "m3", player1_id: "p4", player2_id: "p1", winner_id: "p4", score: "3-0" }), // Diana détruit Alice
+            makeMatch({ id: "m4", player1_id: "p2", player2_id: "p3", winner_id: "p2", score: "3-0" }), // Bob domine Charlie
+            makeMatch({ id: "m5", player1_id: "p2", player2_id: "p4", winner_id: "p2", score: "3-0" }), // Bob domine Diana
+            makeMatch({ id: "m6", player1_id: "p3", player2_id: "p4", winner_id: "p3", score: "3-0" }), // Charlie bat Diana
+        ]
+        // Tous à 15pts (3 matchs × 5pts). Alice diff=-5, Bob diff=+5.
+        // h2h : Alice bat Bob directement → Alice doit être classée avant Bob.
+        const result = calculateGroupStandings(matches, "g1", "Groupe A", fourPlayers, equalPtsRules)
+        const aliceRank = result.standings.findIndex(s => s.playerId === "p1")
+        const bobRank = result.standings.findIndex(s => s.playerId === "p2")
+        expect(aliceRank).toBeLessThan(bobRank)
+    })
+
     it("assigns sequential ranks starting from 1", () => {
         const matches = [
             makeMatch({ id: "m1", player1_id: "p1", player2_id: "p2", winner_id: "p1", score: "3-1" }),
