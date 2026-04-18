@@ -3,12 +3,10 @@ import { Navigate } from "react-router"
 import { useEvent } from "@/contexts/EventContext"
 import { useAuth } from "@/contexts/AuthContext"
 import { useClubConfig } from "@/hooks/useClubConfig"
-import { PlayerMovementsCard } from "@/components/admin/dashboard/PlayerMovementsCard"
+import { PlayersStatusCard } from "@/components/admin/dashboard/PlayersStatusCard"
 import { UnpaidPaymentsCard } from "@/components/admin/dashboard/UnpaidPaymentsCard"
-import { TodayMatchesCard } from "@/components/admin/dashboard/TodayMatchesCard"
+import { MatchesCard } from "@/components/admin/dashboard/MatchesCard"
 import { AlertsCard } from "@/components/admin/dashboard/AlertsCard"
-import { PendingScoresCard } from "@/components/admin/dashboard/PendingScoresCard"
-import { VisitorRequestsPanel } from "@/components/admin/visitors/VisitorRequestsPanel"
 
 export function AdminDashboard() {
     const { profile } = useAuth()
@@ -36,26 +34,18 @@ export function AdminDashboard() {
             </div>
 
             <div className="flex-1 min-h-0 grid grid-cols-28 grid-rows-16 gap-5">
-                <PlayerMovementsCard
-                    className="col-start-1 col-span-7 row-start-1 row-span-7"
+                <PlayersStatusCard
+                    className="col-start-1 col-span-10 row-start-1 row-span-7"
                     eventId={currentEvent?.id ?? null}
                     clubId={currentEvent?.club_id ?? null}
                 />
                 <UnpaidPaymentsCard
-                    className="col-start-8 col-span-7 row-start-1 row-span-7"
+                    className="col-start-11 col-span-9 row-start-1 row-span-7"
                     clubId={profile?.club_id ?? null}
                 />
-                <VisitorRequestsPanel
-                    className="col-start-15 col-span-7 row-start-1 row-span-7"
-                    eventId={currentEvent?.id ?? null}
-                />
-                <AlertsCard className="col-start-22 col-span-7 row-start-1 row-span-7" />
-                <TodayMatchesCard
-                    className="col-start-1 col-span-21 row-start-8 row-span-9 min-h-0"
-                    eventId={currentEvent?.id ?? null}
-                />
-                <PendingScoresCard
-                    className="col-start-22 col-span-7 row-start-8 row-span-9 min-h-0"
+                <AlertsCard className="col-start-20 col-span-9 row-start-1 row-span-7" />
+                <MatchesCard
+                    className="col-start-1 col-span-28 row-start-8 row-span-9 min-h-0"
                     eventId={currentEvent?.id ?? null}
                 />
             </div>

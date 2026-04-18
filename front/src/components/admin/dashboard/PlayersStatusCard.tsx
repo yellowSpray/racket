@@ -1,38 +1,40 @@
-import { useCallback, useEffect, useState } from "react"
-import { useVisitorRequests } from "@/hooks/useVisitorRequests"
+import { useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel"
-import type { CarouselApi } from "@/components/ui/carousel"
-import { UserGroupIcon, Tick02Icon, Cancel01Icon, Clock01Icon, ArrowLeft01Icon, ArrowRight01Icon } from "hugeicons-react"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
+import {
+    UserGroupIcon,
+    ArrowLeft01Icon,
+    ArrowRight01Icon,
+    Tick02Icon,
+    Cancel01Icon,
+    Clock01Icon,
+} from "hugeicons-react"
+import { usePlayerMovements, type PlayerMovement } from "@/hooks/usePlayerMovements"
+import { useVisitorRequests } from "@/hooks/useVisitorRequests"
+import { formatRelativeTime } from "@/lib/formatRelativeTime"
 import type { VisitorRequest } from "@/types/visitor"
+import { useState } from "react"
 
 const SLIDES = [
+    { label: "Inscrits" },
+    { label: "Désinscrits" },
     { label: "Liste d'attente" },
     { label: "Demandes visiteurs" },
 ]
 
-interface VisitorRequestsPanelProps {
+interface PlayersStatusCardProps {
     eventId: string | null
+    clubId: string | null
     className?: string
 }
 
-export function VisitorRequestsPanel({ eventId, className }: VisitorRequestsPanelProps) {
-    const { requests, loading, fetchPendingForEvent, reviewRequest } = useVisitorRequests()
+export function PlayersStatusCard({ eventId, clubId, className }: PlayersStatusCardProps) {
+    const { movements, loading: movementsLoading } = usePlayerMovements(eventId, clubId)
+    const { requests, loading: requestsLoading, fetchPendingForEvent, reviewRequest } = useVisitorRequests()
     const [slideIndex, setSlideIndex] = useState(0)
-    const [api, setApi] = useState<CarouselApi>()
-
-    const onSelect = useCallback(() => {
-        if (!api) return
-        setSlideIndex(api.selectedScrollSnap())
-    }, [api])
-
-    useEffect(() => {
-        if (!api) return
-        api.on("select", onSelect)
-        return () => { api.off("select", onSelect) }
-    }, [api, onSelect])
 
     useEffect(() => {
         if (eventId) {
@@ -42,17 +44,15 @@ export function VisitorRequestsPanel({ eventId, className }: VisitorRequestsPane
 
     async function handleApprove(requestId: string) {
         await reviewRequest(requestId, "approved")
-        if (eventId) {
-            fetchPendingForEvent(eventId)
-        }
+        if (eventId) fetchPendingForEvent(eventId)
     }
 
     async function handleReject(requestId: string) {
         await reviewRequest(requestId, "rejected")
-        if (eventId) {
-            fetchPendingForEvent(eventId)
-        }
+        if (eventId) fetchPendingForEvent(eventId)
     }
+
+    const inactiveMovements = movements.filter((m) => m.status === "inactive")
 
     return (
         <Card className={className}>
@@ -60,14 +60,14 @@ export function VisitorRequestsPanel({ eventId, className }: VisitorRequestsPane
                 <CardTitle className="flex items-center gap-2 text-sm">
                     <UserGroupIcon size={16} className="text-foreground" />
                     {SLIDES[slideIndex].label}
-                    {slideIndex === 1 && requests.length > 0 && (
+                    {slideIndex === 3 && requests.length > 0 && (
                         <Badge variant="pending" className="ml-1">
                             {requests.length}
                         </Badge>
                     )}
                     <div className="ml-auto flex items-center gap-1">
                         <button
-                            onClick={() => api?.scrollPrev()}
+                            onClick={() => setSlideIndex((i) => Math.max(0, i - 1))}
                             disabled={slideIndex === 0}
                             className="p-0.5 rounded transition-colors hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
                             aria-label="Slide précédent"
@@ -75,7 +75,7 @@ export function VisitorRequestsPanel({ eventId, className }: VisitorRequestsPane
                             <ArrowLeft01Icon size={14} />
                         </button>
                         <button
-                            onClick={() => api?.scrollNext()}
+                            onClick={() => setSlideIndex((i) => Math.min(SLIDES.length - 1, i + 1))}
                             disabled={slideIndex === SLIDES.length - 1}
                             className="p-0.5 rounded transition-colors hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
                             aria-label="Slide suivant"
@@ -86,27 +86,83 @@ export function VisitorRequestsPanel({ eventId, className }: VisitorRequestsPane
                 </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 min-h-0">
-                <Carousel setApi={setApi} opts={{ loop: false }} className="h-full">
-                    <CarouselContent className="h-full">
-                        <CarouselItem className="h-full">
-                            <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                                <Clock01Icon size={28} className="mb-3" />
-                                <p className="text-sm text-center">Joueurs inscrits en attente d'un groupe</p>
-                                <p className="text-xs mt-1">À venir</p>
-                            </div>
-                        </CarouselItem>
-                        <CarouselItem className="h-full">
-                            <VisitorRequestsList
-                                requests={requests}
-                                loading={loading}
-                                onApprove={handleApprove}
-                                onReject={handleReject}
-                            />
-                        </CarouselItem>
-                    </CarouselContent>
-                </Carousel>
+                {slideIndex === 0 && (
+                    <MovementsList movements={movements} loading={movementsLoading} />
+                )}
+                {slideIndex === 1 && (
+                    <MovementsList movements={inactiveMovements} loading={movementsLoading} />
+                )}
+                {slideIndex === 2 && <WaitingListPlaceholder />}
+                {slideIndex === 3 && (
+                    <VisitorRequestsList
+                        requests={requests}
+                        loading={requestsLoading}
+                        onApprove={handleApprove}
+                        onReject={handleReject}
+                    />
+                )}
             </CardContent>
         </Card>
+    )
+}
+
+function MovementsList({ movements, loading }: { movements: PlayerMovement[]; loading: boolean }) {
+    if (loading) {
+        return (
+            <div className="h-full flex items-center justify-center text-gray-400">
+                <p className="text-sm">Chargement...</p>
+            </div>
+        )
+    }
+
+    if (movements.length === 0) {
+        return (
+            <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                <UserGroupIcon size={28} className="mb-3" />
+                <p className="text-sm">Aucun mouvement récent</p>
+            </div>
+        )
+    }
+
+    return (
+        <ScrollArea className="h-full" type="auto">
+            <div>
+                <Table>
+                    <TableBody>
+                        {movements.map((m) => (
+                            <TableRow key={`${m.profileId}-${m.updatedAt}`}>
+                                <TableCell className="text-sm truncate py-1.5">
+                                    {m.firstName} {m.lastName}
+                                </TableCell>
+                                <TableCell className="text-right whitespace-nowrap py-1.5">
+                                    <div className="flex items-center justify-end gap-2">
+                                        <Badge
+                                            variant={m.status === "active" ? "active" : "inactive"}
+                                            className="text-[10px] px-1.5 py-0"
+                                        >
+                                            {m.status === "active" ? "Inscrit" : "Désinscrit"}
+                                        </Badge>
+                                        <span className="text-xs text-muted-foreground">
+                                            {formatRelativeTime(m.updatedAt)}
+                                        </span>
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
+        </ScrollArea>
+    )
+}
+
+function WaitingListPlaceholder() {
+    return (
+        <div className="h-full flex flex-col items-center justify-center text-gray-400">
+            <Clock01Icon size={28} className="mb-3" />
+            <p className="text-sm text-center">Joueurs inscrits en attente d'un groupe</p>
+            <p className="text-xs mt-1">À venir</p>
+        </div>
     )
 }
 
