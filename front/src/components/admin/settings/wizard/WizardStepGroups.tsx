@@ -271,7 +271,7 @@ export function WizardStepGroups({ event, groups, eventPlayerIds, onGroupsChange
                 id: `proposed-new-${i}`,
                 event_id: eventId,
                 group_name: `Box ${i + 1}`,
-                max_players: maxPlayersPerGroup,
+                max_players: Math.max(maxPlayersPerGroup, slotCount),
                 created_at: "",
                 players: orderedPlayers.slice(playerIdx, playerIdx + slotCount),
             })
@@ -413,10 +413,10 @@ export function WizardStepGroups({ event, groups, eventPlayerIds, onGroupsChange
         setCreating(true)
 
         try {
-            const groupsToCreate = selectedDistribution.distribution.map((_count, index) => ({
+            const groupsToCreate = selectedDistribution.distribution.map((count, index) => ({
                 event_id: event.id,
                 group_name: `Box ${index + 1}`,
-                max_players: maxPlayersPerGroup,
+                max_players: Math.max(maxPlayersPerGroup, count),
             }))
 
             const { data: createdGroupsData, error: insertError } = await supabase

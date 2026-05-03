@@ -194,7 +194,7 @@ export function buildProposedGroups(
         id: `proposed-new-${i}`,
         event_id: eventId,
         group_name: `Box ${i + 1}`,
-        max_players: effectiveMaxPlayers,
+        max_players: Math.max(effectiveMaxPlayers, players.length),
         created_at: "",
         players,
     }))
