@@ -4,6 +4,7 @@ import { transformGroups, type Group } from "@/types/draw"
 import type { Match } from "@/types/match"
 import { useCallback, useState } from "react"
 import { logger } from "@/lib/logger"
+import { sortGroupsByName } from "@/lib/utils"
 
 export function usePreviousEvent() {
     const [previousEvent, setPreviousEvent] = useState<Event | null>(null)
@@ -57,7 +58,7 @@ export function usePreviousEvent() {
                 .eq("event_id", eventData.id)
                 .order("group_name")
 
-            const groups = groupsData ? transformGroups(groupsData) : []
+            const groups = groupsData ? sortGroupsByName(transformGroups(groupsData)) : []
             setPreviousGroups(groups)
 
             // Fetch matches if groups exist

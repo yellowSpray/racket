@@ -3,6 +3,7 @@ import { transformGroups, type Group, type SupabaseGroup } from "@/types/draw"
 import { useCallback, useState } from "react"
 import { handleHookError, withTimeout } from "@/lib/handleHookError"
 import { logger } from "@/lib/logger"
+import { sortGroupsByName } from "@/lib/utils"
 
 export function useGroups() {
 
@@ -55,8 +56,8 @@ export function useGroups() {
                 return
             }
 
-            // transformer les données brutes en objets Group
-            setGroups(transformGroups(data as SupabaseGroup[] || []))
+            // transformer les données brutes en objets Group (tri numérique pour Box 10 > Box 2)
+            setGroups(sortGroupsByName(transformGroups(data as SupabaseGroup[] || [])))
             endLog()
 
         } catch (err) {
