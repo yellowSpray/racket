@@ -70,6 +70,84 @@ export function generateGroupRounds(
 }
 
 /**
+ * Template de planification : SCHEDULE_TEMPLATES[taille][posI][posJ] = index de date (0-based).
+ * Définit sur quelle date les joueurs aux positions i et j jouent leur match.
+ * La position correspond à l'index du joueur dans group.players.
+ * -1 = diagonale (joueur contre lui-même, jamais utilisé).
+ * Modifiez ces valeurs pour contrôler l'ordre des dates par taille de groupe.
+ */
+export const SCHEDULE_TEMPLATES: Record<number, number[][]> = {
+    2: [
+        [-1,  0],
+        [ 0, -1],
+    ],
+    3: [
+        [-1,  0,  1],
+        [ 0, -1,  2],
+        [ 1,  2, -1],
+    ],
+    4: [
+        [-1,  0,  1,  2],
+        [ 0, -1,  2,  1],
+        [ 1,  2, -1,  0],
+        [ 2,  1,  0, -1],
+    ],
+    5: [
+        [-1,  0,  1,  2,  3],
+        [ 0, -1,  4,  1,  2],
+        [ 1,  4, -1,  3,  0],
+        [ 2,  1,  3, -1,  4],
+        [ 3,  2,  0,  4, -1],
+    ],
+    6: [
+        [-1,  0,  1,  2,  3,  4],
+        [ 0, -1,  4,  1,  2,  3],
+        [ 1,  4, -1,  3,  0,  2],
+        [ 2,  1,  3, -1,  4,  0],
+        [ 3,  2,  0,  4, -1,  1],
+        [ 4,  3,  2,  0,  1, -1],
+    ],
+}
+
+/**
+ * Mappe les rounds de chaque groupe sur des dates en utilisant SCHEDULE_TEMPLATES.
+ * Pour chaque paire (i, j), la date est déterminée par SCHEDULE_TEMPLATES[n][i][j].
+ * Fallback séquentiel (round N → date N) si le groupe n'a pas de template.
+ */
+export function mapRoundsToDatesByTemplate(
+    groupRounds: GroupRound[][],
+    groups: Group[],
+    dates: string[]
+): DatePlan[] {
+    const plans: DatePlan[] = dates.map(date => ({ date, pairings: [] }))
+
+    for (let gi = 0; gi < groupRounds.length; gi++) {
+        const rounds = groupRounds[gi]
+        const players = groups[gi]?.players ?? []
+        const template = SCHEDULE_TEMPLATES[players.length]
+
+        for (let ri = 0; ri < rounds.length; ri++) {
+            for (const pairing of rounds[ri].pairings) {
+                let dateIdx: number
+                if (template) {
+                    const pos1 = players.findIndex(p => p.id === pairing.player1Id)
+                    const pos2 = players.findIndex(p => p.id === pairing.player2Id)
+                    dateIdx = pos1 >= 0 && pos2 >= 0 ? template[pos1][pos2] : ri
+                } else {
+                    dateIdx = ri
+                }
+                const safeDateIdx = dateIdx % dates.length
+                if (safeDateIdx >= 0 && safeDateIdx < plans.length) {
+                    plans[safeDateIdx].pairings.push(pairing)
+                }
+            }
+        }
+    }
+
+    return plans
+}
+
+/**
  * Mappe les rounds de chaque groupe sur des dates.
  * Round N → Date N. Si plus de rounds que de dates, les surplus vont
  * sur les dates les moins chargées.
