@@ -14,6 +14,7 @@ import { ArrowDown01Icon, ArrowUp01Icon } from "hugeicons-react"
 interface MatchListViewProps {
     matches: Match[]
     players: PlayerType[]
+    searchQuery?: string
     editMode?: boolean
     pendingScores?: Map<string, string>
     onScoreChange?: (matchId: string, value: string) => void
@@ -153,12 +154,23 @@ function ScoreDisplay({ match }: { match: Match }) {
     return <span className="font-semibold text-blue-600">{match.score}</span>
 }
 
-export function MatchListView({ matches, players, editMode, pendingScores, onScoreChange }: MatchListViewProps) {
+export function MatchListView({ matches, players, searchQuery = "", editMode, pendingScores, onScoreChange }: MatchListViewProps) {
     const restrictions = buildRestrictionsMap(players)
+
+    const normalizeStr = (s: string) => s.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "")
+    const query = normalizeStr(searchQuery.trim())
+
+    const filteredMatches = query
+        ? matches.filter(m => {
+            const p1 = m.player1 ? normalizeStr(`${m.player1.first_name} ${m.player1.last_name}`) : ""
+            const p2 = m.player2 ? normalizeStr(`${m.player2.first_name} ${m.player2.last_name}`) : ""
+            return p1.includes(query) || p2.includes(query)
+        })
+        : matches
 
     // Group matches by date, then by box (group_name)
     const matchesByDate = new Map<string, Match[]>()
-    for (const match of matches) {
+    for (const match of filteredMatches) {
         const date = match.match_date
         if (!matchesByDate.has(date)) matchesByDate.set(date, [])
         matchesByDate.get(date)!.push(match)

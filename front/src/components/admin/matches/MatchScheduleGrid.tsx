@@ -118,6 +118,10 @@ export function MatchScheduleGrid({
     const dndEnabled = !!onMatchDrop
     const [activeMatch, setActiveMatch] = useState<Match | null>(null)
     const [dropError, setDropError] = useState<string | null>(null)
+    const [pendingDrop, setPendingDrop] = useState<{
+        matchId: string
+        updates: { match_date: string; match_time: string; court_number: string }
+    } | null>(null)
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -170,12 +174,16 @@ export function MatchScheduleGrid({
         const draggedMatch = activeMatch
         setActiveMatch(null)
         setDropError(null)
+        setPendingDrop(null)
         const { active, over } = dragEvent
         if (!over || !onMatchDrop) return
 
         const overId = over.id as string
         const slot = parseSlotId(overId)
         if (!slot) return
+
+        const matchId = (active.id as string).replace("match-", "")
+        const updates = { match_date: slot.date, match_time: slot.time, court_number: slot.court }
 
         if (playerConstraints && draggedMatch) {
             const p1 = draggedMatch.player1
@@ -194,24 +202,40 @@ export function MatchScheduleGrid({
             )
             if (!validation.valid) {
                 setDropError(validation.warnings.join(" / "))
+                setPendingDrop({ matchId, updates })
                 return
             }
         }
 
-        const matchId = (active.id as string).replace("match-", "")
-        onMatchDrop(matchId, {
-            match_date: slot.date,
-            match_time: slot.time,
-            court_number: slot.court,
-        })
+        onMatchDrop(matchId, updates)
+    }
+
+    const handleForce = () => {
+        if (!pendingDrop || !onMatchDrop) return
+        onMatchDrop(pendingDrop.matchId, pendingDrop.updates)
+        setDropError(null)
+        setPendingDrop(null)
+    }
+
+    const handleCancelDrop = () => {
+        setDropError(null)
+        setPendingDrop(null)
     }
 
     const gridContent = (
         <div className="flex flex-col h-full min-h-0 overflow-hidden">
             {dropError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded mb-2 text-sm flex items-center justify-between">
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded mb-2 text-sm flex items-center justify-between gap-3">
                     <span>{dropError}</span>
-                    <button onClick={() => setDropError(null)} className="text-red-400 hover:text-red-600 ml-2">&times;</button>
+                    <div className="flex items-center gap-2 shrink-0">
+                        <button
+                            onClick={handleForce}
+                            className="px-2 py-1 text-xs font-medium bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                        >
+                            Forcer
+                        </button>
+                        <button onClick={handleCancelDrop} className="text-red-400 hover:text-red-600">&times;</button>
+                    </div>
                 </div>
             )}
             <ScrollArea className="flex-1 min-h-0" type="auto">

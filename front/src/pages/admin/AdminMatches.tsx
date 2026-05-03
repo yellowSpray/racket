@@ -8,8 +8,9 @@ import { useGroups } from "@/hooks/useGroups"
 import { useMatches } from "@/hooks/useMatches"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router"
-import { Calendar03Icon, Settings01Icon, PencilEdit01Icon, FloppyDiskIcon, Cancel01Icon, ListViewIcon, GridViewIcon } from "hugeicons-react"
+import { Calendar03Icon, Settings01Icon, PencilEdit01Icon, FloppyDiskIcon, Cancel01Icon, ListViewIcon, GridViewIcon, Search01Icon } from "hugeicons-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { totalMatchCount, totalSlotCount, calculateTimeSlots, calculateDates } from "@/lib/matchScheduler"
 import { intervalToMinutes } from "@/lib/utils"
 import { parseScore } from "@/lib/rankingEngine"
@@ -25,6 +26,7 @@ export function AdminMatches() {
 
     // Mode vue
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+    const [searchQuery, setSearchQuery] = useState("")
 
     // Mode édition des scores
     const [editMode, setEditMode] = useState(false)
@@ -190,14 +192,33 @@ export function AdminMatches() {
     return (
         <div className="flex flex-col h-full min-h-0">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between mb-6 gap-4">
+                <div className="flex items-center gap-2 shrink-0">
                     <h3 className="text-lg font-semibold">Matchs</h3>
                     <EventSelector />
                 </div>
-                <div className="flex gap-4">
+                {hasMatches && viewMode === "list" && (
+                    <div className="relative flex-1 max-w-sm mx-auto">
+                        <Search01Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Rechercher un joueur..."
+                            className="pl-9 pr-9 rounded-full h-10"
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery("")}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            >
+                                ×
+                            </button>
+                        )}
+                    </div>
+                )}
+                <div className="flex gap-4 shrink-0">
                     {hasMatches && (
-                        <Button variant="icon" size="icon" onClick={() => setViewMode(v => v === "grid" ? "list" : "grid")}>
+                        <Button variant="icon" size="icon" onClick={() => { setViewMode(v => v === "grid" ? "list" : "grid"); setSearchQuery("") }}>
                             {viewMode === "grid" ? <ListViewIcon size="20" strokeWidth={2} /> : <GridViewIcon size="20" strokeWidth={2} />}
                         </Button>
                     )}
@@ -290,6 +311,7 @@ export function AdminMatches() {
                         <MatchListView
                             matches={matches}
                             players={players}
+                            searchQuery={searchQuery}
                             editMode={editMode}
                             pendingScores={pendingScores}
                             onScoreChange={handleScoreChange}
