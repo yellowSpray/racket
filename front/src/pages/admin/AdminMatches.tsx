@@ -42,14 +42,26 @@ export function AdminMatches() {
         }
     }, [currentEvent, fetchGroupsByEvent, fetchMatchesByEvent])
 
+    const playerAbsences = useMemo(() => {
+        const map = new Map<string, string[]>()
+        for (const p of players) {
+            if (p.unavailable.length > 0) map.set(p.id, p.unavailable)
+        }
+        return map
+    }, [players])
+
     // --- Score editing ---
 
     const handleEnterEditMode = () => {
-        // Pré-remplir avec les scores existants
         const initial = new Map<string, string>()
         for (const match of matches) {
             if (match.score) {
                 initial.set(match.id, match.score)
+            } else {
+                const p1Absent = playerAbsences.get(match.player1_id)?.includes(match.match_date)
+                const p2Absent = playerAbsences.get(match.player2_id)?.includes(match.match_date)
+                if (p1Absent && !p2Absent) initial.set(match.id, "ABS-0")
+                else if (p2Absent && !p1Absent) initial.set(match.id, "0-ABS")
             }
         }
         setPendingScores(initial)
@@ -315,6 +327,7 @@ export function AdminMatches() {
                             editMode={editMode}
                             pendingScores={pendingScores}
                             onScoreChange={handleScoreChange}
+                            playerAbsences={playerAbsences}
                         />
                     )}
                 </div>

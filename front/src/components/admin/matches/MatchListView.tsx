@@ -18,6 +18,7 @@ interface MatchListViewProps {
     editMode?: boolean
     pendingScores?: Map<string, string>
     onScoreChange?: (matchId: string, value: string) => void
+    playerAbsences?: Map<string, string[]>
 }
 
 const SCORE_OPTIONS = [
@@ -154,7 +155,7 @@ function ScoreDisplay({ match }: { match: Match }) {
     return <span className="font-semibold text-blue-600">{match.score}</span>
 }
 
-export function MatchListView({ matches, players, searchQuery = "", editMode, pendingScores, onScoreChange }: MatchListViewProps) {
+export function MatchListView({ matches, players, searchQuery = "", editMode, pendingScores, onScoreChange, playerAbsences }: MatchListViewProps) {
     const restrictions = buildRestrictionsMap(players)
 
     const normalizeStr = (s: string) => s.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "")
@@ -222,9 +223,11 @@ export function MatchListView({ matches, players, searchQuery = "", editMode, pe
                                                         {boxMatches.map(match => {
                                                             const isP1Winner = match.winner_id === match.player1_id
                                                             const isP2Winner = match.winner_id === match.player2_id
+                                                            const p1Absent = !match.score && !!playerAbsences?.get(match.player1_id)?.includes(match.match_date)
+                                                            const p2Absent = !match.score && !!playerAbsences?.get(match.player2_id)?.includes(match.match_date)
 
                                                             return (
-                                                                <TableRow key={match.id} className="border-b border-gray-200 last:border-b-0">
+                                                                <TableRow key={match.id} className={`border-b border-gray-200 last:border-b-0 ${p1Absent || p2Absent ? "bg-amber-50" : ""}`}>
                                                                     <TableCell className="text-center text-sm">
                                                                         {formatDateLabel(date)}
                                                                     </TableCell>
@@ -232,14 +235,20 @@ export function MatchListView({ matches, players, searchQuery = "", editMode, pe
                                                                         {boxName}
                                                                     </TableCell>
                                                                     <TableCell className={isP1Winner ? "font-bold text-green-600" : ""}>
-                                                                        {formatPlayerName(match.player1)}
+                                                                        <span className="flex items-center gap-1.5">
+                                                                            {formatPlayerName(match.player1)}
+                                                                            {p1Absent && <span className="text-[10px] font-semibold text-amber-600 bg-amber-100 px-1 rounded">Abs</span>}
+                                                                        </span>
                                                                     </TableCell>
                                                                     <TableCell className="text-center text-xs text-gray-500">
                                                                         <RestrictionDisplay restrictions={restrictions} playerId={match.player1_id} />
                                                                     </TableCell>
                                                                     <TableCell className="text-center text-gray-400">vs</TableCell>
                                                                     <TableCell className={isP2Winner ? "font-bold text-green-600" : ""}>
-                                                                        {formatPlayerName(match.player2)}
+                                                                        <span className="flex items-center gap-1.5">
+                                                                            {formatPlayerName(match.player2)}
+                                                                            {p2Absent && <span className="text-[10px] font-semibold text-amber-600 bg-amber-100 px-1 rounded">Abs</span>}
+                                                                        </span>
                                                                     </TableCell>
                                                                     <TableCell className="text-center text-xs text-gray-500">
                                                                         <RestrictionDisplay restrictions={restrictions} playerId={match.player2_id} />

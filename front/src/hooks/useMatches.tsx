@@ -3,7 +3,7 @@ import type { Match } from "@/types/match"
 import type { Group } from "@/types/draw"
 import type { Event } from "@/types/event"
 import type { UnplacedMatch } from "@/lib/matchScheduler"
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { handleHookError, withTimeout } from "@/lib/handleHookError"
 import { logger } from "@/lib/logger"
 import { intervalToMinutes } from "@/lib/utils"
@@ -61,6 +61,7 @@ export function useMatches() {
     const [playerConstraints, setPlayerConstraints] = useState<Map<string, PlayerConstraints>>(new Map())
     const [loading, setLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
+    const subscribedGroupIds = useRef<string[]>([])
 
     /**
      * Récupère tous les matchs d'un événement avec les profils joueurs et le groupe.
@@ -99,6 +100,7 @@ export function useMatches() {
             }
 
             const groupIds = groups.map(g => g.id)
+            subscribedGroupIds.current = groupIds
 
             const { data, error: fetchError } = await withTimeout(
                 supabase
@@ -708,6 +710,28 @@ export function useMatches() {
             handleHookError(err, setError, "useMatches.submitPending")
             return false
         }
+    }, [])
+
+    // Souscription Realtime : met à jour les matchs en direct quand un score change en DB
+    useEffect(() => {
+        const channel = supabase
+            .channel("matches-realtime")
+            .on(
+                "postgres_changes",
+                { event: "UPDATE", schema: "public", table: "matches" },
+                (payload) => {
+                    const updated = payload.new as Match
+                    if (!subscribedGroupIds.current.includes(updated.group_id)) return
+                    setMatches(prev => prev.map(m =>
+                        m.id === updated.id
+                            ? { ...m, score: updated.score, winner_id: updated.winner_id, updated_at: updated.updated_at }
+                            : m
+                    ))
+                }
+            )
+            .subscribe()
+
+        return () => { supabase.removeChannel(channel) }
     }, [])
 
     return {
