@@ -23,3 +23,10 @@ export function formatTimeForInput(time: string | null | undefined): string | nu
   if (!time) return null
   return time.replace(/([+-]\d{2})$/, "").slice(0, 5)
 }
+
+/** Trie les groupes par nom en ordre naturel numérique (Box 1, Box 2, ..., Box 10) plutôt qu'alphabétique. */
+export function sortGroupsByName<T extends { group_name: string }>(groups: T[]): T[] {
+  return [...groups].sort((a, b) =>
+    a.group_name.localeCompare(b.group_name, undefined, { numeric: true, sensitivity: "base" })
+  )
+}

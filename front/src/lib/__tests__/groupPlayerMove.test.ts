@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { movePlayerBetweenGroups, validateGroups } from "../groupPlayerMove"
+import { movePlayerBetweenGroups, movePlayerToPosition, validateGroups } from "../groupPlayerMove"
 import type { Group } from "@/types/draw"
 
 const makeGroups = (): Group[] => [
@@ -43,6 +43,59 @@ describe("movePlayerBetweenGroups", () => {
         movePlayerBetweenGroups(groups, "p1", "g1", "g2")
         expect(groups[0].players).toHaveLength(2)
         expect(groups[1].players).toHaveLength(1)
+    })
+})
+
+describe("movePlayerToPosition", () => {
+    it("cross-groupe : insère en début de liste (index 0)", () => {
+        const result = movePlayerToPosition(makeGroups(), "p1", "g1", "g2", 0)
+        expect(result.find(g => g.id === "g1")!.players!.map(p => p.id)).toEqual(["p2"])
+        expect(result.find(g => g.id === "g2")!.players!.map(p => p.id)).toEqual(["p1", "p3"])
+    })
+
+    it("cross-groupe : insère en fin de liste", () => {
+        const result = movePlayerToPosition(makeGroups(), "p1", "g1", "g2", 1)
+        expect(result.find(g => g.id === "g2")!.players!.map(p => p.id)).toEqual(["p3", "p1"])
+    })
+
+    it("même groupe : déplace vers le bas", () => {
+        const groups: Group[] = [{
+            id: "g1", event_id: "e1", group_name: "Box 1", max_players: 4, created_at: "",
+            players: [
+                { id: "A", first_name: "A", last_name: "", phone: "", power_ranking: 0 },
+                { id: "B", first_name: "B", last_name: "", phone: "", power_ranking: 0 },
+                { id: "C", first_name: "C", last_name: "", phone: "", power_ranking: 0 },
+                { id: "D", first_name: "D", last_name: "", phone: "", power_ranking: 0 },
+            ],
+        }]
+        const result = movePlayerToPosition(groups, "A", "g1", "g1", 2)
+        expect(result[0].players!.map(p => p.id)).toEqual(["B", "A", "C", "D"])
+    })
+
+    it("même groupe : déplace vers le haut", () => {
+        const groups: Group[] = [{
+            id: "g1", event_id: "e1", group_name: "Box 1", max_players: 4, created_at: "",
+            players: [
+                { id: "A", first_name: "A", last_name: "", phone: "", power_ranking: 0 },
+                { id: "B", first_name: "B", last_name: "", phone: "", power_ranking: 0 },
+                { id: "C", first_name: "C", last_name: "", phone: "", power_ranking: 0 },
+                { id: "D", first_name: "D", last_name: "", phone: "", power_ranking: 0 },
+            ],
+        }]
+        const result = movePlayerToPosition(groups, "C", "g1", "g1", 0)
+        expect(result[0].players!.map(p => p.id)).toEqual(["C", "A", "B", "D"])
+    })
+
+    it("ne mute pas les groupes originaux", () => {
+        const groups = makeGroups()
+        movePlayerToPosition(groups, "p1", "g1", "g2", 0)
+        expect(groups[0].players!.map(p => p.id)).toEqual(["p1", "p2"])
+    })
+
+    it("retourne les groupes inchangés si joueur introuvable", () => {
+        const groups = makeGroups()
+        const result = movePlayerToPosition(groups, "unknown", "g1", "g2", 0)
+        expect(result).toEqual(groups)
     })
 })
 
