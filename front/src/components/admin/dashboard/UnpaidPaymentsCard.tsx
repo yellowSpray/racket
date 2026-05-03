@@ -8,11 +8,12 @@ import type { GroupedUnpaidPayment } from "@/hooks/useUnpaidPayments"
 
 interface UnpaidPaymentsCardProps {
     clubId: string | null
+    eventId: string | null
     className?: string
 }
 
-export function UnpaidPaymentsCard({ clubId, className }: UnpaidPaymentsCardProps) {
-    const { grouped, loading } = useUnpaidPayments(clubId)
+export function UnpaidPaymentsCard({ clubId, eventId, className }: UnpaidPaymentsCardProps) {
+    const { grouped, loading } = useUnpaidPayments(clubId, eventId)
 
     return (
         <Card className={className}>

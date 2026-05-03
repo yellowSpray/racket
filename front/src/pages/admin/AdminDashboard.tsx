@@ -42,6 +42,7 @@ export function AdminDashboard() {
                 <UnpaidPaymentsCard
                     className="col-start-11 col-span-9 row-start-1 row-span-7"
                     clubId={profile?.club_id ?? null}
+                    eventId={currentEvent?.id ?? null}
                 />
                 <AlertsCard className="col-start-20 col-span-9 row-start-1 row-span-7" />
                 <MatchesCard

@@ -40,7 +40,14 @@ describe('useUnpaidPayments', () => {
     })
 
     it('should return empty state when clubId is null', () => {
-        const { result } = renderHook(() => useUnpaidPayments(null))
+        const { result } = renderHook(() => useUnpaidPayments(null, null))
+
+        expect(result.current.payments).toEqual([])
+        expect(result.current.loading).toBe(false)
+    })
+
+    it('should return empty state when eventId is null', () => {
+        const { result } = renderHook(() => useUnpaidPayments('club1', null))
 
         expect(result.current.payments).toEqual([])
         expect(result.current.loading).toBe(false)
@@ -58,11 +65,11 @@ describe('useUnpaidPayments', () => {
                 id: 'pay2',
                 profile_id: 'p2',
                 profiles: { first_name: 'Bob', last_name: 'Dupont' },
-                events: { event_name: 'Série 5' },
+                events: { event_name: 'Série 4' },
             },
         ])
 
-        const { result } = renderHook(() => useUnpaidPayments('club1'))
+        const { result } = renderHook(() => useUnpaidPayments('club1', 'event1'))
 
         await waitFor(() => {
             expect(result.current.loading).toBe(false)
@@ -70,14 +77,14 @@ describe('useUnpaidPayments', () => {
 
         expect(result.current.payments).toEqual([
             { id: 'pay1', profileId: 'p1', firstName: 'Alice', lastName: 'Martin', eventName: 'Série 4' },
-            { id: 'pay2', profileId: 'p2', firstName: 'Bob', lastName: 'Dupont', eventName: 'Série 5' },
+            { id: 'pay2', profileId: 'p2', firstName: 'Bob', lastName: 'Dupont', eventName: 'Série 4' },
         ])
     })
 
     it('should return empty on fetch error', async () => {
         paymentsBuilder._reject('Fetch failed')
 
-        const { result } = renderHook(() => useUnpaidPayments('club1'))
+        const { result } = renderHook(() => useUnpaidPayments('club1', 'event1'))
 
         await waitFor(() => {
             expect(result.current.loading).toBe(false)
@@ -89,7 +96,7 @@ describe('useUnpaidPayments', () => {
     it('should query payments table with correct filters', async () => {
         paymentsBuilder._resolve([])
 
-        renderHook(() => useUnpaidPayments('club1'))
+        renderHook(() => useUnpaidPayments('club1', 'event1'))
 
         await waitFor(() => {
             expect(mockSupabase.from).toHaveBeenCalledWith('payments')
@@ -98,5 +105,6 @@ describe('useUnpaidPayments', () => {
         expect(paymentsBuilder.select).toHaveBeenCalled()
         expect(paymentsBuilder.eq).toHaveBeenCalledWith('status', 'unpaid')
         expect(paymentsBuilder.eq).toHaveBeenCalledWith('events.club_id', 'club1')
+        expect(paymentsBuilder.eq).toHaveBeenCalledWith('event_id', 'event1')
     })
 })
