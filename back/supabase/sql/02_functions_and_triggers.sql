@@ -150,3 +150,60 @@ CREATE TRIGGER trg_cleanup_absences_on_event_complete
   AFTER UPDATE ON public.events
   FOR EACH ROW
   EXECUTE FUNCTION public.cleanup_absences_on_event_complete();
+
+-- ===================================
+-- SYNC STATUT ACTIVE/INACTIVE VIA EVENT_PLAYERS
+-- ===================================
+
+-- Inscription à un event → active
+CREATE OR REPLACE FUNCTION public.sync_active_on_event_register()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  DELETE FROM public.player_status
+  WHERE profile_id = NEW.profile_id AND status = 'inactive';
+
+  INSERT INTO public.player_status (profile_id, status)
+  VALUES (NEW.profile_id, 'active')
+  ON CONFLICT (profile_id, status) DO NOTHING;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_event_players_insert ON public.event_players;
+CREATE TRIGGER trg_event_players_insert
+  AFTER INSERT ON public.event_players
+  FOR EACH ROW
+  EXECUTE FUNCTION public.sync_active_on_event_register();
+
+-- Désinscription d'un event → inactive si plus aucun event
+CREATE OR REPLACE FUNCTION public.sync_inactive_on_event_unregister()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.event_players
+    WHERE profile_id = OLD.profile_id
+  ) THEN
+    DELETE FROM public.player_status
+    WHERE profile_id = OLD.profile_id AND status = 'active';
+
+    INSERT INTO public.player_status (profile_id, status)
+    VALUES (OLD.profile_id, 'inactive')
+    ON CONFLICT (profile_id, status) DO NOTHING;
+  END IF;
+
+  RETURN OLD;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_event_players_delete ON public.event_players;
+CREATE TRIGGER trg_event_players_delete
+  AFTER DELETE ON public.event_players
+  FOR EACH ROW
+  EXECUTE FUNCTION public.sync_inactive_on_event_unregister();
