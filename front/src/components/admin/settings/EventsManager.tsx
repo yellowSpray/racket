@@ -111,6 +111,7 @@ export function EventsManager({ clubDefaults }: EventsManagerProps) {
                                     <TableHead className="text-center">Nom</TableHead>
                                     <TableHead className="text-center">Date de début</TableHead>
                                     <TableHead className="text-center">Date de fin</TableHead>
+                                    <TableHead className="text-center">Clôture</TableHead>
                                     <TableHead className="text-center">Heure de debut</TableHead>
                                     <TableHead className="text-center">Heure de fin</TableHead>
                                     <TableHead className="text-center">Terrains</TableHead>
@@ -130,6 +131,9 @@ export function EventsManager({ clubDefaults }: EventsManagerProps) {
                                             </TableCell>
                                             <TableCell className="text-center">{formatDate(event.start_date)}</TableCell>
                                             <TableCell className="text-center">{formatDate(event.end_date)}</TableCell>
+                                            <TableCell className="text-center">
+                                                {event.deadline ? formatDate(event.deadline) : <span className="text-gray-400">-</span>}
+                                            </TableCell>
                                             <TableCell className="text-center">{formatTime(event.start_time)}</TableCell>
                                             <TableCell className="text-center">{formatTime(event.end_time)}</TableCell>
                                             <TableCell className="text-center">{event.number_of_courts}</TableCell>

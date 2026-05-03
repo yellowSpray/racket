@@ -23,6 +23,13 @@ export function DroppableGroupColumn({ group, isOver, previousPlayerIds, maxRows
     const isOverMax = count > group.max_players
     const hasNewPlayers = (availableNewPlayers?.length ?? 0) > 0
 
+    const topThreeAvg = (() => {
+        if (players.length === 0) return null
+        const sorted = [...players].sort((a, b) => (b.power_ranking || 0) - (a.power_ranking || 0))
+        const top = sorted.slice(0, 3)
+        return Math.round(top.reduce((sum, p) => sum + (p.power_ranking || 0), 0) / top.length)
+    })()
+
     const { setNodeRef } = useDroppable({ id: `group-${group.id}` })
 
     const playerIds = players.map(p => `player-${p.id}`)
@@ -38,7 +45,12 @@ export function DroppableGroupColumn({ group, isOver, previousPlayerIds, maxRows
             }`}
         >
             <div className="flex items-center justify-between mb-2">
-                <h4 className="font-semibold text-sm">{group.group_name}</h4>
+                <div className="flex items-center gap-2">
+                    <h4 className="font-semibold text-sm">{group.group_name}</h4>
+                    {topThreeAvg !== null && (
+                        <span className="text-xs text-muted-foreground">Niv. ~{topThreeAvg}</span>
+                    )}
+                </div>
                 <Badge variant={isOverMax ? "inactive" : "default"}>
                     <UserGroupIcon className="h-3 w-3 mr-1" />
                     {count}/{group.max_players}

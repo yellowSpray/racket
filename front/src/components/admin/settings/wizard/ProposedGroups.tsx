@@ -10,7 +10,7 @@ import {
     type DragEndEvent,
     type DragOverEvent,
 } from "@dnd-kit/core"
-import { movePlayerBetweenGroups } from "@/lib/groupPlayerMove"
+import { movePlayerBetweenGroups, movePlayerToPosition } from "@/lib/groupPlayerMove"
 import { DroppableGroupColumn } from "./DroppableGroupColumn"
 import { DraggablePlayerItem } from "./DraggablePlayerItem"
 import type { Group, GroupPlayer } from "@/types/draw"
@@ -98,18 +98,24 @@ export function ProposedGroups({ groups, onGroupsChanged, previousPlayerIds, max
         const fromGroupId = findGroupForPlayer(active.id as string)
         if (!fromGroupId) return
 
-        let toGroupId: string | null = null
         const overId = over.id as string
-        if (overId.startsWith("group-")) {
-            toGroupId = overId.replace("group-", "")
-        } else if (overId.startsWith("player-")) {
-            toGroupId = findGroupForPlayer(overId)
+
+        if (overId.startsWith("player-")) {
+            // Drop sur un joueur → insertion à sa position exacte
+            const overPlayerId = overId.replace("player-", "")
+            const toGroupId = findGroupForPlayer(overId)
+            if (!toGroupId) return
+            const toGroup = groups.find(g => g.id === toGroupId)
+            const toIndex = (toGroup?.players || []).findIndex(p => p.id === overPlayerId)
+            const newGroups = movePlayerToPosition(groups, activeId, fromGroupId, toGroupId, toIndex === -1 ? 0 : toIndex)
+            onGroupsChanged(newGroups)
+        } else if (overId.startsWith("group-")) {
+            // Drop sur la zone du groupe → ajout en fin de liste
+            const toGroupId = overId.replace("group-", "")
+            if (fromGroupId === toGroupId) return
+            const newGroups = movePlayerBetweenGroups(groups, activeId, fromGroupId, toGroupId)
+            onGroupsChanged(newGroups)
         }
-
-        if (!toGroupId || fromGroupId === toGroupId) return
-
-        const newGroups = movePlayerBetweenGroups(groups, activeId, fromGroupId, toGroupId)
-        onGroupsChanged(newGroups)
     }
 
     return (

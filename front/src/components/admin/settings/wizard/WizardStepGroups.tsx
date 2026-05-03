@@ -1,3 +1,4 @@
+import { GroupRoundPreview } from "./GroupRoundPreview"
 import type { Event } from "@/types/event"
 import { transformGroups, type Group, type GroupPlayer } from "@/types/draw"
 import type { GroupStandings, PromotionResult } from "@/types/ranking"
@@ -23,11 +24,13 @@ import { ProposedGroups } from "./ProposedGroups"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { validateGroups } from "@/lib/groupPlayerMove"
+import { sortGroupsByName } from "@/lib/utils"
 import { InformationCircleIcon, SparklesIcon, Settings01Icon, ArrowLeftRightIcon, Delete02Icon, UserGroupIcon, Award01Icon, Tick02Icon, ChartIncreaseIcon, ChartDecreaseIcon, UserRemove01Icon, UserAdd01Icon } from "hugeicons-react"
 
 interface WizardStepGroupsProps {
     event: Event
     groups: Group[]
+    eventPlayerIds: Set<string>
     onGroupsChanged: (groups: Group[]) => void
     onNext: () => void
     onPrevious: () => void
@@ -83,7 +86,7 @@ function StaticGroupColumn({ title, titleExtra, groups, maxRows, renderPlayer, s
     )
 }
 
-export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPrevious }: WizardStepGroupsProps) {
+export function WizardStepGroups({ event, groups, eventPlayerIds, onGroupsChanged, onNext, onPrevious }: WizardStepGroupsProps) {
     const { createGroups, assignPlayersToGroup, loading: groupsLoading } = useGroups()
     const { players } = usePlayers()
     const { profile } = useAuth()
@@ -136,7 +139,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
         })
     }, [previousEvent, previousGroups, previousMatches, effectiveScoringRules])
 
-    const activePlayers = players.filter(p => p.status?.includes("active"))
+    const activePlayers = players.filter(p => eventPlayerIds.has(p.id))
 
     const registeredPlayerIds = useMemo(
         () => new Set(activePlayers.map(p => p.id)),
@@ -232,12 +235,58 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
         })
     }, [previousGroups, previousStandings, previousMatches, promotionResult, registeredPlayerIds, maxPlayersPerGroup, moveMap])
 
+    // Extend autoProposedGroups by redistributing existing players when new players don't fit
+    const autoProposedGroupsWithCapacity = useMemo(() => {
+        if (!autoProposedGroups) return null
+        if (newPlayers.length === 0) return autoProposedGroups
+
+        const totalOccupied = autoProposedGroups.reduce((sum, g) => sum + (g.players?.length ?? 0), 0)
+        const totalCapacity = autoProposedGroups.reduce((sum, g) => sum + g.max_players, 0)
+        const availableSlots = totalCapacity - totalOccupied
+
+        if (newPlayers.length <= availableSlots) return autoProposedGroups
+
+        // Calculer le bon nombre de groupes pour accueillir tout le monde
+        const allDist = calculateAllDistributions(totalOccupied + newPlayers.length, maxPlayersPerGroup)
+        const targetGroupCount = allDist.length > 0
+            ? allDist[allDist.length - 1].distribution.length
+            : autoProposedGroups.length + Math.ceil((newPlayers.length - availableSlots) / maxPlayersPerGroup)
+
+        if (targetGroupCount <= autoProposedGroups.length) return autoProposedGroups
+
+        // Aplatir les joueurs dans leur ordre actuel depuis autoProposedGroups
+        // (promo/relg déjà appliqués + tri moveMap déjà fait → classement respecté)
+        const orderedPlayers = autoProposedGroups.flatMap(g => g.players || [])
+
+        // Répartir équitablement sur targetGroupCount groupes
+        const perGroup = Math.floor(orderedPlayers.length / targetGroupCount)
+        const remainder = orderedPlayers.length % targetGroupCount
+        const eventId = autoProposedGroups[0]?.event_id ?? event.id
+        const result: Group[] = []
+        let playerIdx = 0
+
+        for (let i = 0; i < targetGroupCount; i++) {
+            const slotCount = i < remainder ? perGroup + 1 : perGroup
+            result.push({
+                id: `proposed-new-${i}`,
+                event_id: eventId,
+                group_name: `Box ${i + 1}`,
+                max_players: maxPlayersPerGroup,
+                created_at: "",
+                players: orderedPlayers.slice(playerIdx, playerIdx + slotCount),
+            })
+            playerIdx += slotCount
+        }
+
+        return result
+    }, [autoProposedGroups, newPlayers, maxPlayersPerGroup, event.id])
+
     // Set initial proposed groups from auto-computation (only when user hasn't modified via DnD)
     useEffect(() => {
-        if (mode === "previous" && autoProposedGroups && !proposedLocalGroups) {
-            setProposedLocalGroups(autoProposedGroups)
+        if (mode === "previous" && autoProposedGroupsWithCapacity && !proposedLocalGroups) {
+            setProposedLocalGroups(autoProposedGroupsWithCapacity)
         }
-    }, [mode, autoProposedGroups, proposedLocalGroups])
+    }, [mode, autoProposedGroupsWithCapacity, proposedLocalGroups])
 
     const totalPlayers = activePlayers.length
     const optimalDistribution = calculateOptimalDistribution(totalPlayers, maxPlayersPerGroup)
@@ -296,16 +345,26 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
 
             if (insertError) throw new Error(insertError.message)
 
-            await Promise.all(proposedLocalGroups.map((group, i) => {
-                const groupId = createdGroupsData[i].id
+            // Match by group_name (not index) to guard against DB return order variance
+            const prevGroupsByName = new Map(createdGroupsData.map(g => [g.group_name as string, g.id as string]))
+
+            // Insert directly (bypass useGroups.assignPlayersToGroup to avoid unnecessary
+            // fetchGroupsByEvent calls that would re-render with DB order and break player ordering)
+            await Promise.all(proposedLocalGroups.map(async (group) => {
+                const groupId = prevGroupsByName.get(group.group_name)
+                if (!groupId) return
                 const playerIds = (group.players || []).map(p => p.id)
-                return playerIds.length > 0 ? assignPlayersToGroup(groupId, playerIds, event.id) : Promise.resolve()
+                if (playerIds.length === 0) return
+                const { error } = await supabase.from("group_players").insert(
+                    playerIds.map(profileId => ({ group_id: groupId, profile_id: profileId }))
+                )
+                if (error) throw new Error(error.message)
             }))
 
-            // Build result directly from proposedLocalGroups to preserve player order
-            const transformed = proposedLocalGroups.map((group, i) => ({
+            // Preserve proposedLocalGroups order and player arrays exactly as-is
+            const transformed = proposedLocalGroups.map(group => ({
                 ...group,
-                id: createdGroupsData[i].id,
+                id: prevGroupsByName.get(group.group_name) ?? group.id,
                 event_id: event.id,
             }))
             onGroupsChanged(transformed)
@@ -330,8 +389,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                 .order("group_name")
 
             if (data) {
-                const transformed = transformGroups(data)
-                onGroupsChanged(transformed)
+                onGroupsChanged(sortGroupsByName(transformGroups(data)))
             }
         } catch (err) {
             handleError(err)
@@ -381,8 +439,9 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                 selectedDistribution.numberOfGroups
             )
 
+            const autoGroupsByName = new Map(createdGroupsData.map(g => [g.group_name as string, g.id as string]))
             await Promise.all(distributedGroups.map((players, i) => {
-                const groupId = createdGroupsData[i].id
+                const groupId = autoGroupsByName.get(`Box ${i + 1}`) ?? createdGroupsData[i].id
                 const playerIds = players.map(p => p.id)
                 return playerIds.length > 0 ? assignPlayersToGroup(groupId, playerIds, event.id) : Promise.resolve()
             }))
@@ -394,8 +453,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                 .order("group_name")
 
             if (data) {
-                const transformed = transformGroups(data)
-                onGroupsChanged(transformed)
+                onGroupsChanged(sortGroupsByName(transformGroups(data)))
             }
         } catch (err) {
             handleError(err)
@@ -752,7 +810,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                     onCancel={() => setManagementMode(false)}
                 />
             ) : (
-                /* Affichage résumé des groupes */
+                /* Aperçu round-robin avec dates */
                 <div className="grid gap-4">
                     <div className="flex items-center justify-between">
                         <p className="text-sm text-muted-foreground">
@@ -779,37 +837,7 @@ export function WizardStepGroups({ event, groups, onGroupsChanged, onNext, onPre
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto">
-                        {groups.map(group => (
-                            <div key={group.id} className="border rounded-lg p-4">
-                                <div className="flex items-center justify-between mb-3">
-                                    <h4 className="font-semibold text-sm">{group.group_name}</h4>
-                                    <Badge variant="default">
-                                        <UserGroupIcon className="h-3 w-3 mr-1" />
-                                        {(group.players || []).length}/{group.max_players}
-                                    </Badge>
-                                </div>
-                                {(group.players || []).length === 0 ? (
-                                    <p className="text-xs text-muted-foreground">Aucun joueur</p>
-                                ) : (
-                                    <ul className="space-y-1.5">
-                                        {(group.players || []).map((player, index) => (
-                                            <li key={player.id} className="flex items-center justify-between text-sm">
-                                                <span>
-                                                    <span className="text-muted-foreground mr-2">{index + 1}.</span>
-                                                    {player.first_name} {player.last_name}
-                                                </span>
-                                                <span className="text-xs text-muted-foreground">
-                                                    R{player.power_ranking || "-"}
-                                                </span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-
+                    <GroupRoundPreview event={event} groups={groups} />
                 </div>
             )}
 

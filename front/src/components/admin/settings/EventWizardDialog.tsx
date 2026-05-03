@@ -4,7 +4,7 @@ import { transformGroups, type Group } from "@/types/draw"
 import type { Match } from "@/types/match"
 import { useEffect, useState, useCallback } from "react"
 import { supabase } from "@/lib/supabaseClient"
-import { intervalToMinutes, formatTimeForInput } from "@/lib/utils"
+import { intervalToMinutes, formatTimeForInput, sortGroupsByName } from "@/lib/utils"
 import {
     Dialog,
     DialogContent,
@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/stepper"
 import { WizardStepConfig, type WizardConfigData } from "./wizard/WizardStepConfig"
 import { WizardStepCalendar } from "./wizard/WizardStepCalendar"
+import { WizardStepRegistrations } from "./wizard/WizardStepRegistrations"
 import { WizardStepGroups } from "./wizard/WizardStepGroups"
 import { WizardStepMatches } from "./wizard/WizardStepMatches"
 import { Tick02Icon } from "hugeicons-react"
@@ -40,6 +41,7 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
     const [activeStep, setActiveStep] = useState(1)
     const [configData, setConfigData] = useState<WizardConfigData | null>(null)
     const [wizardEvent, setWizardEvent] = useState<Event | null>(null)
+    const [registeredPlayerIds, setRegisteredPlayerIds] = useState<Set<string>>(new Set())
     const [groups, setGroups] = useState<Group[]>([])
     const [matches, setMatches] = useState<Match[]>([])
 
@@ -48,10 +50,21 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
     // Determiner la completion des etapes
     const step1Completed = !!configData
     const step2Completed = !!wizardEvent
-    const step3Completed = groups.length > 0 && groups.some(g => (g.players || []).length > 0)
-    const step4Completed = matches.length > 0
+    const step3Completed = registeredPlayerIds.size > 0
+    const step4Completed = groups.length > 0 && groups.some(g => (g.players || []).length > 0)
+    const step5Completed = matches.length > 0
 
     const loadEventData = useCallback(async (eventId: string) => {
+        // Charger les inscriptions
+        const { data: registrationsData } = await supabase
+            .from("event_players")
+            .select("profile_id")
+            .eq("event_id", eventId)
+
+        if (registrationsData) {
+            setRegisteredPlayerIds(new Set(registrationsData.map(r => r.profile_id as string)))
+        }
+
         // Charger les groupes
         const { data: groupsData } = await supabase
             .from("groups")
@@ -60,7 +73,7 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
             .order("group_name")
 
         if (groupsData) {
-            const transformedGroups = transformGroups(groupsData)
+            const transformedGroups = sortGroupsByName(transformGroups(groupsData))
             setGroups(transformedGroups)
 
             // Charger les matchs si des groupes existent
@@ -103,6 +116,7 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
         } else {
             setConfigData(null)
             setWizardEvent(null)
+            setRegisteredPlayerIds(new Set())
             setGroups([])
             setMatches([])
             setActiveStep(1)
@@ -115,10 +129,12 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
             if (step > 1 && !step1Completed) return
             if (step > 2 && !step2Completed) return
             if (step > 3 && !step3Completed) return
+            if (step > 4 && !step4Completed) return
         } else {
             if (step === 2 && !step1Completed) return
             if (step === 3 && !step2Completed) return
             if (step === 4 && !step3Completed) return
+            if (step === 5 && !step4Completed) return
         }
 
         setActiveStep(step)
@@ -132,6 +148,10 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
     const handleCalendarSave = (savedEvent: Event) => {
         setWizardEvent(savedEvent)
         setActiveStep(3)
+    }
+
+    const handleRegistrationsChanged = (playerIds: Set<string>) => {
+        setRegisteredPlayerIds(playerIds)
     }
 
     const handleGroupsChanged = (updatedGroups: Group[]) => {
@@ -156,15 +176,15 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className={`max-h-[90vh] overflow-y-auto bg-white transition-[max-width] ${activeStep >= 3 ? 'sm:max-w-[95vw] lg:max-w-[1200px]' : 'sm:max-w-[700px]'}`}>
+            <DialogContent className={`max-h-[90vh] overflow-y-auto bg-white transition-[max-width] ${activeStep >= 4 ? 'sm:max-w-[95vw] lg:max-w-[1200px]' : activeStep === 3 ? 'sm:max-w-[760px]' : 'sm:max-w-[700px]'}`}>
                 <DialogHeader>
                     <DialogTitle>
                         {isEditing ? "Modifier l'événement" : "Créer un événement"}
                     </DialogTitle>
                     <DialogDescription>
                         {isEditing
-                            ? "Modifiez la configuration, le calendrier, les groupes ou les matchs"
-                            : "Configurez votre événement en 4 étapes"
+                            ? "Modifiez la configuration, le calendrier, les inscriptions, les tableaux ou les matchs"
+                            : "Configurez votre événement en 5 étapes"
                         }
                     </DialogDescription>
                 </DialogHeader>
@@ -203,7 +223,7 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
                             <StepperTrigger>
                                 <StepperIndicator>3</StepperIndicator>
                             </StepperTrigger>
-                            <StepperTitle>Tableaux</StepperTitle>
+                            <StepperTitle>Inscriptions</StepperTitle>
                             <StepperSeparator />
                         </StepperItem>
 
@@ -214,6 +234,18 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
                         >
                             <StepperTrigger>
                                 <StepperIndicator>4</StepperIndicator>
+                            </StepperTrigger>
+                            <StepperTitle>Tableaux</StepperTitle>
+                            <StepperSeparator />
+                        </StepperItem>
+
+                        <StepperItem
+                            step={5}
+                            completed={step5Completed}
+                            disabled={!step4Completed}
+                        >
+                            <StepperTrigger>
+                                <StepperIndicator>5</StepperIndicator>
                             </StepperTrigger>
                             <StepperTitle>Matchs</StepperTitle>
                         </StepperItem>
@@ -241,10 +273,9 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
 
                     <StepperContent value={3}>
                         {wizardEvent && (
-                            <WizardStepGroups
+                            <WizardStepRegistrations
                                 event={wizardEvent}
-                                groups={groups}
-                                onGroupsChanged={handleGroupsChanged}
+                                onRegistrationsChanged={handleRegistrationsChanged}
                                 onNext={() => setActiveStep(4)}
                                 onPrevious={() => setActiveStep(2)}
                             />
@@ -253,12 +284,25 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
 
                     <StepperContent value={4}>
                         {wizardEvent && (
+                            <WizardStepGroups
+                                event={wizardEvent}
+                                groups={groups}
+                                eventPlayerIds={registeredPlayerIds}
+                                onGroupsChanged={handleGroupsChanged}
+                                onNext={() => setActiveStep(5)}
+                                onPrevious={() => setActiveStep(3)}
+                            />
+                        )}
+                    </StepperContent>
+
+                    <StepperContent value={5}>
+                        {wizardEvent && (
                             <WizardStepMatches
                                 event={wizardEvent}
                                 groups={groups}
                                 matches={matches}
                                 onMatchesChanged={handleMatchesChanged}
-                                onPrevious={() => setActiveStep(3)}
+                                onPrevious={() => setActiveStep(4)}
                                 onFinish={handleFinish}
                             />
                         )}
