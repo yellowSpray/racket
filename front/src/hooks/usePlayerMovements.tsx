@@ -39,14 +39,31 @@ export function usePlayerMovements(eventId: string | null, clubId: string | null
         setLoading(true)
 
         try {
-            // 1. Find previous event for this club
+            // 1. Fetch the current event's start_date to anchor the search
+            const { data: currentEvent, error: currentEventError } = await withTimeout(
+                supabase
+                    .from("events")
+                    .select("start_date")
+                    .eq("id", eventId)
+                    .single(),
+                "usePlayerMovements.currentEvent"
+            )
+
+            if (currentEventError || !currentEvent) {
+                setMovements([])
+                return
+            }
+
+            // 2. Find the most recent event that started strictly before the current one
+            // Using start_date prevents concurrent/overlapping events from being picked
             const { data: prevEvent, error: prevError } = await withTimeout(
                 supabase
                     .from("events")
                     .select("id")
                     .eq("club_id", clubId)
                     .neq("id", eventId)
-                    .order("end_date", { ascending: false })
+                    .lt("start_date", currentEvent.start_date)
+                    .order("start_date", { ascending: false })
                     .limit(1)
                     .maybeSingle(),
                 "usePlayerMovements.prevEvent"
