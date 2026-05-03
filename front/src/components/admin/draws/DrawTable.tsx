@@ -10,6 +10,7 @@ interface DrawTableProps {
     matches?: Match[]
     scoringRules?: ScoringRules
     displayMode?: "score" | "points"
+    playerAbsences?: Map<string, string[]>
 }
 
 const DEFAULT_SCORING: ScoringRules = {
@@ -23,7 +24,7 @@ const DEFAULT_SCORING: ScoringRules = {
     ],
 }
 
-export function DrawTable({ group, matches = [], scoringRules, displayMode = "score" }: DrawTableProps) {
+export function DrawTable({ group, matches = [], scoringRules, displayMode = "score", playerAbsences }: DrawTableProps) {
 
     const players = useMemo(() => group.players || [], [group.players])
     const maxPlayers = group.max_players || 6
@@ -133,7 +134,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                     <div className="flex items-center px-1 py-0.5">
                                         <span className="font-bold text-xs shrink-0 w-4">{getPlayerLetter(rowIndex)}</span>
                                         <div className="flex-1 text-center min-w-0">
-                                            <p className="text-xs truncate">{player.first_name} {player.last_name}</p>
+                                            <p className="text-xs truncate font-bold">{player.first_name} {player.last_name}</p>
                                             <p className="text-[10px] text-foreground truncate">{player.phone}</p>
                                         </div>
                                     </div>
@@ -200,32 +201,39 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                         onMouseEnter={() => setHoveredMatch({row: rowIndex, col: colIndex})}
                                         onMouseLeave={() => setHoveredMatch(null)}
                                     >
-                                        {match ? (
-                                            match.score ? (
-                                                displayMode === "points" ? (
-                                                    (() => {
-                                                        const pts = getPointsForScore(match.score, rules.score_points)
-                                                        if (!pts) return <div className="text-gray-300">-</div>
-                                                        const playerPts = isWinner ? pts.winnerPts : pts.loserPts
-                                                        return <div className={`font-bold ${isAbsence ? 'text-amber-600' : ''}`}>{playerPts}</div>
-                                                    })()
-                                                ) : (
-                                                    <div className={`font-bold ${isAbsence ? 'text-amber-600' : ''}`}>
-                                                        {isRowPlayerAbsent ? "Abs" : isAbsence ? "-" : orientedScore(match, player.id)}
-                                                    </div>
-                                                )
+                                        {(() => {
+                                            if (!match) return (
+                                                <div className="flex flex-col items-center gap-0.5 text-gray-300 text-[10px]">
+                                                    <div>-</div>
+                                                    <div>--:--</div>
+                                                </div>
+                                            )
+                                            const rowAbsent = !match.score && !!playerAbsences?.get(player.id)?.includes(match.match_date)
+                                            const oppAbsent = !match.score && !!playerAbsences?.get(opponent.id)?.includes(match.match_date)
+                                            if (rowAbsent || oppAbsent) return (
+                                                <div className="font-bold text-amber-600 text-xs">
+                                                    {rowAbsent ? "Abs" : "-"}
+                                                </div>
+                                            )
+                                            if (match.score) return displayMode === "points" ? (
+                                                (() => {
+                                                    const pts = getPointsForScore(match.score!, rules.score_points)
+                                                    if (!pts) return <div className="text-gray-300">-</div>
+                                                    const playerPts = isWinner ? pts.winnerPts : pts.loserPts
+                                                    return <div className={`font-bold ${isAbsence ? 'text-amber-600' : ''}`}>{playerPts}</div>
+                                                })()
                                             ) : (
+                                                <div className={`font-bold ${isAbsence ? 'text-amber-600' : ''}`}>
+                                                    {isRowPlayerAbsent ? "Abs" : isAbsence ? "-" : orientedScore(match, player.id)}
+                                                </div>
+                                            )
+                                            return (
                                                 <div className="flex flex-col items-center gap-0.5">
                                                     <div className="text-foreground text-[10px]">{formatDate(match.match_date)}</div>
                                                     <div className="font-bold text-[10px]">{formatTime(match.match_time)}</div>
                                                 </div>
                                             )
-                                        ) : (
-                                            <div className="flex flex-col items-center gap-0.5 text-gray-300 text-[10px]">
-                                                <div>-</div>
-                                                <div>--:--</div>
-                                            </div>
-                                        )}
+                                        })()}
                                     </TableCell>
                                 )
                             })}

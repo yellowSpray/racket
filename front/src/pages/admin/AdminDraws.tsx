@@ -5,7 +5,8 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useGroups } from "@/hooks/useGroups"
 import { useMatches } from "@/hooks/useMatches"
 import { useClubConfig } from "@/hooks/useClubConfig"
-import { useEffect, useRef, useState } from "react"
+import { usePlayers } from "@/contexts/PlayersContext"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 import { useNavigate } from "react-router"
 import { Settings01Icon, PencilEdit02Icon, HashtagIcon, StarIcon, Download01Icon, SquareLock01Icon } from "hugeicons-react"
@@ -33,7 +34,16 @@ export function AdminDraws () {
     const { groups, loading, fetchGroupsByEvent } = useGroups()
     const { matches, fetchMatchesByEvent, closeEvent, error: matchError } = useMatches()
     const { scoringRules, fetchClubConfig } = useClubConfig()
+    const { players } = usePlayers()
     const [displayMode, setDisplayMode] = useState<"score" | "points">("score")
+
+    const playerAbsences = useMemo(() => {
+        const map = new Map<string, string[]>()
+        for (const p of players) {
+            if (p.unavailable.length > 0) map.set(p.id, p.unavailable)
+        }
+        return map
+    }, [players])
     const [closing, setClosing] = useState(false)
     const navigate = useNavigate()
     const tablesRef = useRef<HTMLDivElement>(null)
@@ -193,7 +203,7 @@ export function AdminDraws () {
                             const sortedGroup = sortPlayersByEarliestDates(group, groupMatches)
                             return (
                                 <div key={group.id}>
-                                    <DrawTable group={sortedGroup} matches={groupMatches} scoringRules={scoringRules ?? undefined} displayMode={displayMode} />
+                                    <DrawTable group={sortedGroup} matches={groupMatches} scoringRules={scoringRules ?? undefined} displayMode={displayMode} playerAbsences={playerAbsences} />
                                 </div>
                             )
                         })}
