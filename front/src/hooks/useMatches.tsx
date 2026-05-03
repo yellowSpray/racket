@@ -9,7 +9,7 @@ import { logger } from "@/lib/logger"
 import { intervalToMinutes } from "@/lib/utils"
 import {
     generateGroupRounds,
-    mapRoundsToDates,
+    mapRoundsToDatesByTemplate,
     assignTimeSlotsForDates,
     calculateTimeSlots,
     calculateDates,
@@ -251,8 +251,8 @@ export function useMatches() {
             // 3. Générer les rounds structurés par groupe (avec optimisation bye/absence)
             const groupRounds = generateGroupRounds(groups, dates, absencesMap)
 
-            // 4. Mapper les rounds sur les dates (round N → date N)
-            const datePlans = mapRoundsToDates(groupRounds, dates)
+            // 4. Mapper les rounds sur les dates via le template de planification
+            const datePlans = mapRoundsToDatesByTemplate(groupRounds, groups, dates)
             const totalPairings = datePlans.reduce((sum, p) => sum + p.pairings.length, 0)
 
             if (totalPairings === 0) {
