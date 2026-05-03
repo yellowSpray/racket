@@ -4,7 +4,9 @@ import { playerSchema } from "@/lib/schemas"
 import { validateFormData } from "@/lib/validation"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
 import { ValidationError } from "@/lib/errors"
+import { supabase } from "@/lib/supabaseClient"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
   DialogContent,
@@ -31,7 +33,7 @@ import {
 import { Field, FieldLabel, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input"
 import { MultiDateCalendar } from "@/components/ui/multi-date-calendar"
-import { ZapIcon, UserGroupIcon, EuroIcon, Add01Icon } from 'hugeicons-react';
+import { UserGroupIcon, EuroIcon, Add01Icon } from 'hugeicons-react';
 import type { PlayerType, PaymentStatus } from "@/types/player";
 
 interface EditPlayersProps {
@@ -76,14 +78,14 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
     const [paymentStatus, setPaymentStatus] = useState<"paid" | "unpaid">("unpaid")
     const [localPayments, setLocalPayments] = useState<Record<string, PaymentStatus>>({})
     const [localAbsences, setLocalAbsences] = useState<string[]>([])
+    const [registeredEvents, setRegisteredEvents] = useState<{ event_id: string; event_name: string }[]>([])
 
-    // voir si le membre est actif dans l'event
     const isVisitor = selected.includes("visitor")
 
-    // reset du formulaire quand il  s'ouvre
+    // reset du formulaire quand il s'ouvre
     useEffect(() => {
         if(open) {
-            setIsSubmitting(false) // reset
+            setIsSubmitting(false)
             if(mode === "edit" && playerData) {
                 setFormData({
                     first_name: playerData.first_name,
@@ -95,19 +97,35 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
                     power_ranking: playerData.power_ranking,
                     unavailable: playerData.unavailable || []
                 })
-                setSelected(playerData.status || [])
+                // Garder seulement member/visitor (active/inactive géré par trigger)
+                setSelected(playerData.status.filter(s => s === "member" || s === "visitor"))
                 setPaymentStatus(playerData.payment_status || "unpaid")
                 setLocalPayments(
                     Object.fromEntries((playerData.payments || []).map(p => [p.event_id, p.status]))
                 )
                 setLocalAbsences(playerData.unavailable || [])
                 setCurrentStep(1)
+
+                // Charger les events auxquels le joueur est inscrit
+                supabase
+                    .from("event_players")
+                    .select("event_id, events(event_name)")
+                    .eq("profile_id", playerData.id)
+                    .then(({ data }) => {
+                        if (data) {
+                            setRegisteredEvents(data.map(d => ({
+                                event_id: d.event_id as string,
+                                event_name: (d.events as { event_name: string } | null)?.event_name || ""
+                            })))
+                        }
+                    })
             } else {
                 setFormData(initialFormData)
-                setSelected(["inactive", "visitor"])
+                setSelected(["visitor"])
                 setPaymentStatus("unpaid")
                 setLocalPayments({})
                 setLocalAbsences([])
+                setRegisteredEvents([])
                 setCurrentStep(1)
             }
         }
@@ -121,37 +139,13 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
         }))
     }
 
-    // handler pour les status joueur
+    // handler pour les status joueur (member/visitor uniquement)
     const handleStatusChange = (values: string[]) => {
-        let newSelected = [...selected]
-
-        // gestion status active/inactive
-        if(values.includes("active")) {
-            newSelected = newSelected.filter(v => v !== "inactive")
-            if(!newSelected.includes("active")) {
-                newSelected.push("active")
-            }
-        } else {
-            newSelected = newSelected.filter(v => v !== "active")
-            if (!newSelected.includes("inactive")) {
-                newSelected.push("inactive")
-            }
-        }
-
-        // gestion status membre/visitor
         if (values.includes("member")) {
-            newSelected = newSelected.filter(v => v !== "visitor")
-            if (!newSelected.includes("member")) {
-                newSelected.push("member")
-            }
+            setSelected(["member"])
         } else {
-            newSelected = newSelected.filter(v => v !== "member")
-            if (!newSelected.includes("visitor")) {
-                newSelected.push("visitor")
-            }
+            setSelected(["visitor"])
         }
-
-        setSelected(newSelected)
     }
 
     // handler pour le toggle paid/unpaid
@@ -329,32 +323,39 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
             <FieldGroup>
                 <div className="grid grid-cols-1 gap-4">
                     <Field>
-                        <FieldLabel htmlFor="status">Status</FieldLabel>
+                        <FieldLabel htmlFor="status">Type</FieldLabel>
                         <ToggleGroup
                             type="multiple"
                             variant="outline"
                             size="sm"
-                            className="grid grid-cols-2"
+                            className="grid grid-cols-1"
                             spacing={4}
-                            value={selected.filter(s => ["active", "member"].includes(s))}
+                            value={selected.filter(s => s === "member")}
                             onValueChange={handleStatusChange}
                         >
                             <ToggleGroupItem
-                                value="active"
-                                aria-label="Toggle active"
-                                className="data-[state=off]:bg-gray-100 data-[state=off]:text-muted-foreground data-[state=on]:bg-transparent data-[state=on]:*:[svg]:text-green-500 col-span-1"
-                            >
-                                <ZapIcon /> {selected.includes("active") ? "Actif" : "Inactif"}
-                            </ToggleGroupItem>
-                            <ToggleGroupItem
                                 value="member"
                                 aria-label="Toggle member"
-                                className="data-[state=off]:bg-gray-100 data-[state=off]:text-muted-foreground data-[state=on]:bg-transparent data-[state=on]:*:[svg]:text-green-500 col-span-1"
+                                className="data-[state=off]:bg-gray-100 data-[state=off]:text-muted-foreground data-[state=on]:bg-transparent data-[state=on]:*:[svg]:text-green-500"
                             >
-                                <UserGroupIcon /> {selected.includes("member") ? "Membre" : "Non-membre"}
+                                <UserGroupIcon /> {selected.includes("member") ? "Membre" : "Non-membre (visiteur)"}
                             </ToggleGroupItem>
                         </ToggleGroup>
                     </Field>
+                    {mode === "edit" && (
+                        <Field>
+                            <FieldLabel>Événements inscrits</FieldLabel>
+                            {registeredEvents.length === 0 ? (
+                                <p className="text-sm text-muted-foreground italic">Aucun événement</p>
+                            ) : (
+                                <div className="flex flex-wrap gap-1">
+                                    {registeredEvents.map(e => (
+                                        <Badge key={e.event_id} variant="outline">{e.event_name}</Badge>
+                                    ))}
+                                </div>
+                            )}
+                        </Field>
+                    )}
                     {isVisitor && mode === "edit" && playerData?.payments && playerData.payments.length > 0 && (
                         <Field>
                             <FieldLabel>Paiement par série</FieldLabel>

@@ -203,7 +203,7 @@ describe('useAdminPlayers', () => {
                 p_email: 'new@test.com',
                 p_power_ranking: 7,
                 p_club_id: 'club-1',
-                p_statuses: ['member', 'active'],
+                p_statuses: ['member', 'inactive'],
             }))
         })
 

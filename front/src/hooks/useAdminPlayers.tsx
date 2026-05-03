@@ -212,11 +212,11 @@ export function useAdminPlayers() {
     const addPlayer = async (player: Partial<PlayerType>) => {
 
         // séparer les statuts joueur du statut de paiement
-        const playerStatuses = (player.status || []) as string[]
+        // active/inactive géré par trigger SQL, on force inactive à la création
+        const playerStatuses = (player.status || []).filter(s => s !== "active" && s !== "inactive") as string[]
         const isPaid = player.payment_status === "paid"
 
-        // ajouter paid/unpaid au tableau si le joueur est visiteur
-        const rpcStatuses = [...playerStatuses]
+        const rpcStatuses = [...playerStatuses, "inactive"]
         if (playerStatuses.includes("visitor")) {
             rpcStatuses.push(isPaid ? "paid" : "unpaid")
         }
@@ -277,12 +277,15 @@ export function useAdminPlayers() {
             }
 
             // séparer les statuts joueur du statut de paiement
-            const playerStatuses = (updates.status || currentPlayer.status) as string[]
+            // active/inactive géré par trigger SQL — on préserve l'état courant du joueur
+            const baseStatuses = ((updates.status || currentPlayer.status) as string[])
+                .filter(s => s !== "active" && s !== "inactive")
+            const currentActiveStatus = (currentPlayer.status as string[])
+                .find(s => s === "active" || s === "inactive") ?? "inactive"
             const isPaid = (updates.payment_status ?? currentPlayer.payment_status) === "paid"
 
-            // ajouter paid/unpaid au tableau si le joueur est visiteur
-            const rpcStatuses = [...playerStatuses]
-            if (playerStatuses.includes("visitor")) {
+            const rpcStatuses = [...baseStatuses, currentActiveStatus]
+            if (baseStatuses.includes("visitor")) {
                 rpcStatuses.push(isPaid ? "paid" : "unpaid")
             }
 
