@@ -302,7 +302,7 @@ export function useAdminPlayers() {
                 p_statuses: rpcStatuses,
                 p_arrival_time: updates.arrival || currentPlayer.arrival || null,
                 p_departure_time: updates.departure || currentPlayer.departure || null,
-                p_event_id: currentEventId,
+                p_event_id: null,
                 p_event_date: null,
                 p_payment_amount: 0
             })
