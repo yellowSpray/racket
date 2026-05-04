@@ -36,13 +36,18 @@ BEGIN
   ORDER BY created_at DESC
   LIMIT 1;
 
-  -- Copier uniquement les joueurs actifs de l'evenement precedent
+  -- Copier uniquement les joueurs actifs non-visiteurs de l'evenement precedent
+  -- Les visiteurs sont lies a un evenement specifique et ne doivent pas etre renouveles
   IF v_previous_event_id IS NOT NULL THEN
     INSERT INTO public.event_players (event_id, profile_id)
     SELECT NEW.id, ep.profile_id
     FROM public.event_players ep
     JOIN public.player_status ps ON ps.profile_id = ep.profile_id AND ps.status = 'active'
     WHERE ep.event_id = v_previous_event_id
+      AND NOT EXISTS (
+        SELECT 1 FROM public.player_status
+        WHERE profile_id = ep.profile_id AND status = 'visitor'
+      )
     ON CONFLICT (event_id, profile_id) DO NOTHING;
   END IF;
 
