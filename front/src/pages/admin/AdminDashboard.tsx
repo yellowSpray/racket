@@ -7,6 +7,7 @@ import { PlayersStatusCard } from "@/components/admin/dashboard/PlayersStatusCar
 import { UnpaidPaymentsCard } from "@/components/admin/dashboard/UnpaidPaymentsCard"
 import { MatchesCard } from "@/components/admin/dashboard/MatchesCard"
 import { AlertsCard } from "@/components/admin/dashboard/AlertsCard"
+import { EventSelector } from "@/components/admin/settings/EventSelector"
 
 export function AdminDashboard() {
     const { profile } = useAuth()
@@ -26,9 +27,10 @@ export function AdminDashboard() {
         <div className="flex flex-col h-full min-h-0 gap-5">
             <div className="flex items-center gap-2">
                 <h3 className="text-lg font-semibold">Dashboard</h3>
-                {(clubConfig || currentEvent) && (
+                <EventSelector />
+                {clubConfig && (
                     <span className="text-sm text-muted-foreground">
-                        - {[clubConfig?.club_name, currentEvent?.event_name].filter(Boolean).join(" - ")}
+                        - {clubConfig.club_name}
                     </span>
                 )}
             </div>
@@ -42,7 +44,6 @@ export function AdminDashboard() {
                 <UnpaidPaymentsCard
                     className="col-start-11 col-span-9 row-start-1 row-span-7"
                     clubId={profile?.club_id ?? null}
-                    eventId={currentEvent?.id ?? null}
                 />
                 <AlertsCard className="col-start-20 col-span-9 row-start-1 row-span-7" />
                 <MatchesCard
