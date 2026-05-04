@@ -27,15 +27,16 @@ interface UnpaidPaymentRow {
 }
 
 /**
- * Charge les paiements impayés d'un événement spécifique.
- * Filtre par event_id pour éviter de mélanger plusieurs événements simultanés.
+ * Charge tous les paiements impayés d'un club, tous événements confondus.
+ * Les paiements fantômes liés à une mauvaise sélection d'événement
+ * sont prévenus en amont (updatePlayer passe p_event_id: null).
  */
-export function useUnpaidPayments(clubId: string | null, eventId: string | null) {
+export function useUnpaidPayments(clubId: string | null) {
     const [payments, setPayments] = useState<UnpaidPayment[]>([])
     const [loading, setLoading] = useState(false)
 
     const fetchUnpaidPayments = useCallback(async () => {
-        if (!clubId || !eventId) {
+        if (!clubId) {
             setPayments([])
             return
         }
@@ -49,7 +50,6 @@ export function useUnpaidPayments(clubId: string | null, eventId: string | null)
                     .select("id, profile_id, profiles(first_name, last_name), events!inner(event_name, club_id)")
                     .eq("status", "unpaid")
                     .eq("events.club_id", clubId)
-                    .eq("event_id", eventId)
                     .order("created_at", { ascending: true }),
                 "useUnpaidPayments"
             )
@@ -75,7 +75,7 @@ export function useUnpaidPayments(clubId: string | null, eventId: string | null)
         } finally {
             setLoading(false)
         }
-    }, [clubId, eventId])
+    }, [clubId])
 
     useEffect(() => {
         fetchUnpaidPayments()
