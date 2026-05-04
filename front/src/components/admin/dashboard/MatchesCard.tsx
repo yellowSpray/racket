@@ -192,7 +192,7 @@ function MatchesFeed({ day, scoreSelections, onScoreChange, onValidate }: Matche
                                     const nextTime = index < day.matches.length - 1
                                         ? formatTime(day.matches[index + 1].match_time)
                                         : null
-                                    const isLastOfSlot = currentTime !== nextTime
+                                    const isLastOfSlot = nextTime !== null && currentTime !== nextTime
                                     return (
                                         <MatchTableRow
                                             key={match.id}
