@@ -5,7 +5,6 @@ import {
     CardContent,
     CardDescription,
     CardHeader,
-    CardTitle,
 } from "@/components/ui/card";
 import {
     Field,
@@ -65,7 +64,7 @@ export default function Login({className, toggle, onForgotPassword, ...props}: L
 
     return (
         <div className={cn("flex flex-col items-center h-full", className)} {...props}>
-            <Card className="w-1/2 h-full shadow-none gap-6 justify-center border-none">
+            <Card className="w-1/2 h-full shadow-none gap-6 justify-center border-none bg-transparent">
                 <CardHeader>
                     <h3 className="leading-none font-semibold text-lg">Connectez-vous</h3>
                     <CardDescription>
@@ -114,6 +113,7 @@ export default function Login({className, toggle, onForgotPassword, ...props}: L
                             <Field>
                                 <Button
                                     type="submit"
+                                    size="lg"
                                     disabled={loading}
                                 >
                                     {loading ? 'Connexion...' : 'Se connecter'}
@@ -121,6 +121,7 @@ export default function Login({className, toggle, onForgotPassword, ...props}: L
                                 <Button
                                     variant="outline"
                                     type="button"
+                                    size="lg"
                                     className="border-1 border-border"
                                     disabled={loading}
                                 >

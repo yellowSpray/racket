@@ -49,7 +49,7 @@ export default function ForgotPassword({ className, onBack, ...props }: ForgotPa
 
     return (
         <div className={cn("flex flex-col items-center h-full", className)} {...props}>
-            <Card className="w-1/2 h-full shadow-none gap-6 justify-center border-none">
+            <Card className="w-1/2 h-full shadow-none gap-6 justify-center border-none bg-transparent">
                 <CardHeader>
                     <h3 className="leading-none font-semibold text-lg">Mot de passe oublié</h3>
                     <CardDescription>
@@ -83,7 +83,7 @@ export default function ForgotPassword({ className, onBack, ...props }: ForgotPa
                                     />
                                 </Field>
                                 <Field>
-                                    <Button type="submit" disabled={loading}>
+                                    <Button type="submit" size="lg" disabled={loading}>
                                         {loading ? "Envoi en cours..." : "Envoyer le lien"}
                                     </Button>
                                 </Field>

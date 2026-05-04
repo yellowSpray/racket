@@ -10,7 +10,6 @@ import {
     CardContent,
     CardDescription,
     CardHeader,
-    CardTitle,
 } from "@/components/ui/card";
 import {
     Field,
@@ -140,7 +139,7 @@ export default function Register({
 
     return (
         <div className={cn("flex flex-col items-center h-full", className)} {...props}>
-            <Card className="w-1/2 h-full shadow-none gap-6 justify-center border-none">
+            <Card className="w-1/2 h-full shadow-none gap-6 justify-center border-none bg-transparent">
                 <CardHeader>
                     <h3 className="leading-none font-semibold text-lg">Créer un compte</h3>
                     <CardDescription>
@@ -148,7 +147,7 @@ export default function Register({
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Stepper value={step} onValueChange={setStep}>
+                    <Stepper value={step} onValueChange={setStep} className="mb-7">
                         <StepperNav className="mb-4">
                             <StepperItem step={1}>
                                 <StepperTrigger>
@@ -238,6 +237,7 @@ export default function Register({
                                     <Field>
                                         <Button
                                             type="button"
+                                            size="lg"
                                             onClick={handleNext}
                                             disabled={loading}
                                         >
@@ -290,6 +290,7 @@ export default function Register({
                                         <Button
                                             type="button"
                                             variant="outline"
+                                            size="lg"
                                             onClick={handleBack}
                                             disabled={loading}
                                         >
@@ -297,6 +298,7 @@ export default function Register({
                                         </Button>
                                         <Button
                                             type="submit"
+                                            size="lg"
                                             disabled={loading}
                                             className="flex-1"
                                         >
@@ -308,7 +310,7 @@ export default function Register({
                         </form>
                     </Stepper>
 
-                    <FieldDescription className="text-center mt-4">
+                    <FieldDescription className="text-center mt-14">
                         Déjà un compte ? <Button variant="link" onClick={toggle}>Se connecter</Button>
                     </FieldDescription>
                 </CardContent>

@@ -33,7 +33,7 @@ export default function Auth() {
                         className="w-1/2"
                     />
                     <motion.div
-                        className="w-1/2 h-full rounded-3xl bg-muted absolute top-0 right-0"
+                        className="w-1/2 h-full rounded-3xl overflow-hidden absolute top-0 right-0"
                         layout
                         animate={{ left: view === 'register' ? "0%" : "50%" }}
                         transition={{
@@ -41,7 +41,13 @@ export default function Auth() {
                             visualDuration: 0.3,
                             bounce: 0.2
                         }}
-                    />
+                    >
+                        <img
+                            src="/stade1.png"
+                            alt=""
+                            className="w-full h-full object-cover"
+                        />
+                    </motion.div>
                 </div>
             </AnimatePresence>
         </section>
