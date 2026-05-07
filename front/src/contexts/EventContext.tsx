@@ -97,10 +97,10 @@ export function EventProvider({children}: {children: ReactNode}) {
         }
     }
 
-    // charger les events au montage
+    // charger les events dès que le profil est disponible
     useEffect(() => {
-        fetchEvents()
-    }, [])
+        if (profile) fetchEvents()
+    }, [profile?.id])
 
     const value: EventContextType = {
         currentEvent,
