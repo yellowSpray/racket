@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -16,7 +16,6 @@ import { usePlayerMovements, type PlayerMovement } from "@/hooks/usePlayerMoveme
 import { useVisitorRequests } from "@/hooks/useVisitorRequests"
 import { formatRelativeTime } from "@/lib/formatRelativeTime"
 import type { VisitorRequest } from "@/types/visitor"
-import { useState } from "react"
 
 const SLIDES = [
     { label: "Inscrits" },
@@ -26,33 +25,28 @@ const SLIDES = [
 ]
 
 interface PlayersStatusCardProps {
-    eventId: string | null
     clubId: string | null
     className?: string
 }
 
-export function PlayersStatusCard({ eventId, clubId, className }: PlayersStatusCardProps) {
-    const { movements, loading: movementsLoading } = usePlayerMovements(eventId, clubId)
-    const { requests, loading: requestsLoading, fetchPendingForEvent, reviewRequest } = useVisitorRequests()
+export function PlayersStatusCard({ clubId, className }: PlayersStatusCardProps) {
+    const { movements, loading: movementsLoading } = usePlayerMovements(clubId)
+    const { requests, loading: requestsLoading, fetchPendingForClub, reviewRequest } = useVisitorRequests()
     const [slideIndex, setSlideIndex] = useState(0)
 
     useEffect(() => {
-        if (eventId) {
-            fetchPendingForEvent(eventId)
-        }
-    }, [eventId, fetchPendingForEvent])
+        fetchPendingForClub()
+    }, [fetchPendingForClub])
 
     async function handleApprove(requestId: string) {
         await reviewRequest(requestId, "approved")
-        if (eventId) fetchPendingForEvent(eventId)
+        fetchPendingForClub()
     }
 
     async function handleReject(requestId: string) {
         await reviewRequest(requestId, "rejected")
-        if (eventId) fetchPendingForEvent(eventId)
+        fetchPendingForClub()
     }
-
-    const inactiveMovements = movements.filter((m) => m.status === "inactive")
 
     return (
         <Card className={className}>
@@ -87,10 +81,18 @@ export function PlayersStatusCard({ eventId, clubId, className }: PlayersStatusC
             </CardHeader>
             <CardContent className="flex-1 min-h-0">
                 {slideIndex === 0 && (
-                    <MovementsList movements={movements} loading={movementsLoading} />
+                    <MovementsList
+                        movements={movements.filter((m) => m.status === "active")}
+                        loading={movementsLoading}
+                        emptyLabel="Aucun nouvel inscrit"
+                    />
                 )}
                 {slideIndex === 1 && (
-                    <MovementsList movements={inactiveMovements} loading={movementsLoading} />
+                    <MovementsList
+                        movements={movements.filter((m) => m.status === "inactive")}
+                        loading={movementsLoading}
+                        emptyLabel="Aucun désinscrit"
+                    />
                 )}
                 {slideIndex === 2 && <WaitingListPlaceholder />}
                 {slideIndex === 3 && (
@@ -106,7 +108,7 @@ export function PlayersStatusCard({ eventId, clubId, className }: PlayersStatusC
     )
 }
 
-function MovementsList({ movements, loading }: { movements: PlayerMovement[]; loading: boolean }) {
+function MovementsList({ movements, loading, emptyLabel }: { movements: PlayerMovement[]; loading: boolean; emptyLabel: string }) {
     if (loading) {
         return (
             <div className="h-full flex items-center justify-center text-gray-400">
@@ -119,39 +121,34 @@ function MovementsList({ movements, loading }: { movements: PlayerMovement[]; lo
         return (
             <div className="h-full flex flex-col items-center justify-center text-gray-400">
                 <UserGroupIcon size={28} className="mb-3" />
-                <p className="text-sm">Aucun mouvement récent</p>
+                <p className="text-sm">{emptyLabel}</p>
             </div>
         )
     }
 
     return (
         <ScrollArea className="h-full" type="auto">
-            <div>
-                <Table>
-                    <TableBody>
-                        {movements.map((m) => (
-                            <TableRow key={`${m.profileId}-${m.updatedAt}`}>
-                                <TableCell className="text-sm truncate py-1.5">
-                                    {m.firstName} {m.lastName}
-                                </TableCell>
-                                <TableCell className="text-right whitespace-nowrap py-1.5">
-                                    <div className="flex items-center justify-end gap-2">
-                                        <Badge
-                                            variant={m.status === "active" ? "active" : "inactive"}
-                                            className="text-[10px] px-1.5 py-0"
-                                        >
-                                            {m.status === "active" ? "Inscrit" : "Désinscrit"}
-                                        </Badge>
-                                        <span className="text-xs text-muted-foreground">
-                                            {formatRelativeTime(m.updatedAt)}
-                                        </span>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </div>
+            <Table>
+                <TableBody>
+                    {movements.map((m) => (
+                        <TableRow key={`${m.profileId}-${m.eventId}`}>
+                            <TableCell className="text-sm truncate py-1.5">
+                                {m.firstName} {m.lastName}
+                            </TableCell>
+                            <TableCell className="py-1.5">
+                                <Badge variant="default" className="text-[10px] px-1.5 py-0 truncate max-w-[120px]">
+                                    {m.eventName}
+                                </Badge>
+                            </TableCell>
+                            <TableCell className="text-right whitespace-nowrap py-1.5">
+                                <span className="text-xs text-muted-foreground">
+                                    {formatRelativeTime(m.registeredAt)}
+                                </span>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
         </ScrollArea>
     )
 }
@@ -238,11 +235,7 @@ function RequestRow({ request, onApprove, onReject }: {
                 )}
             </div>
             <div className="flex items-center gap-2 shrink-0 ml-3">
-                <Button
-                    size="sm"
-                    variant="default"
-                    onClick={() => onApprove(request.id)}
-                >
+                <Button size="sm" variant="default" onClick={() => onApprove(request.id)}>
                     <Tick02Icon size={16} className="mr-1" />
                     Accepter
                 </Button>

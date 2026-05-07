@@ -7,31 +7,28 @@ export interface PlayerMovement {
     firstName: string
     lastName: string
     status: "active" | "inactive"
-    updatedAt: string
+    registeredAt: string
+    eventName: string
+    eventId: string
 }
 
-// type brut retourné par Supabase pour les joueurs d'un événement
 interface EventPlayerRow {
     profile_id: string
     registered_at: string
-    profiles: { id: string; first_name: string; last_name: string }
+    profiles: { first_name: string; last_name: string }
 }
 
 /**
- * Compare les joueurs inscrits entre l'événement courant et le précédent
- * pour identifier les arrivées (active) et les départs (inactive).
- * Se recharge automatiquement quand eventId ou clubId change.
+ * Compare les joueurs entre le dernier événement du club et l'avant-dernier.
+ * Nouveaux inscrits → active (eventName = dernier événement)
+ * Désinscrits → inactive (eventName = avant-dernier événement)
  */
-export function usePlayerMovements(eventId: string | null, clubId: string | null) {
+export function usePlayerMovements(clubId: string | null) {
     const [movements, setMovements] = useState<PlayerMovement[]>([])
     const [loading, setLoading] = useState(false)
 
-    /**
-     * Récupère les mouvements de joueurs entre l'événement précédent et l'actuel.
-     * Nouveaux inscrits → active, anciens partis → inactive.
-     */
     const fetchMovements = useCallback(async () => {
-        if (!eventId || !clubId) {
+        if (!clubId) {
             setMovements([])
             return
         }
@@ -39,34 +36,64 @@ export function usePlayerMovements(eventId: string | null, clubId: string | null
         setLoading(true)
 
         try {
-            // 1. Fetch the current event's start_date to anchor the search
-            const { data: currentEvent, error: currentEventError } = await withTimeout(
+            // 1. Les deux derniers événements du club
+            const { data: recentEvents, error: eventsError } = await withTimeout(
                 supabase
                     .from("events")
-                    .select("start_date")
-                    .eq("id", eventId)
-                    .single(),
-                "usePlayerMovements.currentEvent"
+                    .select("id, event_name, start_date")
+                    .eq("club_id", clubId)
+                    .order("start_date", { ascending: false })
+                    .limit(2),
+                "usePlayerMovements.recentEvents"
             )
 
-            if (currentEventError || !currentEvent) {
+            if (eventsError || !recentEvents || recentEvents.length === 0) {
                 setMovements([])
                 return
             }
 
-            // 2. Find the most recent event that started strictly before the current one
-            // Using start_date prevents concurrent/overlapping events from being picked
-            const { data: prevEvent, error: prevError } = await withTimeout(
+            const latestEvent = recentEvents[0]
+            const prevEvent = recentEvents[1] ?? null
+
+            // 2. Joueurs du dernier événement
+            const { data: latestPlayers, error: latestError } = await withTimeout(
                 supabase
-                    .from("events")
-                    .select("id")
-                    .eq("club_id", clubId)
-                    .neq("id", eventId)
-                    .lt("start_date", currentEvent.start_date)
-                    .order("start_date", { ascending: false })
-                    .limit(1)
-                    .maybeSingle(),
-                "usePlayerMovements.prevEvent"
+                    .from("event_players")
+                    .select("profile_id, registered_at, profiles!inner(first_name, last_name)")
+                    .eq("event_id", latestEvent.id),
+                "usePlayerMovements.latestPlayers"
+            )
+
+            if (latestError || !latestPlayers) {
+                setMovements([])
+                return
+            }
+
+            const latest = latestPlayers as unknown as EventPlayerRow[]
+
+            // Pas d'événement précédent → tous les inscrits sont nouveaux
+            if (!prevEvent) {
+                setMovements(
+                    latest.map((row) => ({
+                        profileId: row.profile_id,
+                        firstName: row.profiles.first_name,
+                        lastName: row.profiles.last_name,
+                        status: "active" as const,
+                        registeredAt: row.registered_at,
+                        eventName: latestEvent.event_name,
+                        eventId: latestEvent.id,
+                    }))
+                )
+                return
+            }
+
+            // 3. Joueurs de l'avant-dernier événement
+            const { data: prevPlayers, error: prevError } = await withTimeout(
+                supabase
+                    .from("event_players")
+                    .select("profile_id, registered_at, profiles!inner(first_name, last_name)")
+                    .eq("event_id", prevEvent.id),
+                "usePlayerMovements.prevPlayers"
             )
 
             if (prevError) {
@@ -74,83 +101,42 @@ export function usePlayerMovements(eventId: string | null, clubId: string | null
                 return
             }
 
-            // 2. Fetch current event players with profiles
-            const { data: currentPlayers, error: currentError } = await withTimeout(
-                supabase
-                    .from("event_players")
-                    .select("profile_id, registered_at, profiles!inner(id, first_name, last_name)")
-                    .eq("event_id", eventId),
-                "usePlayerMovements.currentPlayers"
-            )
-
-            if (currentError || !currentPlayers) {
-                setMovements([])
-                return
-            }
-
-            const current = currentPlayers as unknown as EventPlayerRow[]
-
-            // No previous event → all current players are new inscriptions
-            if (!prevEvent) {
-                setMovements(
-                    current.map((row) => ({
-                        profileId: row.profile_id,
-                        firstName: row.profiles.first_name,
-                        lastName: row.profiles.last_name,
-                        status: "active" as const,
-                        updatedAt: row.registered_at,
-                    }))
-                )
-                return
-            }
-
-            // 3. Fetch previous event players with profiles
-            const { data: prevPlayers, error: prevPlayersError } = await withTimeout(
-                supabase
-                    .from("event_players")
-                    .select("profile_id, registered_at, profiles!inner(id, first_name, last_name)")
-                    .eq("event_id", prevEvent.id),
-                "usePlayerMovements.prevPlayers"
-            )
-
-            if (prevPlayersError) {
-                setMovements([])
-                return
-            }
-
             const previous = (prevPlayers ?? []) as unknown as EventPlayerRow[]
             const prevIds = new Set(previous.map((p) => p.profile_id))
-            const currentIds = new Set(current.map((p) => p.profile_id))
+            const latestIds = new Set(latest.map((p) => p.profile_id))
 
             const results: PlayerMovement[] = []
 
-            // New players (in current but not in previous) → "active" / Inscrit
-            for (const row of current) {
+            // Nouveaux inscrits : dans le dernier mais pas dans l'avant-dernier
+            for (const row of latest) {
                 if (!prevIds.has(row.profile_id)) {
                     results.push({
                         profileId: row.profile_id,
                         firstName: row.profiles.first_name,
                         lastName: row.profiles.last_name,
                         status: "active",
-                        updatedAt: row.registered_at,
+                        registeredAt: row.registered_at,
+                        eventName: latestEvent.event_name,
+                        eventId: latestEvent.id,
                     })
                 }
             }
 
-            // Left players (in previous but not in current) → "inactive" / Désinscrit
+            // Désinscrits : dans l'avant-dernier mais pas dans le dernier
             for (const row of previous) {
-                if (!currentIds.has(row.profile_id)) {
+                if (!latestIds.has(row.profile_id)) {
                     results.push({
                         profileId: row.profile_id,
                         firstName: row.profiles.first_name,
                         lastName: row.profiles.last_name,
                         status: "inactive",
-                        updatedAt: row.registered_at,
+                        registeredAt: row.registered_at,
+                        eventName: prevEvent.event_name,
+                        eventId: prevEvent.id,
                     })
                 }
             }
 
-            // Sort: active first, then inactive, each group by name
             results.sort((a, b) => {
                 if (a.status !== b.status) return a.status === "active" ? -1 : 1
                 return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`)
@@ -162,7 +148,7 @@ export function usePlayerMovements(eventId: string | null, clubId: string | null
         } finally {
             setLoading(false)
         }
-    }, [eventId, clubId])
+    }, [clubId])
 
     useEffect(() => {
         fetchMovements()

@@ -32,6 +32,30 @@ export function useVisitorRequests() {
         setLoading(false)
     }, [])
 
+    /** Récupère toutes les demandes en attente pour le club (vue admin globale). */
+    const fetchPendingForClub = useCallback(async () => {
+        setLoading(true)
+        setError(null)
+        const endLog = logger.start("useVisitorRequests.fetchPendingForClub")
+
+        const { data, error: fetchError } = await supabase
+            .from("visitor_requests")
+            .select("*, profile:profiles(first_name, last_name, email, clubs(club_name)), event:events(event_name)")
+            .eq("status", "pending")
+            .order("created_at", { ascending: false })
+
+        if (fetchError) {
+            handleHookError(fetchError, setError, "useVisitorRequests.fetchPendingForClub")
+            setRequests([])
+            endLog({ error: fetchError.message })
+        } else {
+            setRequests((data as VisitorRequest[]) ?? [])
+            endLog()
+        }
+
+        setLoading(false)
+    }, [])
+
     /** Récupère les demandes en attente pour un événement donné (vue admin). */
     const fetchPendingForEvent = useCallback(async (eventId: string) => {
         setLoading(true)
@@ -121,5 +145,5 @@ export function useVisitorRequests() {
         return { success: true }
     }, [])
 
-    return { requests, loading, error, fetchMyRequests, fetchPendingForEvent, createRequest, cancelRequest, reviewRequest }
+    return { requests, loading, error, fetchMyRequests, fetchPendingForClub, fetchPendingForEvent, createRequest, cancelRequest, reviewRequest }
 }
