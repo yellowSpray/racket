@@ -5,6 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Calendar03Icon, Clock01Icon, ArrowLeft01Icon, ArrowRight01Icon } from "hugeicons-react"
 import { useMatchesByDay, type DayMatch, type MatchDay } from "@/hooks/useMatchesByDay"
+import { EventSelector } from "@/components/admin/settings/EventSelector"
 
 const SCORE_OPTIONS = [
     { value: "", label: "Score…" },
@@ -97,6 +98,7 @@ export function MatchesCard({ eventId, className }: MatchesCardProps) {
                 <CardTitle className="flex items-center gap-2 text-sm">
                     <Calendar03Icon size={16} className="text-foreground shrink-0" />
                     <span className="font-semibold shrink-0">Matchs</span>
+                    <EventSelector />
                     <button
                         onClick={() => setDayIndex(i => i - 1)}
                         disabled={dayIndex === 0 || days.length === 0}
