@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { UserAdd01Icon, Search01Icon, Cancel01Icon } from "hugeicons-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useClubConfig } from "@/hooks/useClubConfig"
+import { useHeaderSlot, useHeaderActions } from "@/contexts/HeaderSlotContext"
 import type { ClubDefaults } from "@/components/admin/settings/EventDialog"
 
 /** Normalize Supabase time "19:00:00+00" → "19:00" */
@@ -38,73 +39,75 @@ export function AdminSettings () {
         fetchClubConfig(profile?.club_id ?? null)
     }, [profile?.club_id, fetchClubConfig])
 
-    return (
-        <div className="flex flex-col h-full min-h-0">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
-                <div className="flex flex-row items-center justify-between mb-6 gap-4">
-                    <div className="flex items-center gap-3 shrink-0">
-                        <h3 className="text-lg font-semibold">Paramètres</h3>
-                        {clubConfig && (
-                            <span className="text-sm text-muted-foreground">- {clubConfig.club_name}</span>
-                        )}
-                    </div>
-                    {activeTab === "users" && (
-                        <div className="relative flex-1 max-w-sm">
-                            <Search01Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                value={usersSearch}
-                                onChange={(e) => setUsersSearch(e.target.value)}
-                                placeholder="Rechercher par nom ou email..."
-                                className="pl-9 pr-9 rounded-full h-10"
-                            />
-                            {usersSearch && (
-                                <button
-                                    onClick={() => setUsersSearch("")}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                                >
-                                    <Cancel01Icon className="h-4 w-4" />
-                                </button>
-                            )}
-                        </div>
+    const headerPortal = useHeaderSlot(
+        <>
+            <h3 className="text-lg font-semibold">Paramètres</h3>
+            {clubConfig && (
+                <span className="text-sm text-muted-foreground">- {clubConfig.club_name}</span>
+            )}
+            {activeTab === "users" && (
+                <div className="relative flex-1 max-w-sm mx-auto">
+                    <Search01Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        value={usersSearch}
+                        onChange={(e) => setUsersSearch(e.target.value)}
+                        placeholder="Rechercher par nom ou email..."
+                        className="pl-9 pr-9 rounded-full h-10"
+                    />
+                    {usersSearch && (
+                        <button
+                            onClick={() => setUsersSearch("")}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                            <Cancel01Icon className="h-4 w-4" />
+                        </button>
                     )}
-                    <div className="flex items-center gap-3 shrink-0">
-                        {activeTab === "users" && (
-                            <Button variant="default" size="lg" onClick={() => setUsersInviteOpen(true)}>
-                                <UserAdd01Icon size={20} strokeWidth={2} />
-                                Ajouter
-                            </Button>
-                        )}
-                        <TabsList className="h-10 rounded-full">
-                            <TabsTrigger value="manage">Gestion</TabsTrigger>
-                            <TabsTrigger value="events">Événements</TabsTrigger>
-                            <TabsTrigger value="clubs">Mon club</TabsTrigger>
-                            <TabsTrigger value="users">Utilisateurs</TabsTrigger>
-                        </TabsList>
-                    </div>
                 </div>
-                <div className="flex-1 min-h-0 overflow-hidden rounded-md">
-                    <TabsContent value="events" className="h-full">
-                        <EventParamsManager />
-                    </TabsContent>
+            )}
+        </>
+    )
 
-                    <TabsContent value="manage" className="h-full">
-                        <EventsManager clubDefaults={clubDefaults} />
-                    </TabsContent>
+    const actionsPortal = useHeaderActions(
+        <>
+            {activeTab === "users" && (
+                <Button variant="default" size="lg" onClick={() => setUsersInviteOpen(true)}>
+                    <UserAdd01Icon size={20} strokeWidth={2} />
+                    Ajouter
+                </Button>
+            )}
+            <TabsList className="h-10 rounded-full">
+                <TabsTrigger value="manage">Gestion</TabsTrigger>
+                <TabsTrigger value="events">Événements</TabsTrigger>
+                <TabsTrigger value="clubs">Mon club</TabsTrigger>
+                <TabsTrigger value="users">Utilisateurs</TabsTrigger>
+            </TabsList>
+        </>
+    )
 
-                    <TabsContent value="clubs" className="h-full">
-                        <ClubConfigManager />
-                    </TabsContent>
-
-                    <TabsContent value="users" className="h-full">
-                        <UsersManager
-                            globalFilter={usersSearch}
-                            onGlobalFilterChange={setUsersSearch}
-                            inviteOpen={usersInviteOpen}
-                            onInviteOpenChange={setUsersInviteOpen}
-                        />
-                    </TabsContent>
-                </div>
-            </Tabs>
-        </div>
+    return (
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0 h-full">
+            {/* Portals rendus ici pour avoir accès au contexte Tabs */}
+            {headerPortal}
+            {actionsPortal}
+            <div className="flex-1 min-h-0 overflow-hidden rounded-md">
+                <TabsContent value="events" className="h-full">
+                    <EventParamsManager />
+                </TabsContent>
+                <TabsContent value="manage" className="h-full">
+                    <EventsManager clubDefaults={clubDefaults} />
+                </TabsContent>
+                <TabsContent value="clubs" className="h-full">
+                    <ClubConfigManager />
+                </TabsContent>
+                <TabsContent value="users" className="h-full">
+                    <UsersManager
+                        globalFilter={usersSearch}
+                        onGlobalFilterChange={setUsersSearch}
+                        inviteOpen={usersInviteOpen}
+                        onInviteOpenChange={setUsersInviteOpen}
+                    />
+                </TabsContent>
+            </div>
+        </Tabs>
     )
 }
