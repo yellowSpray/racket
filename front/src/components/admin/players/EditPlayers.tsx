@@ -44,6 +44,7 @@ interface EditPlayersProps {
     onAbsencesChange?: (playerId: string, dates: string[]) => Promise<void>
     open?: boolean
     onOpenChange?: (open: boolean) => void
+    size?: "sm" | "default" | "lg" | "icon"
 }
 
 const initialFormData: Partial<PlayerType> = {
@@ -60,7 +61,7 @@ const initialFormData: Partial<PlayerType> = {
 
 const STEPS = [1, 2, 3]
 
-export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChange, onAbsencesChange, open: controlledOpen, onOpenChange }: EditPlayersProps) {
+export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChange, onAbsencesChange, open: controlledOpen, onOpenChange, size = "sm" }: EditPlayersProps) {
     const [currentStep, setCurrentStep] = useState<number>(1)
     const [internalOpen, setInternalOpen] = useState(false)
 
@@ -429,7 +430,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
         <Dialog open={open} onOpenChange={setOpen}>
             {!isControlled && (
                 <DialogTrigger asChild>
-                    <Button variant="default" size="sm">
+                    <Button variant="default" size={size}>
                         <Add01Icon size="16" strokeWidth={2}/>
                         Ajouter
                     </Button>
