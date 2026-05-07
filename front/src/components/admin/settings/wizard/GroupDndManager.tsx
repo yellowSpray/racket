@@ -3,7 +3,7 @@ import { useErrorHandler } from "@/hooks/useErrorHandler"
 import {
     DndContext,
     DragOverlay,
-    closestCenter,
+    closestCorners,
     useSensor,
     useSensors,
     PointerSensor,
@@ -12,7 +12,7 @@ import {
     type DragOverEvent,
 } from "@dnd-kit/core"
 import { supabase } from "@/lib/supabaseClient"
-import { movePlayerBetweenGroups, validateGroups } from "@/lib/groupPlayerMove"
+import { movePlayerBetweenGroups, movePlayerToPosition, validateGroups } from "@/lib/groupPlayerMove"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { DroppableGroupColumn } from "./DroppableGroupColumn"
@@ -95,19 +95,29 @@ export function GroupDndManager({ initialGroups, onFinish, onCancel }: GroupDndM
         const fromGroupId = findGroupForPlayer(active.id as string)
         if (!fromGroupId) return
 
-        let toGroupId: string | null = null
         const overId = over.id as string
-        if (overId.startsWith("group-")) {
-            toGroupId = overId.replace("group-", "")
-        } else if (overId.startsWith("player-")) {
-            toGroupId = findGroupForPlayer(overId)
+
+        if (overId.startsWith("player-")) {
+            const overPlayerId = overId.replace("player-", "")
+            const toGroupId = findGroupForPlayer(overId)
+            if (!toGroupId) return
+            const toGroup = localGroups.find(g => g.id === toGroupId)
+            const toIndex = (toGroup?.players || []).findIndex(p => p.id === overPlayerId)
+            const newGroups = movePlayerToPosition(localGroups, activeId, fromGroupId, toGroupId, toIndex === -1 ? 0 : toIndex)
+            setLocalGroups(newGroups)
+            if (fromGroupId !== toGroupId) {
+                setPendingMoves(prev => [...prev, { playerId: activeId, fromGroupId, toGroupId }])
+            }
+            return
         }
 
-        if (!toGroupId || fromGroupId === toGroupId) return
-
-        const newGroups = movePlayerBetweenGroups(localGroups, activeId, fromGroupId, toGroupId)
-        setLocalGroups(newGroups)
-        setPendingMoves(prev => [...prev, { playerId: activeId, fromGroupId, toGroupId: toGroupId! }])
+        if (overId.startsWith("group-")) {
+            const toGroupId = overId.replace("group-", "")
+            if (fromGroupId === toGroupId) return
+            const newGroups = movePlayerBetweenGroups(localGroups, activeId, fromGroupId, toGroupId)
+            setLocalGroups(newGroups)
+            setPendingMoves(prev => [...prev, { playerId: activeId, fromGroupId, toGroupId }])
+        }
     }
 
     const handleFinish = async () => {
@@ -183,7 +193,7 @@ export function GroupDndManager({ initialGroups, onFinish, onCancel }: GroupDndM
 
             <DndContext
                 sensors={sensors}
-                collisionDetection={closestCenter}
+                collisionDetection={closestCorners}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
                 onDragEnd={handleDragEnd}
@@ -200,7 +210,7 @@ export function GroupDndManager({ initialGroups, onFinish, onCancel }: GroupDndM
                 <DragOverlay>
                     {activePlayer && (
                         <div className="shadow-lg">
-                            <DraggablePlayerItem player={activePlayer} id={`player-${activePlayer.id}`} />
+                            <DraggablePlayerItem player={activePlayer} id={`overlay-${activePlayer.id}`} />
                         </div>
                     )}
                 </DragOverlay>

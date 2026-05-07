@@ -141,6 +141,14 @@ export function WizardStepGroups({ event, groups, eventPlayerIds, onGroupsChange
 
     const activePlayers = players.filter(p => eventPlayerIds.has(p.id))
 
+    const playerAbsences = useMemo(() => {
+        const map = new Map<string, string[]>()
+        for (const p of activePlayers) {
+            if (p.unavailable.length > 0) map.set(p.id, p.unavailable)
+        }
+        return map
+    }, [activePlayers])
+
     const registeredPlayerIds = useMemo(
         () => new Set(activePlayers.map(p => p.id)),
         [activePlayers]
@@ -837,7 +845,7 @@ export function WizardStepGroups({ event, groups, eventPlayerIds, onGroupsChange
                         </div>
                     </div>
 
-                    <GroupRoundPreview event={event} groups={groups} />
+                    <GroupRoundPreview event={event} groups={groups} playerAbsences={playerAbsences} />
                 </div>
             )}
 

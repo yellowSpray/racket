@@ -1,28 +1,59 @@
 import type { Event } from "@/types/event"
 import type { Group } from "@/types/draw"
 import type { Match } from "@/types/match"
-import { useMemo } from "react"
-import { generateGroupRounds, calculateDates, SCHEDULE_TEMPLATES } from "@/lib/matchScheduler"
+import { useMemo, useEffect } from "react"
+import { generateGroupRounds, calculateDates, SCHEDULE_TEMPLATES, optimizePlayerOrderForAbsences } from "@/lib/matchScheduler"
 import { DrawTable } from "@/components/admin/draws/DrawTable"
 
-// Schedule templates: SCHEDULE_TEMPLATES[groupSize][playerPos_i][playerPos_j] = date index (0-based).
 interface GroupRoundPreviewProps {
     event: Event
     groups: Group[]
+    playerAbsences?: Map<string, string[]>
 }
 
-export function GroupRoundPreview({ event, groups }: GroupRoundPreviewProps) {
+export function GroupRoundPreview({ event, groups, playerAbsences }: GroupRoundPreviewProps) {
     const dates = useMemo(
         () => calculateDates(event.start_date, event.end_date, event.playing_dates),
         [event.start_date, event.end_date, event.playing_dates]
     )
 
-    const groupRounds = useMemo(() => generateGroupRounds(groups), [groups])
+    useEffect(() => {
+        console.group("[GroupRoundPreview] Absences joueurs")
+        console.log("Dates de l'événement :", dates)
+        if (!playerAbsences || playerAbsences.size === 0) {
+            console.log("Aucune absence détectée")
+        } else {
+            console.log(`${playerAbsences.size} joueur(s) avec absences :`)
+            for (const [playerId, absentDates] of playerAbsences) {
+                const player = groups.flatMap(g => g.players || []).find(p => p.id === playerId)
+                const name = player ? `${player.first_name} ${player.last_name}` : playerId
+                const relevant = absentDates.filter(d => dates.includes(d))
+                console.log(
+                    `  ${name} — absences : [${absentDates.join(", ")}]` +
+                    (relevant.length > 0 ? ` → impact sur dates event : [${relevant.join(", ")}]` : " → aucun impact sur les dates de l'event")
+                )
+            }
+        }
+        console.groupEnd()
+    }, [playerAbsences, dates, groups])
+
+    // Appliquer le même réordonnancement que le scheduler pour que les dates coïncident
+    const optimizedGroups = useMemo(() => {
+        if (!playerAbsences || playerAbsences.size === 0) return groups
+        return groups.map(group => {
+            const players = group.players || []
+            const template = SCHEDULE_TEMPLATES[players.length]
+            if (!template) return group
+            return { ...group, players: optimizePlayerOrderForAbsences(players, template, dates, playerAbsences) }
+        })
+    }, [groups, playerAbsences, dates])
+
+    const groupRounds = useMemo(() => generateGroupRounds(optimizedGroups), [optimizedGroups])
 
     const matchesByGroup = useMemo(() => {
         const result = new Map<string, Match[]>()
 
-        groups.forEach((group, groupIdx) => {
+        optimizedGroups.forEach((group, groupIdx) => {
             const players = group.players ?? []
             const rounds = groupRounds[groupIdx] ?? []
             const template = SCHEDULE_TEMPLATES[players.length]
@@ -59,11 +90,11 @@ export function GroupRoundPreview({ event, groups }: GroupRoundPreviewProps) {
         })
 
         return result
-    }, [groups, groupRounds, dates])
+    }, [optimizedGroups, groupRounds, dates])
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {groups.map(group => (
+            {optimizedGroups.map(group => (
                 <DrawTable
                     key={group.id}
                     group={group}

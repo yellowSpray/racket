@@ -2,7 +2,7 @@ import { useState } from "react"
 import {
     DndContext,
     DragOverlay,
-    closestCenter,
+    closestCorners,
     useSensor,
     useSensors,
     PointerSensor,
@@ -122,7 +122,7 @@ export function ProposedGroups({ groups, onGroupsChanged, previousPlayerIds, max
         <div className="space-y-3">
             <DndContext
                 sensors={sensors}
-                collisionDetection={closestCenter}
+                collisionDetection={closestCorners}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
                 onDragEnd={handleDragEnd}
@@ -144,7 +144,7 @@ export function ProposedGroups({ groups, onGroupsChanged, previousPlayerIds, max
                 <DragOverlay>
                     {activePlayer && (
                         <div className="shadow-lg">
-                            <DraggablePlayerItem player={activePlayer} id={`player-${activePlayer.id}`} />
+                            <DraggablePlayerItem player={activePlayer} id={`overlay-${activePlayer.id}`} />
                         </div>
                     )}
                 </DragOverlay>

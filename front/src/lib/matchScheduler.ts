@@ -119,6 +119,63 @@ export const SCHEDULE_TEMPLATES: Record<number, number[][]> = {
 }
 
 /**
+ * Réordonne les joueurs d'un groupe pour minimiser les conflits d'absence avec le template.
+ *
+ * Pour chaque groupe, le template SCHEDULE_TEMPLATES[n][i][j] indique sur quelle date
+ * le joueur à la position i joue contre le joueur à la position j. Pour les groupes impairs,
+ * certaines positions ont un « bye » sur certaines dates (pas de match ce jour-là). En plaçant
+ * un joueur absent à la position qui a un bye sur sa date d'absence, on évite de lui programmer
+ * un match ce jour-là.
+ *
+ * Pour les groupes pairs, chaque joueur joue sur chaque date — aucune optimisation possible.
+ * L'algorithme calcule la matrice de coût (absences × positions) et fait une assignation greedy.
+ */
+export function optimizePlayerOrderForAbsences<T extends { id: string }>(
+    players: T[],
+    template: number[][],
+    dates: string[],
+    absences: Map<string, string[]>
+): T[] {
+    const n = players.length
+    if (n < 2 || absences.size === 0) return players
+
+    const hasMatchOnDate = (pos: number, dateIdx: number): boolean => {
+        for (let j = 0; j < n; j++) {
+            if (j !== pos && template[pos][j] === dateIdx) return true
+        }
+        return false
+    }
+
+    const costMatrix: number[][] = players.map(player => {
+        const playerAbsences = (absences.get(player.id) || []).filter(d => dates.includes(d))
+        return Array.from({ length: n }, (_, pos) => {
+            if (playerAbsences.length === 0) return 0
+            return playerAbsences.reduce((cost, absDate) => {
+                const dateIdx = dates.indexOf(absDate)
+                return dateIdx === -1 ? cost : cost + (hasMatchOnDate(pos, dateIdx) ? 1 : 0)
+            }, 0)
+        })
+    })
+
+    const assignedPlayers = new Set<number>()
+    const assignedPositions = new Set<number>()
+    const result = new Array<T>(n)
+
+    const triples = players.flatMap((_, pi) =>
+        Array.from({ length: n }, (__, pos) => ({ playerIdx: pi, pos, cost: costMatrix[pi][pos] }))
+    ).sort((a, b) => a.cost - b.cost || a.playerIdx - b.playerIdx)
+
+    for (const { playerIdx, pos } of triples) {
+        if (assignedPlayers.has(playerIdx) || assignedPositions.has(pos)) continue
+        result[pos] = players[playerIdx]
+        assignedPlayers.add(playerIdx)
+        assignedPositions.add(pos)
+    }
+
+    return result
+}
+
+/**
  * Mappe les rounds de chaque groupe sur des dates en utilisant SCHEDULE_TEMPLATES.
  * Pour chaque paire (i, j), la date est déterminée par SCHEDULE_TEMPLATES[n][i][j].
  * Fallback séquentiel (round N → date N) si le groupe n'a pas de template.

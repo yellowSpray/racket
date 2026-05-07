@@ -12,4 +12,8 @@ export default defineConfig({
       '@components': path.resolve(__dirname, './src/shared/components'),
     },
   },
+  server: {
+    host: true,
+    port: 5000
+  },
 })

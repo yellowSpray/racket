@@ -13,6 +13,8 @@ import {
     assignTimeSlotsForDates,
     calculateTimeSlots,
     calculateDates,
+    optimizePlayerOrderForAbsences,
+    SCHEDULE_TEMPLATES,
     type PlayerConstraints,
 } from "@/lib/matchScheduler"
 import { computeEloUpdates, type EloMatchResult } from "@/lib/eloEngine"
@@ -250,11 +252,23 @@ export function useMatches() {
                 }
             }
 
-            // 3. Générer les rounds structurés par groupe (avec optimisation bye/absence)
-            const groupRounds = generateGroupRounds(groups, dates, absencesMap)
+            // 3. Réordonner les joueurs dans chaque groupe pour minimiser les conflits d'absence
+            // Pour les groupes impairs (bye), place les absents à la position bye du bon jour.
+            // Pour les groupes pairs, aucune optimisation possible (chaque joueur joue chaque date).
+            const optimizedGroups = absencesMap.size > 0
+                ? groups.map(group => {
+                    const players = group.players || []
+                    const template = SCHEDULE_TEMPLATES[players.length]
+                    if (!template) return group
+                    return { ...group, players: optimizePlayerOrderForAbsences(players, template, dates, absencesMap) }
+                })
+                : groups
 
-            // 4. Mapper les rounds sur les dates via le template de planification
-            const datePlans = mapRoundsToDatesByTemplate(groupRounds, groups, dates)
+            // 4. Générer les rounds structurés par groupe (optimise aussi les byes hors-template)
+            const groupRounds = generateGroupRounds(optimizedGroups, dates, absencesMap)
+
+            // 5. Mapper les rounds sur les dates via le template de planification
+            const datePlans = mapRoundsToDatesByTemplate(groupRounds, optimizedGroups, dates)
             const totalPairings = datePlans.reduce((sum, p) => sum + p.pairings.length, 0)
 
             if (totalPairings === 0) {
@@ -262,7 +276,7 @@ export function useMatches() {
                 return null
             }
 
-            // 5. Assigner les créneaux horaires et terrains par date
+            // 6. Assigner les créneaux horaires et terrains par date
             const { assignments, unplaced } = assignTimeSlotsForDates(
                 datePlans,
                 timeSlots,
@@ -279,7 +293,7 @@ export function useMatches() {
                 return null
             }
 
-            // 6. Insérer en batch dans Supabase
+            // 7. Insérer en batch dans Supabase
             const matchRows = assignments.map(a => ({
                 group_id: a.groupId,
                 player1_id: a.player1Id,
@@ -298,7 +312,7 @@ export function useMatches() {
                 return null
             }
 
-            // 7. Refresh
+            // 8. Refresh
             await fetchMatchesByEvent(event.id)
 
             setUnplacedMatches(unplaced)
