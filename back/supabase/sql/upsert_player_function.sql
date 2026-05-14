@@ -5,6 +5,22 @@
 -- Cette fonction gere la creation ou modification complete d'un joueur
 -- Elle s'occupe de toutes les tables impliquees de maniere transactionnelle
 
+-- Supprimer toutes les surcharges existantes de upsert_player
+DO $$
+DECLARE
+  r record;
+BEGIN
+  FOR r IN
+    SELECT oid::regprocedure AS sig
+    FROM pg_proc
+    WHERE proname = 'upsert_player'
+      AND pronamespace = 'public'::regnamespace
+  LOOP
+    EXECUTE 'DROP FUNCTION ' || r.sig;
+  END LOOP;
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION public.upsert_player(
   -- Donnees du profil
   p_profile_id uuid,
@@ -23,8 +39,10 @@ CREATE OR REPLACE FUNCTION public.upsert_player(
   p_arrival_time time DEFAULT NULL,
   p_departure_time time DEFAULT NULL,
   
-  -- Parametres non utilises pour l'instant (compatibilite future)
+  -- Inscription à la série (event_players)
   p_event_id uuid DEFAULT NULL,
+  -- Round courant pour les paiements visiteurs
+  p_round_id uuid DEFAULT NULL,
   p_event_date date DEFAULT NULL,
   p_payment_amount numeric(10,2) DEFAULT 0
 )
@@ -160,35 +178,33 @@ BEGIN
   END IF;
 
   -- ===================================
-  -- ETAPE 4: GESTION DES PAIEMENTS
+  -- ETAPE 4: GESTION DES PAIEMENTS (par round)
   -- ===================================
-  
-  IF p_event_id IS NOT NULL AND v_is_visitor THEN
-    -- Les visitors doivent payer, creer ou mettre a jour le paiement
+
+  IF p_round_id IS NOT NULL AND v_is_visitor THEN
     INSERT INTO public.payments (
-      profile_id, 
-      event_id, 
-      amount, 
+      profile_id,
+      round_id,
+      amount,
       status,
       paid_at
     )
     VALUES (
       v_profile_id,
-      p_event_id,
+      p_round_id,
       p_payment_amount,
       CASE WHEN v_is_paid THEN 'paid'::payment_status_enum ELSE 'unpaid'::payment_status_enum END,
       CASE WHEN v_is_paid THEN now() ELSE NULL END
     )
-    ON CONFLICT (profile_id, event_id)
+    ON CONFLICT (profile_id, round_id)
     DO UPDATE SET
       amount = EXCLUDED.amount,
       status = EXCLUDED.status,
       paid_at = EXCLUDED.paid_at,
       updated_at = now();
-  ELSIF p_event_id IS NOT NULL AND NOT v_is_visitor THEN
-    -- Si c'est un member, supprimer le paiement s'il existe
+  ELSIF p_round_id IS NOT NULL AND NOT v_is_visitor THEN
     DELETE FROM public.payments
-    WHERE profile_id = v_profile_id AND event_id = p_event_id;
+    WHERE profile_id = v_profile_id AND round_id = p_round_id;
   END IF;
 
   -- ===================================
