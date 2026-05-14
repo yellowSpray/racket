@@ -189,10 +189,10 @@ export function buildProposedGroups(
     }
 
     // Build final groups
-    const eventId = previousGroups[0]?.event_id || ""
+    const roundId = previousGroups[0]?.round_id || ""
     return boxes.map((players, i) => ({
         id: `proposed-new-${i}`,
-        event_id: eventId,
+        round_id: roundId,
         group_name: `Box ${i + 1}`,
         max_players: Math.max(effectiveMaxPlayers, players.length),
         created_at: "",

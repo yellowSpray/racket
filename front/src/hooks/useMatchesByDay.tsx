@@ -64,13 +64,13 @@ function computeWinnerId(score: string, player1Id: string, player2Id: string): s
  * en attente (pour saisie de score). Détermine automatiquement le jour initial
  * à afficher (aujourd'hui ou le prochain jour planifié).
  */
-export function useMatchesByDay(eventId: string | null) {
+export function useMatchesByDay(roundId: string | null) {
     const [days, setDays] = useState<MatchDay[]>([])
     const [loading, setLoading] = useState(false)
     const [initialDayIndex, setInitialDayIndex] = useState(0)
 
     const fetchMatches = useCallback(async () => {
-        if (!eventId) {
+        if (!roundId) {
             setDays([])
             setInitialDayIndex(0)
             return
@@ -81,7 +81,7 @@ export function useMatchesByDay(eventId: string | null) {
         const { data: groups, error: groupsError } = await supabase
             .from("groups")
             .select("id")
-            .eq("event_id", eventId)
+            .eq("round_id", roundId)
 
         if (groupsError || !groups || groups.length === 0) {
             setDays([])
@@ -97,7 +97,7 @@ export function useMatchesByDay(eventId: string | null) {
                 *,
                 player1:profiles!matches_player1_id_fkey(id, first_name, last_name, avatar_url),
                 player2:profiles!matches_player2_id_fkey(id, first_name, last_name, avatar_url),
-                group:groups(id, group_name, event_id)
+                group:groups(id, group_name, round_id)
             `)
             .in("group_id", groupIds)
             .order("match_date", { ascending: true })
@@ -123,7 +123,7 @@ export function useMatchesByDay(eventId: string | null) {
         setDays(grouped)
         setInitialDayIndex(initialIdx)
         setLoading(false)
-    }, [eventId])
+    }, [roundId])
 
     useEffect(() => {
         fetchMatches()

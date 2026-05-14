@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabaseClient"
 import type { Match } from "@/types/match"
 import type { Group } from "@/types/draw"
-import type { Event } from "@/types/event"
+import type { Event, EventRound } from "@/types/event"
 import type { UnplacedMatch } from "@/lib/matchScheduler"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { handleHookError, withTimeout } from "@/lib/handleHookError"
@@ -66,11 +66,11 @@ export function useMatches() {
     const subscribedGroupIds = useRef<string[]>([])
 
     /**
-     * Récupère tous les matchs d'un événement avec les profils joueurs et le groupe.
-     * Filtre via les groupes de l'événement puis charge les matchs triés par date/heure.
+     * Récupère tous les matchs d'un round avec les profils joueurs et le groupe.
+     * Filtre via les groupes du round puis charge les matchs triés par date/heure.
      */
-    const fetchMatchesByEvent = useCallback(async (eventId: string | null) => {
-        if (!eventId) {
+    const fetchMatchesByRound = useCallback(async (roundId: string | null) => {
+        if (!roundId) {
             setMatches([])
             return
         }
@@ -80,12 +80,12 @@ export function useMatches() {
         const endLog = logger.start("useMatches.fetch")
 
         try {
-            // Récupérer les groups de l'event pour filtrer
+            // Récupérer les groups du round pour filtrer
             const { data: groups, error: groupsError } = await withTimeout(
                 supabase
                     .from("groups")
                     .select("id")
-                    .eq("event_id", eventId),
+                    .eq("round_id", roundId),
                 "useMatches.fetchGroups"
             )
 
@@ -111,7 +111,7 @@ export function useMatches() {
                         *,
                         player1:profiles!matches_player1_id_fkey(id, first_name, last_name, avatar_url),
                         player2:profiles!matches_player2_id_fkey(id, first_name, last_name, avatar_url),
-                        group:groups(id, group_name, event_id)
+                        group:groups(id, group_name, round_id)
                     `)
                     .in("group_id", groupIds)
                     .order("match_date", { ascending: true })
@@ -135,17 +135,17 @@ export function useMatches() {
         }
     }, [])
 
-    const generateMatches = async (event: Event, groups: Group[]): Promise<{ total: number; placed: number } | null> => {
+    const generateMatches = async (round: EventRound, event: Event, groups: Group[]): Promise<{ total: number; placed: number } | null> => {
         setLoading(true)
         setError(null)
 
         try {
             // 1. Calculer les dates de jeu (nécessaire pour le bye optimization)
-            const dates = calculateDates(event.start_date, event.end_date, event.playing_dates)
-            const durationMin = intervalToMinutes(event.estimated_match_duration)
+            const dates = calculateDates(round.start_date, round.end_date, round.playing_dates)
+            const durationMin = intervalToMinutes(round.estimated_match_duration)
             const timeSlots = calculateTimeSlots(
-                event.start_time || "19:00",
-                event.end_time || "23:00",
+                round.start_time || "19:00",
+                round.end_time || "23:00",
                 durationMin
             )
 
@@ -175,17 +175,17 @@ export function useMatches() {
                         .select("profile_id, arrival, departure")
                         .is("event_id", null)
                         .in("profile_id", ids),
-                    // Absences liées à cet événement
+                    // Absences liées à ce round
                     supabase
                         .from("absences")
                         .select("profile_id, absent_date")
-                        .eq("event_id", event.id)
+                        .eq("round_id", round.id)
                         .in("profile_id", ids),
-                    // Absences générales (sans event_id) — fallback
+                    // Absences générales (sans round_id) — fallback
                     supabase
                         .from("absences")
                         .select("profile_id, absent_date")
-                        .is("event_id", null)
+                        .is("round_id", null)
                         .in("profile_id", ids),
                 ])
 
@@ -280,7 +280,7 @@ export function useMatches() {
             const { assignments, unplaced } = assignTimeSlotsForDates(
                 datePlans,
                 timeSlots,
-                event.number_of_courts,
+                round.number_of_courts,
                 constraints,
                 durationMin
             )
@@ -313,7 +313,7 @@ export function useMatches() {
             }
 
             // 8. Refresh
-            await fetchMatchesByEvent(event.id)
+            await fetchMatchesByRound(round.id)
 
             setUnplacedMatches(unplaced)
 
@@ -339,16 +339,15 @@ export function useMatches() {
         }
     }
 
-    /** Supprime tous les matchs d'un événement via ses groupes. */
-    const deleteMatchesByEvent = async (eventId: string) => {
+    /** Supprime tous les matchs d'un round via ses groupes. */
+    const deleteMatchesByRound = async (roundId: string) => {
         setError(null)
 
         try {
-            // Récupérer les group IDs de l'event
             const { data: groups, error: groupsError } = await supabase
                 .from("groups")
                 .select("id")
-                .eq("event_id", eventId)
+                .eq("round_id", roundId)
 
             if (groupsError) {
                 handleHookError(groupsError, setError, "useMatches.delete")
@@ -427,18 +426,17 @@ export function useMatches() {
      * Récupère tous les matchs terminés, calcule les deltas depuis les ratings initiaux,
      * et met à jour les profiles. Retourne le nombre de joueurs mis à jour.
      */
-    const applyEventElo = async (eventId: string): Promise<number> => {
+    const applyRoundElo = async (roundId: string): Promise<number> => {
         setError(null)
 
         try {
-            // 1. Récupérer les groupes de l'event
             const { data: groups, error: groupsError } = await supabase
                 .from("groups")
                 .select("id")
-                .eq("event_id", eventId)
+                .eq("round_id", roundId)
 
             if (groupsError) {
-                handleHookError(groupsError, setError, "useMatches.applyEventElo")
+                handleHookError(groupsError, setError, "useMatches.applyRoundElo")
                 return 0
             }
 
@@ -454,7 +452,7 @@ export function useMatches() {
                 .not("winner_id", "is", null)
 
             if (matchesError) {
-                handleHookError(matchesError, setError, "useMatches.applyEventElo")
+                handleHookError(matchesError, setError, "useMatches.applyRoundElo")
                 return 0
             }
 
@@ -485,7 +483,7 @@ export function useMatches() {
                 .in("id", Array.from(playerIds))
 
             if (profilesError) {
-                handleHookError(profilesError, setError, "useMatches.applyEventElo")
+                handleHookError(profilesError, setError, "useMatches.applyRoundElo")
                 return 0
             }
 
@@ -511,57 +509,57 @@ export function useMatches() {
             const responses = await Promise.all(profileUpdates)
             const updateError = responses.find(r => r.error)
             if (updateError?.error) {
-                handleHookError(updateError.error, setError, "useMatches.applyEventElo")
+                handleHookError(updateError.error, setError, "useMatches.applyRoundElo")
                 return 0
             }
 
             return newRatings.size
         } catch (err) {
-            handleHookError(err, setError, "useMatches.applyEventElo")
+            handleHookError(err, setError, "useMatches.applyRoundElo")
             return 0
         }
     }
 
     /**
-     * Cloture un evenement : verifie que tous les matchs sont joues,
-     * puis passe le statut a 'completed'.
-     * L'ELO est applique automatiquement par le trigger trg_auto_elo_on_event_complete.
+     * Clôture un round : vérifie que tous les matchs sont joués,
+     * puis passe le statut à 'completed'.
+     * L'ELO est appliqué automatiquement par le trigger trg_auto_elo_on_event_complete.
      */
-    const closeEvent = async (eventId: string): Promise<{ success: boolean }> => {
+    const closeRound = async (roundId: string): Promise<{ success: boolean }> => {
         setError(null)
 
         try {
-            // 1. Recuperer les groupes de l'event
+            // 1. Récupérer les groupes du round
             const { data: groups, error: groupsError } = await supabase
                 .from("groups")
                 .select("id")
-                .eq("event_id", eventId)
+                .eq("round_id", roundId)
 
             if (groupsError) {
-                handleHookError(groupsError, setError, "useMatches.closeEvent")
+                handleHookError(groupsError, setError, "useMatches.closeRound")
                 return { success: false }
             }
 
             if (!groups || groups.length === 0) {
-                setError("Aucun groupe pour cet événement")
+                setError("Aucun groupe pour ce round")
                 return { success: false }
             }
 
             const groupIds = groups.map(g => g.id)
 
-            // 2. Recuperer tous les matchs et verifier qu'ils sont tous joues
+            // 2. Vérifier que tous les matchs sont joués
             const { data: allMatches, error: matchesError } = await supabase
                 .from("matches")
                 .select("id, winner_id")
                 .in("group_id", groupIds)
 
             if (matchesError) {
-                handleHookError(matchesError, setError, "useMatches.closeEvent")
+                handleHookError(matchesError, setError, "useMatches.closeRound")
                 return { success: false }
             }
 
             if (!allMatches || allMatches.length === 0) {
-                setError("Aucun match dans cet événement")
+                setError("Aucun match dans ce round")
                 return { success: false }
             }
 
@@ -571,20 +569,20 @@ export function useMatches() {
                 return { success: false }
             }
 
-            // 3. Passer le statut a 'completed' (le trigger applique l'ELO automatiquement)
+            // 3. Passer le round en 'completed' (le trigger applique l'ELO automatiquement)
             const { error: statusError } = await supabase
-                .from("events")
+                .from("event_rounds")
                 .update({ status: "completed" })
-                .eq("id", eventId)
+                .eq("id", roundId)
 
             if (statusError) {
-                handleHookError(statusError, setError, "useMatches.closeEvent")
+                handleHookError(statusError, setError, "useMatches.closeRound")
                 return { success: false }
             }
 
             return { success: true }
         } catch (err) {
-            handleHookError(err, setError, "useMatches.closeEvent")
+            handleHookError(err, setError, "useMatches.closeRound")
             return { success: false }
         }
     }
@@ -754,13 +752,13 @@ export function useMatches() {
         playerConstraints,
         loading,
         error,
-        fetchMatchesByEvent,
+        fetchMatchesByRound,
         generateMatches,
-        deleteMatchesByEvent,
+        deleteMatchesByRound,
         updateMatchResults,
         updateMatchSchedule,
         submitPendingScore,
-        applyEventElo,
-        closeEvent,
+        applyRoundElo,
+        closeRound,
     }
 }

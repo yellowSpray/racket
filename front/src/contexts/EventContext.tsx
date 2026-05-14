@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
-import type { Event, EventContextType } from "@/types/event";
+import type { Event, EventContextType, EventRound } from "@/types/event";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { logger } from "@/lib/logger";
 import { withTimeout } from "@/lib/handleHookError";
@@ -7,30 +7,38 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const EventContext = createContext<EventContextType | undefined>(undefined)
 
+/** Renvoie le round actif ou le plus récent d'une série. */
+function resolveCurrentRound(rounds: EventRound[]): EventRound | null {
+    if (!rounds || rounds.length === 0) return null
+    return (
+        rounds.find(r => r.status === 'active') ??
+        [...rounds].sort((a, b) => b.round_number - a.round_number)[0]
+    )
+}
+
 // Provider
 export function EventProvider({children}: {children: ReactNode}) {
 
     const { profile } = useAuth()
-    const [currentEvent, setCurrentEvent] = useState<Event | null>(null)
+    const [currentEvent, setCurrentEventState] = useState<Event | null>(null)
+    const [currentRound, setCurrentRound] = useState<EventRound | null>(null)
     const [events, setEvents] = useState<Event[]>([])
     const [loading, setLoading] = useState<boolean>(true)
     const [error, setError] = useState<string | null>(null)
 
-    // fetch des events
     const fetchEvents = async () => {
         setLoading(true)
         setError(null)
         const endLog = logger.start("EventContext.fetchEvents")
 
         try {
-            // Mettre a jour les statuts avant de charger
             await supabase.rpc("update_event_statuses")
 
             const {data, error: fetchError} = await withTimeout(
                 supabase
                     .from("events")
-                    .select("*, event_players(count)")
-                    .order("start_date", {ascending: false}),
+                    .select("*, event_players(count), event_rounds(*)")
+                    .order("created_at", {ascending: false}),
                 "EventContext.fetchEvents"
             )
 
@@ -40,37 +48,44 @@ export function EventProvider({children}: {children: ReactNode}) {
                 return
             }
 
-            // Filtrer pour ne garder que les events du club de l'utilisateur
-            // (la RLS retourne aussi les events ouverts d'autres clubs)
             const userClubId = profile?.club_id
             const filteredData = userClubId
                 ? (data || []).filter(event => event.club_id === userClubId)
                 : (data || [])
 
-            const eventsWithCount = filteredData.map(event => ({
+            const eventsWithCount: Event[] = filteredData.map(event => ({
                 ...event,
-                player_count: Array.isArray(event.event_players) && event.event_players.length >  0
+                player_count: Array.isArray(event.event_players) && event.event_players.length > 0
                     ? event.event_players[0].count
-                    : 0
+                    : 0,
+                event_rounds: (event.event_rounds || []).sort(
+                    (a: EventRound, b: EventRound) => a.round_number - b.round_number
+                ),
             }))
 
             setEvents(eventsWithCount)
-            logger.info("EventContext", `${eventsWithCount.length} événement(s) chargé(s)`)
-            eventsWithCount.forEach(e => logger.info("EventContext", `  → "${e.event_name}" status=${e.status ?? "undefined"}`))
+            logger.info("EventContext", `${eventsWithCount.length} série(s) chargée(s)`)
 
-            // Restaurer l'event sauvegardé ou sélectionner le plus récent
             if (eventsWithCount.length > 0) {
                 const savedEventId = localStorage.getItem("selectedEventId")
-                const savedEvent = savedEventId ? eventsWithCount.find(e => e.id === savedEventId) : null
+                const savedEvent = savedEventId
+                    ? eventsWithCount.find(e => e.id === savedEventId)
+                    : null
 
+                let selectedEvent: Event
                 if (savedEvent) {
-                    setCurrentEvent(savedEvent)
+                    selectedEvent = savedEvent
                 } else {
-                    // Pas de sauvegarde valide → prioriser l'événement en cours, sinon le plus récent
-                    const defaultEvent = eventsWithCount.find(e => e.status === 'active') ?? eventsWithCount[0]
-                    setCurrentEvent(defaultEvent)
-                    localStorage.setItem("selectedEventId", defaultEvent.id)
+                    // Prioriser la série qui a un round actif, sinon la plus récente
+                    selectedEvent =
+                        eventsWithCount.find(e =>
+                            (e.event_rounds || []).some(r => r.status === 'active')
+                        ) ?? eventsWithCount[0]
+                    localStorage.setItem("selectedEventId", selectedEvent.id)
                 }
+
+                setCurrentEventState(selectedEvent)
+                setCurrentRound(resolveCurrentRound(selectedEvent.event_rounds || []))
             }
 
             endLog()
@@ -82,28 +97,29 @@ export function EventProvider({children}: {children: ReactNode}) {
         }
     }
 
-    // selection d'un event
     const selectEvent = (eventId: string | null) => {
         if(!eventId) {
-            setCurrentEvent(null)
+            setCurrentEventState(null)
+            setCurrentRound(null)
             localStorage.removeItem("selectedEventId")
             return
         }
 
         const event = events.find(e => e.id === eventId)
         if(event) {
-            setCurrentEvent(event)
+            setCurrentEventState(event)
+            setCurrentRound(resolveCurrentRound(event.event_rounds || []))
             localStorage.setItem("selectedEventId", eventId)
         }
     }
 
-    // charger les events dès que le profil est disponible
     useEffect(() => {
         if (profile) fetchEvents()
     }, [profile?.id])
 
     const value: EventContextType = {
         currentEvent,
+        currentRound,
         events,
         loading,
         error,

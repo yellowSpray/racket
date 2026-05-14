@@ -14,8 +14,8 @@ export function useEventCourts() {
      * Charge les terrains d'un événement triés par ordre d'affichage.
      * Si eventId est null, réinitialise la liste.
      */
-    const fetchCourts = useCallback(async (eventId: string | null) => {
-        if (!eventId) {
+    const fetchCourts = useCallback(async (roundId: string | null) => {
+        if (!roundId) {
             setCourts([])
             return
         }
@@ -28,7 +28,7 @@ export function useEventCourts() {
             const { data, error: fetchError } = await supabase
                 .from("event_courts")
                 .select("*")
-                .eq("event_id", eventId)
+                .eq("round_id", roundId)
                 .order("sort_order", { ascending: true })
 
             if (fetchError) {
@@ -51,7 +51,7 @@ export function useEventCourts() {
      * Ajoute un terrain à l'événement.
      * Le sort_order est automatiquement placé en dernière position.
      */
-    const addCourt = async (eventId: string, data: { court_name: string; available_from: string; available_to: string }) => {
+    const addCourt = async (roundId: string, data: { court_name: string; available_from: string; available_to: string }) => {
         setError(null)
 
         // placer le nouveau terrain en fin de liste
@@ -60,7 +60,7 @@ export function useEventCourts() {
         const { data: result, error: insertError } = await supabase
             .from("event_courts")
             .insert({
-                event_id: eventId,
+                round_id: roundId,
                 court_name: data.court_name,
                 available_from: data.available_from,
                 available_to: data.available_to,
@@ -121,12 +121,12 @@ export function useEventCourts() {
      * Crée N terrains nommés "Terrain 1", "Terrain 2", etc.
      * avec les mêmes horaires de disponibilité.
      */
-    const initCourts = async (eventId: string, numberOfCourts: number, availableFrom: string, availableTo: string) => {
+    const initCourts = async (roundId: string, numberOfCourts: number, availableFrom: string, availableTo: string) => {
         setError(null)
 
         // générer les terrains avec un nom et un ordre séquentiel
         const courtsToCreate = Array.from({ length: numberOfCourts }, (_, i) => ({
-            event_id: eventId,
+            round_id: roundId,
             court_name: `Terrain ${i + 1}`,
             available_from: availableFrom,
             available_to: availableTo,
