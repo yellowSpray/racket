@@ -75,24 +75,34 @@ Event Fest automates the entire box lifecycle: import players, calculate ranking
 * "Box precedent" wizard: generate new groups from previous event standings with automatic redistribution by power ranking
 * Previous box preview with promotion/relegation indicators and unregistered player detection
 * Drag & drop group management for proposed groups (with new player highlighting)
-* Admin dashboard with today's matches feed, player movements feed, and unpaid payments feed (grouped by player with +N badges)
+* Admin dashboard with matches feed (MatchesCard), player status feed (PlayersStatusCard), and unpaid payments feed (grouped by player with +N badges) — EventSelector in header
 * PDF export for draw tables
-* Match list view with grid/list toggle
-* Player dashboard with real content (NextMatchCard, ScoreInputCard with pending score submission)
-* Player draws page reusing admin DrawTable with tabs
+* Match list view with grid/list toggle, player search bar, and force-drop button in schedule grid
+* Draw table with bold player names, pre-declared absence indicators, and auto-fill ABS scores
+* Player dashboard with real content (NextMatchCard, ScoreInputCard, EloCard with tier colour, EventInfoCard, EvolutionCard with draggable anecdote timeline)
+* Player draws page reusing admin DrawTable with event selector and club title
+* Player discover page with 12-column layout, country/region toggles from DB
+* Player profile page with availability (arrival/departure per event + absences calendar) and notification toggles
 * Cross-club visitor system (registration, open_to_visitors toggle, visitor fees, automatic payment creation)
+* Smart Excel import with fuzzy column detection, preview table, downloadable template — onboarding wizard for new clubs (3 steps: welcome, import, create event) with auto-redirect
+* Template-based date assignment in match scheduler (SCHEDULE_TEMPLATES + mapRoundsToDatesByTemplate)
+* SQL triggers for automatic active/inactive status sync via event_players
+* Responsive draw grid with custom 3xl breakpoint (1800px)
+* Portal-based header slot system — each page pushes its content into the global header
+* Pulsing status indicators per event state (green animated for active, yellow for upcoming, grey for completed)
 * Toast notifications via Sonner (replacing inline error messages)
 * Centralized error handling with useErrorHandler integrated across all components
 * JSDoc documentation on all hooks and utility functions
 * Default profile pictures for squash and tennis players
 * SQL seed scripts for players, events, and random match scores
-* Vitest + TDD test suite (911 tests across 77 files)
+* Vitest + TDD test suite (988+ tests across 79+ files)
 
 ### In Progress (MVP — Phase 1)
 
-* Smart Excel import with auto-detection and column mapping
-* Player rankings and progression page (shell exists)
-* Player messages and settings pages
+* Mobile-first responsive layout for all `/user` pages
+* Responsive admin layout for small desktop screens (1280px and below)
+* Player rankings page with dedicated content (shell exists, dashboard covers MVP need)
+* Player messages page
 
 ### Planned (Phase 2-4)
 
@@ -144,24 +154,31 @@ Event-Fest/
 - [x] Event settings and configuration (scoring, promo, courts, event defaults, visitor fees)
 - [x] Group / draw management with distribution choices
 - [x] Multi-constraint scheduling engine with DnD and conflict detection
-- [x] Vitest + TDD setup (911 tests across 77 files)
+- [x] Vitest + TDD setup (988+ tests across 79+ files)
 - [x] Configurable scoring engine (score-to-points mapping)
 - [x] Configurable promotion/relegation rules
 - [x] Ranking engine (points, set diff, head-to-head)
 - [x] Promotion/relegation engine
 - [x] Elo rating engine (auto-apply via DB trigger)
 - [x] "Box precedent" wizard (generate groups from previous event)
-- [x] One-click box creation wizard (complete workflow)
-- [x] Admin dashboard (today's matches, player movements, unpaid payments grouped by player)
+- [x] One-click box creation wizard (5-step: config, calendar, registrations, groups, schedule)
+- [x] Template-based date assignment in match scheduler
+- [x] Admin dashboard refactored (MatchesCard, PlayersStatusCard, EventSelector in header)
 - [x] PDF export for draw tables
-- [x] Player dashboard with NextMatchCard and ScoreInputCard
+- [x] Player dashboard with NextMatchCard, ScoreInputCard, EloCard, EventInfoCard, EvolutionCard
+- [x] Player profile with availability and notifications
+- [x] Player discover page
 - [x] Club members management and event defaults settings
 - [x] Cross-club visitor system
 - [x] Auto-registration and auto-renewal of active players
+- [x] SQL triggers for active/inactive status sync via event_players
 - [x] 3-state event lifecycle with pg_cron transitions
 - [x] Toast notifications and centralized error handling
-- [ ] Smart Excel import
-- [ ] Player rankings / messages / settings pages (content)
+- [x] Portal-based header slot system
+- [x] Smart Excel import with onboarding wizard (fuzzy column mapping, preview, template)
+- [ ] Mobile-first responsive layout for player pages
+- [ ] Responsive admin layout for small desktop screens
+- [ ] Player rankings / messages pages (content)
 
 ### Phase 2 — Growth
 - [x] Player-entered results (pending score submission)
