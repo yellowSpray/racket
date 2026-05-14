@@ -1,6 +1,6 @@
 import { EventsSkeleton } from "@/components/shared/skeletons/SettingsSkeleton"
 import { useEvent } from "@/contexts/EventContext"
-import type { Event } from "@/types/event"
+import type { Event, EventRound } from "@/types/event"
 import type { ClubDefaults } from "./EventDialog"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -27,8 +27,8 @@ export function EventsManager({ clubDefaults }: EventsManagerProps) {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false)
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
     
-    const getEventStatus = (event: Event) => {
-        switch (event.status) {
+    const getEventStatus = (round: EventRound | undefined) => {
+        switch (round?.status) {
             case "completed":
                 return { label: "Terminé", variant: "default" as const }
             case "upcoming":
@@ -37,6 +37,11 @@ export function EventsManager({ clubDefaults }: EventsManagerProps) {
             default:
                 return { label: "En cours", variant: "active" as const }
         }
+    }
+
+    const resolveRound = (event: Event): EventRound | undefined => {
+        const rounds = event.event_rounds ?? []
+        return rounds.find(r => r.status === "active") ?? rounds[rounds.length - 1]
     }
 
     // formater les dates
@@ -122,21 +127,22 @@ export function EventsManager({ clubDefaults }: EventsManagerProps) {
                             </TableHeader>
                             <TableBody>
                                 {events.map((event) => {
-                                    const status = getEventStatus(event)
+                                    const round = resolveRound(event)
+                                    const status = getEventStatus(round)
                                     const playerCount = event.player_count || 0
                                     return (
                                         <TableRow key={event.id} className="border-b border-gray-200 last:border-b-0">
                                             <TableCell className="font-medium text-center">
                                                 {event.event_name}
                                             </TableCell>
-                                            <TableCell className="text-center">{formatDate(event.start_date)}</TableCell>
-                                            <TableCell className="text-center">{formatDate(event.end_date)}</TableCell>
+                                            <TableCell className="text-center">{round?.start_date ? formatDate(round.start_date) : <span className="text-gray-400">-</span>}</TableCell>
+                                            <TableCell className="text-center">{round?.end_date ? formatDate(round.end_date) : <span className="text-gray-400">-</span>}</TableCell>
                                             <TableCell className="text-center">
-                                                {event.deadline ? formatDate(event.deadline) : <span className="text-gray-400">-</span>}
+                                                {round?.deadline ? formatDate(round.deadline) : <span className="text-gray-400">-</span>}
                                             </TableCell>
-                                            <TableCell className="text-center">{formatTime(event.start_time)}</TableCell>
-                                            <TableCell className="text-center">{formatTime(event.end_time)}</TableCell>
-                                            <TableCell className="text-center">{event.number_of_courts}</TableCell>
+                                            <TableCell className="text-center">{formatTime(round?.start_time)}</TableCell>
+                                            <TableCell className="text-center">{formatTime(round?.end_time)}</TableCell>
+                                            <TableCell className="text-center">{round?.number_of_courts ?? <span className="text-gray-400">-</span>}</TableCell>
                                             <TableCell className="text-center">{playerCount}</TableCell>
                                             <TableCell className="text-center">
                                                 <Badge variant={status.variant}>{status.label}</Badge>

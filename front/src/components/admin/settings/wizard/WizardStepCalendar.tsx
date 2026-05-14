@@ -1,4 +1,4 @@
-import type { Event } from "@/types/event"
+import type { Event, EventRound } from "@/types/event"
 import type { WizardConfigData } from "./WizardStepConfig"
 import { useState, useEffect, useMemo } from "react"
 import { supabase } from "@/lib/supabaseClient"
@@ -17,12 +17,13 @@ import { MultiDateCalendar } from "@/components/ui/multi-date-calendar"
 
 interface WizardStepCalendarProps {
     event: Event | null
+    round: EventRound | null
     configData: WizardConfigData
-    onSave: (savedEvent: Event) => void
+    onSave: (savedEvent: Event, savedRound: EventRound) => void
     onPrevious: () => void
 }
 
-export function WizardStepCalendar({ event, configData, onSave, onPrevious }: WizardStepCalendarProps) {
+export function WizardStepCalendar({ event, round, configData, onSave, onPrevious }: WizardStepCalendarProps) {
     const { profile } = useAuth()
     const [loading, setLoading] = useState(false)
     const { handleError, clearError } = useErrorHandler()
@@ -31,11 +32,11 @@ export function WizardStepCalendar({ event, configData, onSave, onPrevious }: Wi
     const [deadline, setDeadline] = useState("")
 
     useEffect(() => {
-        if (event) {
-            setPlayingDates(event.playing_dates || [])
-            setDeadline(event.deadline || "")
+        if (round) {
+            setPlayingDates(round.playing_dates || [])
+            setDeadline(round.deadline || "")
         }
-    }, [event])
+    }, [round])
 
     const sortedDates = useMemo(() => [...playingDates].sort(), [playingDates])
     const startDate = sortedDates.length > 0 ? sortedDates[0] : ""
@@ -71,45 +72,80 @@ export function WizardStepCalendar({ event, configData, onSave, onPrevious }: Wi
         }
 
         try {
-            const { estimated_match_duration: durationMinutes, playing_dates: dates, deadline: deadlineValue, ...restData } = validation.data
-            const eventData = {
-                club_id: profile?.club_id,
-                ...restData,
+            const { estimated_match_duration: durationMinutes, playing_dates: dates, deadline: deadlineValue, start_date, end_date, start_time, end_time, number_of_courts, ...eventOnlyData } = validation.data
+            const roundData = {
+                start_date,
+                end_date,
+                start_time: start_time ?? null,
+                end_time: end_time ?? null,
+                number_of_courts,
                 estimated_match_duration: durationMinutes ? minutesToInterval(durationMinutes) : null,
                 playing_dates: dates && dates.length > 0 ? dates : null,
                 deadline: deadlineValue || null,
             }
 
+            let savedEvent: Event
+            let savedRound: EventRound
+
             if (event) {
+                // Update event name
                 const { data: updated, error: updateError } = await supabase
                     .from("events")
-                    .update(eventData)
+                    .update({ event_name: eventOnlyData.event_name, description: eventOnlyData.description })
                     .eq("id", event.id)
                     .select()
                     .single()
 
-                if (updateError) {
-                    handleError(updateError)
-                    return
+                if (updateError) { handleError(updateError); return }
+                savedEvent = updated
+
+                // Update current round
+                const currentRoundId = round?.id
+                if (currentRoundId) {
+                    const { data: updatedRound, error: roundError } = await supabase
+                        .from("event_rounds")
+                        .update(roundData)
+                        .eq("id", currentRoundId)
+                        .select()
+                        .single()
+
+                    if (roundError) { handleError(roundError); return }
+                    savedRound = updatedRound
+                } else {
+                    const { data: createdRound, error: roundError } = await supabase
+                        .from("event_rounds")
+                        .insert([{ event_id: event.id, round_number: 1, ...roundData }])
+                        .select()
+                        .single()
+
+                    if (roundError) { handleError(roundError); return }
+                    savedRound = createdRound
                 }
-                if (updated) {
-                    toast.success("Événement modifié")
-                    onSave(updated)
-                }
+                toast.success("Événement modifié")
             } else {
+                // Create new event (series)
                 const { data: created, error: insertError } = await supabase
                     .from("events")
-                    .insert([eventData])
+                    .insert([{ club_id: profile?.club_id, event_name: eventOnlyData.event_name, description: eventOnlyData.description }])
                     .select()
                     .single()
 
-                if (insertError) {
-                    handleError(insertError)
-                    return
-                }
+                if (insertError) { handleError(insertError); return }
+                savedEvent = created
+
+                // Create round 1
+                const { data: createdRound, error: roundError } = await supabase
+                    .from("event_rounds")
+                    .insert([{ event_id: created.id, round_number: 1, status: "active", ...roundData }])
+                    .select()
+                    .single()
+
+                if (roundError) { handleError(roundError); return }
+                savedRound = createdRound
                 toast.success("Événement créé")
-                onSave(created)
             }
+
+            onSave(savedEvent, savedRound)
         } catch (err) {
             handleError(err)
         } finally {

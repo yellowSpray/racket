@@ -1,4 +1,4 @@
-import type { Event } from "@/types/event"
+import type { Event, EventRound } from "@/types/event"
 import { useEffect, useState } from "react"
 import { intervalToMinutes, formatTimeForInput } from "@/lib/utils"
 import type { ClubDefaults } from "../EventDialog"
@@ -16,12 +16,13 @@ export interface WizardConfigData {
 
 interface WizardStepConfigProps {
     event: Event | null
+    round: EventRound | null
     configData: WizardConfigData | null
     onNext: (data: WizardConfigData) => void
     clubDefaults?: ClubDefaults
 }
 
-export function WizardStepConfig({ event, configData, onNext, clubDefaults }: WizardStepConfigProps) {
+export function WizardStepConfig({ event, round, configData, onNext, clubDefaults }: WizardStepConfigProps) {
     const [eventName, setEventName] = useState("")
     const [startTime, setStartTime] = useState(clubDefaults?.startTime ?? "19:00")
     const [endTime, setEndTime] = useState(clubDefaults?.endTime ?? "23:00")
@@ -38,10 +39,12 @@ export function WizardStepConfig({ event, configData, onNext, clubDefaults }: Wi
             setMatchDuration(configData.matchDuration)
         } else if (event) {
             setEventName(event.event_name)
-            setStartTime(formatTimeForInput(event.start_time) || "19:00")
-            setEndTime(formatTimeForInput(event.end_time) || "23:00")
-            setNumberOfCourts(event.number_of_courts)
-            setMatchDuration(intervalToMinutes(event.estimated_match_duration))
+            if (round) {
+                setStartTime(formatTimeForInput(round.start_time) || "19:00")
+                setEndTime(formatTimeForInput(round.end_time) || "23:00")
+                setNumberOfCourts(round.number_of_courts)
+                setMatchDuration(intervalToMinutes(round.estimated_match_duration))
+            }
         }
     }, [event, configData])
 

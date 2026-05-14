@@ -1,4 +1,4 @@
-import type { Event } from "@/types/event"
+import type { EventRound } from "@/types/event"
 import type { Group } from "@/types/draw"
 import type { Match } from "@/types/match"
 import { useMemo, useEffect } from "react"
@@ -6,15 +6,15 @@ import { generateGroupRounds, calculateDates, SCHEDULE_TEMPLATES, optimizePlayer
 import { DrawTable } from "@/components/admin/draws/DrawTable"
 
 interface GroupRoundPreviewProps {
-    event: Event
+    round: EventRound
     groups: Group[]
     playerAbsences?: Map<string, string[]>
 }
 
-export function GroupRoundPreview({ event, groups, playerAbsences }: GroupRoundPreviewProps) {
+export function GroupRoundPreview({ round, groups, playerAbsences }: GroupRoundPreviewProps) {
     const dates = useMemo(
-        () => calculateDates(event.start_date, event.end_date, event.playing_dates),
-        [event.start_date, event.end_date, event.playing_dates]
+        () => calculateDates(round.start_date, round.end_date, round.playing_dates),
+        [round.start_date, round.end_date, round.playing_dates]
     )
 
     useEffect(() => {

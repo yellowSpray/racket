@@ -1,4 +1,4 @@
-import type { Event } from "@/types/event"
+import type { Event, EventRound } from "@/types/event"
 import type { Group } from "@/types/draw"
 import type { Match } from "@/types/match"
 import { useMatches } from "@/hooks/useMatches"
@@ -24,6 +24,7 @@ import { SparklesIcon, Delete02Icon, Calendar03Icon } from "hugeicons-react"
 
 interface WizardStepMatchesProps {
     event: Event
+    round: EventRound
     groups: Group[]
     matches: Match[]
     onMatchesChanged: (matches: Match[]) => void
@@ -31,22 +32,22 @@ interface WizardStepMatchesProps {
     onFinish: () => void
 }
 
-export function WizardStepMatches({ event, groups, matches, onMatchesChanged, onPrevious, onFinish }: WizardStepMatchesProps) {
-    const { generateMatches, deleteMatchesByEvent, unplacedMatches, playerConstraints, updateMatchSchedule } = useMatches()
+export function WizardStepMatches({ event, round, groups, matches, onMatchesChanged, onPrevious, onFinish }: WizardStepMatchesProps) {
+    const { generateMatches, deleteMatchesByRound, unplacedMatches, playerConstraints, updateMatchSchedule } = useMatches()
     const [generating, setGenerating] = useState(false)
     const [confirmOpen, setConfirmOpen] = useState(false)
     const [confirmAction, setConfirmAction] = useState<"generate" | "delete">("generate")
     const { handleError, clearError } = useErrorHandler()
 
     const matchCount = totalMatchCount(groups)
-    const durationMin = intervalToMinutes(event.estimated_match_duration)
-    const dates = calculateDates(event.start_date, event.end_date, event.playing_dates)
+    const durationMin = intervalToMinutes(round.estimated_match_duration)
+    const dates = calculateDates(round.start_date, round.end_date, round.playing_dates)
     const timeSlots = calculateTimeSlots(
-        event.start_time || "19:00",
-        event.end_time || "23:00",
+        round.start_time || "19:00",
+        round.end_time || "23:00",
         durationMin
     )
-    const slotTotal = totalSlotCount(dates.length, timeSlots.length, event.number_of_courts)
+    const slotTotal = totalSlotCount(dates.length, timeSlots.length, round.number_of_courts)
 
     // Diagnostic des matchs non-placés
     const diagnostic = useMemo(() => {
@@ -56,9 +57,9 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
             placedMatches: matches.length,
             dates,
             timeSlotsPerDay: timeSlots.length,
-            courts: event.number_of_courts,
+            courts: round.number_of_courts,
         })
-    }, [unplacedMatches, matchCount, matches.length, dates, timeSlots.length, event.number_of_courts])
+    }, [unplacedMatches, matchCount, matches.length, dates, timeSlots.length, round.number_of_courts])
 
     // DnD handler
     const handleMatchDrop = useCallback(async (matchId: string, updates: { match_date: string; match_time: string; court_number: string }) => {
@@ -77,7 +78,7 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
     if (!hasPlayers) missingRequirements.push("Au moins 2 joueurs dans un groupe")
     if (dates.length === 0) missingRequirements.push("Dates de jeu configurées")
     if (timeSlots.length === 0) missingRequirements.push("Créneaux horaires (heure début/fin + durée match)")
-    if (!event.number_of_courts || event.number_of_courts < 1) missingRequirements.push("Au moins 1 terrain")
+    if (!round.number_of_courts || round.number_of_courts < 1) missingRequirements.push("Au moins 1 terrain")
     if (slotTotal < matchCount && slotTotal > 0 && matchCount > 0) missingRequirements.push(`Pas assez de créneaux : ${slotTotal} disponibles pour ${matchCount} matchs`)
     const canGenerate = missingRequirements.length === 0
 
@@ -98,9 +99,9 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
         setWarning(null)
         try {
             if (hasMatches) {
-                await deleteMatchesByEvent(event.id)
+                await deleteMatchesByRound(round.id)
             }
-            const result = await generateMatches(event, groups)
+            const result = await generateMatches(round, event, groups)
 
             if (!result) {
                 handleError(new Error("Impossible de générer les matchs. Vérifiez la configuration des créneaux et terrains."))
@@ -115,7 +116,7 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
             }
 
             // Re-fetch les matchs pour obtenir les donnees completes
-            const updatedMatches = await fetchMatchesForEvent(event.id)
+            const updatedMatches = await fetchMatchesForRound(round.id)
             onMatchesChanged(updatedMatches)
         } catch (err) {
             handleError(err)
@@ -133,7 +134,7 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
         setGenerating(true)
         clearError()
         try {
-            await deleteMatchesByEvent(event.id)
+            await deleteMatchesByRound(round.id)
             onMatchesChanged([])
         } catch (err) {
             handleError(err)
@@ -181,7 +182,7 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
                     <h3 className="mt-4 text-lg font-semibold">Aucun match généré</h3>
                     <p className="text-gray-500 mt-2">
                         {matchCount} matchs à programmer sur {slotTotal} créneaux disponibles
-                        ({dates.length} jour{dates.length > 1 ? "s" : ""} × {timeSlots.length} créneaux × {event.number_of_courts} terrain{event.number_of_courts > 1 ? "s" : ""})
+                        ({dates.length} jour{dates.length > 1 ? "s" : ""} × {timeSlots.length} créneaux × {round.number_of_courts} terrain{round.number_of_courts > 1 ? "s" : ""})
                     </p>
                     <Button className="mt-4" size="lg" onClick={handleGenerate} disabled={generating}>
                         <SparklesIcon className="mr-2 h-4 w-4" />
@@ -254,12 +255,11 @@ export function WizardStepMatches({ event, groups, matches, onMatchesChanged, on
 // Helper pour re-fetch les matchs apres generation
 import { supabase } from "@/lib/supabaseClient"
 
-async function fetchMatchesForEvent(eventId: string): Promise<Match[]> {
-    // D'abord recuperer les group IDs
+async function fetchMatchesForRound(roundId: string): Promise<Match[]> {
     const { data: groupsData } = await supabase
         .from("groups")
         .select("id")
-        .eq("event_id", eventId)
+        .eq("round_id", roundId)
 
     if (!groupsData || groupsData.length === 0) return []
 
@@ -271,7 +271,7 @@ async function fetchMatchesForEvent(eventId: string): Promise<Match[]> {
             *,
             player1:profiles!matches_player1_id_fkey(id, first_name, last_name),
             player2:profiles!matches_player2_id_fkey(id, first_name, last_name),
-            group:groups(id, group_name, event_id)
+            group:groups(id, group_name, round_id)
         `)
         .in("group_id", groupIds)
         .order("match_date")

@@ -22,7 +22,7 @@ import { CourtsSkeleton } from "@/components/shared/skeletons/SettingsSkeleton"
 
 export function CourtsManager() {
 
-    const { currentEvent } = useEvent()
+    const { currentEvent, currentRound } = useEvent()
     const { courts, loading, error, fetchCourts, addCourt, updateCourt, removeCourt, initCourts } = useEventCourts()
 
     const [showAddForm, setShowAddForm] = useState(false)
@@ -33,8 +33,8 @@ export function CourtsManager() {
     const [saving, setSaving] = useState(false)
 
     useEffect(() => {
-        fetchCourts(currentEvent?.id ?? null)
-    }, [currentEvent?.id, fetchCourts])
+        fetchCourts(currentRound?.id ?? null)
+    }, [currentRound?.id, fetchCourts])
 
     if (!currentEvent) {
         return (
@@ -58,7 +58,7 @@ export function CourtsManager() {
         }
 
         setSaving(true)
-        const success = await addCourt(currentEvent.id, result.data)
+        const success = await addCourt(currentRound?.id ?? currentEvent.id, result.data)
         setSaving(false)
 
         if (success) {
@@ -78,17 +78,17 @@ export function CourtsManager() {
     }
 
     const handleInitCourts = async () => {
-        const from = currentEvent.start_time?.match(/(\d{2}:\d{2})/)?.[1] || "19:00"
-        const to = currentEvent.end_time?.match(/(\d{2}:\d{2})/)?.[1] || "23:00"
-        await initCourts(currentEvent.id, currentEvent.number_of_courts, from, to)
+        const from = currentRound?.start_time?.match(/(\d{2}:\d{2})/)?.[1] || "19:00"
+        const to = currentRound?.end_time?.match(/(\d{2}:\d{2})/)?.[1] || "23:00"
+        await initCourts(currentEvent.id, currentRound?.number_of_courts ?? 1, from, to)
     }
 
     const calculateSlots = (from: string, to: string): number => {
-        if (!currentEvent.estimated_match_duration) return 0
+        if (!currentRound?.estimated_match_duration) return 0
         const [fH, fM] = from.split(":").map(Number)
         const [tH, tM] = to.split(":").map(Number)
         const totalMinutes = (tH * 60 + tM) - (fH * 60 + fM)
-        const match = currentEvent.estimated_match_duration.match(/(\d{2}):(\d{2})/)
+        const match = currentRound.estimated_match_duration.match(/(\d{2}):(\d{2})/)
         if (!match) return 0
         const durationMinutes = parseInt(match[1], 10) * 60 + parseInt(match[2], 10)
         if (durationMinutes <= 0) return 0
@@ -114,7 +114,7 @@ export function CourtsManager() {
                         <p className="mt-3 text-gray-500">Aucun terrain configuré</p>
                         <div className="flex gap-2 justify-center mt-4">
                             <Button onClick={handleInitCourts} variant="outline">
-                                Initialiser {currentEvent.number_of_courts} terrain{currentEvent.number_of_courts > 1 ? 's' : ''}
+                                Initialiser {currentRound?.number_of_courts ?? 1} terrain{(currentRound?.number_of_courts ?? 1) > 1 ? 's' : ''}
                             </Button>
                             <Button onClick={() => setShowAddForm(true)}>
                                 <PlusSignIcon className="mr-2 h-4 w-4" /> Ajouter manuellement

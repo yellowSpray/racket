@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabaseClient"
-import type { Event } from "@/types/event"
+import type { Event, EventRound } from "@/types/event"
 import React, { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { eventSchema } from "@/lib/schemas"
@@ -32,11 +32,12 @@ interface EventDialogProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     event: Event | null
+    round?: EventRound | null
     onSuccess: () => void
     clubDefaults?: ClubDefaults
 }
 
-export function EventDialog({ open, onOpenChange, event, onSuccess, clubDefaults}: EventDialogProps) {
+export function EventDialog({ open, onOpenChange, event, round, onSuccess, clubDefaults}: EventDialogProps) {
     const { profile } = useAuth()
     const [loading, setLoading] = useState<boolean>(false)
     const { handleError, clearError, getFieldError } = useErrorHandler()
@@ -54,11 +55,11 @@ export function EventDialog({ open, onOpenChange, event, onSuccess, clubDefaults
         if(open){
             if(event){
                 setEventName(event.event_name)
-                setStartTime(event.start_time || "19:00")
-                setEndTime(event.end_time || "23:00")
-                setNumberOfCourts(event.number_of_courts)
-                setMatchDuration(intervalToMinutes(event.estimated_match_duration))
-                setPlayingDates(event.playing_dates || [])
+                setStartTime(round?.start_time || "19:00")
+                setEndTime(round?.end_time || "23:00")
+                setNumberOfCourts(round?.number_of_courts ?? (clubDefaults?.numberOfCourts ?? 4))
+                setMatchDuration(intervalToMinutes(round?.estimated_match_duration))
+                setPlayingDates(round?.playing_dates || [])
             } else {
                 setEventName("")
                 setStartTime(clubDefaults?.startTime ?? "19:00")

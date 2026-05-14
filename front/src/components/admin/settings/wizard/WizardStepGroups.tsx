@@ -1,5 +1,5 @@
 import { GroupRoundPreview } from "./GroupRoundPreview"
-import type { Event } from "@/types/event"
+import type { Event, EventRound } from "@/types/event"
 import { transformGroups, type Group, type GroupPlayer } from "@/types/draw"
 import type { GroupStandings, PromotionResult } from "@/types/ranking"
 import { useGroups } from "@/hooks/useGroups"
@@ -29,6 +29,7 @@ import { InformationCircleIcon, SparklesIcon, Settings01Icon, ArrowLeftRightIcon
 
 interface WizardStepGroupsProps {
     event: Event
+    round: EventRound
     groups: Group[]
     eventPlayerIds: Set<string>
     onGroupsChanged: (groups: Group[]) => void
@@ -86,7 +87,7 @@ function StaticGroupColumn({ title, titleExtra, groups, maxRows, renderPlayer, s
     )
 }
 
-export function WizardStepGroups({ event, groups, eventPlayerIds, onGroupsChanged, onNext, onPrevious }: WizardStepGroupsProps) {
+export function WizardStepGroups({ event, round, groups, eventPlayerIds, onGroupsChanged, onNext, onPrevious }: WizardStepGroupsProps) {
     const { createGroups, assignPlayersToGroup, loading: groupsLoading } = useGroups()
     const { players } = usePlayers()
     const { profile } = useAuth()
@@ -269,7 +270,7 @@ export function WizardStepGroups({ event, groups, eventPlayerIds, onGroupsChange
         // Répartir équitablement sur targetGroupCount groupes
         const perGroup = Math.floor(orderedPlayers.length / targetGroupCount)
         const remainder = orderedPlayers.length % targetGroupCount
-        const eventId = autoProposedGroups[0]?.event_id ?? event.id
+        const roundId = autoProposedGroups[0]?.round_id ?? round.id
         const result: Group[] = []
         let playerIdx = 0
 
@@ -277,7 +278,7 @@ export function WizardStepGroups({ event, groups, eventPlayerIds, onGroupsChange
             const slotCount = i < remainder ? perGroup + 1 : perGroup
             result.push({
                 id: `proposed-new-${i}`,
-                event_id: eventId,
+                round_id: roundId,
                 group_name: `Box ${i + 1}`,
                 max_players: Math.max(maxPlayersPerGroup, slotCount),
                 created_at: "",
@@ -341,7 +342,7 @@ export function WizardStepGroups({ event, groups, eventPlayerIds, onGroupsChange
 
         try {
             const groupsToCreate = proposedLocalGroups.map(g => ({
-                event_id: event.id,
+                round_id: round.id,
                 group_name: g.group_name,
                 max_players: g.max_players,
             }))
@@ -357,7 +358,7 @@ export function WizardStepGroups({ event, groups, eventPlayerIds, onGroupsChange
             const prevGroupsByName = new Map(createdGroupsData.map(g => [g.group_name as string, g.id as string]))
 
             // Insert directly (bypass useGroups.assignPlayersToGroup to avoid unnecessary
-            // fetchGroupsByEvent calls that would re-render with DB order and break player ordering)
+            // fetchGroupsByRound calls that would re-render with DB order and break player ordering)
             await Promise.all(proposedLocalGroups.map(async (group) => {
                 const groupId = prevGroupsByName.get(group.group_name)
                 if (!groupId) return
@@ -373,7 +374,7 @@ export function WizardStepGroups({ event, groups, eventPlayerIds, onGroupsChange
             const transformed = proposedLocalGroups.map(group => ({
                 ...group,
                 id: prevGroupsByName.get(group.group_name) ?? group.id,
-                event_id: event.id,
+                round_id: round.id,
             }))
             onGroupsChanged(transformed)
         } catch (err) {
@@ -389,11 +390,11 @@ export function WizardStepGroups({ event, groups, eventPlayerIds, onGroupsChange
         setCreating(true)
 
         try {
-            await createGroups(event.id, numberOfGroups, maxPlayersPerGroup)
+            await createGroups(round.id, numberOfGroups, maxPlayersPerGroup)
             const { data } = await supabase
                 .from("groups")
                 .select("*, group_players(profile_id, profiles(id, first_name, last_name, phone, power_ranking))")
-                .eq("event_id", event.id)
+                .eq("round_id", round.id)
                 .order("group_name")
 
             if (data) {
@@ -422,7 +423,7 @@ export function WizardStepGroups({ event, groups, eventPlayerIds, onGroupsChange
 
         try {
             const groupsToCreate = selectedDistribution.distribution.map((count, index) => ({
-                event_id: event.id,
+                round_id: round.id,
                 group_name: `Box ${index + 1}`,
                 max_players: Math.max(maxPlayersPerGroup, count),
             }))
@@ -451,13 +452,13 @@ export function WizardStepGroups({ event, groups, eventPlayerIds, onGroupsChange
             await Promise.all(distributedGroups.map((players, i) => {
                 const groupId = autoGroupsByName.get(`Box ${i + 1}`) ?? createdGroupsData[i].id
                 const playerIds = players.map(p => p.id)
-                return playerIds.length > 0 ? assignPlayersToGroup(groupId, playerIds, event.id) : Promise.resolve()
+                return playerIds.length > 0 ? assignPlayersToGroup(groupId, playerIds, round.id) : Promise.resolve()
             }))
 
             const { data } = await supabase
                 .from("groups")
                 .select("*, group_players(profile_id, profiles(id, first_name, last_name, phone, power_ranking))")
-                .eq("event_id", event.id)
+                .eq("round_id", round.id)
                 .order("group_name")
 
             if (data) {
@@ -476,7 +477,7 @@ export function WizardStepGroups({ event, groups, eventPlayerIds, onGroupsChange
             const { error: deleteError } = await supabase
                 .from("groups")
                 .delete()
-                .eq("event_id", event.id)
+                .eq("round_id", round.id)
 
             if (deleteError) throw new Error(deleteError.message)
             onGroupsChanged([])
@@ -810,7 +811,7 @@ export function WizardStepGroups({ event, groups, eventPlayerIds, onGroupsChange
                 /* Mode gestion drag-and-drop */
                 <GroupDndManager
                     initialGroups={groups}
-                    eventId={event.id}
+                    eventId={round.id}
                     onFinish={(updatedGroups) => {
                         onGroupsChanged(updatedGroups)
                         setManagementMode(false)
@@ -845,7 +846,7 @@ export function WizardStepGroups({ event, groups, eventPlayerIds, onGroupsChange
                         </div>
                     </div>
 
-                    <GroupRoundPreview event={event} groups={groups} playerAbsences={playerAbsences} />
+                    <GroupRoundPreview round={round} groups={groups} playerAbsences={playerAbsences} />
                 </div>
             )}
 

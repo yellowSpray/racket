@@ -1,4 +1,4 @@
-import type { Event } from "@/types/event"
+import type { Event, EventRound } from "@/types/event"
 import type { ClubDefaults } from "./EventDialog"
 import { transformGroups, type Group } from "@/types/draw"
 import type { Match } from "@/types/match"
@@ -41,6 +41,7 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
     const [activeStep, setActiveStep] = useState(1)
     const [configData, setConfigData] = useState<WizardConfigData | null>(null)
     const [wizardEvent, setWizardEvent] = useState<Event | null>(null)
+    const [wizardRound, setWizardRound] = useState<EventRound | null>(null)
     const [registeredPlayerIds, setRegisteredPlayerIds] = useState<Set<string>>(new Set())
     const [groups, setGroups] = useState<Group[]>([])
     const [matches, setMatches] = useState<Match[]>([])
@@ -54,7 +55,7 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
     const step4Completed = groups.length > 0 && groups.some(g => (g.players || []).length > 0)
     const step5Completed = matches.length > 0
 
-    const loadEventData = useCallback(async (eventId: string) => {
+    const loadEventData = useCallback(async (eventId: string, roundId: string) => {
         // Charger les inscriptions
         const { data: registrationsData } = await supabase
             .from("event_players")
@@ -69,7 +70,7 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
         const { data: groupsData } = await supabase
             .from("groups")
             .select("*, group_players(profile_id, profiles(id, first_name, last_name, phone, power_ranking))")
-            .eq("event_id", eventId)
+            .eq("round_id", roundId)
             .order("group_name")
 
         if (groupsData) {
@@ -85,7 +86,7 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
                         *,
                         player1:profiles!matches_player1_id_fkey(id, first_name, last_name),
                         player2:profiles!matches_player2_id_fkey(id, first_name, last_name),
-                        group:groups(id, group_name, event_id)
+                        group:groups(id, group_name, round_id)
                     `)
                     .in("group_id", groupIds)
                     .order("match_date")
@@ -103,19 +104,23 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
         if (!open) return
 
         if (event) {
+            const rounds = event.event_rounds ?? []
+            const currentRound = rounds.find(r => r.status === "active") ?? rounds[rounds.length - 1] ?? null
             setWizardEvent(event)
+            setWizardRound(currentRound)
             setConfigData({
                 eventName: event.event_name,
-                startTime: formatTimeForInput(event.start_time) || "19:00",
-                endTime: formatTimeForInput(event.end_time) || "23:00",
-                numberOfCourts: event.number_of_courts,
-                matchDuration: intervalToMinutes(event.estimated_match_duration),
+                startTime: formatTimeForInput(currentRound?.start_time) || "19:00",
+                endTime: formatTimeForInput(currentRound?.end_time) || "23:00",
+                numberOfCourts: currentRound?.number_of_courts ?? 1,
+                matchDuration: intervalToMinutes(currentRound?.estimated_match_duration),
             })
             setActiveStep(1)
-            loadEventData(event.id)
+            if (currentRound) loadEventData(event.id, currentRound.id)
         } else {
             setConfigData(null)
             setWizardEvent(null)
+            setWizardRound(null)
             setRegisteredPlayerIds(new Set())
             setGroups([])
             setMatches([])
@@ -145,8 +150,9 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
         setActiveStep(2)
     }
 
-    const handleCalendarSave = (savedEvent: Event) => {
+    const handleCalendarSave = (savedEvent: Event, savedRound: EventRound) => {
         setWizardEvent(savedEvent)
+        setWizardRound(savedRound)
         setActiveStep(3)
     }
 
@@ -254,6 +260,7 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
                     <StepperContent value={1}>
                         <WizardStepConfig
                             event={wizardEvent}
+                            round={wizardRound}
                             configData={configData}
                             onNext={handleConfigNext}
                             clubDefaults={clubDefaults}
@@ -264,6 +271,7 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
                         {configData && (
                             <WizardStepCalendar
                                 event={wizardEvent}
+                                round={wizardRound}
                                 configData={configData}
                                 onSave={handleCalendarSave}
                                 onPrevious={() => setActiveStep(1)}
@@ -283,9 +291,10 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
                     </StepperContent>
 
                     <StepperContent value={4}>
-                        {wizardEvent && (
+                        {wizardEvent && wizardRound && (
                             <WizardStepGroups
                                 event={wizardEvent}
+                                round={wizardRound}
                                 groups={groups}
                                 eventPlayerIds={registeredPlayerIds}
                                 onGroupsChanged={handleGroupsChanged}
@@ -296,9 +305,10 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
                     </StepperContent>
 
                     <StepperContent value={5}>
-                        {wizardEvent && (
+                        {wizardEvent && wizardRound && (
                             <WizardStepMatches
                                 event={wizardEvent}
+                                round={wizardRound}
                                 groups={groups}
                                 matches={matches}
                                 onMatchesChanged={handleMatchesChanged}
