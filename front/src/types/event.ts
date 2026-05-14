@@ -24,6 +24,7 @@ export interface Event {
   event_name: string
   description?: string
   open_to_visitors?: boolean
+  auto_renew?: boolean
   invite_token?: string
   created_at?: string
   updated_at?: string
