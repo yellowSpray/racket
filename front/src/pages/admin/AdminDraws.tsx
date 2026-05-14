@@ -30,10 +30,10 @@ import { exportTablesToPdf } from "@/lib/exportPdf"
 
 export function AdminDraws () {
 
-    const { currentEvent, fetchEvents } = useEvent()
+    const { currentEvent, currentRound, fetchEvents } = useEvent()
     const { profile } = useAuth()
-    const { groups, loading, fetchGroupsByEvent } = useGroups()
-    const { matches, fetchMatchesByEvent, closeEvent, error: matchError } = useMatches()
+    const { groups, loading, fetchGroupsByRound } = useGroups()
+    const { matches, fetchMatchesByRound, closeRound, error: matchError } = useMatches()
     const { scoringRules, fetchClubConfig } = useClubConfig()
     const { players } = usePlayers()
     const [displayMode, setDisplayMode] = useState<"score" | "points">("score")
@@ -64,15 +64,15 @@ export function AdminDraws () {
     const handleCloseEvent = useCallback(async () => {
         if (!currentEvent) return
         setClosing(true)
-        const result = await closeEvent(currentEvent.id)
+        const result = await closeRound(currentRound!.id)
         setClosing(false)
         if (result.success) {
             toast.success("Événement clôturé")
             fetchEvents()
         }
-    }, [currentEvent, closeEvent, fetchEvents])
+    }, [currentEvent, closeRound, fetchEvents])
 
-    const isCompleted = currentEvent?.status === "completed"
+    const isCompleted = currentRound?.status === "completed"
 
     const clubId = profile?.club_id ?? null
 
@@ -138,11 +138,11 @@ export function AdminDraws () {
 
     // charger les groups, matchs et config club quand l'event change
     useEffect(() => {
-        if(currentEvent) {
-            fetchGroupsByEvent(currentEvent.id)
-            fetchMatchesByEvent(currentEvent.id)
+        if(currentRound) {
+            fetchGroupsByRound(currentRound.id)
+            fetchMatchesByRound(currentRound.id)
         }
-    }, [currentEvent, fetchGroupsByEvent, fetchMatchesByEvent])
+    }, [currentRound, fetchGroupsByRound, fetchMatchesByRound])
 
     useEffect(() => {
         fetchClubConfig(clubId)

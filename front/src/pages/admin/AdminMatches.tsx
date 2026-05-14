@@ -19,10 +19,10 @@ import { matchResultSchema } from "@/lib/schemas/matchResult.schema"
 
 export function AdminMatches() {
 
-    const { currentEvent } = useEvent()
+    const { currentEvent, currentRound } = useEvent()
     const { players } = usePlayers()
-    const { groups, fetchGroupsByEvent } = useGroups()
-    const { matches, loading, error, fetchMatchesByEvent, updateMatchResults } = useMatches()
+    const { groups, fetchGroupsByRound } = useGroups()
+    const { matches, loading, error, fetchMatchesByRound, updateMatchResults } = useMatches()
     const navigate = useNavigate()
 
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
@@ -33,11 +33,11 @@ export function AdminMatches() {
     const [scoreErrors, setScoreErrors] = useState<Map<string, string>>(new Map())
 
     useEffect(() => {
-        if (currentEvent) {
-            fetchGroupsByEvent(currentEvent.id)
-            fetchMatchesByEvent(currentEvent.id)
+        if (currentRound) {
+            fetchGroupsByRound(currentRound.id)
+            fetchMatchesByRound(currentRound.id)
         }
-    }, [currentEvent, fetchGroupsByEvent, fetchMatchesByEvent])
+    }, [currentRound, fetchGroupsByRound, fetchMatchesByRound])
 
     const playerAbsences = useMemo(() => {
         const map = new Map<string, string[]>()
@@ -125,18 +125,19 @@ export function AdminMatches() {
     const matchCount = totalMatchCount(groups)
     const slotInfo = useMemo(() => {
         if (!currentEvent) return null
-        const durationMin = intervalToMinutes(currentEvent.estimated_match_duration)
-        const dates = calculateDates(currentEvent.start_date, currentEvent.end_date, currentEvent.playing_dates)
+        if (!currentRound) return { total: 0, placed: 0 }
+        const durationMin = intervalToMinutes(currentRound.estimated_match_duration)
+        const dates = calculateDates(currentRound.start_date, currentRound.end_date, currentRound.playing_dates)
         const timeSlots = calculateTimeSlots(
-            currentEvent.start_time || "19:00",
-            currentEvent.end_time || "23:00",
+            currentRound.start_time || "19:00",
+            currentRound.end_time || "23:00",
             durationMin
         )
         return {
-            total: totalSlotCount(dates.length, timeSlots.length, currentEvent.number_of_courts),
+            total: totalSlotCount(dates.length, timeSlots.length, currentRound.number_of_courts),
             datesCount: dates.length,
             slotsPerDay: timeSlots.length,
-            courtsCount: currentEvent.number_of_courts,
+            courtsCount: currentRound.number_of_courts,
         }
     }, [currentEvent])
 
@@ -282,6 +283,7 @@ export function AdminMatches() {
                             <MatchScheduleGrid
                                 matches={matches}
                                 event={currentEvent}
+                                round={currentRound}
                                 editMode={editMode}
                                 pendingScores={pendingScores}
                                 onScoreChange={handleScoreChange}

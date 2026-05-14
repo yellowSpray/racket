@@ -19,9 +19,9 @@ import type { GroupStandings } from "@/types/ranking"
 
 export function UserRankings() {
     const { profile } = useAuth()
-    const { currentEvent } = useEvent()
-    const { groups, fetchGroupsByEvent, loading: groupsLoading } = useGroups()
-    const { matches, fetchMatchesByEvent, loading: matchesLoading } = useMatches()
+    const { currentEvent, currentRound } = useEvent()
+    const { groups, fetchGroupsByRound, loading: groupsLoading } = useGroups()
+    const { matches, fetchMatchesByRound, loading: matchesLoading } = useMatches()
     const { scoringRules, fetchClubConfig } = useClubConfig()
 
     useEffect(() => {
@@ -29,11 +29,11 @@ export function UserRankings() {
     }, [profile?.club_id, fetchClubConfig])
 
     useEffect(() => {
-        if (currentEvent?.id) {
-            fetchGroupsByEvent(currentEvent.id)
-            fetchMatchesByEvent(currentEvent.id)
+        if (currentRound?.id) {
+            fetchGroupsByRound(currentRound.id)
+            fetchMatchesByRound(currentRound.id)
         }
-    }, [currentEvent?.id, fetchGroupsByEvent, fetchMatchesByEvent])
+    }, [currentRound?.id, fetchGroupsByRound, fetchMatchesByRound])
 
     const standings: GroupStandings[] = useMemo(() => {
         if (!scoringRules || groups.length === 0) return []

@@ -3,6 +3,7 @@ import { EditPlayers } from "@/components/admin/players/EditPlayers";
 import { columns as playerColumns } from "@/components/admin/players/PlayerColumns";
 import { DataTable } from "@/components/admin/players/PlayerTable";
 import { usePlayers } from "@/contexts/PlayersContext";
+import { useEvent } from "@/contexts/EventContext";
 import { useHeaderSlot, useHeaderActions } from "@/contexts/HeaderSlotContext";
 import type { PlayerType } from "@/types/player";
 import {
@@ -32,6 +33,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 export function AdminPlayers() {
 
     const { players, addPlayer, updatePlayer, deletePlayer, updatePaymentStatus, updateAbsences, loading, fetchPlayer } = usePlayers();
+    const { currentRound } = useEvent();
     const [statusFilter, setStatusFilter] = useState<string>("all")
     const [searchFilter, setSearchFilter] = useState("")
     const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -159,7 +161,7 @@ export function AdminPlayers() {
                     playerData={editPlayer}
                     onSave={(data) => updatePlayer(editPlayer.id, data)}
                     onPaymentChange={updatePaymentStatus}
-                    onAbsencesChange={updateAbsences}
+                    onAbsencesChange={(playerId, dates) => updateAbsences(playerId, dates, currentRound?.id ?? null)}
                     open={true}
                     onOpenChange={(open) => { if (!open) setEditPlayer(null) }}
                 />

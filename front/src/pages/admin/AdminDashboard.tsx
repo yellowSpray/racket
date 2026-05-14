@@ -11,7 +11,7 @@ import { AlertsCard } from "@/components/admin/dashboard/AlertsCard"
 
 export function AdminDashboard() {
     const { profile } = useAuth()
-    const { currentEvent, events, loading: eventsLoading } = useEvent()
+    const { currentRound, events, loading: eventsLoading } = useEvent()
     const { clubConfig, fetchClubConfig } = useClubConfig()
 
     useEffect(() => {
@@ -50,7 +50,7 @@ export function AdminDashboard() {
                     <AlertsCard className="col-start-20 col-span-9 row-start-1 row-span-7" />
                     <MatchesCard
                         className="col-start-1 col-span-28 row-start-8 row-span-9 min-h-0"
-                        eventId={currentEvent?.id ?? null}
+                        roundId={currentRound?.id ?? null}
                     />
                 </div>
             </div>

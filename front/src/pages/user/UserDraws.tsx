@@ -4,21 +4,27 @@ import { useEvent } from "@/contexts/EventContext"
 import { useGroups } from "@/hooks/useGroups"
 import { useMatches } from "@/hooks/useMatches"
 import { useClubConfig } from "@/hooks/useClubConfig"
+import type { EventRound } from "@/types/event"
 import { DrawTable } from "@/components/admin/draws/DrawTable"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
+function resolveRound(rounds: EventRound[] | undefined): EventRound | null {
+    if (!rounds || rounds.length === 0) return null
+    return rounds.find(r => r.status === "active") ?? rounds[rounds.length - 1]
+}
+
 export function UserDraws() {
     const { profile } = useAuth()
-    const { currentEvent, events } = useEvent()
-    const { groups, fetchGroupsByEvent, loading: groupsLoading } = useGroups()
-    const { matches, fetchMatchesByEvent, loading: matchesLoading } = useMatches()
+    const { currentEvent, currentRound, events } = useEvent()
+    const { groups, fetchGroupsByRound, loading: groupsLoading } = useGroups()
+    const { matches, fetchMatchesByRound, loading: matchesLoading } = useMatches()
     const { clubConfig, scoringRules, fetchClubConfig } = useClubConfig()
     const clubName = clubConfig?.club_name
 
     const defaultEventId = useMemo(() => {
-        const activeEvent = events.find(e => e.status === "active")
-        return activeEvent?.id ?? currentEvent?.id ?? ""
+        const eventWithActiveRound = events.find(e => e.event_rounds?.some(r => r.status === "active"))
+        return eventWithActiveRound?.id ?? currentEvent?.id ?? ""
     }, [events, currentEvent])
 
     const [selectedEventId, setSelectedEventId] = useState<string>("")
@@ -34,16 +40,21 @@ export function UserDraws() {
         [events, selectedEventId, currentEvent]
     )
 
+    const selectedRound = useMemo(
+        () => resolveRound(selectedEvent?.event_rounds) ?? currentRound,
+        [selectedEvent, currentRound]
+    )
+
     useEffect(() => {
         if (profile?.club_id) fetchClubConfig(profile.club_id)
     }, [profile?.club_id, fetchClubConfig])
 
     useEffect(() => {
-        if (selectedEventId) {
-            fetchGroupsByEvent(selectedEventId)
-            fetchMatchesByEvent(selectedEventId)
+        if (selectedRound?.id) {
+            fetchGroupsByRound(selectedRound.id)
+            fetchMatchesByRound(selectedRound.id)
         }
-    }, [selectedEventId, fetchGroupsByEvent, fetchMatchesByEvent])
+    }, [selectedRound?.id, fetchGroupsByRound, fetchMatchesByRound])
 
     const matchesByGroup = useMemo(() => {
         const map = new Map<string, typeof matches>()
@@ -71,14 +82,17 @@ export function UserDraws() {
                     <SelectValue placeholder="Choisir un événement" />
                 </SelectTrigger>
                 <SelectContent>
-                    {events.map(event => (
-                        <SelectItem key={event.id} value={event.id}>
-                            {event.event_name}
-                            {event.status === "active" && (
-                                <span className="ml-2 text-xs text-green-600 font-medium">En cours</span>
-                            )}
-                        </SelectItem>
-                    ))}
+                    {events.map(event => {
+                        const round = resolveRound(event.event_rounds)
+                        return (
+                            <SelectItem key={event.id} value={event.id}>
+                                {event.event_name}
+                                {round?.status === "active" && (
+                                    <span className="ml-2 text-xs text-green-600 font-medium">En cours</span>
+                                )}
+                            </SelectItem>
+                        )
+                    })}
                 </SelectContent>
             </Select>
         </div>

@@ -15,17 +15,17 @@ import type { Match } from "@/types/match"
 
 export function UserDashboard() {
     const { profile } = useAuth()
-    const { currentEvent } = useEvent()
-    const { matches, fetchMatchesByEvent, submitPendingScore } = useMatches()
-    const { groups, fetchGroupsByEvent } = useGroups()
+    const { currentEvent, currentRound } = useEvent()
+    const { matches, fetchMatchesByRound, submitPendingScore } = useMatches()
+    const { groups, fetchGroupsByRound } = useGroups()
     const { clubConfig, scoringRules, fetchClubConfig } = useClubConfig()
 
     useEffect(() => {
-        if (currentEvent?.id) {
-            fetchMatchesByEvent(currentEvent.id)
-            fetchGroupsByEvent(currentEvent.id)
+        if (currentRound?.id) {
+            fetchMatchesByRound(currentRound.id)
+            fetchGroupsByRound(currentRound.id)
         }
-    }, [currentEvent?.id, fetchMatchesByEvent, fetchGroupsByEvent])
+    }, [currentRound?.id, fetchMatchesByRound, fetchGroupsByRound])
 
     useEffect(() => {
         if (profile?.club_id) fetchClubConfig(profile.club_id)
