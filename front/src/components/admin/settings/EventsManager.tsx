@@ -1,10 +1,12 @@
 import { EventsSkeleton } from "@/components/shared/skeletons/SettingsSkeleton"
 import { useEvent } from "@/contexts/EventContext"
+import { supabase } from "@/lib/supabaseClient"
 import type { Event, EventRound } from "@/types/event"
 import type { ClubDefaults } from "./EventDialog"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
 import { PlusSignIcon, PencilEdit01Icon, Delete02Icon, Calendar03Icon } from "hugeicons-react"
 import { EventWizardDialog } from "./EventWizardDialog"
 import { DeleteEventDialog } from "./DeleteEventDialog"
@@ -18,6 +20,8 @@ export function EventsManager({ clubDefaults }: EventsManagerProps) {
     const [dialogOpen, setDialogOpen] = useState<boolean>(false)
     const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false)
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
+    const [creatingRoundForEvent, setCreatingRoundForEvent] = useState<string | null>(null)
+    const [deletingRoundId, setDeletingRoundId] = useState<string | null>(null)
 
     const getRoundStatus = (round: EventRound | undefined) => {
         switch (round?.status) {
@@ -34,6 +38,31 @@ export function EventsManager({ clubDefaults }: EventsManagerProps) {
         if (!t) return null
         const m = t.match(/(\d{2}):(\d{2})/)
         return m ? `${m[1]}:${m[2]}` : t
+    }
+
+    const handleCreateRound = async (eventId: string) => {
+        setCreatingRoundForEvent(eventId)
+        try {
+            await supabase.rpc("create_new_round", { p_event_id: eventId })
+            await fetchEvents()
+        } finally {
+            setCreatingRoundForEvent(null)
+        }
+    }
+
+    const handleToggleAutoRenew = async (event: Event, value: boolean) => {
+        await supabase.from("events").update({ auto_renew: value }).eq("id", event.id)
+        await fetchEvents()
+    }
+
+    const handleDeleteRound = async (roundId: string) => {
+        setDeletingRoundId(roundId)
+        try {
+            await supabase.from("event_rounds").delete().eq("id", roundId)
+            await fetchEvents()
+        } finally {
+            setDeletingRoundId(null)
+        }
     }
 
     const handleCreate = () => { setSelectedEvent(null); setDialogOpen(true) }
@@ -70,6 +99,9 @@ export function EventsManager({ clubDefaults }: EventsManagerProps) {
                 <>
                     {events.map((event) => {
                         const rounds = event.event_rounds ?? []
+                        const nextRoundNumber = rounds.length > 0
+                            ? Math.max(...rounds.map(r => r.round_number)) + 1
+                            : 1
 
                         return (
                             <div key={event.id} className="border border-gray-200 rounded-lg overflow-hidden">
@@ -77,43 +109,76 @@ export function EventsManager({ clubDefaults }: EventsManagerProps) {
                                 {/* En-tête : nom + joueurs + actions */}
                                 <div className="flex items-center justify-between px-4 py-2 bg-gray-100 border-b border-gray-200">
                                     <span className="font-semibold text-sm">{event.event_name}</span>
-                                    <div className="flex items-center gap-1">
-                                        <Button variant="icon" size="icon" className="border-0 h-7 w-7" onClick={() => handleEdit(event)}>
-                                            <PencilEdit01Icon className="h-3.5 w-3.5" />
-                                        </Button>
-                                        <Button variant="icon" size="icon" className="border-0 h-7 w-7" onClick={() => handleDelete(event)}>
-                                            <Delete02Icon className="h-3.5 w-3.5 text-red-500" />
-                                        </Button>
+                                    <div className="flex items-center gap-3">
+                                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                                            <span className="text-xs text-gray-500">Renouvellement auto</span>
+                                            <Switch
+                                                checked={event.auto_renew ?? false}
+                                                onCheckedChange={(v) => handleToggleAutoRenew(event, v)}
+                                            />
+                                        </label>
+                                        <div className="flex items-center gap-1">
+                                            <Button variant="icon" size="icon" className="border-0 h-7 w-7" onClick={() => handleEdit(event)}>
+                                                <PencilEdit01Icon className="h-3.5 w-3.5" />
+                                            </Button>
+                                            <Button variant="icon" size="icon" className="border-0 h-7 w-7" onClick={() => handleDelete(event)}>
+                                                <Delete02Icon className="h-3.5 w-3.5 text-red-500" />
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
 
                                 {/* En-têtes de colonnes */}
-                                <div className="grid grid-cols-9 text-center divide-x divide-gray-100 border-b border-gray-100 bg-gray-50">
-                                    {["Round", "Début", "Fin", "Clôture", "Heure déb.", "Heure fin", "Terrains", "Joueurs", "Statut"].map(label => (
+                                <div className="grid grid-cols-10 text-center divide-x divide-gray-100 border-b border-gray-100 bg-gray-50">
+                                    {["Round", "Début", "Fin", "Clôture", "Heure déb.", "Heure fin", "Terrains", "Joueurs", "Statut", ""].map(label => (
                                         <div key={label} className="py-1 px-1">
                                             <span className="text-gray-400 uppercase tracking-wide" style={{ fontSize: "10px" }}>{label}</span>
                                         </div>
                                     ))}
                                 </div>
 
-                                {/* Une ligne par round */}
+                                {/* Placeholder prochain round */}
+                                <button
+                                    onClick={() => handleCreateRound(event.id)}
+                                    disabled={creatingRoundForEvent === event.id}
+                                    className="w-full flex items-center justify-center gap-2 py-3 text-xs text-gray-400 border-b border-dashed border-gray-200 transition-colors disabled:opacity-50 hover:bg-gray-100 hover:text-gray-600"
+                                >
+                                    <PlusSignIcon className="h-3.5 w-3.5" />
+                                    {creatingRoundForEvent === event.id
+                                        ? "Création..."
+                                        : `Créer le Round ${nextRoundNumber}`}
+                                </button>
+
+                                {/* Une ligne par round (plus récent en premier) */}
                                 {rounds.length === 0 ? (
                                     <div className="py-3 text-center text-xs text-gray-400">Aucun round configuré</div>
                                 ) : (
-                                    rounds.map((r) => {
+                                    [...rounds].reverse().map((r) => {
                                         const s = getRoundStatus(r)
                                         return (
-                                            <div key={r.id} className="grid grid-cols-9 text-xs text-center divide-x divide-gray-100 border-b border-gray-100 last:border-b-0">
-                                                <div className="py-2 px-1 font-medium text-gray-700">Round {r.round_number}</div>
-                                                <div className="py-2 px-1 text-gray-700">{r.start_date ? formatDate(r.start_date) : <span className="text-gray-300">—</span>}</div>
-                                                <div className="py-2 px-1 text-gray-700">{r.end_date   ? formatDate(r.end_date)   : <span className="text-gray-300">—</span>}</div>
-                                                <div className="py-2 px-1 text-gray-700">{r.deadline   ? formatDate(r.deadline)   : <span className="text-gray-300">—</span>}</div>
-                                                <div className="py-2 px-1 text-gray-700">{formatTime(r.start_time) ?? <span className="text-gray-300">—</span>}</div>
-                                                <div className="py-2 px-1 text-gray-700">{formatTime(r.end_time)   ?? <span className="text-gray-300">—</span>}</div>
-                                                <div className="py-2 px-1 text-gray-700">{r.number_of_courts}</div>
-                                                <div className="py-2 px-1 text-gray-700">{r.player_count ?? 0}</div>
-                                                <div className="py-2 px-1 flex items-center justify-center">
+                                            <div key={r.id} className="grid grid-cols-10 text-xs text-center divide-x divide-gray-100 border-b border-gray-100 last:border-b-0">
+                                                <div className="py-3 px-1 font-medium text-gray-700">Round {r.round_number}</div>
+                                                <div className="py-3 px-1 text-gray-700">{r.start_date ? formatDate(r.start_date) : <span className="text-gray-300">—</span>}</div>
+                                                <div className="py-3 px-1 text-gray-700">{r.end_date   ? formatDate(r.end_date)   : <span className="text-gray-300">—</span>}</div>
+                                                <div className="py-3 px-1 text-gray-700">{r.deadline   ? formatDate(r.deadline)   : <span className="text-gray-300">—</span>}</div>
+                                                <div className="py-3 px-1 text-gray-700">{formatTime(r.start_time) ?? <span className="text-gray-300">—</span>}</div>
+                                                <div className="py-3 px-1 text-gray-700">{formatTime(r.end_time)   ?? <span className="text-gray-300">—</span>}</div>
+                                                <div className="py-3 px-1 text-gray-700">{r.number_of_courts}</div>
+                                                <div className="py-3 px-1 text-gray-700">{r.player_count ?? 0}</div>
+                                                <div className="py-3 px-1 flex items-center justify-center">
                                                     <Badge variant={s.variant}>{s.label}</Badge>
+                                                </div>
+                                                <div className="py-3 px-1 flex items-center justify-center gap-1">
+                                                    <Button variant="icon" size="icon" className="border-0 h-6 w-6" onClick={() => handleEdit(event)}>
+                                                        <PencilEdit01Icon className="h-3 w-3" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="icon" size="icon" className="border-0 h-6 w-6"
+                                                        disabled={deletingRoundId === r.id}
+                                                        onClick={() => handleDeleteRound(r.id)}
+                                                    >
+                                                        <Delete02Icon className="h-3 w-3 text-red-500" />
+                                                    </Button>
                                                 </div>
                                             </div>
                                         )
