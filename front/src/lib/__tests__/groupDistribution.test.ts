@@ -23,7 +23,7 @@ function makeGroup(
 ): Group {
   return {
     id,
-    event_id: 'evt-1',
+    round_id: 'r1',
     group_name: name,
     max_players: maxPlayers,
     created_at: '',

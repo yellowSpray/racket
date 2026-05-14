@@ -32,12 +32,12 @@ describe('useGroups', () => {
         expect(result.current.error).toBeNull()
     })
 
-    describe('fetchGroupsByEvent', () => {
+    describe('fetchGroupsByRound', () => {
         it('should set groups to empty when eventId is null', async () => {
             const { result } = renderHook(() => useGroups())
 
             await act(async () => {
-                await result.current.fetchGroupsByEvent(null)
+                await result.current.fetchGroupsByRound(null)
             })
 
             expect(result.current.groups).toEqual([])
@@ -76,7 +76,7 @@ describe('useGroups', () => {
             const { result } = renderHook(() => useGroups())
 
             await act(async () => {
-                await result.current.fetchGroupsByEvent('e1')
+                await result.current.fetchGroupsByRound('e1')
             })
 
             expect(result.current.loading).toBe(false)
@@ -98,7 +98,7 @@ describe('useGroups', () => {
             const { result } = renderHook(() => useGroups())
 
             await act(async () => {
-                await result.current.fetchGroupsByEvent('e1')
+                await result.current.fetchGroupsByRound('e1')
             })
 
             expect(result.current.loading).toBe(false)
@@ -134,7 +134,7 @@ describe('useGroups', () => {
             const { result } = renderHook(() => useGroups())
 
             await act(async () => {
-                await result.current.fetchGroupsByEvent('e1')
+                await result.current.fetchGroupsByRound('e1')
             })
 
             expect(result.current.groups[0].players![0].power_ranking).toBe(0)
@@ -144,7 +144,7 @@ describe('useGroups', () => {
     describe('createGroups', () => {
         it('should create groups and refresh', async () => {
             // First call: insert (returns success)
-            // Second call: fetchGroupsByEvent refresh
+            // Second call: fetchGroupsByRound refresh
             let callCount = 0
             mockSupabase.from.mockImplementation(() => {
                 callCount++

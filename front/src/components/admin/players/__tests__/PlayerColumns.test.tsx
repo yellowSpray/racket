@@ -19,7 +19,7 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
 // Mock tooltip
 vi.mock('@/components/ui/tooltip', () => ({
   Tooltip: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  TooltipTrigger: ({ children, asChild }: { children: React.ReactNode, asChild?: boolean }) => <div data-testid="tooltip-trigger">{children}</div>,
+  TooltipTrigger: ({ children }: { children: React.ReactNode }) => <div data-testid="tooltip-trigger">{children}</div>,
   TooltipContent: ({ children }: { children: React.ReactNode }) => <div data-testid="tooltip-content">{children}</div>,
 }))
 
@@ -27,6 +27,7 @@ const makePlayer = (overrides: Partial<PlayerType> = {}): PlayerType => ({
   id: 'p1',
   first_name: 'Alice',
   last_name: 'Martin',
+  full_name: 'Alice Martin',
   email: 'alice@test.com',
   phone: '0612345678',
   arrival: '19:00',
@@ -40,18 +41,14 @@ const makePlayer = (overrides: Partial<PlayerType> = {}): PlayerType => ({
 })
 
 describe('PlayerColumns', () => {
-  const mockUpdatePlayer = vi.fn()
-  const mockUpdatePaymentStatus = vi.fn()
-  const mockUpdateAbsences = vi.fn()
-
   it('returns an array of column definitions', () => {
-    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus, mockUpdateAbsences)
+    const cols = columns()
     expect(Array.isArray(cols)).toBe(true)
     expect(cols.length).toBeGreaterThan(0)
   })
 
   it('includes expected column headers', () => {
-    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus, mockUpdateAbsences)
+    const cols = columns()
     const headers = cols.map(c => c.header)
     expect(headers).toContain('Prénom Nom')
     expect(headers).toContain('Téléphone')
@@ -65,7 +62,7 @@ describe('PlayerColumns', () => {
   })
 
   it('has a full_name accessor that concatenates first and last name', () => {
-    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus, mockUpdateAbsences)
+    const cols = columns()
     const fullNameCol = cols.find(c => c.header === 'Prénom Nom')
     expect(fullNameCol).toBeDefined()
     if (fullNameCol && 'accessorFn' in fullNameCol && fullNameCol.accessorFn) {
@@ -75,11 +72,11 @@ describe('PlayerColumns', () => {
   })
 
   it('renders unavailable dates as badges in absence column', () => {
-    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus, mockUpdateAbsences)
+    const cols = columns()
     const absenceCol = cols.find(c => c.header === 'Absence')
     expect(absenceCol).toBeDefined()
     if (absenceCol && 'cell' in absenceCol && absenceCol.cell) {
-      const CellComponent = absenceCol.cell as React.FC<{ row: { original: PlayerType; getValue: ReturnType<typeof vi.fn> } }>
+      const CellComponent = absenceCol.cell as unknown as unknown as React.FC<{ row: { original: PlayerType; getValue: ReturnType<typeof vi.fn> } }>
       const mockRow = {
         original: makePlayer({ unavailable: ['2026-03-04', '2026-03-05'] }),
         getValue: vi.fn(),
@@ -91,11 +88,11 @@ describe('PlayerColumns', () => {
   })
 
   it('renders status badges in status column', () => {
-    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus, mockUpdateAbsences)
+    const cols = columns()
     const statusCol = cols.find(c => c.header === 'Status')
     expect(statusCol).toBeDefined()
     if (statusCol && 'cell' in statusCol && statusCol.cell) {
-      const CellComponent = statusCol.cell as React.FC<{ row: { original: PlayerType; getValue: ReturnType<typeof vi.fn> } }>
+      const CellComponent = statusCol.cell as unknown as React.FC<{ row: { original: PlayerType; getValue: ReturnType<typeof vi.fn> } }>
       const mockRow = {
         original: makePlayer({ status: ['active', 'member'] }),
         getValue: vi.fn(),
@@ -107,21 +104,21 @@ describe('PlayerColumns', () => {
   })
 
   it('has 10 columns total (including select checkbox, excluding actions)', () => {
-    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus, mockUpdateAbsences)
+    const cols = columns()
     expect(cols.length).toBe(10)
   })
 
   it('renders all payment badges when 2 or fewer', () => {
-    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus, mockUpdateAbsences)
+    const cols = columns()
     const paymentCol = cols.find(c => c.header === 'Paiement')
     expect(paymentCol).toBeDefined()
     if (paymentCol && 'cell' in paymentCol && paymentCol.cell) {
-      const CellComponent = paymentCol.cell as React.FC<{ row: { original: PlayerType; getValue: ReturnType<typeof vi.fn> } }>
+      const CellComponent = paymentCol.cell as unknown as React.FC<{ row: { original: PlayerType; getValue: ReturnType<typeof vi.fn> } }>
       const mockRow = {
         original: makePlayer({
           payments: [
-            { event_id: 'e1', event_name: 'Série 41', status: 'paid' },
-            { event_id: 'e2', event_name: 'Série 42', status: 'unpaid' },
+            { round_id: 'r1', round_number: 1, event_name: 'Série 41', status: 'paid' },
+            { round_id: 'r2', round_number: 2, event_name: 'Série 42', status: 'unpaid' },
           ],
         }),
         getValue: vi.fn(),
@@ -134,18 +131,18 @@ describe('PlayerColumns', () => {
   })
 
   it('truncates payment badges and shows +N when more than 2', () => {
-    const cols = columns(mockUpdatePlayer, mockUpdatePaymentStatus, mockUpdateAbsences)
+    const cols = columns()
     const paymentCol = cols.find(c => c.header === 'Paiement')
     expect(paymentCol).toBeDefined()
     if (paymentCol && 'cell' in paymentCol && paymentCol.cell) {
-      const CellComponent = paymentCol.cell as React.FC<{ row: { original: PlayerType; getValue: ReturnType<typeof vi.fn> } }>
+      const CellComponent = paymentCol.cell as unknown as React.FC<{ row: { original: PlayerType; getValue: ReturnType<typeof vi.fn> } }>
       const mockRow = {
         original: makePlayer({
           payments: [
-            { event_id: 'e1', event_name: 'Série 41', status: 'paid' },
-            { event_id: 'e2', event_name: 'Série 42', status: 'unpaid' },
-            { event_id: 'e3', event_name: 'Série 43', status: 'paid' },
-            { event_id: 'e4', event_name: 'Série 44', status: 'unpaid' },
+            { round_id: 'r1', round_number: 1, event_name: 'Série 41', status: 'paid' },
+            { round_id: 'r2', round_number: 2, event_name: 'Série 42', status: 'unpaid' },
+            { round_id: 'r3', round_number: 3, event_name: 'Série 43', status: 'paid' },
+            { round_id: 'r4', round_number: 4, event_name: 'Série 44', status: 'unpaid' },
           ],
         }),
         getValue: vi.fn(),

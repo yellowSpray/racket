@@ -5,7 +5,7 @@ import type { Group } from '@/types/draw'
 
 const proposedGroups: Group[] = [
     {
-        id: 'proposed-g1', event_id: 'e1', group_name: 'Box 1', max_players: 4, created_at: '',
+        id: 'proposed-g1', round_id: 'r1', group_name: 'Box 1', max_players: 4, created_at: '',
         players: [
             { id: 'p1', first_name: 'Alice', last_name: 'A', phone: '', power_ranking: 10 },
             { id: 'p2', first_name: 'Bob', last_name: 'B', phone: '', power_ranking: 9 },
@@ -14,7 +14,7 @@ const proposedGroups: Group[] = [
         ],
     },
     {
-        id: 'proposed-g2', event_id: 'e1', group_name: 'Box 2', max_players: 4, created_at: '',
+        id: 'proposed-g2', round_id: 'r1', group_name: 'Box 2', max_players: 4, created_at: '',
         players: [
             { id: 'p4', first_name: 'Diana', last_name: 'D', phone: '', power_ranking: 7 },
             { id: 'p6', first_name: 'Frank', last_name: 'F', phone: '', power_ranking: 5 },

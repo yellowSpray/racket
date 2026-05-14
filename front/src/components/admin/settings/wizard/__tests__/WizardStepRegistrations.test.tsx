@@ -7,9 +7,6 @@ const mockEvent: Event = {
     id: "event-1",
     club_id: "club-1",
     event_name: "Test Event",
-    start_date: "2025-06-01",
-    end_date: "2025-06-01",
-    number_of_courts: 2,
 }
 
 const mockProfiles = [

@@ -10,7 +10,7 @@ beforeAll(() => {
   } as unknown as typeof ResizeObserver
 })
 import type { Match } from '@/types/match'
-import type { Event } from '@/types/event'
+import type { Event, EventRound } from '@/types/event'
 
 // Mock MatchCell to simplify testing
 vi.mock('../MatchCell', () => ({
@@ -28,12 +28,20 @@ const makeEvent = (overrides: Partial<Event> = {}): Event => ({
   id: 'e1',
   club_id: 'c1',
   event_name: 'Tournoi Test',
+  ...overrides,
+})
+
+const makeRound = (overrides: Partial<EventRound> = {}): EventRound => ({
+  id: 'r1',
+  event_id: 'e1',
+  round_number: 1,
   start_date: '2026-03-01',
   end_date: '2026-03-02',
   start_time: '19:00',
   end_time: '23:00',
   number_of_courts: 2,
   estimated_match_duration: '00:30:00',
+  status: 'active',
   ...overrides,
 })
 
@@ -52,25 +60,25 @@ const makeMatch = (overrides: Partial<Match> = {}): Match => ({
 
 describe('MatchScheduleGrid', () => {
   it('renders without crashing with empty matches', () => {
-    render(<MatchScheduleGrid matches={[]} event={makeEvent()} />)
+    render(<MatchScheduleGrid matches={[]} event={makeEvent()} round={makeRound()} />)
   })
 
   it('does not render any cards when there are no matches', () => {
-    const { container } = render(<MatchScheduleGrid matches={[]} event={makeEvent()} />)
+    const { container } = render(<MatchScheduleGrid matches={[]} event={makeEvent()} round={makeRound()} />)
     // No dates means no cards
     expect(container.querySelectorAll('[class*="Card"]').length).toBe(0)
   })
 
   it('displays a date card when matches exist', () => {
     const matches = [makeMatch()]
-    render(<MatchScheduleGrid matches={matches} event={makeEvent()} />)
+    render(<MatchScheduleGrid matches={matches} event={makeEvent()} round={makeRound()} />)
     // Should display the formatted date label (French format)
     expect(screen.getByText(/mars/i)).toBeInTheDocument()
   })
 
   it('displays match count text', () => {
     const matches = [makeMatch()]
-    render(<MatchScheduleGrid matches={matches} event={makeEvent()} />)
+    render(<MatchScheduleGrid matches={matches} event={makeEvent()} round={makeRound()} />)
     expect(screen.getByText('1 match programmé')).toBeInTheDocument()
   })
 
@@ -79,7 +87,7 @@ describe('MatchScheduleGrid', () => {
       makeMatch({ id: 'm1', court_number: 'Terrain 1', match_time: '19:00:00' }),
       makeMatch({ id: 'm2', court_number: 'Terrain 2', match_time: '19:00:00' }),
     ]
-    render(<MatchScheduleGrid matches={matches} event={makeEvent()} />)
+    render(<MatchScheduleGrid matches={matches} event={makeEvent()} round={makeRound()} />)
     expect(screen.getByText('2 matchs programmés')).toBeInTheDocument()
   })
 
@@ -87,7 +95,7 @@ describe('MatchScheduleGrid', () => {
     const matches = [
       makeMatch({ court_number: 'Court Central' }),
     ]
-    render(<MatchScheduleGrid matches={matches} event={makeEvent()} />)
+    render(<MatchScheduleGrid matches={matches} event={makeEvent()} round={makeRound()} />)
     expect(screen.getByText('Court Central')).toBeInTheDocument()
   })
 
@@ -95,14 +103,14 @@ describe('MatchScheduleGrid', () => {
     const matches = [
       makeMatch({ court_number: null }),
     ]
-    render(<MatchScheduleGrid matches={matches} event={makeEvent({ number_of_courts: 2 })} />)
+    render(<MatchScheduleGrid matches={matches} event={makeEvent()} round={makeRound({ number_of_courts: 2 })} />)
     expect(screen.getByText('Terrain 1')).toBeInTheDocument()
     expect(screen.getByText('Terrain 2')).toBeInTheDocument()
   })
 
   it('displays time slots from calculateTimeSlots', () => {
     const matches = [makeMatch()]
-    render(<MatchScheduleGrid matches={matches} event={makeEvent()} />)
+    render(<MatchScheduleGrid matches={matches} event={makeEvent()} round={makeRound()} />)
     expect(screen.getByText('19:00')).toBeInTheDocument()
     expect(screen.getByText('19:30')).toBeInTheDocument()
     expect(screen.getByText('20:00')).toBeInTheDocument()
@@ -110,7 +118,7 @@ describe('MatchScheduleGrid', () => {
 
   it('displays the "Heure" column header', () => {
     const matches = [makeMatch()]
-    render(<MatchScheduleGrid matches={matches} event={makeEvent()} />)
+    render(<MatchScheduleGrid matches={matches} event={makeEvent()} round={makeRound()} />)
     expect(screen.getByText('Heure')).toBeInTheDocument()
   })
 
@@ -118,7 +126,7 @@ describe('MatchScheduleGrid', () => {
     const matches = [
       makeMatch({ match_time: '19:00:00', court_number: 'Terrain 1' }),
     ]
-    render(<MatchScheduleGrid matches={matches} event={makeEvent()} />)
+    render(<MatchScheduleGrid matches={matches} event={makeEvent()} round={makeRound()} />)
     expect(screen.getByText('p1 vs p2')).toBeInTheDocument()
   })
 
@@ -127,7 +135,7 @@ describe('MatchScheduleGrid', () => {
       makeMatch({ id: 'm1', match_date: '2026-03-01' }),
       makeMatch({ id: 'm2', match_date: '2026-03-02' }),
     ]
-    render(<MatchScheduleGrid matches={matches} event={makeEvent()} />)
+    render(<MatchScheduleGrid matches={matches} event={makeEvent()} round={makeRound()} />)
     // Both dates should be shown
     const dateHeaders = screen.getAllByText(/mars/i)
     expect(dateHeaders.length).toBe(2)

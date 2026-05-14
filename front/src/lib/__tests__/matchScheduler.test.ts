@@ -32,7 +32,7 @@ function makePlayer(id: string, firstName = 'Player', lastName = id): GroupPlaye
 function makeGroup(id: string, name: string, players: GroupPlayer[], maxPlayers = 6): Group {
   return {
     id,
-    event_id: 'evt-1',
+    round_id: 'r1',
     group_name: name,
     max_players: maxPlayers,
     created_at: '',
@@ -198,7 +198,7 @@ describe('generateRoundRobinPairings', () => {
   it('handles group with undefined players property', () => {
     const group: Group = {
       id: 'g1',
-      event_id: 'evt-1',
+      round_id: 'r1',
       group_name: 'Group A',
       max_players: 6,
       created_at: '',
@@ -342,7 +342,7 @@ describe('totalMatchCount', () => {
   it('handles group with undefined players', () => {
     const group: Group = {
       id: 'g1',
-      event_id: 'evt-1',
+      round_id: 'r1',
       group_name: 'A',
       max_players: 6,
       created_at: '',

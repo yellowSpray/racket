@@ -4,14 +4,14 @@ import type { Group } from "@/types/draw"
 
 const makeGroups = (): Group[] => [
     {
-        id: "g1", event_id: "e1", group_name: "Box 1", max_players: 3, created_at: "",
+        id: "g1", round_id: "r1", group_name: "Box 1", max_players: 3, created_at: "",
         players: [
             { id: "p1", first_name: "Alice", last_name: "A", phone: "", power_ranking: 10 },
             { id: "p2", first_name: "Bob", last_name: "B", phone: "", power_ranking: 20 },
         ],
     },
     {
-        id: "g2", event_id: "e1", group_name: "Box 2", max_players: 3, created_at: "",
+        id: "g2", round_id: "r1", group_name: "Box 2", max_players: 3, created_at: "",
         players: [
             { id: "p3", first_name: "Charlie", last_name: "C", phone: "", power_ranking: 30 },
         ],
@@ -60,7 +60,7 @@ describe("movePlayerToPosition", () => {
 
     it("même groupe : déplace vers le bas", () => {
         const groups: Group[] = [{
-            id: "g1", event_id: "e1", group_name: "Box 1", max_players: 4, created_at: "",
+            id: "g1", round_id: "r1", group_name: "Box 1", max_players: 4, created_at: "",
             players: [
                 { id: "A", first_name: "A", last_name: "", phone: "", power_ranking: 0 },
                 { id: "B", first_name: "B", last_name: "", phone: "", power_ranking: 0 },
@@ -74,7 +74,7 @@ describe("movePlayerToPosition", () => {
 
     it("même groupe : déplace vers le haut", () => {
         const groups: Group[] = [{
-            id: "g1", event_id: "e1", group_name: "Box 1", max_players: 4, created_at: "",
+            id: "g1", round_id: "r1", group_name: "Box 1", max_players: 4, created_at: "",
             players: [
                 { id: "A", first_name: "A", last_name: "", phone: "", power_ranking: 0 },
                 { id: "B", first_name: "B", last_name: "", phone: "", power_ranking: 0 },

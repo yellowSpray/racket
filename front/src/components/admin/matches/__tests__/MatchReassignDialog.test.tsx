@@ -16,7 +16,7 @@ function makeMatch(overrides: Partial<Match> = {}): Match {
     score: null,
     player1: { id: 'p1', first_name: 'Alice', last_name: 'Smith' },
     player2: { id: 'p2', first_name: 'Bob', last_name: 'Jones' },
-    group: { id: 'g1', group_name: 'Box 1', event_id: 'evt-1' },
+    group: { id: 'g1', group_name: 'Box 1', round_id: 'r1' },
     ...overrides,
   }
 }

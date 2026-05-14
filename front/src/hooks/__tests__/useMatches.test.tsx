@@ -47,12 +47,12 @@ describe('useMatches', () => {
         expect(result.current.error).toBeNull()
     })
 
-    describe('fetchMatchesByEvent', () => {
+    describe('fetchMatchesByRound', () => {
         it('should set matches to empty when eventId is null', async () => {
             const { result } = renderHook(() => useMatches())
 
             await act(async () => {
-                await result.current.fetchMatchesByEvent(null)
+                await result.current.fetchMatchesByRound(null)
             })
 
             expect(result.current.matches).toEqual([])
@@ -66,7 +66,7 @@ describe('useMatches', () => {
             const { result } = renderHook(() => useMatches())
 
             await act(async () => {
-                await result.current.fetchMatchesByEvent('e1')
+                await result.current.fetchMatchesByRound('e1')
             })
 
             expect(result.current.matches).toEqual([])
@@ -102,7 +102,7 @@ describe('useMatches', () => {
             const { result } = renderHook(() => useMatches())
 
             await act(async () => {
-                await result.current.fetchMatchesByEvent('e1')
+                await result.current.fetchMatchesByRound('e1')
             })
 
             expect(result.current.loading).toBe(false)
@@ -125,7 +125,7 @@ describe('useMatches', () => {
             const { result } = renderHook(() => useMatches())
 
             await act(async () => {
-                await result.current.fetchMatchesByEvent('e1')
+                await result.current.fetchMatchesByRound('e1')
             })
 
             expect(result.current.error).toBe('Matches fetch error')
@@ -133,7 +133,7 @@ describe('useMatches', () => {
         })
     })
 
-    describe('deleteMatchesByEvent', () => {
+    describe('deleteMatchesByRound', () => {
         it('should delete matches and return true', async () => {
             let callCount = 0
             mockSupabase.from.mockImplementation(() => {
@@ -152,7 +152,7 @@ describe('useMatches', () => {
             let returnVal: boolean | undefined
 
             await act(async () => {
-                returnVal = await result.current.deleteMatchesByEvent('e1')
+                returnVal = await result.current.deleteMatchesByRound('e1')
             })
 
             expect(returnVal).toBe(true)
@@ -175,7 +175,7 @@ describe('useMatches', () => {
             let returnVal: boolean | undefined
 
             await act(async () => {
-                returnVal = await result.current.deleteMatchesByEvent('e1')
+                returnVal = await result.current.deleteMatchesByRound('e1')
             })
 
             expect(returnVal).toBe(false)
@@ -241,7 +241,7 @@ describe('useMatches', () => {
         })
     })
 
-    describe('applyEventElo', () => {
+    describe('applyRoundElo', () => {
         it('should return 0 when no groups exist for event', async () => {
             mockSupabase.from.mockImplementation(() => {
                 mockSupabase._builder._resolve([])
@@ -252,7 +252,7 @@ describe('useMatches', () => {
             let count: number | undefined
 
             await act(async () => {
-                count = await result.current.applyEventElo('e1')
+                count = await result.current.applyRoundElo('e1')
             })
 
             expect(count).toBe(0)
@@ -275,7 +275,7 @@ describe('useMatches', () => {
             let count: number | undefined
 
             await act(async () => {
-                count = await result.current.applyEventElo('e1')
+                count = await result.current.applyRoundElo('e1')
             })
 
             expect(count).toBe(0)
@@ -316,7 +316,7 @@ describe('useMatches', () => {
             let count: number | undefined
 
             await act(async () => {
-                count = await result.current.applyEventElo('e1')
+                count = await result.current.applyRoundElo('e1')
             })
 
             // 3 players had their ratings changed
@@ -337,7 +337,7 @@ describe('useMatches', () => {
             let count: number | undefined
 
             await act(async () => {
-                count = await result.current.applyEventElo('e1')
+                count = await result.current.applyRoundElo('e1')
             })
 
             expect(count).toBe(0)
@@ -373,7 +373,7 @@ describe('useMatches', () => {
             let count: number | undefined
 
             await act(async () => {
-                count = await result.current.applyEventElo('e1')
+                count = await result.current.applyRoundElo('e1')
             })
 
             // ABS gives 0 delta, so no players updated
@@ -409,7 +409,7 @@ describe('useMatches', () => {
             let count: number | undefined
 
             await act(async () => {
-                count = await result.current.applyEventElo('e1')
+                count = await result.current.applyRoundElo('e1')
             })
 
             // p2 has null rating → match skipped by computeEloUpdates
@@ -417,7 +417,7 @@ describe('useMatches', () => {
         })
     })
 
-    describe('closeEvent', () => {
+    describe('closeRound', () => {
         it('should set status to completed when all matches are played', async () => {
             const allMatches = [
                 { id: 'm1', player1_id: 'p1', player2_id: 'p2', winner_id: 'p1', score: '3-1' },
@@ -441,7 +441,7 @@ describe('useMatches', () => {
             let returnVal: { success: boolean } | undefined
 
             await act(async () => {
-                returnVal = await result.current.closeEvent('e1')
+                returnVal = await result.current.closeRound('e1')
             })
 
             expect(returnVal?.success).toBe(true)
@@ -470,7 +470,7 @@ describe('useMatches', () => {
             let returnVal: { success: boolean } | undefined
 
             await act(async () => {
-                returnVal = await result.current.closeEvent('e1')
+                returnVal = await result.current.closeRound('e1')
             })
 
             expect(returnVal?.success).toBe(false)
@@ -493,7 +493,7 @@ describe('useMatches', () => {
             let returnVal: { success: boolean } | undefined
 
             await act(async () => {
-                returnVal = await result.current.closeEvent('e1')
+                returnVal = await result.current.closeRound('e1')
             })
 
             expect(returnVal?.success).toBe(false)
@@ -524,7 +524,7 @@ describe('useMatches', () => {
             let returnVal: { success: boolean } | undefined
 
             await act(async () => {
-                returnVal = await result.current.closeEvent('e1')
+                returnVal = await result.current.closeRound('e1')
             })
 
             expect(returnVal?.success).toBe(false)

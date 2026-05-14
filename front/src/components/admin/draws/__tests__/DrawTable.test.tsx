@@ -41,7 +41,7 @@ const makeMatch = (overrides: Partial<Match> = {}): Match => ({
 
 const makeGroup = (overrides: Partial<Group> = {}): Group => ({
   id: 'g1',
-  event_id: 'e1',
+  round_id: 'r1',
   group_name: 'Groupe A',
   max_players: 4,
   created_at: '2026-01-01',

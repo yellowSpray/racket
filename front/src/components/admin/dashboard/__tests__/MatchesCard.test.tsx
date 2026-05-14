@@ -28,7 +28,7 @@ function makeMatch(overrides: Partial<DayMatch> = {}): DayMatch {
         status: 'no_score',
         player1: { id: 'p1', first_name: 'Alice', last_name: 'Martin' },
         player2: { id: 'p2', first_name: 'Bob', last_name: 'Dupont' },
-        group: { id: 'g1', group_name: 'Box A', event_id: 'ev1' },
+        group: { id: 'g1', group_name: 'Box A', round_id: 'round1' },
         ...overrides,
     }
 }
@@ -59,12 +59,12 @@ beforeEach(() => {
 describe('MatchesCard', () => {
     it('shows loading state', () => {
         mockUseMatchesByDay.mockReturnValue({ ...defaultReturn, loading: true })
-        render(<MatchesCard eventId="ev1" />)
+        render(<MatchesCard roundId="round1" />)
         expect(screen.getByText('Chargement...')).toBeInTheDocument()
     })
 
     it('shows empty state when no days', () => {
-        render(<MatchesCard eventId="ev1" />)
+        render(<MatchesCard roundId="round1" />)
         expect(screen.getByText(/aucun match programmé/i)).toBeInTheDocument()
     })
 
@@ -73,7 +73,7 @@ describe('MatchesCard', () => {
             ...defaultReturn,
             days: [makeDay()],
         })
-        render(<MatchesCard eventId="ev1" />)
+        render(<MatchesCard roundId="round1" />)
         // Both desktop table and mobile cards are in the DOM (CSS hides one at runtime)
         expect(screen.getAllByText('Alice Martin').length).toBeGreaterThanOrEqual(1)
         expect(screen.getAllByText('Bob Dupont').length).toBeGreaterThanOrEqual(1)
@@ -84,7 +84,7 @@ describe('MatchesCard', () => {
             ...defaultReturn,
             days: [makeDay({ label: 'vendredi 18 avril' })],
         })
-        render(<MatchesCard eventId="ev1" />)
+        render(<MatchesCard roundId="round1" />)
         expect(screen.getByText('vendredi 18 avril')).toBeInTheDocument()
     })
 
@@ -93,7 +93,7 @@ describe('MatchesCard', () => {
             ...defaultReturn,
             days: [makeDay({ isToday: true })],
         })
-        render(<MatchesCard eventId="ev1" />)
+        render(<MatchesCard roundId="round1" />)
         expect(screen.getByText("aujourd'hui")).toBeInTheDocument()
     })
 
@@ -102,7 +102,7 @@ describe('MatchesCard', () => {
             ...defaultReturn,
             days: [makeDay()],
         })
-        render(<MatchesCard eventId="ev1" />)
+        render(<MatchesCard roundId="round1" />)
         expect(screen.getAllByText('Box A').length).toBeGreaterThanOrEqual(1)
     })
 
@@ -111,7 +111,7 @@ describe('MatchesCard', () => {
             ...defaultReturn,
             days: [makeDay({ matches: [makeMatch({ court_number: '3' })] })],
         })
-        render(<MatchesCard eventId="ev1" />)
+        render(<MatchesCard roundId="round1" />)
         expect(screen.getByText('3')).toBeInTheDocument()
     })
 
@@ -122,7 +122,7 @@ describe('MatchesCard', () => {
                 matches: [makeMatch({ status: 'done', winner_id: 'p1', score: '3-1' })],
             })],
         })
-        render(<MatchesCard eventId="ev1" />)
+        render(<MatchesCard roundId="round1" />)
         expect(screen.getAllByText('3-1').length).toBeGreaterThanOrEqual(1)
     })
 
@@ -131,7 +131,7 @@ describe('MatchesCard', () => {
             ...defaultReturn,
             days: [makeDay({ matches: [makeMatch({ status: 'no_score' })] })],
         })
-        render(<MatchesCard eventId="ev1" />)
+        render(<MatchesCard roundId="round1" />)
         // One combobox per layout (desktop + mobile)
         expect(screen.getAllByRole('combobox').length).toBeGreaterThanOrEqual(1)
         expect(screen.getAllByRole('button', { name: /valider/i }).length).toBeGreaterThanOrEqual(1)
@@ -142,7 +142,7 @@ describe('MatchesCard', () => {
             ...defaultReturn,
             days: [makeDay({ matches: [makeMatch({ status: 'no_score' })] })],
         })
-        render(<MatchesCard eventId="ev1" />)
+        render(<MatchesCard roundId="round1" />)
         const validateButtons = screen.getAllByRole('button', { name: /valider/i })
         expect(validateButtons.every(btn => btn.hasAttribute('disabled'))).toBe(true)
     })
@@ -153,7 +153,7 @@ describe('MatchesCard', () => {
             ...defaultReturn,
             days: [makeDay({ matches: [makeMatch({ status: 'no_score' })] })],
         })
-        render(<MatchesCard eventId="ev1" />)
+        render(<MatchesCard roundId="round1" />)
 
         const comboboxes = screen.getAllByRole('combobox')
         fireEvent.change(comboboxes[0], { target: { value: '3-1' } })
@@ -176,7 +176,7 @@ describe('MatchesCard', () => {
                 })],
             })],
         })
-        render(<MatchesCard eventId="ev1" />)
+        render(<MatchesCard roundId="round1" />)
         expect(screen.getAllByText('3-1').length).toBeGreaterThanOrEqual(1)
         expect(screen.getAllByText('2-3').length).toBeGreaterThanOrEqual(1)
         // 2 conflict buttons per layout (desktop + mobile) = 4 total
@@ -189,7 +189,7 @@ describe('MatchesCard', () => {
             ...defaultReturn,
             days: [makeDay(), makeDay({ date: '2026-04-19', isToday: false })],
         })
-        render(<MatchesCard eventId="ev1" />)
+        render(<MatchesCard roundId="round1" />)
         expect(screen.getByRole('button', { name: /jour précédent/i })).toBeDisabled()
     })
 
@@ -198,7 +198,7 @@ describe('MatchesCard', () => {
             ...defaultReturn,
             days: [makeDay()],
         })
-        render(<MatchesCard eventId="ev1" />)
+        render(<MatchesCard roundId="round1" />)
         expect(screen.getByRole('button', { name: /jour suivant/i })).toBeDisabled()
     })
 
@@ -209,7 +209,7 @@ describe('MatchesCard', () => {
             ...defaultReturn,
             days: [day1, day2],
         })
-        render(<MatchesCard eventId="ev1" />)
+        render(<MatchesCard roundId="round1" />)
         expect(screen.getByText('vendredi 18 avril')).toBeInTheDocument()
 
         fireEvent.click(screen.getByRole('button', { name: /jour suivant/i }))
@@ -223,7 +223,7 @@ describe('MatchesCard', () => {
             ...defaultReturn,
             days: [makeDay({ matches: [done, pending] })],
         })
-        render(<MatchesCard eventId="ev1" />)
+        render(<MatchesCard roundId="round1" />)
         expect(screen.getByText('1/2 joués')).toBeInTheDocument()
     })
 })

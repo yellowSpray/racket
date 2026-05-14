@@ -18,9 +18,6 @@ const makeEvent = (overrides: Partial<Event> = {}): Event => ({
   id: 'e1',
   club_id: 'c1',
   event_name: 'Tournoi Test',
-  start_date: '2026-03-01',
-  end_date: '2026-03-02',
-  number_of_courts: 2,
   ...overrides,
 })
 

@@ -15,7 +15,7 @@ const makeMatch = (overrides: Partial<Match> = {}): Match => ({
   score: null,
   player1: { id: 'p1', first_name: 'Alice', last_name: 'Martin' },
   player2: { id: 'p2', first_name: 'Bob', last_name: 'Dupont' },
-  group: { id: 'g1', group_name: 'Group A', event_id: 'e1' },
+  group: { id: 'g1', group_name: 'Group A', round_id: 'r1' },
   ...overrides,
 })
 
@@ -69,7 +69,7 @@ describe('MatchCell', () => {
   it('does not display group badge when group_name is empty', () => {
     render(
       <MatchCell
-        match={makeMatch({ group: { id: 'g1', group_name: '', event_id: 'e1' } })}
+        match={makeMatch({ group: { id: 'g1', group_name: '', round_id: 'r1' } })}
       />
     )
     expect(screen.queryByText('Group A')).not.toBeInTheDocument()

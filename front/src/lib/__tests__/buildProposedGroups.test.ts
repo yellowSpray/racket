@@ -5,7 +5,7 @@ import type { GroupStandings, PromotionResult } from "@/types/ranking"
 
 const previousGroups: Group[] = [
     {
-        id: "g1", event_id: "e1", group_name: "Box 1", max_players: 4, created_at: "",
+        id: "g1", round_id: "r1", group_name: "Box 1", max_players: 4, created_at: "",
         players: [
             { id: "p1", first_name: "Alice", last_name: "A", phone: "", power_ranking: 10 },
             { id: "p2", first_name: "Bob", last_name: "B", phone: "", power_ranking: 9 },
@@ -14,7 +14,7 @@ const previousGroups: Group[] = [
         ],
     },
     {
-        id: "g2", event_id: "e1", group_name: "Box 2", max_players: 4, created_at: "",
+        id: "g2", round_id: "r1", group_name: "Box 2", max_players: 4, created_at: "",
         players: [
             { id: "p5", first_name: "Eve", last_name: "E", phone: "", power_ranking: 6 },
             { id: "p6", first_name: "Frank", last_name: "F", phone: "", power_ranking: 5 },
@@ -140,7 +140,7 @@ describe("buildProposedGroups", () => {
 
     it("handles empty groups", () => {
         const emptyGroups: Group[] = [
-            { id: "g1", event_id: "e1", group_name: "Box 1", max_players: 4, created_at: "", players: [] },
+            { id: "g1", round_id: "r1", group_name: "Box 1", max_players: 4, created_at: "", players: [] },
         ]
         const result = buildProposedGroups(emptyGroups, [], { moves: [], stayingPlayers: [] })
         expect(result).toEqual([])
@@ -263,7 +263,7 @@ describe("buildProposedGroups", () => {
             // 3 boxes, 3 new players of varying strength
             const threeBoxGroups: Group[] = [
                 {
-                    id: "g1", event_id: "e1", group_name: "Box 1", max_players: 4, created_at: "",
+                    id: "g1", round_id: "r1", group_name: "Box 1", max_players: 4, created_at: "",
                     players: [
                         { id: "p1", first_name: "A", last_name: "A", phone: "", power_ranking: 1200 },
                         { id: "p2", first_name: "B", last_name: "B", phone: "", power_ranking: 1100 },
@@ -272,7 +272,7 @@ describe("buildProposedGroups", () => {
                     ],
                 },
                 {
-                    id: "g2", event_id: "e1", group_name: "Box 2", max_players: 4, created_at: "",
+                    id: "g2", round_id: "r1", group_name: "Box 2", max_players: 4, created_at: "",
                     players: [
                         { id: "p5", first_name: "E", last_name: "E", phone: "", power_ranking: 800 },
                         { id: "p6", first_name: "F", last_name: "F", phone: "", power_ranking: 700 },
@@ -281,7 +281,7 @@ describe("buildProposedGroups", () => {
                     ],
                 },
                 {
-                    id: "g3", event_id: "e1", group_name: "Box 3", max_players: 4, created_at: "",
+                    id: "g3", round_id: "r1", group_name: "Box 3", max_players: 4, created_at: "",
                     players: [
                         { id: "p9", first_name: "I", last_name: "I", phone: "", power_ranking: 400 },
                         { id: "p10", first_name: "J", last_name: "J", phone: "", power_ranking: 300 },
