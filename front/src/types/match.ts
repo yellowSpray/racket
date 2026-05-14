@@ -16,7 +16,7 @@ export interface Match {
     updated_at?: string
     player1?: { id: string; first_name: string; last_name: string; avatar_url?: string }
     player2?: { id: string; first_name: string; last_name: string; avatar_url?: string }
-    group?: { id: string; group_name: string; event_id: string }
+    group?: { id: string; group_name: string; round_id: string }
 }
 
 export interface MatchPairing {

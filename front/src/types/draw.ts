@@ -8,7 +8,7 @@ export type GroupPlayer = {
 
 export type Group = {
     id: string
-    event_id: string
+    round_id: string
     group_name: string
     max_players: number
     created_at: string
@@ -30,7 +30,7 @@ export type SupabaseGroupPlayer = {
 
 export type SupabaseGroup = {
     id: string
-    event_id: string
+    round_id: string
     group_name: string
     max_players: number
     created_at: string
@@ -44,7 +44,7 @@ export type SupabaseGroup = {
 export function transformGroups(data: SupabaseGroup[]): Group[] {
     return data.map(g => ({
         id: g.id,
-        event_id: g.event_id,
+        round_id: g.round_id,
         group_name: g.group_name,
         max_players: g.max_players,
         created_at: g.created_at,

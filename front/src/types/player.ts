@@ -22,8 +22,8 @@ export type SupabaseGroupPlayer = {
 
 export type SupabasePayment = {
     status: PaymentStatus
-    event_id: string
-    events: { event_name: string }
+    round_id: string
+    event_rounds: { round_number: number; events: { event_name: string } }
 }
 
 export type SupabasePlayer = {
@@ -41,7 +41,8 @@ export type SupabasePlayer = {
 }
 
 export type PlayerPayment = {
-    event_id: string
+    round_id: string
+    round_number: number
     event_name: string
     status: PaymentStatus
 }
@@ -50,6 +51,7 @@ export type PlayerType = {
     id: string
     first_name: string
     last_name: string
+    full_name: string
     email: string
     phone: string
     arrival: string
@@ -70,8 +72,8 @@ export interface PlayersContextType {
     updatePlayer: (id: string, updates: Partial<PlayerType>) => Promise<void>;
     deletePlayer: (id: string) => Promise<void>;
     removePlayerFromEvent: (id: string) => Promise<void>;
-    updatePaymentStatus: (playerId: string, eventId: string, newStatus: PaymentStatus) => Promise<void>;
-    updateAbsences: (playerId: string, dates: string[]) => Promise<void>;
+    updatePaymentStatus: (playerId: string, roundId: string, newStatus: PaymentStatus) => Promise<void>;
+    updateAbsences: (playerId: string, dates: string[], roundId: string | null) => Promise<void>;
     fetchPlayer: () => Promise<void>;
-    fetchPlayersByEvent: (id: string) => Promise<void>;
+    fetchPlayersByEvent: (eventId: string, roundId: string | null) => Promise<void>;
 }
