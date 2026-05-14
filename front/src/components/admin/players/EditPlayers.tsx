@@ -102,7 +102,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
                 setSelected(playerData.status.filter(s => s === "member" || s === "visitor"))
                 setPaymentStatus(playerData.payment_status || "unpaid")
                 setLocalPayments(
-                    Object.fromEntries((playerData.payments || []).map(p => [p.event_id, p.status]))
+                    Object.fromEntries((playerData.payments || []).map(p => [p.round_id, p.status]))
                 )
                 setLocalAbsences(playerData.unavailable || [])
                 setCurrentStep(1)
@@ -116,7 +116,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
                         if (data) {
                             setRegisteredEvents(data.map(d => ({
                                 event_id: d.event_id as string,
-                                event_name: (d.events as { event_name: string } | null)?.event_name || ""
+                                event_name: (d.events as unknown as { event_name: string } | null)?.event_name || ""
                             })))
                         }
                     })
@@ -188,14 +188,14 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
             // Persister les changements de paiement per-event
             if (mode === "edit" && playerData && onPaymentChange) {
                 const originalPayments = Object.fromEntries(
-                    (playerData.payments || []).map(p => [p.event_id, p.status])
+                    (playerData.payments || []).map(p => [p.round_id, p.status])
                 )
                 const paymentUpdates = Object.entries(localPayments)
-                    .filter(([eventId, newStatus]) => originalPayments[eventId] !== newStatus)
+                    .filter(([roundId, newStatus]) => originalPayments[roundId] !== newStatus)
 
                 await Promise.all(
-                    paymentUpdates.map(([eventId, newStatus]) =>
-                        onPaymentChange(playerData.id, eventId, newStatus)
+                    paymentUpdates.map(([roundId, newStatus]) =>
+                        onPaymentChange(playerData.id, roundId, newStatus)
                     )
                 )
             }
@@ -362,9 +362,9 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
                             <FieldLabel>Paiement par série</FieldLabel>
                             <div className="space-y-2">
                                 {playerData.payments.map((payment) => {
-                                    const currentStatus = localPayments[payment.event_id] ?? payment.status
+                                    const currentStatus = localPayments[payment.round_id] ?? payment.status
                                     return (
-                                        <div key={payment.event_id} className="flex items-center justify-between gap-4">
+                                        <div key={payment.round_id} className="flex items-center justify-between gap-4">
                                             <span className="text-sm truncate">{payment.event_name}</span>
                                             <ToggleGroup
                                                 type="multiple"
@@ -373,7 +373,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
                                                 value={currentStatus === "paid" ? ["paid"] : []}
                                                 onValueChange={(values) => {
                                                     const newStatus = values.includes("paid") ? "paid" : "unpaid"
-                                                    setLocalPayments(prev => ({ ...prev, [payment.event_id]: newStatus as PaymentStatus }))
+                                                    setLocalPayments(prev => ({ ...prev, [payment.round_id]: newStatus as PaymentStatus }))
                                                 }}
                                             >
                                                 <ToggleGroupItem

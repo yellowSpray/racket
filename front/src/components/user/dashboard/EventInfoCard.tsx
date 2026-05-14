@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Location01Icon, Building04Icon } from "hugeicons-react"
 import { useEvent } from "@/contexts/EventContext"
 import { useEventRegistration } from "@/hooks/useEventRegistration"
-import type { Event } from "@/types/event"
+import type { Event, EventRound } from "@/types/event"
 import type { ClubConfig } from "@/types/settings"
 
 interface EventInfoCardProps {
@@ -30,9 +30,21 @@ export function EventInfoCard({ event, clubConfig, profileId, className }: Event
     const { isRegistered, loading, register, unregister } = useEventRegistration(event?.id, profileId)
     const { events } = useEvent()
 
+    const resolveRound = (e: Event): EventRound | undefined => {
+        const rounds = e.event_rounds ?? []
+        return rounds.find(r => r.status === "active") ?? rounds[rounds.length - 1]
+    }
+
     const nextEvent = events
-        .filter(e => e.id !== event?.id && e.status === "upcoming")
-        .sort((a, b) => a.start_date.localeCompare(b.start_date))[0] ?? null
+        .filter(e => e.id !== event?.id && resolveRound(e)?.status === "upcoming")
+        .sort((a, b) => {
+            const ra = resolveRound(a)?.start_date ?? ""
+            const rb = resolveRound(b)?.start_date ?? ""
+            return ra.localeCompare(rb)
+        })[0] ?? null
+
+    const currentRound = event ? resolveRound(event) : undefined
+    const nextRound = nextEvent ? resolveRound(nextEvent) : undefined
 
     return (
         <Card className={`${className} flex flex-col`}>
@@ -76,7 +88,9 @@ export function EventInfoCard({ event, clubConfig, profileId, className }: Event
                         {event ? (
                             <div className="flex items-baseline gap-2 min-w-0">
                                 <p className="text-sm font-medium truncate shrink-0">{event.event_name}</p>
-                                <p className="text-xs text-muted-foreground truncate">{formatDate(event.start_date)} → {formatDate(event.end_date)}</p>
+                                {currentRound && (
+                                    <p className="text-xs text-muted-foreground truncate">{formatDate(currentRound.start_date)} → {formatDate(currentRound.end_date)}</p>
+                                )}
                             </div>
                         ) : (
                             <p className="text-xs text-muted-foreground italic">À venir</p>
@@ -91,7 +105,9 @@ export function EventInfoCard({ event, clubConfig, profileId, className }: Event
                         {nextEvent ? (
                             <div className="flex items-baseline gap-2 min-w-0">
                                 <p className="text-sm font-medium truncate shrink-0">{nextEvent.event_name}</p>
-                                <p className="text-xs text-muted-foreground truncate">{formatDate(nextEvent.start_date)} → {formatDate(nextEvent.end_date)}</p>
+                                {nextRound && (
+                                    <p className="text-xs text-muted-foreground truncate">{formatDate(nextRound.start_date)} → {formatDate(nextRound.end_date)}</p>
+                                )}
                             </div>
                         ) : (
                             <p className="text-xs text-muted-foreground italic">À venir</p>

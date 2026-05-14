@@ -1,6 +1,6 @@
 import { useMemo, useCallback, useState } from "react"
 import type { Match } from "@/types/match"
-import type { Event } from "@/types/event"
+import type { Event, EventRound } from "@/types/event"
 import {
     DndContext,
     DragOverlay,
@@ -28,6 +28,7 @@ import { intervalToMinutes } from "@/lib/utils"
 interface MatchScheduleGridProps {
     matches: Match[]
     event: Event
+    round?: EventRound | null
     editMode?: boolean
     pendingScores?: Map<string, string>
     onScoreChange?: (matchId: string, value: string) => void
@@ -108,7 +109,8 @@ function DroppableSlot({ id }: { id: string }) {
 
 export function MatchScheduleGrid({
     matches,
-    event,
+    event: _event,
+    round,
     editMode,
     pendingScores,
     onScoreChange,
@@ -128,13 +130,13 @@ export function MatchScheduleGrid({
     )
 
     const timeSlots = useMemo(() => {
-        const durationMin = intervalToMinutes(event.estimated_match_duration)
+        const durationMin = intervalToMinutes(round?.estimated_match_duration)
         return calculateTimeSlots(
-            event.start_time || "19:00",
-            event.end_time || "23:00",
+            round?.start_time || "19:00",
+            round?.end_time || "23:00",
             durationMin
         )
-    }, [event.estimated_match_duration, event.start_time, event.end_time])
+    }, [round?.estimated_match_duration, round?.start_time, round?.end_time])
 
     const courts = useMemo(() => {
         const courtsSet = new Set<string>()
@@ -143,8 +145,8 @@ export function MatchScheduleGrid({
         })
         const sorted = Array.from(courtsSet).sort()
         if (sorted.length > 0) return sorted
-        return Array.from({ length: event.number_of_courts }, (_, i) => `Terrain ${i + 1}`)
-    }, [matches, event.number_of_courts])
+        return Array.from({ length: round?.number_of_courts ?? 1 }, (_, i) => `Terrain ${i + 1}`)
+    }, [matches, round?.number_of_courts])
 
     const { sortedDates, matchesByDate } = useMemo(() => {
         const byDate = new Map<string, Match[]>()
@@ -168,7 +170,7 @@ export function MatchScheduleGrid({
         setActiveMatch(match || null)
     }
 
-    const durationMin = intervalToMinutes(event.estimated_match_duration)
+    const durationMin = intervalToMinutes(round?.estimated_match_duration)
 
     const handleDragEnd = (dragEvent: DragEndEvent) => {
         const draggedMatch = activeMatch

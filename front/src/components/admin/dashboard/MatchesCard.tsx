@@ -59,12 +59,12 @@ function MatchProgressBadge({ played, total }: { played: number; total: number }
 }
 
 interface MatchesCardProps {
-    eventId: string | null
+    roundId: string | null
     className?: string
 }
 
-export function MatchesCard({ eventId, className }: MatchesCardProps) {
-    const { days, loading, initialDayIndex, resolveScore } = useMatchesByDay(eventId)
+export function MatchesCard({ roundId, className }: MatchesCardProps) {
+    const { days, loading, initialDayIndex, resolveScore } = useMatchesByDay(roundId)
     const [dayIndex, setDayIndex] = useState(0)
     const [scoreSelections, setScoreSelections] = useState<Map<string, string>>(new Map())
 
