@@ -15,6 +15,7 @@ export interface EventRound {
   status: EventStatus
   created_at?: string
   updated_at?: string
+  player_count?: number
 }
 
 export interface Event {
