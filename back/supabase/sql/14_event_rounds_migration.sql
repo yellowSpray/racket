@@ -149,7 +149,7 @@ DROP FUNCTION IF EXISTS public.auto_renew_event_players();
 -- ===================================
 
 -- Supprimer les contraintes uniques AVANT de supprimer les colonnes
-ALTER TABLE public.groups       DROP CONSTRAINT IF EXISTS groups_pkey CASCADE;  -- récrée via PK existante
+-- NB: ne pas toucher à groups_pkey (PK) — cela casserait les FK de matches et group_players
 ALTER TABLE public.payments     DROP CONSTRAINT IF EXISTS payments_profile_id_event_id_key;
 ALTER TABLE public.absences     DROP CONSTRAINT IF EXISTS absences_profile_id_event_id_absent_date_key;
 
