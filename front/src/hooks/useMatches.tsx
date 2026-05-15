@@ -149,20 +149,6 @@ export function useMatches() {
                 durationMin
             )
 
-            // — Log : créneaux réels utilisés par l'algo
-            console.group("⏱ useMatches.generateMatches — créneaux (algo réel)")
-            console.log(`  round.start_time (raw)         : ${JSON.stringify(round.start_time)}`)
-            console.log(`  round.end_time (raw)           : ${JSON.stringify(round.end_time)}`)
-            console.log(`  estimated_match_duration (raw) : ${JSON.stringify(round.estimated_match_duration)}`)
-            console.log(`  durationMin                    : ${durationMin} min`)
-            console.log(`  start_time effectif            : ${round.start_time || "19:00 (FALLBACK !)"}`)
-            console.log(`  end_time effectif              : ${round.end_time || "23:00 (FALLBACK !)"}`)
-            console.log(`  Créneaux calculés (algo)       : [${timeSlots.join(", ")}]  → ${timeSlots.length} créneau(x)`)
-            console.log(`  Dates de jeu                   : [${dates.join(", ")}]  → ${dates.length} jour(s)`)
-            console.log(`  Terrains                       : ${round.number_of_courts}`)
-            console.log(`  Capacité totale                : ${dates.length * timeSlots.length * round.number_of_courts} matchs max`)
-            console.groupEnd()
-
             // 3. Récupérer les contraintes des joueurs (arrivée, départ, absences)
             const playerIds = new Set<string>()
             for (const group of groups) {
