@@ -101,12 +101,44 @@ export function WizardStepMatches({ event, round, groups, matches, onMatchesChan
             if (hasMatches) {
                 await deleteMatchesByRound(round.id)
             }
+
+            // — Log : résumé des tableaux en entrée
+            console.group("🎾 Génération des matchs — entrée")
+            groups.forEach(g => {
+                const n = (g.players || []).length
+                const pairs = (n * (n - 1)) / 2
+                console.log(`  Tableau "${g.group_name}" : ${n} joueurs → ${pairs} paires round-robin`)
+            })
+            const totalPairs = groups.reduce((s, g) => {
+                const n = (g.players || []).length
+                return s + (n * (n - 1)) / 2
+            }, 0)
+            console.log(`  Total paires (toutes dates confondues estimé par l'algo) : à confirmer`)
+            console.log(`  Total paires round-robin uniques : ${totalPairs}`)
+            console.groupEnd()
+
             const result = await generateMatches(round, event, groups)
 
             if (!result) {
                 handleError(new Error("Impossible de générer les matchs. Vérifiez la configuration des créneaux et terrains."))
                 return
             }
+
+            // — Log : résultat de l'algorithme
+            console.group(`🎾 Génération des matchs — résultat algo`)
+            console.log(`  Total pairings calculés : ${result.total}`)
+            console.log(`  Placés                  : ${result.placed} / ${result.total}`)
+            console.log(`  Non-placés              : ${result.unplaced.length}`)
+            if (result.unplaced.length > 0) {
+                console.group("  ❌ Matchs non-placés")
+                result.unplaced.forEach(u => {
+                    console.log(`    ${u.pairing.player1Name} vs ${u.pairing.player2Name}  |  Tableau : ${u.pairing.groupName}  |  Date : ${u.date}`)
+                })
+                console.groupEnd()
+            } else {
+                console.log("  ✅ Tous les matchs ont été placés")
+            }
+            console.groupEnd()
 
             if (result.placed < result.total) {
                 setWarning(
@@ -118,6 +150,32 @@ export function WizardStepMatches({ event, round, groups, matches, onMatchesChan
             // Re-fetch les matchs pour obtenir les donnees completes
             const updatedMatches = await fetchMatchesForRound(round.id)
             onMatchesChanged(updatedMatches)
+
+            // — Log : vérification base de données
+            console.group("🎾 Génération des matchs — vérification BDD")
+            console.log(`  Matchs en base : ${updatedMatches.length} / ${result.total} attendus`)
+
+            const matchesByGroup = new Map<string, typeof updatedMatches>()
+            for (const m of updatedMatches) {
+                const key = m.group?.group_name ?? "Inconnu"
+                if (!matchesByGroup.has(key)) matchesByGroup.set(key, [])
+                matchesByGroup.get(key)!.push(m)
+            }
+
+            groups.forEach(g => {
+                const n = (g.players || []).length
+                const dbCount = matchesByGroup.get(g.group_name)?.length ?? 0
+                const pairs = (n * (n - 1)) / 2
+                const ok = dbCount > 0
+                console.log(`  ${ok ? "✅" : "⚠️"} Tableau "${g.group_name}" : ${dbCount} matchs en BDD  (${pairs} paires round-robin uniques)`)
+            })
+
+            const missing = groups.filter(g => !(matchesByGroup.get(g.group_name)?.length))
+            if (missing.length > 0) {
+                console.warn(`  ⚠️ Tableaux sans aucun match en BDD : ${missing.map(g => g.group_name).join(", ")}`)
+            }
+            console.groupEnd()
+
         } catch (err) {
             handleError(err)
         } finally {

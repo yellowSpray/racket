@@ -135,7 +135,7 @@ export function useMatches() {
         }
     }, [])
 
-    const generateMatches = async (round: EventRound, event: Event, groups: Group[]): Promise<{ total: number; placed: number } | null> => {
+    const generateMatches = async (round: EventRound, event: Event, groups: Group[]): Promise<{ total: number; placed: number; unplaced: UnplacedMatch[] } | null> => {
         setLoading(true)
         setError(null)
 
