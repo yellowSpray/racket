@@ -5,6 +5,7 @@ import type { ClubDefaults } from "../EventDialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { ArrowRight01Icon } from "hugeicons-react"
 
 export interface WizardConfigData {
     eventName: string
@@ -133,6 +134,7 @@ export function WizardStepConfig({ event, round, configData, onNext, clubDefault
             <div className="flex justify-end pt-4">
                 <Button type="submit" size="lg">
                     Suivant
+                    <ArrowRight01Icon className="h-4 w-4" />
                 </Button>
             </div>
         </form>

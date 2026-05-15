@@ -25,7 +25,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { validateGroups } from "@/lib/groupPlayerMove"
 import { sortGroupsByName } from "@/lib/utils"
-import { InformationCircleIcon, SparklesIcon, Settings01Icon, ArrowLeftRightIcon, Delete02Icon, UserGroupIcon, Award01Icon, Tick02Icon, ChartIncreaseIcon, ChartDecreaseIcon, UserRemove01Icon, UserAdd01Icon } from "hugeicons-react"
+import { InformationCircleIcon, SparklesIcon, Settings01Icon, ArrowLeftRightIcon, Delete02Icon, UserGroupIcon, Award01Icon, Tick02Icon, ChartIncreaseIcon, ChartDecreaseIcon, UserRemove01Icon, UserAdd01Icon, ArrowLeft01Icon, ArrowRight01Icon } from "hugeicons-react"
 
 interface WizardStepGroupsProps {
     event: Event
@@ -854,6 +854,7 @@ export function WizardStepGroups({ event, round, groups, eventPlayerIds, onGroup
             {!managementMode && (
                 <div className="flex justify-between pt-6">
                     <Button type="button" size="lg" variant="outline" onClick={onPrevious}>
+                        <ArrowLeft01Icon className="h-4 w-4" />
                         Précédent
                     </Button>
                     <Button
@@ -863,6 +864,7 @@ export function WizardStepGroups({ event, round, groups, eventPlayerIds, onGroup
                         disabled={!hasGroups || !hasPlayers || !validateGroups(groups).valid}
                     >
                         Suivant
+                        <ArrowRight01Icon className="h-4 w-4" />
                     </Button>
                 </div>
             )}

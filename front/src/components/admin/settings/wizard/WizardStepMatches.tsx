@@ -20,7 +20,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { SparklesIcon, Delete02Icon, Calendar03Icon } from "hugeicons-react"
+import { SparklesIcon, Delete02Icon, Calendar03Icon, ArrowLeft01Icon, Tick02Icon } from "hugeicons-react"
 
 interface WizardStepMatchesProps {
     event: Event
@@ -219,9 +219,11 @@ export function WizardStepMatches({ event, round, groups, matches, onMatchesChan
             {/* Navigation */}
             <div className="flex justify-between pt-6">
                 <Button type="button" size="lg" variant="outline" onClick={onPrevious}>
+                    <ArrowLeft01Icon className="h-4 w-4" />
                     Précédent
                 </Button>
                 <Button type="button" size="lg" onClick={onFinish}>
+                    <Tick02Icon className="h-4 w-4" />
                     Terminer
                 </Button>
             </div>

@@ -9,7 +9,7 @@ import { useErrorHandler } from "@/hooks/useErrorHandler"
 import { ValidationError } from "@/lib/errors"
 import { toast } from "sonner"
 import { minutesToInterval } from "@/lib/utils"
-import { Calendar03Icon } from "hugeicons-react"
+import { Calendar03Icon, ArrowLeft01Icon, ArrowRight01Icon } from "hugeicons-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -160,7 +160,7 @@ export function WizardStepCalendar({ event, round, configData, onSave, onPreviou
                     {/* Gauche : Calendrier */}
                     <div className="grid gap-2">
                         <Label>
-                            Jours de jeu <span className="text-red-500">*</span>
+                            Jours des matchs <span className="text-red-500">*</span>
                         </Label>
                         <p className="text-xs text-muted-foreground">
                             Sélectionnez les dates où les matchs se déroulent.
@@ -219,10 +219,12 @@ export function WizardStepCalendar({ event, round, configData, onSave, onPreviou
 
             <div className="flex justify-between pt-4">
                 <Button type="button" size="lg" variant="outline" onClick={onPrevious}>
+                    <ArrowLeft01Icon className="h-4 w-4" />
                     Précédent
                 </Button>
                 <Button type="submit" disabled={loading} size="lg">
                     {loading ? "Enregistrement..." : "Suivant"}
+                    <ArrowRight01Icon className="h-4 w-4" />
                 </Button>
             </div>
         </form>

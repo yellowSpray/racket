@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { UserAdd01Icon, UserRemove01Icon, Search01Icon, UserGroupIcon } from "hugeicons-react"
+import { UserAdd01Icon, UserRemove01Icon, Search01Icon, UserGroupIcon, ArrowLeft01Icon, ArrowRight01Icon } from "hugeicons-react"
 
 type RegistrationPlayer = {
     id: string
@@ -177,10 +177,12 @@ export function WizardStepRegistrations({ event, onRegistrationsChanged, onNext,
             {/* Navigation */}
             <div className="flex justify-between pt-2">
                 <Button type="button" size="lg" variant="outline" onClick={onPrevious}>
+                    <ArrowLeft01Icon className="h-4 w-4" />
                     Précédent
                 </Button>
                 <Button type="button" size="lg" onClick={onNext} disabled={registeredIds.size === 0}>
                     Suivant
+                    <ArrowRight01Icon className="h-4 w-4" />
                 </Button>
             </div>
         </div>

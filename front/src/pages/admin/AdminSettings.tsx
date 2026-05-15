@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { EventsManager } from "@/components/admin/settings/EventsManager"
 import { EventParamsManager } from "@/components/admin/settings/EventParamsManager"
 import { ClubConfigManager } from "@/components/admin/settings/ClubConfigManager"
@@ -10,13 +10,6 @@ import { UserAdd01Icon, Search01Icon, Cancel01Icon } from "hugeicons-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useClubConfig } from "@/hooks/useClubConfig"
 import { useHeaderSlot, useHeaderActions } from "@/contexts/HeaderSlotContext"
-import type { ClubDefaults } from "@/components/admin/settings/EventDialog"
-
-/** Normalize Supabase time "19:00:00+00" → "19:00" */
-function formatTime(time: string | undefined): string | undefined {
-    if (!time) return undefined
-    return time.replace(/([+-]\d{2})$/, "").slice(0, 5)
-}
 
 export function AdminSettings () {
     const { profile } = useAuth()
@@ -24,16 +17,6 @@ export function AdminSettings () {
     const [activeTab, setActiveTab] = useState("manage")
     const [usersSearch, setUsersSearch] = useState("")
     const [usersInviteOpen, setUsersInviteOpen] = useState(false)
-
-    const clubDefaults = useMemo<ClubDefaults | undefined>(() => {
-        if (!clubConfig) return undefined
-        return {
-            startTime: formatTime(clubConfig.default_start_time) ?? "19:00",
-            endTime: formatTime(clubConfig.default_end_time) ?? "23:00",
-            numberOfCourts: clubConfig.default_number_of_courts,
-            matchDuration: clubConfig.default_match_duration,
-        }
-    }, [clubConfig])
 
     useEffect(() => {
         fetchClubConfig(profile?.club_id ?? null)
@@ -94,7 +77,7 @@ export function AdminSettings () {
                     <EventParamsManager />
                 </TabsContent>
                 <TabsContent value="manage" className="h-full">
-                    <EventsManager clubDefaults={clubDefaults} />
+                    <EventsManager />
                 </TabsContent>
                 <TabsContent value="clubs" className="h-full">
                     <ClubConfigManager />
