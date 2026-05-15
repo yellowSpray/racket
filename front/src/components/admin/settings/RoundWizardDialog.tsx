@@ -3,7 +3,7 @@ import type { Group } from "@/types/draw"
 import type { Match } from "@/types/match"
 import { useCallback, useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
-import { sortGroupsByName } from "@/lib/utils"
+import { sortGroupsByName, intervalToMinutes, formatTimeForInput } from "@/lib/utils"
 import { transformGroups } from "@/types/draw"
 import {
     Dialog,
@@ -23,6 +23,7 @@ import {
     StepperTitle,
 } from "@/components/ui/stepper"
 import { Tick02Icon } from "hugeicons-react"
+import { WizardRoundStepConfig, type WizardRoundConfigData } from "./wizard/round/WizardRoundStepConfig"
 import { WizardRoundStepCalendar } from "./wizard/round/WizardRoundStepCalendar"
 import { WizardStepRegistrations } from "./wizard/WizardStepRegistrations"
 import { WizardStepGroups } from "./wizard/WizardStepGroups"
@@ -46,15 +47,17 @@ export function RoundWizardDialog({
     const isEditing = !!round
 
     const [activeStep, setActiveStep] = useState(1)
+    const [roundConfig, setRoundConfig] = useState<WizardRoundConfigData | null>(null)
     const [wizardRound, setWizardRound] = useState<EventRound | null>(null)
     const [registeredPlayerIds, setRegisteredPlayerIds] = useState<Set<string>>(new Set())
     const [groups, setGroups] = useState<Group[]>([])
     const [matches, setMatches] = useState<Match[]>([])
 
-    const step1Completed = !!wizardRound
-    const step2Completed = registeredPlayerIds.size > 0
-    const step3Completed = groups.length > 0 && groups.some(g => (g.players || []).length > 0)
-    const step4Completed = matches.length > 0
+    const step1Completed = !!roundConfig
+    const step2Completed = !!wizardRound
+    const step3Completed = registeredPlayerIds.size > 0
+    const step4Completed = groups.length > 0 && groups.some(g => (g.players || []).length > 0)
+    const step5Completed = matches.length > 0
 
     const nextRoundNumber = (() => {
         const rounds = event.event_rounds ?? []
@@ -104,9 +107,16 @@ export function RoundWizardDialog({
 
         if (round) {
             setWizardRound(round)
+            setRoundConfig({
+                startTime: formatTimeForInput(round.start_time) || "19:00",
+                endTime: formatTimeForInput(round.end_time) || "23:00",
+                courts: round.number_of_courts,
+                matchDuration: intervalToMinutes(round.estimated_match_duration),
+            })
             setActiveStep(1)
             loadRoundData(event.id, round.id)
         } else {
+            setRoundConfig(null)
             setWizardRound(null)
             setRegisteredPlayerIds(new Set())
             setGroups([])
@@ -120,6 +130,7 @@ export function RoundWizardDialog({
         if (step > 1 && !step1Completed) return
         if (step > 2 && !step2Completed) return
         if (step > 3 && !step3Completed) return
+        if (step > 4 && !step4Completed) return
         setActiveStep(step)
     }
 
@@ -133,9 +144,9 @@ export function RoundWizardDialog({
         onOpenChange(false)
     }
 
-    const dialogWidth = activeStep >= 3
+    const dialogWidth = activeStep >= 4
         ? "sm:max-w-[95vw] lg:max-w-[1200px]"
-        : activeStep === 2
+        : activeStep === 3
         ? "sm:max-w-[760px]"
         : "sm:max-w-[680px]"
 
@@ -150,8 +161,8 @@ export function RoundWizardDialog({
                     </DialogTitle>
                     <DialogDescription>
                         {isEditing
-                            ? "Modifiez le calendrier, les inscriptions, les tableaux ou les matchs"
-                            : "Configurez cette série en 4 étapes"}
+                            ? "Modifiez la configuration, le calendrier, les inscriptions, les tableaux ou les matchs"
+                            : "Configurez cette série en 5 étapes"}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -165,7 +176,7 @@ export function RoundWizardDialog({
                             <StepperTrigger>
                                 <StepperIndicator>1</StepperIndicator>
                             </StepperTrigger>
-                            <StepperTitle>Calendrier</StepperTitle>
+                            <StepperTitle>Configuration</StepperTitle>
                             <StepperSeparator />
                         </StepperItem>
 
@@ -173,7 +184,7 @@ export function RoundWizardDialog({
                             <StepperTrigger>
                                 <StepperIndicator>2</StepperIndicator>
                             </StepperTrigger>
-                            <StepperTitle>Inscriptions</StepperTitle>
+                            <StepperTitle>Calendrier</StepperTitle>
                             <StepperSeparator />
                         </StepperItem>
 
@@ -181,7 +192,7 @@ export function RoundWizardDialog({
                             <StepperTrigger>
                                 <StepperIndicator>3</StepperIndicator>
                             </StepperTrigger>
-                            <StepperTitle>Tableaux</StepperTitle>
+                            <StepperTitle>Inscriptions</StepperTitle>
                             <StepperSeparator />
                         </StepperItem>
 
@@ -189,28 +200,40 @@ export function RoundWizardDialog({
                             <StepperTrigger>
                                 <StepperIndicator>4</StepperIndicator>
                             </StepperTrigger>
+                            <StepperTitle>Tableaux</StepperTitle>
+                            <StepperSeparator />
+                        </StepperItem>
+
+                        <StepperItem step={5} completed={step5Completed} disabled={!step4Completed}>
+                            <StepperTrigger>
+                                <StepperIndicator>5</StepperIndicator>
+                            </StepperTrigger>
                             <StepperTitle>Matchs</StepperTitle>
                         </StepperItem>
                     </StepperNav>
 
                     <StepperContent value={1}>
-                        <WizardRoundStepCalendar
-                            event={event}
-                            round={wizardRound}
-                            nextRoundNumber={nextRoundNumber}
-                            onSave={(savedRound) => {
-                                setWizardRound(savedRound)
+                        <WizardRoundStepConfig
+                            round={round}
+                            configData={roundConfig}
+                            onNext={(data) => {
+                                setRoundConfig(data)
                                 setActiveStep(2)
                             }}
                         />
                     </StepperContent>
 
                     <StepperContent value={2}>
-                        {wizardRound && (
-                            <WizardStepRegistrations
+                        {roundConfig && (
+                            <WizardRoundStepCalendar
                                 event={event}
-                                onRegistrationsChanged={setRegisteredPlayerIds}
-                                onNext={() => setActiveStep(3)}
+                                round={wizardRound}
+                                nextRoundNumber={nextRoundNumber}
+                                configData={roundConfig}
+                                onSave={(savedRound) => {
+                                    setWizardRound(savedRound)
+                                    setActiveStep(3)
+                                }}
                                 onPrevious={() => setActiveStep(1)}
                             />
                         )}
@@ -218,12 +241,10 @@ export function RoundWizardDialog({
 
                     <StepperContent value={3}>
                         {wizardRound && (
-                            <WizardStepGroups
+                            <WizardStepRegistrations
                                 event={event}
                                 round={wizardRound}
-                                groups={groups}
-                                eventPlayerIds={registeredPlayerIds}
-                                onGroupsChanged={setGroups}
+                                onRegistrationsChanged={setRegisteredPlayerIds}
                                 onNext={() => setActiveStep(4)}
                                 onPrevious={() => setActiveStep(2)}
                             />
@@ -232,13 +253,27 @@ export function RoundWizardDialog({
 
                     <StepperContent value={4}>
                         {wizardRound && (
+                            <WizardStepGroups
+                                event={event}
+                                round={wizardRound}
+                                groups={groups}
+                                eventPlayerIds={registeredPlayerIds}
+                                onGroupsChanged={setGroups}
+                                onNext={() => setActiveStep(5)}
+                                onPrevious={() => setActiveStep(3)}
+                            />
+                        )}
+                    </StepperContent>
+
+                    <StepperContent value={5}>
+                        {wizardRound && (
                             <WizardStepMatches
                                 event={event}
                                 round={wizardRound}
                                 groups={groups}
                                 matches={matches}
                                 onMatchesChanged={setMatches}
-                                onPrevious={() => setActiveStep(3)}
+                                onPrevious={() => setActiveStep(4)}
                                 onFinish={handleFinish}
                             />
                         )}

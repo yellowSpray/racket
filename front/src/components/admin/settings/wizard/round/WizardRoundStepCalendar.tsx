@@ -2,7 +2,8 @@ import type { Event, EventRound, CalendarType } from "@/types/event"
 import { useState, useEffect, useMemo } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { toast } from "sonner"
-import { minutesToInterval, intervalToMinutes, formatTimeForInput } from "@/lib/utils"
+import { minutesToInterval } from "@/lib/utils"
+import type { WizardRoundConfigData } from "./WizardRoundStepConfig"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,6 +14,7 @@ interface WizardRoundStepCalendarProps {
     event: Event
     round: EventRound | null
     nextRoundNumber: number
+    configData: WizardRoundConfigData
     onSave: (savedRound: EventRound) => void
     onPrevious?: () => void
 }
@@ -20,9 +22,13 @@ interface WizardRoundStepCalendarProps {
 function CalendarDaySelection({
     playingDates,
     setPlayingDates,
+    deadline,
+    setDeadline,
 }: {
     playingDates: string[]
     setPlayingDates: (d: string[]) => void
+    deadline: string
+    setDeadline: (d: string) => void
 }) {
     const sorted = useMemo(() => [...playingDates].sort(), [playingDates])
 
@@ -38,6 +44,7 @@ function CalendarDaySelection({
                 <MultiDateCalendar
                     selectedDates={playingDates}
                     onChange={setPlayingDates}
+                    className="w-full"
                 />
             </div>
 
@@ -70,6 +77,19 @@ function CalendarDaySelection({
                             ))}
                         </div>
                     )}
+                </div>
+
+                <div className="grid gap-2">
+                    <Label htmlFor="deadline">Date limite (optionnelle)</Label>
+                    <p className="text-xs text-muted-foreground">
+                        La série sera automatiquement marquée comme terminée après cette date.
+                    </p>
+                    <Input
+                        id="deadline"
+                        type="date"
+                        value={deadline}
+                        onChange={e => setDeadline(e.target.value)}
+                    />
                 </div>
             </div>
         </div>
@@ -120,16 +140,11 @@ export function WizardRoundStepCalendar({
     event,
     round,
     nextRoundNumber,
+    configData,
     onSave,
     onPrevious,
 }: WizardRoundStepCalendarProps) {
     const calendarType: CalendarType = event.calendar_type ?? "day_selection"
-
-    // Champs horaires / terrains (partagés)
-    const [startTime, setStartTime]       = useState("19:00")
-    const [endTime, setEndTime]           = useState("23:00")
-    const [courts, setCourts]             = useState(1)
-    const [matchDuration, setMatchDuration] = useState(30)
 
     // Champs calendrier — day_selection
     const [playingDates, setPlayingDates] = useState<string[]>([])
@@ -145,10 +160,6 @@ export function WizardRoundStepCalendar({
 
     useEffect(() => {
         if (round) {
-            setStartTime(formatTimeForInput(round.start_time) || "19:00")
-            setEndTime(formatTimeForInput(round.end_time) || "23:00")
-            setCourts(round.number_of_courts)
-            setMatchDuration(intervalToMinutes(round.estimated_match_duration))
             setDeadline(round.deadline || "")
 
             if (calendarType === "day_selection") {
@@ -185,10 +196,10 @@ export function WizardRoundStepCalendar({
             : []
 
         const roundData = {
-            start_time: startTime || null,
-            end_time: endTime || null,
-            number_of_courts: courts,
-            estimated_match_duration: matchDuration ? minutesToInterval(matchDuration) : null,
+            start_time: configData.startTime || null,
+            end_time: configData.endTime || null,
+            number_of_courts: configData.courts,
+            estimated_match_duration: configData.matchDuration ? minutesToInterval(configData.matchDuration) : null,
             deadline: deadline || null,
             ...(calendarType === "day_selection"
                 ? {
@@ -232,82 +243,36 @@ export function WizardRoundStepCalendar({
     return (
         <form onSubmit={handleSubmit}>
             <div className="grid gap-6 pt-2 pb-4">
-                {/* Section horaires & terrains */}
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                        <Label htmlFor="start_time">Heure de début</Label>
-                        <Input
-                            id="start_time"
-                            type="time"
-                            value={startTime}
-                            onChange={e => setStartTime(e.target.value)}
-                        />
-                    </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="end_time">Heure de fin</Label>
-                        <Input
-                            id="end_time"
-                            type="time"
-                            value={endTime}
-                            onChange={e => setEndTime(e.target.value)}
-                        />
-                    </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="courts">
-                            Terrains <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                            id="courts"
-                            type="number"
-                            min={1}
-                            value={courts}
-                            onChange={e => setCourts(parseInt(e.target.value) || 1)}
-                        />
-                    </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="match_duration">Durée match (min)</Label>
-                        <Input
-                            id="match_duration"
-                            type="number"
-                            min={5}
-                            max={180}
-                            value={matchDuration}
-                            onChange={e => setMatchDuration(parseInt(e.target.value) || 30)}
-                        />
-                    </div>
-                </div>
-
-                {/* Séparateur visuel */}
-                <div className="border-t border-gray-100" />
-
                 {/* Section calendrier selon le type de l'event */}
                 {calendarType === "day_selection" ? (
                     <CalendarDaySelection
                         playingDates={playingDates}
                         setPlayingDates={setPlayingDates}
+                        deadline={deadline}
+                        setDeadline={setDeadline}
                     />
                 ) : (
-                    <CalendarPeriod
-                        startDate={startDate}
-                        endDate={endDate}
-                        setStartDate={setStartDate}
-                        setEndDate={setEndDate}
-                    />
+                    <>
+                        <CalendarPeriod
+                            startDate={startDate}
+                            endDate={endDate}
+                            setStartDate={setStartDate}
+                            setEndDate={setEndDate}
+                        />
+                        <div className="grid gap-2 max-w-xs">
+                            <Label htmlFor="deadline">Date limite (optionnelle)</Label>
+                            <p className="text-xs text-muted-foreground">
+                                La série sera automatiquement marquée comme terminée après cette date.
+                            </p>
+                            <Input
+                                id="deadline"
+                                type="date"
+                                value={deadline}
+                                onChange={e => setDeadline(e.target.value)}
+                            />
+                        </div>
+                    </>
                 )}
-
-                {/* Deadline */}
-                <div className="grid gap-2 max-w-xs">
-                    <Label htmlFor="deadline">Date limite (optionnelle)</Label>
-                    <p className="text-xs text-muted-foreground">
-                        La série sera automatiquement marquée comme terminée après cette date.
-                    </p>
-                    <Input
-                        id="deadline"
-                        type="date"
-                        value={deadline}
-                        onChange={e => setDeadline(e.target.value)}
-                    />
-                </div>
 
                 {error && <p className="text-sm text-red-600">{error}</p>}
             </div>
