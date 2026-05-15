@@ -1,11 +1,12 @@
-import type { Event } from "@/types/event"
+import type { Event, EventRound } from "@/types/event"
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { supabase } from "@/lib/supabaseClient"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { UserAdd01Icon, UserRemove01Icon, Search01Icon, UserGroupIcon, ArrowLeft01Icon, ArrowRight01Icon } from "hugeicons-react"
+import { Search01Icon, UserGroupIcon, ArrowLeft01Icon, ArrowRight01Icon } from "hugeicons-react"
 
 type RegistrationPlayer = {
     id: string
@@ -17,28 +18,38 @@ type RegistrationPlayer = {
 
 interface WizardStepRegistrationsProps {
     event: Event
+    round: EventRound
     onRegistrationsChanged: (playerIds: Set<string>) => void
     onNext: () => void
     onPrevious: () => void
 }
 
-export function WizardStepRegistrations({ event, onRegistrationsChanged, onNext, onPrevious }: WizardStepRegistrationsProps) {
+export function WizardStepRegistrations({ event, round, onRegistrationsChanged, onNext, onPrevious }: WizardStepRegistrationsProps) {
     const [allPlayers, setAllPlayers] = useState<RegistrationPlayer[]>([])
     const [registeredIds, setRegisteredIds] = useState<Set<string>>(new Set())
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+    const [selectedRegisteredIds, setSelectedRegisteredIds] = useState<Set<string>>(new Set())
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState("")
+    const [searchRegistered, setSearchRegistered] = useState("")
 
     const fetchData = useCallback(async () => {
         setLoading(true)
-        const [profilesRes, registrationsRes] = await Promise.all([
+
+        const previousRound = (event.event_rounds ?? []).find(r => r.round_number === round.round_number - 1)
+        const noOp = Promise.resolve({ data: null as null, error: null })
+        const [profilesRes, registrationsRes, prevGroupsRes] = await Promise.all([
             supabase
                 .from("profiles")
                 .select("id, first_name, last_name, power_ranking, player_status(status)")
+                .eq("club_id", event.club_id)
                 .order("last_name"),
-            supabase
-                .from("event_players")
-                .select("profile_id")
-                .eq("event_id", event.id)
+            previousRound
+                ? supabase.from("event_players").select("profile_id").eq("event_id", event.id)
+                : noOp,
+            previousRound
+                ? supabase.from("groups").select("group_players(profile_id)").eq("round_id", previousRound.id)
+                : noOp,
         ])
 
         if (profilesRes.data) {
@@ -51,14 +62,23 @@ export function WizardStepRegistrations({ event, onRegistrationsChanged, onNext,
             })))
         }
 
+        const ids = new Set<string>()
+
         if (registrationsRes.data) {
-            const ids = new Set(registrationsRes.data.map(r => r.profile_id as string))
-            setRegisteredIds(ids)
-            onRegistrationsChanged(ids)
+            console.log("[WizardStepRegistrations] inscrits fetched:", registrationsRes.data)
+            for (const r of registrationsRes.data) ids.add(r.profile_id as string)
         }
 
+        if (prevGroupsRes.data) {
+            for (const group of prevGroupsRes.data) {
+                for (const gp of (group.group_players || [])) ids.add(gp.profile_id as string)
+            }
+        }
+
+        setRegisteredIds(ids)
+        onRegistrationsChanged(ids)
         setLoading(false)
-    }, [event.id]) // eslint-disable-line react-hooks/exhaustive-deps
+    }, [event.id, round.round_number]) // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         fetchData()
@@ -69,14 +89,51 @@ export function WizardStepRegistrations({ event, onRegistrationsChanged, onNext,
         onRegistrationsChanged(next)
     }, [onRegistrationsChanged])
 
+    const toggleSelect = (playerId: string) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev)
+            if (next.has(playerId)) next.delete(playerId)
+            else next.add(playerId)
+            return next
+        })
+    }
+
     const addPlayer = async (playerId: string) => {
         const { error } = await supabase
             .from("event_players")
-            .insert({ event_id: event.id, profile_id: playerId })
+            .upsert({ event_id: event.id, profile_id: playerId }, { onConflict: "event_id,profile_id", ignoreDuplicates: true })
         if (error) return
         const next = new Set(registeredIds)
         next.add(playerId)
         updateIds(next)
+        setSelectedIds(prev => {
+            const next = new Set(prev)
+            next.delete(playerId)
+            return next
+        })
+    }
+
+    const addSelectedPlayers = async () => {
+        if (selectedIds.size === 0) return
+        const inserts = Array.from(selectedIds).map(profileId => ({
+            event_id: event.id,
+            profile_id: profileId,
+        }))
+        const { error } = await supabase.from("event_players").upsert(inserts, { onConflict: "event_id,profile_id", ignoreDuplicates: true })
+        if (error) return
+        const next = new Set(registeredIds)
+        for (const id of selectedIds) next.add(id)
+        updateIds(next)
+        setSelectedIds(new Set())
+    }
+
+    const toggleSelectRegistered = (playerId: string) => {
+        setSelectedRegisteredIds(prev => {
+            const next = new Set(prev)
+            if (next.has(playerId)) next.delete(playerId)
+            else next.add(playerId)
+            return next
+        })
     }
 
     const removePlayer = async (playerId: string) => {
@@ -89,6 +146,25 @@ export function WizardStepRegistrations({ event, onRegistrationsChanged, onNext,
         const next = new Set(registeredIds)
         next.delete(playerId)
         updateIds(next)
+        setSelectedRegisteredIds(prev => {
+            const next = new Set(prev)
+            next.delete(playerId)
+            return next
+        })
+    }
+
+    const removeSelectedPlayers = async () => {
+        if (selectedRegisteredIds.size === 0) return
+        const { error } = await supabase
+            .from("event_players")
+            .delete()
+            .eq("event_id", event.id)
+            .in("profile_id", Array.from(selectedRegisteredIds))
+        if (error) return
+        const next = new Set(registeredIds)
+        for (const id of selectedRegisteredIds) next.delete(id)
+        updateIds(next)
+        setSelectedRegisteredIds(new Set())
     }
 
     const filteredAvailable = useMemo(() => {
@@ -100,20 +176,41 @@ export function WizardStepRegistrations({ event, onRegistrationsChanged, onNext,
         )
     }, [allPlayers, registeredIds, search])
 
-    const registered = useMemo(
-        () => allPlayers.filter(p => registeredIds.has(p.id)),
-        [allPlayers, registeredIds]
-    )
+    const registered = useMemo(() => {
+        const q = searchRegistered.toLowerCase().trim()
+        const players = allPlayers.filter(p => registeredIds.has(p.id))
+        if (!q) return players
+        return players.filter(p =>
+            `${p.first_name} ${p.last_name}`.toLowerCase().includes(q)
+        )
+    }, [allPlayers, registeredIds, searchRegistered])
 
     return (
         <div className="py-4 flex flex-col gap-4">
-            <div className="grid grid-cols-2 gap-4 min-h-0">
+            <div className="relative grid grid-cols-2 gap-4 min-h-0">
+
+                {/* Bouton central flottant */}
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                    <Button
+                        size="icon"
+                        className="rounded-full h-10 w-10 shadow-md"
+                        disabled={selectedIds.size === 0 && selectedRegisteredIds.size === 0}
+                        variant={selectedRegisteredIds.size > 0 ? "destructive" : "default"}
+                        onClick={selectedIds.size > 0 ? addSelectedPlayers : removeSelectedPlayers}
+                    >
+                        {selectedRegisteredIds.size > 0
+                            ? <ArrowLeft01Icon className="h-5 w-5" />
+                            : <ArrowRight01Icon className="h-5 w-5" />
+                        }
+                    </Button>
+                </div>
 
                 {/* Colonne gauche : joueurs disponibles */}
                 <div className="flex flex-col gap-2 border rounded-lg p-3">
                     <div className="flex items-center justify-between">
                         <h4 className="text-sm font-semibold text-muted-foreground">Disponibles</h4>
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="default" className="text-xs gap-1">
+                            <UserGroupIcon className="h-3 w-3" />
                             {allPlayers.length - registeredIds.size}
                         </Badge>
                     </div>
@@ -126,7 +223,7 @@ export function WizardStepRegistrations({ event, onRegistrationsChanged, onNext,
                             className="pl-9 h-8 text-sm"
                         />
                     </div>
-                    <ScrollArea className="h-[340px]">
+                    <ScrollArea type="always" className="h-[300px]">
                         {loading ? (
                             <p className="text-sm text-muted-foreground text-center py-8">Chargement...</p>
                         ) : filteredAvailable.length === 0 ? (
@@ -138,7 +235,8 @@ export function WizardStepRegistrations({ event, onRegistrationsChanged, onNext,
                                         key={player.id}
                                         player={player}
                                         action="add"
-                                        onAction={() => addPlayer(player.id)}
+                                        selected={selectedIds.has(player.id)}
+                                        onToggleSelect={() => toggleSelect(player.id)}
                                     />
                                 ))}
                             </ul>
@@ -155,9 +253,20 @@ export function WizardStepRegistrations({ event, onRegistrationsChanged, onNext,
                             {registeredIds.size}
                         </Badge>
                     </div>
-                    <ScrollArea className="h-[372px]">
+                    <div className="relative">
+                        <Search01Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            value={searchRegistered}
+                            onChange={e => setSearchRegistered(e.target.value)}
+                            placeholder="Rechercher..."
+                            className="pl-9 h-8 text-sm"
+                        />
+                    </div>
+                    <ScrollArea type="always" className="h-[300px]">
                         {registered.length === 0 ? (
-                            <p className="text-sm text-muted-foreground text-center py-8 italic">Aucun joueur inscrit</p>
+                            <div className="h-[300px] flex items-center justify-center">
+                                <p className="text-sm text-muted-foreground italic">Aucun joueur inscrit</p>
+                            </div>
                         ) : (
                             <ul className="space-y-1 pr-2">
                                 {registered.map(player => (
@@ -165,7 +274,8 @@ export function WizardStepRegistrations({ event, onRegistrationsChanged, onNext,
                                         key={player.id}
                                         player={player}
                                         action="remove"
-                                        onAction={() => removePlayer(player.id)}
+                                        selected={selectedRegisteredIds.has(player.id)}
+                                        onToggleSelect={() => toggleSelectRegistered(player.id)}
                                     />
                                 ))}
                             </ul>
@@ -189,43 +299,49 @@ export function WizardStepRegistrations({ event, onRegistrationsChanged, onNext,
     )
 }
 
-function PlayerRow({ player, action, onAction }: {
+function PlayerRow({ player, action, selected, onToggleSelect }: {
     player: RegistrationPlayer
     action: "add" | "remove"
-    onAction: () => void
+    selected?: boolean
+    onToggleSelect?: () => void
 }) {
     const isVisitor = player.statuses.includes("visitor")
 
     return (
-        <li className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 transition-colors">
+        <li
+            className={cn(
+                "flex items-center justify-between gap-2 px-2 py-1.5 rounded-md transition-colors",
+                "hover:bg-muted/50 cursor-pointer"
+            )}
+            onClick={onToggleSelect}
+        >
             <div className="flex items-center gap-2 min-w-0">
+                <div className={cn(
+                    "w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
+                    selected
+                        ? action === "add"
+                            ? "bg-primary border-primary"
+                            : "bg-destructive border-destructive"
+                        : "border-muted-foreground/40"
+                )}>
+                    {selected && (
+                        <svg viewBox="0 0 12 12" className="w-2.5 h-2.5 fill-none stroke-white stroke-[2.5] stroke-linecap-round stroke-linejoin-round">
+                            <polyline points="2,6 5,9 10,3" />
+                        </svg>
+                    )}
+                </div>
                 <span className="text-sm font-medium truncate">
                     {player.first_name} {player.last_name}
                 </span>
                 {isVisitor && (
-                    <Badge variant="outline" className="text-xs shrink-0 text-amber-600 border-amber-300">
+                    <Badge variant="visitor" className="text-xs shrink-0">
                         Visiteur
                     </Badge>
                 )}
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-                {player.power_ranking > 0 && (
-                    <span className="text-xs text-muted-foreground">{player.power_ranking}</span>
-                )}
-                <button
-                    onClick={onAction}
-                    className={
-                        action === "add"
-                            ? "text-primary hover:text-primary/80 transition-colors"
-                            : "text-muted-foreground hover:text-destructive transition-colors"
-                    }
-                >
-                    {action === "add"
-                        ? <UserAdd01Icon className="h-4 w-4" />
-                        : <UserRemove01Icon className="h-4 w-4" />
-                    }
-                </button>
-            </div>
+            {player.power_ranking > 0 && (
+                <span className="text-xs text-muted-foreground shrink-0">{player.power_ranking}</span>
+            )}
         </li>
     )
 }
