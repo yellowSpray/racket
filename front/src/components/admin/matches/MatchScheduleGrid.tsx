@@ -272,7 +272,7 @@ export function MatchScheduleGrid({
                                         </TableHeader>
                                         <TableBody>
                                             {timeSlots.map(time => (
-                                                <TableRow key={time} className="border-b border-gray-200 last:border-0">
+                                                <TableRow key={time} className="border-b border-gray-200 last:border-0 h-12">
                                                     <TableCell className="text-center font-medium text-xs px-1 py-1 w-12">
                                                         {time}
                                                     </TableCell>

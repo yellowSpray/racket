@@ -283,7 +283,7 @@ export function WizardStepMatches({ event, round, groups, matches, onMatchesChan
                     {diagnostic && <UnplacedMatchesPanel diagnostic={diagnostic} />}
 
                     <div className="max-h-[50vh] overflow-y-auto">
-                        <MatchScheduleGrid matches={matches} event={event} onMatchDrop={handleMatchDrop} playerConstraints={playerConstraints} />
+                        <MatchScheduleGrid matches={matches} event={event} round={round} onMatchDrop={handleMatchDrop} playerConstraints={playerConstraints} />
                     </div>
                 </div>
             )}
