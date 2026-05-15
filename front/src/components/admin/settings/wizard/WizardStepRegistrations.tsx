@@ -24,6 +24,15 @@ interface WizardStepRegistrationsProps {
     onPrevious: () => void
 }
 
+function toggleSetItem(setter: React.Dispatch<React.SetStateAction<Set<string>>>, id: string) {
+    setter(prev => {
+        const next = new Set(prev)
+        if (next.has(id)) next.delete(id)
+        else next.add(id)
+        return next
+    })
+}
+
 export function WizardStepRegistrations({ event, round, onRegistrationsChanged, onNext, onPrevious }: WizardStepRegistrationsProps) {
     const [allPlayers, setAllPlayers] = useState<RegistrationPlayer[]>([])
     const [registeredIds, setRegisteredIds] = useState<Set<string>>(new Set())
@@ -35,9 +44,9 @@ export function WizardStepRegistrations({ event, round, onRegistrationsChanged, 
 
     const fetchData = useCallback(async () => {
         setLoading(true)
-
         const previousRound = (event.event_rounds ?? []).find(r => r.round_number === round.round_number - 1)
         const noOp = Promise.resolve({ data: null as null, error: null })
+
         const [profilesRes, registrationsRes, prevGroupsRes] = await Promise.all([
             supabase
                 .from("profiles")
@@ -63,12 +72,9 @@ export function WizardStepRegistrations({ event, round, onRegistrationsChanged, 
         }
 
         const ids = new Set<string>()
-
         if (registrationsRes.data) {
-            console.log("[WizardStepRegistrations] inscrits fetched:", registrationsRes.data)
             for (const r of registrationsRes.data) ids.add(r.profile_id as string)
         }
-
         if (prevGroupsRes.data) {
             for (const group of prevGroupsRes.data) {
                 for (const gp of (group.group_players || [])) ids.add(gp.profile_id as string)
@@ -80,38 +86,12 @@ export function WizardStepRegistrations({ event, round, onRegistrationsChanged, 
         setLoading(false)
     }, [event.id, round.round_number]) // eslint-disable-line react-hooks/exhaustive-deps
 
-    useEffect(() => {
-        fetchData()
-    }, [fetchData])
+    useEffect(() => { fetchData() }, [fetchData])
 
     const updateIds = useCallback((next: Set<string>) => {
         setRegisteredIds(next)
         onRegistrationsChanged(next)
     }, [onRegistrationsChanged])
-
-    const toggleSelect = (playerId: string) => {
-        setSelectedIds(prev => {
-            const next = new Set(prev)
-            if (next.has(playerId)) next.delete(playerId)
-            else next.add(playerId)
-            return next
-        })
-    }
-
-    const addPlayer = async (playerId: string) => {
-        const { error } = await supabase
-            .from("event_players")
-            .upsert({ event_id: event.id, profile_id: playerId }, { onConflict: "event_id,profile_id", ignoreDuplicates: true })
-        if (error) return
-        const next = new Set(registeredIds)
-        next.add(playerId)
-        updateIds(next)
-        setSelectedIds(prev => {
-            const next = new Set(prev)
-            next.delete(playerId)
-            return next
-        })
-    }
 
     const addSelectedPlayers = async () => {
         if (selectedIds.size === 0) return
@@ -119,38 +99,14 @@ export function WizardStepRegistrations({ event, round, onRegistrationsChanged, 
             event_id: event.id,
             profile_id: profileId,
         }))
-        const { error } = await supabase.from("event_players").upsert(inserts, { onConflict: "event_id,profile_id", ignoreDuplicates: true })
+        const { error } = await supabase
+            .from("event_players")
+            .upsert(inserts, { onConflict: "event_id,profile_id", ignoreDuplicates: true })
         if (error) return
         const next = new Set(registeredIds)
         for (const id of selectedIds) next.add(id)
         updateIds(next)
         setSelectedIds(new Set())
-    }
-
-    const toggleSelectRegistered = (playerId: string) => {
-        setSelectedRegisteredIds(prev => {
-            const next = new Set(prev)
-            if (next.has(playerId)) next.delete(playerId)
-            else next.add(playerId)
-            return next
-        })
-    }
-
-    const removePlayer = async (playerId: string) => {
-        const { error } = await supabase
-            .from("event_players")
-            .delete()
-            .eq("event_id", event.id)
-            .eq("profile_id", playerId)
-        if (error) return
-        const next = new Set(registeredIds)
-        next.delete(playerId)
-        updateIds(next)
-        setSelectedRegisteredIds(prev => {
-            const next = new Set(prev)
-            next.delete(playerId)
-            return next
-        })
     }
 
     const removeSelectedPlayers = async () => {
@@ -176,7 +132,7 @@ export function WizardStepRegistrations({ event, round, onRegistrationsChanged, 
         )
     }, [allPlayers, registeredIds, search])
 
-    const registered = useMemo(() => {
+    const filteredRegistered = useMemo(() => {
         const q = searchRegistered.toLowerCase().trim()
         const players = allPlayers.filter(p => registeredIds.has(p.id))
         if (!q) return players
@@ -189,7 +145,6 @@ export function WizardStepRegistrations({ event, round, onRegistrationsChanged, 
         <div className="py-4 flex flex-col gap-4">
             <div className="relative grid grid-cols-2 gap-4 min-h-0">
 
-                {/* Bouton central flottant */}
                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
                     <Button
                         size="icon"
@@ -205,86 +160,32 @@ export function WizardStepRegistrations({ event, round, onRegistrationsChanged, 
                     </Button>
                 </div>
 
-                {/* Colonne gauche : joueurs disponibles */}
-                <div className="flex flex-col gap-2 border rounded-lg p-3">
-                    <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-semibold text-muted-foreground">Disponibles</h4>
-                        <Badge variant="default" className="text-xs gap-1">
-                            <UserGroupIcon className="h-3 w-3" />
-                            {allPlayers.length - registeredIds.size}
-                        </Badge>
-                    </div>
-                    <div className="relative">
-                        <Search01Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            placeholder="Rechercher..."
-                            className="pl-9 h-8 text-sm"
-                        />
-                    </div>
-                    <ScrollArea type="always" className="h-[300px]">
-                        {loading ? (
-                            <p className="text-sm text-muted-foreground text-center py-8">Chargement...</p>
-                        ) : filteredAvailable.length === 0 ? (
-                            <p className="text-sm text-muted-foreground text-center py-8 italic">Aucun joueur disponible</p>
-                        ) : (
-                            <ul className="space-y-1 pr-2">
-                                {filteredAvailable.map(player => (
-                                    <PlayerRow
-                                        key={player.id}
-                                        player={player}
-                                        action="add"
-                                        selected={selectedIds.has(player.id)}
-                                        onToggleSelect={() => toggleSelect(player.id)}
-                                    />
-                                ))}
-                            </ul>
-                        )}
-                    </ScrollArea>
-                </div>
+                <PlayerColumn
+                    title="Disponibles"
+                    count={allPlayers.length - registeredIds.size}
+                    search={search}
+                    onSearchChange={setSearch}
+                    players={filteredAvailable}
+                    loading={loading}
+                    emptyText="Aucun joueur disponible"
+                    action="add"
+                    selectedIds={selectedIds}
+                    onToggleSelect={id => toggleSetItem(setSelectedIds, id)}
+                />
 
-                {/* Colonne droite : joueurs inscrits */}
-                <div className="flex flex-col gap-2 border rounded-lg p-3">
-                    <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-semibold text-muted-foreground">Inscrits</h4>
-                        <Badge variant="default" className="text-xs gap-1">
-                            <UserGroupIcon className="h-3 w-3" />
-                            {registeredIds.size}
-                        </Badge>
-                    </div>
-                    <div className="relative">
-                        <Search01Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            value={searchRegistered}
-                            onChange={e => setSearchRegistered(e.target.value)}
-                            placeholder="Rechercher..."
-                            className="pl-9 h-8 text-sm"
-                        />
-                    </div>
-                    <ScrollArea type="always" className="h-[300px]">
-                        {registered.length === 0 ? (
-                            <div className="h-[300px] flex items-center justify-center">
-                                <p className="text-sm text-muted-foreground italic">Aucun joueur inscrit</p>
-                            </div>
-                        ) : (
-                            <ul className="space-y-1 pr-2">
-                                {registered.map(player => (
-                                    <PlayerRow
-                                        key={player.id}
-                                        player={player}
-                                        action="remove"
-                                        selected={selectedRegisteredIds.has(player.id)}
-                                        onToggleSelect={() => toggleSelectRegistered(player.id)}
-                                    />
-                                ))}
-                            </ul>
-                        )}
-                    </ScrollArea>
-                </div>
+                <PlayerColumn
+                    title="Inscrits"
+                    count={registeredIds.size}
+                    search={searchRegistered}
+                    onSearchChange={setSearchRegistered}
+                    players={filteredRegistered}
+                    emptyText="Aucun joueur inscrit"
+                    action="remove"
+                    selectedIds={selectedRegisteredIds}
+                    onToggleSelect={id => toggleSetItem(setSelectedRegisteredIds, id)}
+                />
             </div>
 
-            {/* Navigation */}
             <div className="flex justify-between pt-2">
                 <Button type="button" size="lg" variant="outline" onClick={onPrevious}>
                     <ArrowLeft01Icon className="h-4 w-4" />
@@ -299,6 +200,72 @@ export function WizardStepRegistrations({ event, round, onRegistrationsChanged, 
     )
 }
 
+function PlayerColumn({
+    title,
+    count,
+    search,
+    onSearchChange,
+    players,
+    loading,
+    emptyText,
+    action,
+    selectedIds,
+    onToggleSelect,
+}: {
+    title: string
+    count: number
+    search: string
+    onSearchChange: (v: string) => void
+    players: RegistrationPlayer[]
+    loading?: boolean
+    emptyText: string
+    action: "add" | "remove"
+    selectedIds: Set<string>
+    onToggleSelect: (id: string) => void
+}) {
+    return (
+        <div className="flex flex-col gap-2 border rounded-lg p-3">
+            <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold text-muted-foreground">{title}</h4>
+                <Badge variant="default" className="text-xs gap-1">
+                    <UserGroupIcon className="h-3 w-3" />
+                    {count}
+                </Badge>
+            </div>
+            <div className="relative">
+                <Search01Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                    value={search}
+                    onChange={e => onSearchChange(e.target.value)}
+                    placeholder="Rechercher..."
+                    className="pl-9 h-8 text-sm"
+                />
+            </div>
+            <ScrollArea type="always" className="h-[300px]">
+                {loading ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">Chargement...</p>
+                ) : players.length === 0 ? (
+                    <div className="h-[300px] flex items-center justify-center">
+                        <p className="text-sm text-muted-foreground italic">{emptyText}</p>
+                    </div>
+                ) : (
+                    <ul className="space-y-1 pr-2">
+                        {players.map(player => (
+                            <PlayerRow
+                                key={player.id}
+                                player={player}
+                                action={action}
+                                selected={selectedIds.has(player.id)}
+                                onToggleSelect={() => onToggleSelect(player.id)}
+                            />
+                        ))}
+                    </ul>
+                )}
+            </ScrollArea>
+        </div>
+    )
+}
+
 function PlayerRow({ player, action, selected, onToggleSelect }: {
     player: RegistrationPlayer
     action: "add" | "remove"
@@ -309,19 +276,14 @@ function PlayerRow({ player, action, selected, onToggleSelect }: {
 
     return (
         <li
-            className={cn(
-                "flex items-center justify-between gap-2 px-2 py-1.5 rounded-md transition-colors",
-                "hover:bg-muted/50 cursor-pointer"
-            )}
+            className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md transition-colors hover:bg-muted/50 cursor-pointer"
             onClick={onToggleSelect}
         >
             <div className="flex items-center gap-2 min-w-0">
                 <div className={cn(
                     "w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
                     selected
-                        ? action === "add"
-                            ? "bg-primary border-primary"
-                            : "bg-destructive border-destructive"
+                        ? action === "add" ? "bg-primary border-primary" : "bg-destructive border-destructive"
                         : "border-muted-foreground/40"
                 )}>
                     {selected && (
