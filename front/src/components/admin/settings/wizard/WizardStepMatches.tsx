@@ -102,6 +102,20 @@ export function WizardStepMatches({ event, round, groups, matches, onMatchesChan
                 await deleteMatchesByRound(round.id)
             }
 
+            // — Log : configuration des créneaux
+            console.group("⏱ Génération des matchs — configuration créneaux")
+            console.log(`  round.start_time (raw)          : ${JSON.stringify(round.start_time)}`)
+            console.log(`  round.end_time (raw)            : ${JSON.stringify(round.end_time)}`)
+            console.log(`  round.estimated_match_duration  : ${JSON.stringify(round.estimated_match_duration)}`)
+            console.log(`  durationMin calculé             : ${durationMin} min`)
+            console.log(`  start_time effectif (après fallback) : ${round.start_time || "19:00 (FALLBACK)"}`)
+            console.log(`  end_time effectif (après fallback)   : ${round.end_time || "23:00 (FALLBACK)"}`)
+            console.log(`  Créneaux calculés (UI)          : [${timeSlots.join(", ")}]  → ${timeSlots.length} créneau(x)`)
+            console.log(`  Dates de jeu                    : [${dates.join(", ")}]  → ${dates.length} jour(s)`)
+            console.log(`  Terrains                        : ${round.number_of_courts}`)
+            console.log(`  Total créneaux disponibles      : ${slotTotal}  (${dates.length}j × ${timeSlots.length}cr × ${round.number_of_courts}t)`)
+            console.groupEnd()
+
             // — Log : résumé des tableaux en entrée
             console.group("🎾 Génération des matchs — entrée")
             groups.forEach(g => {
