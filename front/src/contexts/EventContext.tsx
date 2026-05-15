@@ -37,7 +37,7 @@ export function EventProvider({children}: {children: ReactNode}) {
             const {data, error: fetchError} = await withTimeout(
                 supabase
                     .from("events")
-                    .select("*, event_players(count), event_rounds(*, groups(id, group_players(count)))")
+                    .select("*, event_players(count), event_rounds(*, groups(id, group_players(profile_id)))")
                     .order("created_at", {ascending: false}),
                 "EventContext.fetchEvents"
             )
@@ -58,16 +58,31 @@ export function EventProvider({children}: {children: ReactNode}) {
                 player_count: Array.isArray(event.event_players) && event.event_players.length > 0
                     ? event.event_players[0].count
                     : 0,
-                event_rounds: (event.event_rounds || [])
-                    .sort((a: EventRound, b: EventRound) => a.round_number - b.round_number)
-                    .map((r: EventRound & { groups?: { group_players?: { count: number }[] }[] }) => ({
-                        ...r,
-                        player_count: (r.groups ?? []).reduce(
-                            (sum, g) => sum + (g.group_players?.[0]?.count ?? 0),
-                            0
-                        ),
-                        groups: undefined,
-                    })),
+                event_rounds: (() => {
+                    type RoundRaw = EventRound & { groups?: { group_players?: { profile_id: string }[] }[] }
+                    const sorted: RoundRaw[] = (event.event_rounds || [])
+                        .sort((a: EventRound, b: EventRound) => a.round_number - b.round_number)
+
+                    const playerIdSets = sorted.map(r =>
+                        new Set<string>(
+                            (r.groups ?? []).flatMap(g =>
+                                (g.group_players ?? []).map(gp => gp.profile_id)
+                            )
+                        )
+                    )
+
+                    return sorted.map((r, idx) => {
+                        const ids     = playerIdSets[idx]
+                        const prevIds = idx > 0 ? playerIdSets[idx - 1] : new Set<string>()
+                        return {
+                            ...r,
+                            player_count:         ids.size,
+                            new_player_count:     [...ids].filter(id => !prevIds.has(id)).length,
+                            removed_player_count: [...prevIds].filter(id => !ids.has(id)).length,
+                            groups: undefined,
+                        }
+                    })
+                })(),
             }))
 
             setEvents(eventsWithCount)

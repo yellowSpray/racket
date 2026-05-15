@@ -37,6 +37,8 @@ export interface EventRound {
   created_at?: string
   updated_at?: string
   player_count?: number
+  new_player_count?: number
+  removed_player_count?: number
 }
 
 export interface Event {
