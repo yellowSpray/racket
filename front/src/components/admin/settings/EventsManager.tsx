@@ -6,7 +6,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
-import { PlusSignIcon, PencilEdit01Icon, Delete02Icon, Calendar03Icon, Settings01Icon, DashedLine02Icon, UserGroupIcon, Clock01Icon } from "hugeicons-react"
+import { PlusSignIcon, Delete02Icon, Calendar03Icon, Settings01Icon, DashedLine02Icon, UserGroupIcon, Clock01Icon } from "hugeicons-react"
 import { EventCreateWizardDialog } from "./EventCreateWizardDialog"
 import { RoundWizardDialog } from "./RoundWizardDialog"
 
@@ -156,7 +156,10 @@ function RoundRow({ round: r, deletingRoundId, onEdit, onDelete }: RoundRowProps
     const s = getRoundStatus(r)
 
     return (
-        <div className="grid grid-cols-10 items-center py-5">
+        <div
+            className="grid grid-cols-10 items-center py-5 m-2 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"
+            onClick={onEdit}
+        >
             {/* Série + statut */}
             <div className="flex flex-col items-center gap-0.5 px-2">
                 <span className="text-xs font-medium text-gray-700">Série {r.round_number}</span>
@@ -198,19 +201,12 @@ function RoundRow({ round: r, deletingRoundId, onEdit, onDelete }: RoundRowProps
                 )}
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center justify-center gap-1">
-                <Button
-                    variant="icon" size="icon" className="border-0 h-6 w-6"
-                    onClick={onEdit}
-                    title="Modifier le round"
-                >
-                    <PencilEdit01Icon className="h-3 w-3" />
-                </Button>
+            {/* Supprimer */}
+            <div className="flex items-center justify-center">
                 <Button
                     variant="icon" size="icon" className="border-0 h-6 w-6"
                     disabled={deletingRoundId === r.id}
-                    onClick={onDelete}
+                    onClick={(e) => { e.stopPropagation(); onDelete() }}
                 >
                     <Delete02Icon className="h-3 w-3 text-red-500" />
                 </Button>
