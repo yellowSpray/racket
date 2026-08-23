@@ -109,31 +109,24 @@ export function EventCreateWizardDialog({
         setSaving(true)
         try {
             if (isEditing && wizardEvent) {
-                const updatePayload = { event_name: eventName, calendar_type: calendarType }
-                console.log("[EventWizard] UPDATE payload:", updatePayload, "id:", wizardEvent.id)
                 const { error } = await supabase
                     .from("events")
-                    .update(updatePayload)
+                    .update({ event_name: eventName, calendar_type: calendarType })
                     .eq("id", wizardEvent.id)
 
-                console.log("[EventWizard] UPDATE error:", error)
                 if (error) { toast.error("Impossible de mettre à jour l'événement"); return }
                 setWizardEvent(prev => prev ? { ...prev, event_name: eventName, calendar_type: calendarType } : prev)
                 toast.success("Événement mis à jour")
             } else {
                 const clubId = profile?.club_id
-                console.log("[EventWizard] club_id:", clubId, "profile:", profile)
                 if (!clubId) { toast.error("Club introuvable"); return }
 
-                const insertPayload = { club_id: clubId, event_name: eventName, calendar_type: calendarType }
-                console.log("[EventWizard] INSERT payload:", insertPayload)
                 const { data, error } = await supabase
                     .from("events")
-                    .insert(insertPayload)
+                    .insert({ club_id: clubId, event_name: eventName, calendar_type: calendarType })
                     .select()
                     .single()
 
-                console.log("[EventWizard] INSERT result — data:", data, "error:", error)
                 if (error || !data) { toast.error("Impossible de créer l'événement"); return }
                 setWizardEvent(data as Event)
                 toast.success("Événement créé")
