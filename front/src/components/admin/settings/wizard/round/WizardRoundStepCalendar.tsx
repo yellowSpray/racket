@@ -78,14 +78,13 @@ function CalendarDaySelection({
                         </div>
                     )}
                 </div>
-
                 <div className="grid gap-2">
-                    <Label htmlFor="deadline">Date limite (optionnelle)</Label>
+                    <Label htmlFor="deadline_day">Date limite (optionnelle)</Label>
                     <p className="text-xs text-muted-foreground">
                         La série sera automatiquement marquée comme terminée après cette date.
                     </p>
                     <Input
-                        id="deadline"
+                        id="deadline_day"
                         type="date"
                         value={deadline}
                         onChange={e => setDeadline(e.target.value)}
