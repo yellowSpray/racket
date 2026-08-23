@@ -9,7 +9,7 @@ import { useErrorHandler } from "@/hooks/useErrorHandler"
 import { ValidationError } from "@/lib/errors"
 import { toast } from "sonner"
 import { minutesToInterval } from "@/lib/utils"
-import { Calendar03Icon, ArrowLeft01Icon, ArrowRight01Icon } from "hugeicons-react"
+import { Calendar03Icon, Cancel01Icon, ArrowLeft01Icon, ArrowRight01Icon } from "hugeicons-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -193,7 +193,7 @@ export function WizardStepCalendar({ event, round, configData, onSave, onPreviou
                                                 onClick={() => setPlayingDates(playingDates.filter(d => d !== date))}
                                                 className="ml-1 text-muted-foreground hover:text-foreground"
                                             >
-                                                ×
+                                                <Cancel01Icon className="h-3 w-3" />
                                             </button>
                                         </span>
                                     ))}
