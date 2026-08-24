@@ -116,10 +116,16 @@ export function MultiDateCalendar({ selectedDates, onChange, disabled = false, c
                 ))}
             </div>
 
-            {/* Date grid */}
-            <div className="flex-1 flex flex-col justify-between">
+            {/*
+             * Grille des dates — `gap-2` porte l'espacement horizontal ET vertical.
+             * Auparavant les semaines etaient reparties par `justify-between` dans un
+             * conteneur `flex-1` : des que la hauteur disponible etait plus courte que
+             * le contenu, les lignes se comprimaient et deux jours selectionnes d'une
+             * meme colonne se collaient en un seul bloc.
+             */}
+            <div data-slot="calendar-grid" className="flex flex-col gap-2">
             {weeks.map((week, wi) => (
-                <div key={wi} className="grid grid-cols-7 gap-2">
+                <div key={wi} className="grid grid-cols-7 gap-2 shrink-0">
                     {week.map((date, di) => {
                         if (!date) {
                             return <div key={di} className="h-8" />
@@ -139,8 +145,11 @@ export function MultiDateCalendar({ selectedDates, onChange, disabled = false, c
                                     "h-8 w-full rounded-md text-sm transition-colors",
                                     !disabled && "cursor-pointer",
                                     disabled && "cursor-default opacity-60",
-                                    !isSelected && !disabled && "hover:bg-accent",
+                                    // --accent vaut oklch(100%) : un survol blanc sur fond
+                                    // blanc etait invisible. Teinte de primary a la place.
+                                    !isSelected && !disabled && "hover:bg-primary/20 hover:text-foreground",
                                     isSelected && "bg-primary text-primary-foreground",
+                                    isSelected && !disabled && "hover:bg-primary-hover",
                                     isToday && !isSelected && "border border-primary",
                                 )}
                             >

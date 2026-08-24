@@ -117,4 +117,57 @@ describe('MultiDateCalendar', () => {
         expect(screen.getByText('Janvier 2026')).toBeInTheDocument()
     })
 
+    describe('espacement et survol', () => {
+        /** Renvoie le bouton du jour demandé dans le mois affiché. */
+        function dayButton(label: string) {
+            return screen.getAllByRole('button').find(b => b.textContent === label)!
+        }
+
+        it('espace les semaines verticalement autant que les jours horizontalement', () => {
+            // Sans gap vertical, deux jours selectionnes dans la meme colonne
+            // sur deux semaines consecutives se collent en un seul bloc.
+            const { container } = render(<MultiDateCalendar selectedDates={[]} onChange={vi.fn()} />)
+            const grid = container.querySelector('[data-slot="calendar-grid"]')
+            expect(grid).toHaveClass('gap-2')
+        })
+
+        it('ne comprime plus les semaines avec justify-between', () => {
+            const { container } = render(<MultiDateCalendar selectedDates={[]} onChange={vi.fn()} />)
+            const grid = container.querySelector('[data-slot="calendar-grid"]')
+            expect(grid).not.toHaveClass('justify-between')
+        })
+
+        it('garde chaque jour selectionne dans sa propre pastille arrondie', () => {
+            render(
+                <MultiDateCalendar
+                    selectedDates={[iso(2025, 1, 6), iso(2025, 1, 13)]}
+                    onChange={vi.fn()}
+                />
+            )
+            for (const label of ['6', '13']) {
+                expect(dayButton(label)).toHaveClass('rounded-md')
+            }
+        })
+
+        it('donne au survol une couleur visible plutot que bg-accent', () => {
+            render(<MultiDateCalendar selectedDates={[]} onChange={vi.fn()} />)
+            const day = dayButton('8')
+            // --accent vaut oklch(100%) : un survol blanc sur fond blanc est invisible
+            expect(day).not.toHaveClass('hover:bg-accent')
+            expect(day).toHaveClass('hover:bg-primary/20')
+        })
+
+        it('donne aussi un survol aux jours deja selectionnes', () => {
+            render(<MultiDateCalendar selectedDates={[iso(2025, 1, 8)]} onChange={vi.fn()} />)
+            expect(dayButton('8')).toHaveClass('hover:bg-primary-hover')
+        })
+
+        it('ne propose aucun survol quand le calendrier est desactive', () => {
+            render(<MultiDateCalendar selectedDates={[]} onChange={vi.fn()} disabled />)
+            const day = dayButton('8')
+            expect(day).not.toHaveClass('hover:bg-primary/20')
+            expect(day).not.toHaveClass('hover:bg-primary-hover')
+        })
+    })
+
 })
