@@ -16,10 +16,16 @@ export interface WizardRoundConfigData {
 interface WizardRoundStepConfigProps {
     round: EventRound | null
     configData: WizardRoundConfigData | null
-    onNext: (data: WizardRoundConfigData) => void
+    /** Mode wizard : valide l'étape avec les valeurs saisies. Omis en mode section. */
+    onNext?: (data: WizardRoundConfigData) => void
+    /**
+     * Mode section : remonte les valeurs à chaque modification, sans bouton de validation.
+     * Doit être une référence stable (setState ou useCallback) pour éviter les rendus en boucle.
+     */
+    onChange?: (data: WizardRoundConfigData) => void
 }
 
-export function WizardRoundStepConfig({ round, configData, onNext }: WizardRoundStepConfigProps) {
+export function WizardRoundStepConfig({ round, configData, onNext, onChange }: WizardRoundStepConfigProps) {
     const [startTime, setStartTime] = useState("19:00")
     const [endTime, setEndTime] = useState("23:00")
     const [courts, setCourts] = useState(1)
@@ -39,9 +45,14 @@ export function WizardRoundStepConfig({ round, configData, onNext }: WizardRound
         }
     }, [configData, round])
 
+    // Mode section : le parent suit les valeurs en continu (pas de bouton de validation ici)
+    useEffect(() => {
+        onChange?.({ startTime, endTime, courts, matchDuration })
+    }, [startTime, endTime, courts, matchDuration, onChange])
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        onNext({ startTime, endTime, courts, matchDuration })
+        onNext?.({ startTime, endTime, courts, matchDuration })
     }
 
     return (
@@ -95,12 +106,14 @@ export function WizardRoundStepConfig({ round, configData, onNext }: WizardRound
                 </div>
             </div>
 
-            <div className="flex justify-end pt-4">
-                <Button type="submit" size="lg">
-                    Suivant
-                    <ArrowRight01Icon className="h-4 w-4" />
-                </Button>
-            </div>
+            {onNext && (
+                <div className="flex justify-end pt-4">
+                    <Button type="submit" size="lg">
+                        Suivant
+                        <ArrowRight01Icon className="h-4 w-4" />
+                    </Button>
+                </div>
+            )}
         </form>
     )
 }

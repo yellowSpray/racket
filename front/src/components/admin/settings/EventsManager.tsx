@@ -3,12 +3,12 @@ import { useEvent } from "@/contexts/EventContext"
 import { supabase } from "@/lib/supabaseClient"
 import type { Event, EventRound } from "@/types/event"
 import { useState } from "react"
+import { useNavigate } from "react-router"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { PlusSignIcon, Delete02Icon, Calendar03Icon, Settings01Icon, DashedLine02Icon, UserGroupIcon, Clock01Icon } from "hugeicons-react"
 import { EventCreateWizardDialog } from "./EventCreateWizardDialog"
-import { RoundWizardDialog } from "./RoundWizardDialog"
 
 // — Helpers purs
 
@@ -219,13 +219,10 @@ function RoundRow({ round: r, deletingRoundId, onEdit, onDelete }: RoundRowProps
 
 export function EventsManager() {
     const { events, loading, fetchEvents } = useEvent()
+    const navigate = useNavigate()
 
     const [eventDialogOpen, setEventDialogOpen] = useState(false)
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
-
-    const [roundDialogOpen, setRoundDialogOpen] = useState(false)
-    const [roundDialogEvent, setRoundDialogEvent] = useState<Event | null>(null)
-    const [selectedRound, setSelectedRound] = useState<EventRound | null>(null)
 
     const [deletingRoundId, setDeletingRoundId] = useState<string | null>(null)
 
@@ -234,10 +231,9 @@ export function EventsManager() {
         setEventDialogOpen(true)
     }
 
-    const openRoundWizard = (event: Event, round: EventRound | null) => {
-        setRoundDialogEvent(event)
-        setSelectedRound(round)
-        setRoundDialogOpen(true)
+    /** La configuration d'une série se fait sur sa propre page, pas dans une modale. */
+    const openRoundPage = (event: Event, round: EventRound | null) => {
+        navigate(`/admin/settings/events/${event.id}/rounds/${round ? round.id : "new"}`)
     }
 
     const handleToggleAutoRenew = async (event: Event, value: boolean) => {
@@ -258,12 +254,6 @@ export function EventsManager() {
     const handleEventSuccess = async () => {
         await fetchEvents()
         setSelectedEvent(null)
-    }
-
-    const handleRoundSuccess = async () => {
-        await fetchEvents()
-        setSelectedRound(null)
-        setRoundDialogEvent(null)
     }
 
     const handleDeleteSuccess = async () => {
@@ -331,7 +321,7 @@ export function EventsManager() {
                                                 round={r}
                                                 event={event}
                                                 deletingRoundId={deletingRoundId}
-                                                onEdit={() => openRoundWizard(event, r)}
+                                                onEdit={() => openRoundPage(event, r)}
                                                 onDelete={() => handleDeleteRound(r.id)}
                                             />
                                         ))}
@@ -340,7 +330,7 @@ export function EventsManager() {
 
                                 {/* Créer une nouvelle série */}
                                 <button
-                                    onClick={() => openRoundWizard(event, null)}
+                                    onClick={() => openRoundPage(event, null)}
                                     className="w-full flex items-center justify-center gap-2 py-3 text-xs text-gray-400 border-t border-dashed border-gray-300 transition-colors hover:bg-gray-100 hover:text-gray-600"
                                 >
                                     <PlusSignIcon className="h-3.5 w-3.5" />
@@ -364,16 +354,6 @@ export function EventsManager() {
                 onSuccess={handleEventSuccess}
                 onDelete={handleDeleteSuccess}
             />
-
-            {roundDialogEvent && (
-                <RoundWizardDialog
-                    open={roundDialogOpen}
-                    onOpenChange={setRoundDialogOpen}
-                    event={roundDialogEvent}
-                    round={selectedRound}
-                    onSuccess={handleRoundSuccess}
-                />
-            )}
         </div>
     )
 }

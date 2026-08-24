@@ -17,6 +17,8 @@ interface WizardRoundStepCalendarProps {
     configData: WizardRoundConfigData
     onSave: (savedRound: EventRound) => void
     onPrevious?: () => void
+    /** Libellé du bouton de validation — « Suivant » en wizard, « Enregistrer » en section. */
+    submitLabel?: string
 }
 
 function CalendarDaySelection({
@@ -142,6 +144,7 @@ export function WizardRoundStepCalendar({
     configData,
     onSave,
     onPrevious,
+    submitLabel = "Suivant",
 }: WizardRoundStepCalendarProps) {
     const calendarType: CalendarType = event.calendar_type ?? "day_selection"
 
@@ -286,8 +289,8 @@ export function WizardRoundStepCalendar({
                     <span />
                 )}
                 <Button type="submit" size="lg" disabled={loading}>
-                    {loading ? "Enregistrement…" : "Suivant"}
-                    <ArrowRight01Icon className="h-4 w-4" />
+                    {loading ? "Enregistrement…" : submitLabel}
+                    {!loading && submitLabel === "Suivant" && <ArrowRight01Icon className="h-4 w-4" />}
                 </Button>
             </div>
         </form>

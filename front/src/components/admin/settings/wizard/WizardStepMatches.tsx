@@ -28,8 +28,10 @@ interface WizardStepMatchesProps {
     groups: Group[]
     matches: Match[]
     onMatchesChanged: (matches: Match[]) => void
-    onPrevious: () => void
-    onFinish: () => void
+    /** Omis en mode section : la navigation d'étape n'est alors pas rendue. */
+    onPrevious?: () => void
+    /** Omis en mode section : la navigation d'étape n'est alors pas rendue. */
+    onFinish?: () => void
 }
 
 export function WizardStepMatches({ event, round, groups, matches, onMatchesChanged, onPrevious, onFinish }: WizardStepMatchesProps) {
@@ -154,7 +156,7 @@ export function WizardStepMatches({ event, round, groups, matches, onMatchesChan
     }
 
     return (
-        <div className="py-4">
+        <div className="py-4 flex flex-col flex-1 min-h-0">
 
             {warning && (
                 <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded mb-4">
@@ -191,7 +193,7 @@ export function WizardStepMatches({ event, round, groups, matches, onMatchesChan
                     </Button>
                 </div>
             ) : (
-                <div className="grid gap-4">
+                <div className="flex flex-col gap-4 flex-1 min-h-0">
                     <div className="flex items-center justify-between">
                         <p className="text-sm text-muted-foreground">
                             {matches.length} match{matches.length > 1 ? "s" : ""} généré{matches.length > 1 ? "s" : ""}
@@ -211,23 +213,27 @@ export function WizardStepMatches({ event, round, groups, matches, onMatchesChan
                     {/* Panneau conflits / matchs non-placés */}
                     {diagnostic && <UnplacedMatchesPanel diagnostic={diagnostic} />}
 
-                    <div className="max-h-[50vh] overflow-y-auto">
+                    {/* Le planning prend toute la hauteur restante et defile seul,
+                        au lieu d'etre bride a la moitie de la fenetre. */}
+                    <div className="flex-1 min-h-0 overflow-y-auto">
                         <MatchScheduleGrid matches={matches} event={event} round={round} onMatchDrop={handleMatchDrop} playerConstraints={playerConstraints} />
                     </div>
                 </div>
             )}
 
-            {/* Navigation */}
-            <div className="flex justify-between pt-6">
-                <Button type="button" size="lg" variant="outline" onClick={onPrevious}>
-                    <ArrowLeft01Icon className="h-4 w-4" />
-                    Précédent
-                </Button>
-                <Button type="button" size="lg" onClick={onFinish}>
-                    <Tick02Icon className="h-4 w-4" />
-                    Terminer
-                </Button>
-            </div>
+            {/* Navigation : absente en mode section (les matchs sont enregistrés à la volée) */}
+            {(onPrevious || onFinish) && (
+                <div className="flex justify-between pt-6">
+                    <Button type="button" size="lg" variant="outline" onClick={onPrevious}>
+                        <ArrowLeft01Icon className="h-4 w-4" />
+                        Précédent
+                    </Button>
+                    <Button type="button" size="lg" onClick={onFinish}>
+                        <Tick02Icon className="h-4 w-4" />
+                        Terminer
+                    </Button>
+                </div>
+            )}
 
             {/* Dialog de confirmation */}
             <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>

@@ -45,7 +45,7 @@ export function AdminSideBar() {
             to="/admin/settings"
             className={`
               flex items-center justify-center p-3 rounded-full border-2 border-border transition-colors
-              ${location.pathname === "/admin/settings" ? "bg-primary border-primary text-foreground" : "text-gray-500 hover:bg-border hover:text-foreground"}
+              ${location.pathname.startsWith("/admin/settings") ? "bg-primary border-primary text-foreground" : "text-gray-500 hover:bg-border hover:text-foreground"}
             `}
           >
             <Settings01Icon size={17} strokeWidth={2} />

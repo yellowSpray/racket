@@ -21,6 +21,7 @@ const AdminDraws = lazy(() => import("@/pages/admin/AdminDraws").then(m => ({ de
 const AdminMatches = lazy(() => import("@/pages/admin/AdminMatches").then(m => ({ default: m.AdminMatches })))
 const AdminPlayers = lazy(() => import("@/pages/admin/AdminPlayers").then(m => ({ default: m.AdminPlayers })))
 const AdminSettings = lazy(() => import("@/pages/admin/AdminSettings").then(m => ({ default: m.AdminSettings })))
+const AdminRoundConfig = lazy(() => import("@/pages/admin/AdminRoundConfig").then(m => ({ default: m.AdminRoundConfig })))
 const AdminEmail = lazy(() => import("@/pages/admin/AdminEmail").then(m => ({ default: m.AdminEmail })))
 const AdminOnboarding = lazy(() => import("@/pages/admin/AdminOnboarding").then(m => ({ default: m.AdminOnboarding })))
 const ProfilePage = lazy(() => import("@/pages/shared/ProfilePage").then(m => ({ default: m.ProfilePage })))
@@ -83,6 +84,9 @@ const router = createBrowserRouter([
                             { path: "players", element: withSuspense(AdminPlayers) },
                             { path: "email", element: withSuspense(AdminEmail) },
                             { path: "settings", element: withSuspense(AdminSettings) },
+                            // Configuration d'une série : page dédiée plutôt qu'une modale
+                            { path: "settings/events/:eventId/rounds/new", element: withSuspense(AdminRoundConfig) },
+                            { path: "settings/events/:eventId/rounds/:roundId", element: withSuspense(AdminRoundConfig) },
                             { path: "profile", element: withSuspense(ProfilePage) }
                         ]
                     }

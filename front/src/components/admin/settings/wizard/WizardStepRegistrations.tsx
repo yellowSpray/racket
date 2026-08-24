@@ -20,8 +20,10 @@ interface WizardStepRegistrationsProps {
     event: Event
     round: EventRound
     onRegistrationsChanged: (playerIds: Set<string>) => void
-    onNext: () => void
-    onPrevious: () => void
+    /** Omis en mode section : la navigation d'étape n'est alors pas rendue. */
+    onNext?: () => void
+    /** Omis en mode section : la navigation d'étape n'est alors pas rendue. */
+    onPrevious?: () => void
 }
 
 function toggleSetItem(setter: React.Dispatch<React.SetStateAction<Set<string>>>, id: string) {
@@ -142,8 +144,8 @@ export function WizardStepRegistrations({ event, round, onRegistrationsChanged, 
     }, [allPlayers, registeredIds, searchRegistered])
 
     return (
-        <div className="py-4 flex flex-col gap-4">
-            <div className="relative grid grid-cols-2 gap-4 min-h-0">
+        <div className="py-4 flex flex-col gap-4 flex-1 min-h-0">
+            <div data-testid="registration-columns" className="relative grid grid-cols-2 gap-4 flex-1 min-h-0">
 
                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
                     <Button
@@ -186,16 +188,19 @@ export function WizardStepRegistrations({ event, round, onRegistrationsChanged, 
                 />
             </div>
 
-            <div className="flex justify-between pt-2">
-                <Button type="button" size="lg" variant="outline" onClick={onPrevious}>
-                    <ArrowLeft01Icon className="h-4 w-4" />
-                    Précédent
-                </Button>
-                <Button type="button" size="lg" onClick={onNext} disabled={registeredIds.size === 0}>
-                    Suivant
-                    <ArrowRight01Icon className="h-4 w-4" />
-                </Button>
-            </div>
+            {/* Navigation d'étape : absente en mode section (les inscriptions sont enregistrées à la volée) */}
+            {(onNext || onPrevious) && (
+                <div className="flex justify-between pt-2">
+                    <Button type="button" size="lg" variant="outline" onClick={onPrevious}>
+                        <ArrowLeft01Icon className="h-4 w-4" />
+                        Précédent
+                    </Button>
+                    <Button type="button" size="lg" onClick={onNext} disabled={registeredIds.size === 0}>
+                        Suivant
+                        <ArrowRight01Icon className="h-4 w-4" />
+                    </Button>
+                </div>
+            )}
         </div>
     )
 }
@@ -224,7 +229,7 @@ function PlayerColumn({
     onToggleSelect: (id: string) => void
 }) {
     return (
-        <div className="flex flex-col gap-2 border rounded-lg p-3">
+        <div className="flex flex-col gap-2 border rounded-lg p-3 min-h-0">
             <div className="flex items-center justify-between">
                 <h4 className="text-sm font-semibold text-muted-foreground">{title}</h4>
                 <Badge variant="default" className="text-xs gap-1">
@@ -241,11 +246,11 @@ function PlayerColumn({
                     className="pl-9 h-8 text-sm"
                 />
             </div>
-            <ScrollArea type="always" className="h-[300px]">
+            <ScrollArea data-testid="player-list" type="always" className="flex-1 min-h-0">
                 {loading ? (
                     <p className="text-sm text-muted-foreground text-center py-8">Chargement...</p>
                 ) : players.length === 0 ? (
-                    <div className="h-[300px] flex items-center justify-center">
+                    <div className="h-full flex items-center justify-center">
                         <p className="text-sm text-muted-foreground italic">{emptyText}</p>
                     </div>
                 ) : (

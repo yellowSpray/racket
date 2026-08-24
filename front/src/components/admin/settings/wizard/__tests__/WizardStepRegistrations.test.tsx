@@ -7,6 +7,17 @@ const mockEvent: Event = {
     id: "event-1",
     club_id: "club-1",
     event_name: "Test Event",
+    // La serie 1 sert de reference : sans serie precedente, le composant
+    // n'interroge ni event_players ni groups (cf. fetchData).
+    event_rounds: [{
+        id: "round-0",
+        event_id: "event-1",
+        round_number: 1,
+        start_date: "2026-01-01",
+        end_date: "2026-01-28",
+        number_of_courts: 2,
+        status: "completed",
+    }],
 }
 
 const mockProfiles = [
@@ -45,6 +56,16 @@ function trackingFrom(table: string, data: unknown[], error = null) {
     return chain
 }
 
+const mockRound = {
+    id: 'round-1',
+    event_id: 'event-1',
+    round_number: 2,
+    start_date: '2026-02-01',
+    end_date: '2026-02-28',
+    number_of_courts: 2,
+    status: 'upcoming' as const,
+}
+
 describe("WizardStepRegistrations", () => {
     const onRegistrationsChanged = vi.fn()
     const onNext = vi.fn()
@@ -63,6 +84,7 @@ describe("WizardStepRegistrations", () => {
         render(
             <WizardStepRegistrations
                 event={mockEvent}
+                round={mockRound}
                 onRegistrationsChanged={onRegistrationsChanged}
                 onNext={onNext}
                 onPrevious={onPrevious}
@@ -82,6 +104,7 @@ describe("WizardStepRegistrations", () => {
         render(
             <WizardStepRegistrations
                 event={mockEvent}
+                round={mockRound}
                 onRegistrationsChanged={onRegistrationsChanged}
                 onNext={onNext}
                 onPrevious={onPrevious}
@@ -97,6 +120,7 @@ describe("WizardStepRegistrations", () => {
         render(
             <WizardStepRegistrations
                 event={mockEvent}
+                round={mockRound}
                 onRegistrationsChanged={onRegistrationsChanged}
                 onNext={onNext}
                 onPrevious={onPrevious}
@@ -118,6 +142,7 @@ describe("WizardStepRegistrations", () => {
         render(
             <WizardStepRegistrations
                 event={mockEvent}
+                round={mockRound}
                 onRegistrationsChanged={onRegistrationsChanged}
                 onNext={onNext}
                 onPrevious={onPrevious}
@@ -139,6 +164,7 @@ describe("WizardStepRegistrations", () => {
         render(
             <WizardStepRegistrations
                 event={mockEvent}
+                round={mockRound}
                 onRegistrationsChanged={onRegistrationsChanged}
                 onNext={onNext}
                 onPrevious={onPrevious}
@@ -170,6 +196,7 @@ describe("WizardStepRegistrations", () => {
         render(
             <WizardStepRegistrations
                 event={mockEvent}
+                round={mockRound}
                 onRegistrationsChanged={onRegistrationsChanged}
                 onNext={onNext}
                 onPrevious={onPrevious}
@@ -200,6 +227,7 @@ describe("WizardStepRegistrations", () => {
         render(
             <WizardStepRegistrations
                 event={mockEvent}
+                round={mockRound}
                 onRegistrationsChanged={onRegistrationsChanged}
                 onNext={onNext}
                 onPrevious={onPrevious}
@@ -215,5 +243,39 @@ describe("WizardStepRegistrations", () => {
         expect(screen.getByText("Bob Dupont")).toBeInTheDocument()
         expect(screen.queryByText("Alice Martin")).not.toBeInTheDocument()
         expect(screen.queryByText("Clara Lefèvre")).not.toBeInTheDocument()
+    })
+
+    describe("hauteur", () => {
+        function renderStep() {
+            return render(
+                <WizardStepRegistrations
+                    event={mockEvent}
+                    round={mockRound}
+                    onRegistrationsChanged={onRegistrationsChanged}
+                    onNext={onNext}
+                    onPrevious={onPrevious}
+                />
+            )
+        }
+
+        it("occupe la hauteur restante au lieu de s'arreter a son contenu", () => {
+            const { container } = renderStep()
+            expect(container.firstElementChild).toHaveClass("flex", "flex-col", "flex-1", "min-h-0")
+        })
+
+        it("etire la zone des deux colonnes", () => {
+            renderStep()
+            expect(screen.getByTestId("registration-columns")).toHaveClass("flex-1", "min-h-0")
+        })
+
+        it("ne fige plus la hauteur des listes de joueurs", () => {
+            renderStep()
+            const lists = screen.getAllByTestId("player-list")
+            expect(lists).toHaveLength(2)
+            for (const list of lists) {
+                expect(list).toHaveClass("flex-1", "min-h-0")
+                expect(list).not.toHaveClass("h-[300px]")
+            }
+        })
     })
 })
