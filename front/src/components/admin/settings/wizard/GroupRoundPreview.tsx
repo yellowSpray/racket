@@ -1,6 +1,7 @@
 import type { EventRound } from "@/types/event"
 import type { Group } from "@/types/draw"
 import type { Match } from "@/types/match"
+import type { PlayerMovement } from "@/lib/playerMovement"
 import { useMemo, useEffect } from "react"
 import { generateGroupRounds, calculateDates, SCHEDULE_TEMPLATES, optimizePlayerOrderForAbsences } from "@/lib/matchScheduler"
 import { DrawTable } from "@/components/admin/draws/DrawTable"
@@ -9,9 +10,11 @@ interface GroupRoundPreviewProps {
     round: EventRound
     groups: Group[]
     playerAbsences?: Map<string, string[]>
+    /** Parcours de chaque joueur depuis la série précédente, indexé par id de joueur. */
+    playerMovements?: Map<string, PlayerMovement>
 }
 
-export function GroupRoundPreview({ round, groups, playerAbsences }: GroupRoundPreviewProps) {
+export function GroupRoundPreview({ round, groups, playerAbsences, playerMovements }: GroupRoundPreviewProps) {
     const dates = useMemo(
         () => calculateDates(round.start_date, round.end_date, round.playing_dates),
         [round.start_date, round.end_date, round.playing_dates]
@@ -93,12 +96,17 @@ export function GroupRoundPreview({ round, groups, playerAbsences }: GroupRoundP
     }, [optimizedGroups, groupRounds, dates])
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        // `auto-rows-min` + `content-start` sont indispensables : la grille a une hauteur
+        // definie (flex-1), donc sans eux ses lignes se partagent l'espace disponible et
+        // le `h-full` de DrawTable, combine a son `overflow-hidden`, rogne les tableaux.
+        // Trois colonnes au-dela de 1920px, comme la page Tirages.
+        <div className="grid grid-cols-1 lg:grid-cols-2 3xl:grid-cols-3 gap-4 flex-1 min-h-0 overflow-y-auto auto-rows-min content-start">
             {optimizedGroups.map(group => (
                 <DrawTable
                     key={group.id}
                     group={group}
                     matches={matchesByGroup.get(group.id) ?? []}
+                    playerMovements={playerMovements}
                 />
             ))}
         </div>

@@ -1,6 +1,7 @@
 import type { Group, GroupPlayer } from "@/types/draw"
 import type { GroupStandings, PromotionResult } from "@/types/ranking"
 import { calculateAllDistributions } from "@/lib/groupDistributionCalculator"
+import { buildPlacementContext, comparePlacement, compareForRedistribution } from "@/lib/playerOrdering"
 
 function cascadeOverflow(
     boxes: GroupPlayer[][],
@@ -43,13 +44,16 @@ function cascadeOverflow(
  */
 export function buildProposedGroups(
     previousGroups: Group[],
-    _standings: GroupStandings[],
+    standings: GroupStandings[],
     promotionResult: PromotionResult,
     registeredPlayerIds?: Set<string>,
     newPlayers?: GroupPlayer[],
     maxPlayersPerGroup?: number
 ): Group[] {
     const effectiveMaxPlayers = maxPlayersPerGroup ?? previousGroups[0]?.max_players ?? 6
+
+    // Situe chaque joueur : tableau d'origine, tableau vise, rang obtenu.
+    const placement = buildPlacementContext(previousGroups, standings, promotionResult)
 
     // Build a player lookup from all previous groups
     const playerMap = new Map<string, GroupPlayer>()
@@ -136,12 +140,12 @@ export function buildProposedGroups(
             }
         }
     } else {
-        // Box count changed: redistribute by sorted order (top players in top box)
-        // Sort all existing by boxIndex first, then by power_ranking descending within same box
-        const sorted = [...existingPlayers].sort((a, b) => {
-            if (a.boxIndex !== b.boxIndex) return a.boxIndex - b.boxIndex
-            return (b.player.power_ranking || 0) - (a.player.power_ranking || 0)
-        })
+        // Le nombre de tableaux change : il faut redistribuer. L'ordre suit le tableau
+        // vise, puis le classement de la serie precedente — surtout pas le classement
+        // de force, qui ferait remonter un joueur a 0 point devant un joueur a 13.
+        const sorted = [...existingPlayers].sort(
+            (a, b) => compareForRedistribution(a.player.id, b.player.id, placement)
+        )
 
         // Place into new boxes according to distribution (without new players for now)
         // First, calculate how many existing slots per box
@@ -188,9 +192,15 @@ export function buildProposedGroups(
         cascadeOverflow(boxes, distribution, bestBox)
     }
 
+    // Ordre d'affichage dans chaque tableau : arrivees d'en haut, maintenus,
+    // relegues restes sur place, arrivees d'en bas — chaque bloc par classement.
+    const orderedBoxes = boxes.map((players, i) =>
+        [...players].sort((a, b) => comparePlacement(a.id, b.id, i, placement))
+    )
+
     // Build final groups
     const roundId = previousGroups[0]?.round_id || ""
-    return boxes.map((players, i) => ({
+    return orderedBoxes.map((players, i) => ({
         id: `proposed-new-${i}`,
         round_id: roundId,
         group_name: `Box ${i + 1}`,

@@ -1,4 +1,5 @@
 import { GroupRoundPreview } from "./GroupRoundPreview"
+import { MovementLegend } from "./MovementLegend"
 import type { Event, EventRound } from "@/types/event"
 import { transformGroups, type Group, type GroupPlayer } from "@/types/draw"
 import type { GroupStandings, PromotionResult } from "@/types/ranking"
@@ -6,13 +7,16 @@ import { useGroups } from "@/hooks/useGroups"
 import { usePlayers } from "@/contexts/PlayersContext"
 import { useClubConfig } from "@/hooks/useClubConfig"
 import { useAuth } from "@/contexts/AuthContext"
-import { usePreviousEvent } from "@/hooks/usePreviousEvent"
+import { usePreviousRound } from "@/hooks/usePreviousRound"
 import { supabase } from "@/lib/supabaseClient"
 import { calculateOptimalDistribution, calculateAllDistributions } from "@/lib/groupDistributionCalculator"
 import { distributePlayersByRanking } from "@/lib/groupDistribution"
 import { calculateGroupStandings } from "@/lib/rankingEngine"
 import { calculatePromotions } from "@/lib/promotionEngine"
 import { buildProposedGroups } from "@/lib/buildProposedGroups"
+import { computePlayerMovements } from "@/lib/playerMovement"
+import { applyPromotionMoves } from "@/lib/promotionPreview"
+import { buildPlacementContext, comparePlacement } from "@/lib/playerOrdering"
 import { useEffect, useState, useMemo } from "react"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
 import { Button } from "@/components/ui/button"
@@ -21,11 +25,12 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { GroupDndManager } from "./GroupDndManager"
 import { ProposedGroups } from "./ProposedGroups"
+import { GroupPlayerRow } from "./GroupPlayerRow"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { validateGroups } from "@/lib/groupPlayerMove"
 import { sortGroupsByName } from "@/lib/utils"
-import { InformationCircleIcon, SparklesIcon, Settings01Icon, ArrowLeftRightIcon, Delete02Icon, UserGroupIcon, Award01Icon, Tick02Icon, ChartIncreaseIcon, ChartDecreaseIcon, UserRemove01Icon, UserAdd01Icon, ArrowLeft01Icon, ArrowRight01Icon } from "hugeicons-react"
+import { InformationCircleIcon, SparklesIcon, Settings01Icon, ArrowLeftRightIcon, Delete02Icon, UserGroupIcon, Award01Icon, Tick02Icon, UserRemove01Icon, UserAdd01Icon, ArrowLeft01Icon, ArrowRight01Icon } from "hugeicons-react"
 
 interface WizardStepGroupsProps {
     event: Event
@@ -33,8 +38,10 @@ interface WizardStepGroupsProps {
     groups: Group[]
     eventPlayerIds: Set<string>
     onGroupsChanged: (groups: Group[]) => void
-    onNext: () => void
-    onPrevious: () => void
+    /** Omis en mode section : la navigation d'étape n'est alors pas rendue. */
+    onNext?: () => void
+    /** Omis en mode section : la navigation d'étape n'est alors pas rendue. */
+    onPrevious?: () => void
 }
 
 type CreationMode = "auto" | "manual" | "previous"
@@ -46,7 +53,7 @@ function StaticGroupColumn({ title, titleExtra, groups, maxRows, renderPlayer, s
     groups: Group[]
     maxRows: number
     renderPlayer: (player: GroupPlayer, group: Group) => React.ReactNode
-    sortPlayers?: (a: GroupPlayer, b: GroupPlayer) => number
+    sortPlayers?: (a: GroupPlayer, b: GroupPlayer, groupIndex: number) => number
 }) {
     return (
         <div className="space-y-3 min-w-0">
@@ -54,8 +61,10 @@ function StaticGroupColumn({ title, titleExtra, groups, maxRows, renderPlayer, s
                 <h4 className="text-sm font-semibold text-muted-foreground truncate ml-3">{title}</h4>
                 {titleExtra}
             </div>
-            {groups.map(group => {
-                const players = sortPlayers ? [...(group.players || [])].sort(sortPlayers) : (group.players || [])
+            {groups.map((group, groupIndex) => {
+                const players = sortPlayers
+                    ? [...(group.players || [])].sort((a, b) => sortPlayers(a, b, groupIndex))
+                    : (group.players || [])
                 const emptySlots = maxRows - players.length
                 return (
                     <div key={group.id} className="border rounded-lg p-3">
@@ -92,7 +101,7 @@ export function WizardStepGroups({ event, round, groups, eventPlayerIds, onGroup
     const { players } = usePlayers()
     const { profile } = useAuth()
     const { clubConfig, scoringRules, promotionRules, fetchClubConfig, defaultScoring, defaultPromotion } = useClubConfig()
-    const { previousEvent, previousGroups, previousMatches, loading: prevLoading, fetchPreviousEvent } = usePreviousEvent()
+    const { previousRound, previousGroups, previousMatches, loading: prevLoading, fetchPreviousRound } = usePreviousRound()
 
     const [mode, setMode] = useState<CreationMode>("auto")
     const [numberOfGroups, setNumberOfGroups] = useState(3)
@@ -110,12 +119,12 @@ export function WizardStepGroups({ event, round, groups, eventPlayerIds, onGroup
         }
     }, [profile?.club_id, fetchClubConfig])
 
-    // Fetch previous event au mount pour savoir s'il existe
+    // Charge la serie precedente du meme evenement (Serie N-1)
     useEffect(() => {
-        if (profile?.club_id && !previousEvent && !prevLoading) {
-            fetchPreviousEvent(profile.club_id, event.id)
+        if (!previousRound && !prevLoading) {
+            fetchPreviousRound(event.id, round.round_number)
         }
-    }, [profile?.club_id, event.id, previousEvent, prevLoading, fetchPreviousEvent])
+    }, [event.id, round.round_number, previousRound, prevLoading, fetchPreviousRound])
 
     // Calculate standings and promotions from previous event data
     const effectiveScoringRules = useMemo(
@@ -128,7 +137,7 @@ export function WizardStepGroups({ event, round, groups, eventPlayerIds, onGroup
     )
 
     const previousStandings: GroupStandings[] = useMemo(() => {
-        if (!previousEvent || previousGroups.length === 0) return []
+        if (!previousRound || previousGroups.length === 0) return []
         return previousGroups.map(group => {
             const groupMatches = previousMatches.filter(m => m.group_id === group.id)
             const groupPlayers = (group.players || []).map(p => ({
@@ -138,7 +147,7 @@ export function WizardStepGroups({ event, round, groups, eventPlayerIds, onGroup
             }))
             return calculateGroupStandings(groupMatches, group.id, group.group_name, groupPlayers, effectiveScoringRules)
         })
-    }, [previousEvent, previousGroups, previousMatches, effectiveScoringRules])
+    }, [previousRound, previousGroups, previousMatches, effectiveScoringRules])
 
     const activePlayers = players.filter(p => eventPlayerIds.has(p.id))
 
@@ -160,6 +169,24 @@ export function WizardStepGroups({ event, round, groups, eventPlayerIds, onGroup
         const groupOrder = previousGroups.map(g => g.id)
         return calculatePromotions(previousStandings, effectivePromotionRules, groupOrder)
     }, [previousStandings, previousGroups, effectivePromotionRules])
+
+    // Parcours de chaque joueur des tableaux enregistres, depuis la serie precedente.
+    // Le mouvement se lit dans les donnees ; la raison est reconstituee en rejouant
+    // le moteur de promotion et en comparant a ce qui a ete reellement enregistre.
+    const playerMovements = useMemo(() => {
+        if (groups.length === 0 || previousGroups.length === 0) return undefined
+        return computePlayerMovements({
+            currentGroups: groups,
+            previousGroups,
+            previousStandings,
+            promotionResult,
+        })
+    }, [groups, previousGroups, previousStandings, promotionResult])
+
+    const placementContext = useMemo(
+        () => buildPlacementContext(previousGroups, previousStandings, promotionResult),
+        [previousGroups, previousStandings, promotionResult]
+    )
 
     const previousPlayerIds = useMemo(
         () => new Set(previousGroups.flatMap(g => (g.players || []).map(p => p.id))),
@@ -188,29 +215,39 @@ export function WizardStepGroups({ event, round, groups, eventPlayerIds, onGroup
         return map
     }, [promotionResult.moves])
 
-    // Column 2: groups after promotions/relegations WITHOUT new players, but with departed players shown
-    const afterPromotionGroups = useMemo(() => {
+    // Colonne 2 — Promotions seules : les regles appliquees aux classements, sans rien
+    // retirer ni redistribuer. Les futurs partants y figurent donc a la place que les
+    // regles leur donnent (un relegue descend, un promu monte), ce qui rend l'etape
+    // verifiable avant que les departs ne brouillent la lecture.
+    const promotionOnlyGroups = useMemo(() => {
         if (previousStandings.length === 0 || previousMatches.length === 0) return null
-        // Build clean groups (without departed players)
+        return applyPromotionMoves(previousGroups, promotionResult)
+    }, [previousGroups, previousStandings, previousMatches, promotionResult])
+
+    // Colonne 3 — Departs : on retire les non-reinscrits, ce qui peut reduire le nombre
+    // de tableaux et forcer une redistribution. Les partants restent affiches, barres, a
+    // leur place d'apres promotion (et non a leur place d'origine).
+    const afterDepartureGroups = useMemo(() => {
+        if (!promotionOnlyGroups) return null
         const cleanGroups = buildProposedGroups(previousGroups, previousStandings, promotionResult, registeredPlayerIds, [], maxPlayersPerGroup)
-        if (!cleanGroups) return null
+        if (!cleanGroups || cleanGroups.length === 0) return null
 
-        // Collect departed players per original group (before promo/releg)
-        const departedByGroup = new Map<number, GroupPlayer[]>()
-        for (let i = 0; i < previousGroups.length; i++) {
-            const departed = (previousGroups[i].players || []).filter(p => !registeredPlayerIds.has(p.id))
-            if (departed.length > 0) {
-                departedByGroup.set(i, departed)
-            }
-        }
+        const departedByBox = new Map<number, GroupPlayer[]>()
+        promotionOnlyGroups.forEach((group, index) => {
+            const departed = (group.players || []).filter(p => !registeredPlayerIds.has(p.id))
+            if (departed.length === 0) return
+            // Si des tableaux ont disparu, on rattache au dernier restant plutot que
+            // de laisser le joueur s'evaporer de l'affichage.
+            const boxIndex = Math.min(index, cleanGroups.length - 1)
+            departedByBox.set(boxIndex, [...(departedByBox.get(boxIndex) ?? []), ...departed])
+        })
 
-        // Inject departed players back into their original group index
-        return cleanGroups.map((group, i) => {
-            const departed = departedByGroup.get(i)
+        return cleanGroups.map((group, index) => {
+            const departed = departedByBox.get(index)
             if (!departed) return group
             return { ...group, players: [...(group.players || []), ...departed] }
         })
-    }, [previousGroups, previousStandings, previousMatches, promotionResult, registeredPlayerIds, maxPlayersPerGroup])
+    }, [promotionOnlyGroups, previousGroups, previousStandings, promotionResult, registeredPlayerIds, maxPlayersPerGroup])
 
     // Lookup playerId → points from previous standings
     const standingsPointsMap = useMemo(() => {
@@ -229,20 +266,11 @@ export function WizardStepGroups({ event, round, groups, eventPlayerIds, onGroup
         const built = buildProposedGroups(previousGroups, previousStandings, promotionResult, registeredPlayerIds, [], maxPlayersPerGroup)
         if (!built) return null
 
-        return built.map(group => {
-            const players = [...(group.players || [])]
-            players.sort((a, b) => {
-                const order = (id: string) => {
-                    const mt = moveMap.get(id)
-                    if (mt === "relegation") return 0
-                    if (mt === "promotion") return 2
-                    return 1
-                }
-                return order(a.id) - order(b.id)
-            })
-            return { ...group, players }
-        })
-    }, [previousGroups, previousStandings, previousMatches, promotionResult, registeredPlayerIds, maxPlayersPerGroup, moveMap])
+        // `buildProposedGroups` ordonne deja chaque tableau (arrivees d'en haut,
+        // maintenus, relegues restes sur place, arrivees d'en bas — chaque bloc par
+        // classement). Un tri supplementaire ici ecrasait cet ordre.
+        return built
+    }, [previousGroups, previousStandings, previousMatches, promotionResult, registeredPlayerIds, maxPlayersPerGroup])
 
     // Extend autoProposedGroups by redistributing existing players when new players don't fit
     const autoProposedGroupsWithCapacity = useMemo(() => {
@@ -263,8 +291,7 @@ export function WizardStepGroups({ event, round, groups, eventPlayerIds, onGroup
 
         if (targetGroupCount <= autoProposedGroups.length) return autoProposedGroups
 
-        // Aplatir les joueurs dans leur ordre actuel depuis autoProposedGroups
-        // (promo/relg déjà appliqués + tri moveMap déjà fait → classement respecté)
+        // Aplatir les joueurs dans leur ordre actuel (deja trie par placement)
         const orderedPlayers = autoProposedGroups.flatMap(g => g.players || [])
 
         // Répartir équitablement sur targetGroupCount groupes
@@ -282,13 +309,17 @@ export function WizardStepGroups({ event, round, groups, eventPlayerIds, onGroup
                 group_name: `Box ${i + 1}`,
                 max_players: Math.max(maxPlayersPerGroup, slotCount),
                 created_at: "",
-                players: orderedPlayers.slice(playerIdx, playerIdx + slotCount),
+                // Les tableaux changent de composition : on reordonne chacun selon sa
+                // nouvelle position, sinon un relegue rattrape ici resterait en tete.
+                players: orderedPlayers
+                    .slice(playerIdx, playerIdx + slotCount)
+                    .sort((a, b) => comparePlacement(a.id, b.id, i, placementContext)),
             })
             playerIdx += slotCount
         }
 
         return result
-    }, [autoProposedGroups, newPlayers, maxPlayersPerGroup, event.id])
+    }, [autoProposedGroups, newPlayers, maxPlayersPerGroup, round.id, placementContext])
 
     // Set initial proposed groups from auto-computation (only when user hasn't modified via DnD)
     useEffect(() => {
@@ -317,6 +348,14 @@ export function WizardStepGroups({ event, round, groups, eventPlayerIds, onGroup
         }
         return set
     }, [previousGroups, registeredPlayerIds])
+
+    /** Les partants restent en bas du tableau ; le reste suit l'ordre de placement. */
+    const sortByPlacement = useMemo(() => (a: GroupPlayer, b: GroupPlayer, groupIndex: number) => {
+        const aDeparted = unregisteredFromPrevious.has(a.id)
+        const bDeparted = unregisteredFromPrevious.has(b.id)
+        if (aDeparted !== bDeparted) return aDeparted ? 1 : -1
+        return comparePlacement(a.id, b.id, groupIndex, placementContext)
+    }, [placementContext, unregisteredFromPrevious])
 
     // Departed players with names (for column 2 badge tooltip)
     const departedPlayers = useMemo(() => {
@@ -491,10 +530,10 @@ export function WizardStepGroups({ event, round, groups, eventPlayerIds, onGroup
     const isLoading = groupsLoading || creating
 
     return (
-        <div className="py-4">
+        <div className="py-4 flex flex-col flex-1 min-h-0">
             {!hasGroups ? (
                 /* Mode creation de groupes */
-                <div className="grid gap-4">
+                <div className="flex flex-col gap-4 flex-1 min-h-0">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <Button
@@ -515,7 +554,7 @@ export function WizardStepGroups({ event, round, groups, eventPlayerIds, onGroup
                                 <Settings01Icon className="h-4 w-4" />
                                 Manuel
                             </Button>
-                            {previousEvent && (
+                            {previousRound && (
                                 <Button
                                     type="button"
                                     variant={mode === "previous" ? "default" : "outline"}
@@ -628,13 +667,13 @@ export function WizardStepGroups({ event, round, groups, eventPlayerIds, onGroup
                         </Alert>
                     )}
 
-                    {mode === "previous" && previousEvent && (
-                        <div className="space-y-4">
+                    {mode === "previous" && previousRound && (
+                        <div className="flex flex-col gap-4 flex-1 min-h-0">
                             {previousStandings.length === 0 ? (
                                 <Alert>
                                     <InformationCircleIcon className="h-4 w-4" />
                                     <AlertDescription>
-                                        Le box precedent ({previousEvent.event_name}) n'a pas de matchs joues.
+                                        La Série {previousRound.round_number} n'a pas de matchs joués.
                                     </AlertDescription>
                                 </Alert>
                             ) : (
@@ -642,45 +681,55 @@ export function WizardStepGroups({ event, round, groups, eventPlayerIds, onGroup
                                     <Alert>
                                         <InformationCircleIcon className="h-4 w-4" />
                                         <AlertDescription>
-                                            <span>Groupes generés depuis <strong>{previousEvent.event_name}</strong>{newPlayers.length > 0 && <> avec <strong>{newPlayers.length}</strong> nouveau{newPlayers.length > 1 ? "x" : ""} joueur{newPlayers.length > 1 ? "s" : ""}</>}.</span>
+                                            <span>Groupes generés depuis la <strong>Série {previousRound.round_number}</strong>{newPlayers.length > 0 && <> avec <strong>{newPlayers.length}</strong> nouveau{newPlayers.length > 1 ? "x" : ""} joueur{newPlayers.length > 1 ? "s" : ""}</>}.</span>
                                             <span>Ajustez avec le drag &amp; drop dans la colonne Proposition.</span>
                                         </AlertDescription>
                                     </Alert>
-                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 max-h-[450px] overflow-y-auto">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4 flex-1 min-h-0 overflow-y-auto items-start">
                                         {/* Column 1: Previous event standings */}
                                         <StaticGroupColumn
-                                            title={`Classement - ${previousEvent.event_name}`}
+                                            title={`Classement - Série ${previousRound.round_number}`}
                                             groups={previousGroups}
                                             maxRows={maxRows}
                                             sortPlayers={(a, b) => (standingsPointsMap.get(b.id) ?? 0) - (standingsPointsMap.get(a.id) ?? 0)}
-                                            renderPlayer={(player) => {
-                                                const moveType = moveMap.get(player.id)
-                                                const isUnregistered = unregisteredFromPrevious.has(player.id)
-                                                return (
-                                                    <div className={`flex items-center justify-between w-full text-sm px-2 py-1.5 rounded border ${
-                                                        isUnregistered ? "bg-gray-50 opacity-50 border-gray-200"
-                                                            : moveType === "promotion" ? "bg-emerald-50 border-emerald-200"
-                                                            : moveType === "relegation" ? "bg-red-50 border-red-200"
-                                                            : "border-gray-200"
-                                                    }`}>
-                                                        <span className="flex items-center gap-2">
-                                                            <span className={isUnregistered ? "line-through text-muted-foreground" : ""}>
-                                                                {player.first_name} {player.last_name}
-                                                            </span>
-                                                            {isUnregistered && <UserRemove01Icon className="h-3.5 w-3.5 text-muted-foreground" />}
-                                                            {!isUnregistered && moveType === "promotion" && <ChartIncreaseIcon className="h-3.5 w-3.5 text-emerald-600" />}
-                                                            {!isUnregistered && moveType === "relegation" && <ChartDecreaseIcon className="h-3.5 w-3.5 text-red-500" />}
-                                                        </span>
-                                                        <span className="text-xs text-muted-foreground">{standingsPointsMap.get(player.id) ?? 0} pts</span>
-                                                    </div>
-                                                )
-                                            }}
+                                            renderPlayer={(player) => (
+                                                <GroupPlayerRow
+                                                    player={player}
+                                                    moveType={moveMap.get(player.id)}
+                                                    departed={unregisteredFromPrevious.has(player.id)}
+                                                    trailing={`${standingsPointsMap.get(player.id) ?? 0} pts`}
+                                                />
+                                            )}
                                         />
 
-                                        {/* Column 2: After promotions (no new players) */}
-                                        {afterPromotionGroups && (
+                                        {/* Colonne 2 : promotions seules, personne n'est retire */}
+                                        {promotionOnlyGroups && (
                                             <StaticGroupColumn
-                                                title="Après promotions + départs"
+                                                title="1. Promotions"
+                                                titleExtra={
+                                                    <Badge variant="inactive" className="cursor-default shrink-0">
+                                                        <ArrowLeftRightIcon className="h-3 w-3 mr-1" />
+                                                        {promotionResult.moves.length}
+                                                    </Badge>
+                                                }
+                                                groups={promotionOnlyGroups}
+                                                sortPlayers={sortByPlacement}
+                                                maxRows={maxRows}
+                                                renderPlayer={(player) => (
+                                                    <GroupPlayerRow
+                                                        player={player}
+                                                        moveType={moveMap.get(player.id)}
+                                                        departed={unregisteredFromPrevious.has(player.id)}
+                                                        trailing={`R${player.power_ranking || "-"}`}
+                                                    />
+                                                )}
+                                            />
+                                        )}
+
+                                        {/* Colonne 3 : retrait des non-reinscrits, avec redistribution eventuelle */}
+                                        {afterDepartureGroups && (
+                                            <StaticGroupColumn
+                                                title="2. Départs"
                                                 titleExtra={
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
@@ -700,38 +749,18 @@ export function WizardStepGroups({ event, round, groups, eventPlayerIds, onGroup
                                                         )}
                                                     </Tooltip>
                                                 }
-                                                groups={afterPromotionGroups}
-                                                sortPlayers={(a, b) => {
-                                                    const order = (id: string) => {
-                                                        if (unregisteredFromPrevious.has(id)) return 2
-                                                        const mt = moveMap.get(id)
-                                                        if (mt === "relegation") return -1
-                                                        if (mt === "promotion") return 1
-                                                        return 0
-                                                    }
-                                                    return order(a.id) - order(b.id)
-                                                }}
+                                                groups={afterDepartureGroups}
+                                                sortPlayers={sortByPlacement}
                                                 maxRows={maxRows}
                                                 renderPlayer={(player) => {
-                                                    const isUnregistered = unregisteredFromPrevious.has(player.id)
-                                                    const moveType = moveMap.get(player.id)
+                                                    const departed = unregisteredFromPrevious.has(player.id)
                                                     return (
-                                                        <div className={`flex items-center justify-between w-full text-sm px-2 py-1.5 rounded border ${
-                                                            isUnregistered ? "bg-gray-50 opacity-50 border-gray-200"
-                                                                : moveType === "promotion" ? "bg-emerald-50 border-emerald-200"
-                                                                : moveType === "relegation" ? "bg-red-50 border-red-200"
-                                                                : "border-gray-200"
-                                                        }`}>
-                                                            <span className="flex items-center gap-2">
-                                                                <span className={isUnregistered ? "line-through text-muted-foreground" : ""}>
-                                                                    {player.first_name} {player.last_name}
-                                                                </span>
-                                                                {isUnregistered && <UserRemove01Icon className="h-3.5 w-3.5 text-muted-foreground" />}
-                                                                {!isUnregistered && moveType === "promotion" && <ChartIncreaseIcon className="h-3.5 w-3.5 text-emerald-600" />}
-                                                                {!isUnregistered && moveType === "relegation" && <ChartDecreaseIcon className="h-3.5 w-3.5 text-red-500" />}
-                                                            </span>
-                                                            <span className="text-xs text-muted-foreground">{isUnregistered ? "" : `R${player.power_ranking || "-"}`}</span>
-                                                        </div>
+                                                        <GroupPlayerRow
+                                                            player={player}
+                                                            moveType={moveMap.get(player.id)}
+                                                            departed={departed}
+                                                            trailing={departed ? "" : `R${player.power_ranking || "-"}`}
+                                                        />
                                                     )
                                                 }}
                                             />
@@ -741,7 +770,7 @@ export function WizardStepGroups({ event, round, groups, eventPlayerIds, onGroup
                                         {proposedLocalGroups && (
                                             <div className="space-y-3 min-w-0">
                                                 <div className="flex items-center justify-between gap-2 mr-3">
-                                                    <h4 className="text-sm font-semibold text-muted-foreground truncate ml-3">Proposition</h4>
+                                                    <h4 className="text-sm font-semibold text-muted-foreground truncate ml-3">3. Proposition</h4>
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
                                                             <Badge variant="inactive" className="cursor-default shrink-0">
@@ -820,7 +849,7 @@ export function WizardStepGroups({ event, round, groups, eventPlayerIds, onGroup
                 />
             ) : (
                 /* Aperçu round-robin avec dates */
-                <div className="grid gap-4">
+                <div className="flex flex-col gap-4 flex-1 min-h-0">
                     <div className="flex items-center justify-between">
                         <p className="text-sm text-muted-foreground">
                             {groups.length} groupe{groups.length > 1 ? "s" : ""} créé{groups.length > 1 ? "s" : ""}
@@ -846,12 +875,16 @@ export function WizardStepGroups({ event, round, groups, eventPlayerIds, onGroup
                         </div>
                     </div>
 
-                    <GroupRoundPreview round={round} groups={groups} playerAbsences={playerAbsences} />
+                    {playerMovements && previousRound && (
+                        <MovementLegend previousRoundNumber={previousRound.round_number} movements={playerMovements} />
+                    )}
+
+                    <GroupRoundPreview round={round} groups={groups} playerAbsences={playerAbsences} playerMovements={playerMovements} />
                 </div>
             )}
 
-            {/* Navigation (caché en mode management) */}
-            {!managementMode && (
+            {/* Navigation (cachée en mode management et en mode section) */}
+            {!managementMode && (onNext || onPrevious) && (
                 <div className="flex justify-between pt-6">
                     <Button type="button" size="lg" variant="outline" onClick={onPrevious}>
                         <ArrowLeft01Icon className="h-4 w-4" />

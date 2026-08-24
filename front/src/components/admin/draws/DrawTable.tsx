@@ -4,6 +4,8 @@ import type { Match } from "@/types/match";
 import type { ScoringRules } from "@/types/settings";
 import { useMemo, useState } from "react";
 import { calculateGroupStandings, getPointsForScore } from "@/lib/rankingEngine";
+import type { PlayerMovement } from "@/lib/playerMovement";
+import { PlayerMovementBadge } from "./PlayerMovementBadge";
 
 interface DrawTableProps {
     group: Group
@@ -11,6 +13,11 @@ interface DrawTableProps {
     scoringRules?: ScoringRules
     displayMode?: "score" | "points"
     playerAbsences?: Map<string, string[]>
+    /**
+     * Parcours de chaque joueur depuis la série précédente, indexé par id de joueur.
+     * Omis hors configuration de série : la table reste alors strictement inchangée.
+     */
+    playerMovements?: Map<string, PlayerMovement>
 }
 
 const DEFAULT_SCORING: ScoringRules = {
@@ -24,7 +31,7 @@ const DEFAULT_SCORING: ScoringRules = {
     ],
 }
 
-export function DrawTable({ group, matches = [], scoringRules, displayMode = "score", playerAbsences }: DrawTableProps) {
+export function DrawTable({ group, matches = [], scoringRules, displayMode = "score", playerAbsences, playerMovements }: DrawTableProps) {
 
     const players = useMemo(() => group.players || [], [group.players])
     const maxPlayers = group.max_players || 6
@@ -134,7 +141,12 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                     <div className="flex items-center px-1 py-0.5">
                                         <span className="font-bold text-xs shrink-0 w-4">{getPlayerLetter(rowIndex)}</span>
                                         <div className="flex-1 text-center min-w-0">
-                                            <p className="text-xs truncate font-bold">{player.first_name} {player.last_name}</p>
+                                            <p className="text-xs truncate font-bold flex items-center justify-center gap-1">
+                                                <span className="truncate">{player.first_name} {player.last_name}</span>
+                                                {playerMovements?.get(player.id) && (
+                                                    <PlayerMovementBadge movement={playerMovements.get(player.id)!} />
+                                                )}
+                                            </p>
                                             <p className="text-[10px] text-foreground truncate">{player.phone}</p>
                                         </div>
                                     </div>
