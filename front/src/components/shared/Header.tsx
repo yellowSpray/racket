@@ -34,48 +34,58 @@ export default function Header() {
   // }
 
   return (
-    <header className="px-8 pt-8 pb-4 flex items-stretch gap-4">
+    // Même grille que DashboardLayout (24 colonnes, gap-4) et même px-8 que <main> :
+    // le bloc logo occupe la colonne de la sidebar et reste aligné avec elle à toute largeur.
+    <header className="px-8 pt-8 pb-4 grid grid-cols-24 gap-4 items-stretch">
 
-      <div className="w-16 shrink-0 rounded bg-gray-300 dark:bg-gray-600" />
+      {/* Emplacement du logo — aligné sur la colonne de la sidebar */}
+      <div
+        data-testid="logo-placeholder"
+        className="col-span-1 rounded bg-gray-300 dark:bg-gray-600"
+      />
 
-      {/* Slot titre / sélecteur */}
-      <div ref={registerSlot} className="flex-1 flex items-center gap-2" />
+      <div data-testid="header-content" className="col-span-23 flex items-stretch gap-4 min-w-0">
 
-      {/* Slot boutons d'action (conditionnel) */}
-      <div ref={registerActionsSlot} className="flex items-center gap-4 shrink-0" />
-      {hasActions && <div className="w-px self-stretch bg-border shrink-0" />}
+        {/* Slot titre / sélecteur */}
+        <div ref={registerSlot} className="flex-1 flex items-center gap-2 min-w-0" />
 
-      {isAuthenticated && profile ? (
-        <div className="flex items-center gap-4 shrink-0">
-          <Button variant="icon" size="icon" onClick={() => setDarkMode(!darkMode)}>
-            {darkMode ? <Sun03Icon size={20} strokeWidth={2} /> : <Moon02Icon size={20} strokeWidth={2} />}
-          </Button>
-          <Button variant="icon" size="icon" className="relative">
-            <Notification03Icon size={20} strokeWidth={2} />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border border-white dark:border-slate-900" />
-          </Button>
-          <Button variant="outline" className="py-1 pl-1 pr-2" asChild>
-            <Link to={profile?.role === "user" ? "/user/profile" : "/admin/profile"}>
-              <Avatar>
-                <AvatarImage
-                  src={profile?.avatar_url || "https://github.com/shadcn.png"}
-                  alt={`${profile?.first_name} ${profile?.last_name}`}
-                />
-              </Avatar>
-              <span>{`${profile?.first_name} ${profile?.last_name}`}</span>
-            </Link>
-          </Button>
-        </div>
-      ) : (
-        <div className="flex items-center gap-4 shrink-0">
-          <Button variant="icon" size="icon" onClick={() => setDarkMode(!darkMode)}>
-            {darkMode ? <Sun03Icon size={20} /> : <Moon02Icon size={20} />}
-          </Button>
-          <Button asChild variant="default">
-            <Link to="/auth">Commencer</Link>
-          </Button>
-        </div>
-      )}
+        {/* Slot boutons d'action (conditionnel) */}
+        <div ref={registerActionsSlot} className="flex items-center gap-4 shrink-0" />
+        {hasActions && <div className="w-px self-stretch bg-border shrink-0" />}
+
+        {isAuthenticated && profile ? (
+          <div className="flex items-center gap-4 shrink-0">
+            <Button variant="icon" size="icon" onClick={() => setDarkMode(!darkMode)}>
+              {darkMode ? <Sun03Icon size={20} strokeWidth={2} /> : <Moon02Icon size={20} strokeWidth={2} />}
+            </Button>
+            <Button variant="icon" size="icon" className="relative">
+              <Notification03Icon size={20} strokeWidth={2} />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border border-white dark:border-slate-900" />
+            </Button>
+            <Button variant="outline" className="py-1 pl-1 pr-2" asChild>
+              <Link to={profile?.role === "user" ? "/user/profile" : "/admin/profile"}>
+                <Avatar>
+                  <AvatarImage
+                    src={profile?.avatar_url || "https://github.com/shadcn.png"}
+                    alt={`${profile?.first_name} ${profile?.last_name}`}
+                  />
+                </Avatar>
+                <span>{`${profile?.first_name} ${profile?.last_name}`}</span>
+              </Link>
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-4 shrink-0">
+            <Button variant="icon" size="icon" onClick={() => setDarkMode(!darkMode)}>
+              {darkMode ? <Sun03Icon size={20} /> : <Moon02Icon size={20} />}
+            </Button>
+            <Button asChild variant="default">
+              <Link to="/auth">Commencer</Link>
+            </Button>
+          </div>
+        )}
+
+      </div>
 
     </header>
   )

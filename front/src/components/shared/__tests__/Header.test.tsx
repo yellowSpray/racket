@@ -18,6 +18,34 @@ vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => mockUseAuth(),
 }))
 
+describe('Header — alignement du bloc logo sur la sidebar', () => {
+  // La sidebar occupe 1 colonne d'une grille de 24 (DashboardLayout).
+  // Le bloc logo doit occuper la meme colonne pour rester aligne quelle que soit la largeur.
+  it('reprend la grille 24 colonnes du layout', () => {
+    mockUseAuth.mockReturnValue({ profile: null, isAuthenticated: false })
+    const { container } = render(<Header />)
+    expect(container.querySelector('header')).toHaveClass('grid', 'grid-cols-24', 'gap-4')
+  })
+
+  it('donne une seule colonne au placeholder du logo', () => {
+    mockUseAuth.mockReturnValue({ profile: null, isAuthenticated: false })
+    render(<Header />)
+    expect(screen.getByTestId('logo-placeholder')).toHaveClass('col-span-1')
+  })
+
+  it('laisse les 23 colonnes restantes au contenu du header', () => {
+    mockUseAuth.mockReturnValue({ profile: null, isAuthenticated: false })
+    render(<Header />)
+    expect(screen.getByTestId('header-content')).toHaveClass('col-span-23')
+  })
+
+  it('ne fixe plus de largeur en dur sur le placeholder', () => {
+    mockUseAuth.mockReturnValue({ profile: null, isAuthenticated: false })
+    render(<Header />)
+    expect(screen.getByTestId('logo-placeholder')).not.toHaveClass('w-16')
+  })
+})
+
 describe('Header', () => {
   it('renders the logo and site name', () => {
     mockUseAuth.mockReturnValue({ profile: null, isAuthenticated: false })
