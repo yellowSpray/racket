@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { useAuth } from "@/contexts/AuthContext"
 import { useEventRules } from "@/hooks/useEventRules"
+import { useEffectiveRules } from "@/hooks/useEffectiveRules"
 import { toast } from "sonner"
 import {
     Dialog,
@@ -57,6 +58,13 @@ export function EventCreateWizardDialog({
         upsertEventScoringRules,
         upsertEventPromotionRules,
     } = useEventRules()
+
+    // Les regles du club servent de modele : un evenement qui n'a pas encore
+    // les siennes part de ce que le club a configure, pas de constantes en dur.
+    const { scoring: clubScoring, promotion: clubPromotion } = useEffectiveRules(
+        null,
+        profile?.club_id ?? null,
+    )
 
     const isEditing = !!event
 
@@ -249,6 +257,8 @@ export function EventCreateWizardDialog({
                     <StepperContent value={3}>
                         <WizardEventStepPromotionRules
                             promotionRules={promotionRules}
+                            defaultPromotedCount={clubPromotion.promoted_count}
+                            defaultRelegatedCount={clubPromotion.relegated_count}
                             onNext={handlePromotionNext}
                             onPrevious={() => setActiveStep(2)}
                             loading={saving}
@@ -258,6 +268,7 @@ export function EventCreateWizardDialog({
                     <StepperContent value={4}>
                         <WizardEventStepScoringRules
                             scoringRules={scoringRules}
+                            defaultScorePoints={clubScoring.score_points}
                             onFinish={handleScoringFinish}
                             onPrevious={() => setActiveStep(3)}
                             loading={saving}

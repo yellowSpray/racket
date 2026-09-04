@@ -1,5 +1,5 @@
 import type { EventPromotionRules } from "@/types/event"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -7,6 +7,7 @@ import { ArrowLeft01Icon, ArrowRight01Icon, ArrowUp01Icon, ArrowDown01Icon } fro
 
 interface WizardEventStepPromotionRulesProps {
     promotionRules: EventPromotionRules | null
+    /** Montees du club, qui servent de modele tant que l'evenement n'a rien. */
     defaultPromotedCount?: number
     defaultRelegatedCount?: number
     onNext: (promotedCount: number, relegatedCount: number) => Promise<void>
@@ -29,12 +30,16 @@ export function WizardEventStepPromotionRules({
         promotionRules?.relegated_count ?? defaultRelegatedCount
     )
 
+    // Les regles du club sont chargees en asynchrone : elles arrivent souvent
+    // apres le montage de l'etape. On les adopte alors, sauf si l'utilisateur
+    // a deja saisi ses propres valeurs.
+    const touched = useRef(false)
+
     useEffect(() => {
-        if (promotionRules) {
-            setPromotedCount(promotionRules.promoted_count)
-            setRelegatedCount(promotionRules.relegated_count)
-        }
-    }, [promotionRules])
+        if (touched.current) return
+        setPromotedCount(promotionRules?.promoted_count ?? defaultPromotedCount)
+        setRelegatedCount(promotionRules?.relegated_count ?? defaultRelegatedCount)
+    }, [promotionRules, defaultPromotedCount, defaultRelegatedCount])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -67,7 +72,7 @@ export function WizardEventStepPromotionRules({
                                 min={0}
                                 max={10}
                                 value={promotedCount}
-                                onChange={(e) => setPromotedCount(Math.max(0, parseInt(e.target.value) || 0))}
+                                onChange={(e) => { touched.current = true; setPromotedCount(Math.max(0, parseInt(e.target.value) || 0)) }}
                             />
                             <p className="text-xs text-muted-foreground">
                                 Les <strong>{promotedCount}</strong> premier{promotedCount > 1 ? "s" : ""} de chaque groupe montent au groupe supérieur.
@@ -92,7 +97,7 @@ export function WizardEventStepPromotionRules({
                                 min={0}
                                 max={10}
                                 value={relegatedCount}
-                                onChange={(e) => setRelegatedCount(Math.max(0, parseInt(e.target.value) || 0))}
+                                onChange={(e) => { touched.current = true; setRelegatedCount(Math.max(0, parseInt(e.target.value) || 0)) }}
                             />
                             <p className="text-xs text-muted-foreground">
                                 Les <strong>{relegatedCount}</strong> dernier{relegatedCount > 1 ? "s" : ""} de chaque groupe descendent au groupe inférieur.

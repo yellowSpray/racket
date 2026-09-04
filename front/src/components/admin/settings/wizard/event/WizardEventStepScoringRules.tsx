@@ -1,19 +1,16 @@
 import type { EventScoringRules } from "@/types/event"
 import type { ScorePointsEntry } from "@/types/settings"
-import { useState, useEffect } from "react"
+import { DEFAULT_SCORE_POINTS } from "@/lib/effectiveRules"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ArrowLeft01Icon, PlusSignIcon, Delete02Icon, Tick02Icon } from "hugeicons-react"
 
-const DEFAULT_SCORE_POINTS: ScorePointsEntry[] = [
-    { score: "3-0", winner_points: 5, loser_points: 0 },
-    { score: "3-1", winner_points: 4, loser_points: 1 },
-    { score: "3-2", winner_points: 3, loser_points: 2 },
-    { score: "ABS", winner_points: 3, loser_points: -1 },
-]
+const FALLBACK_SCORE_POINTS: ScorePointsEntry[] = [...DEFAULT_SCORE_POINTS]
 
 interface WizardEventStepScoringRulesProps {
     scoringRules: EventScoringRules | null
+    /** Bareme du club, qui sert de modele tant que l'evenement n'a pas le sien. */
     defaultScorePoints?: ScorePointsEntry[]
     onFinish: (scorePoints: ScorePointsEntry[]) => Promise<void>
     onPrevious: () => void
@@ -23,7 +20,7 @@ interface WizardEventStepScoringRulesProps {
 
 export function WizardEventStepScoringRules({
     scoringRules,
-    defaultScorePoints = DEFAULT_SCORE_POINTS,
+    defaultScorePoints = FALLBACK_SCORE_POINTS,
     onFinish,
     onPrevious,
     loading,
@@ -33,21 +30,30 @@ export function WizardEventStepScoringRules({
         scoringRules?.score_points ?? defaultScorePoints
     )
 
+    // Le bareme du club est charge en asynchrone : il arrive souvent apres le
+    // montage de l'etape. On l'adopte alors, sauf si l'utilisateur a deja
+    // touche au tableau, auquel cas sa saisie prime.
+    const touched = useRef(false)
+
     useEffect(() => {
-        if (scoringRules) setEntries(scoringRules.score_points)
-    }, [scoringRules])
+        if (touched.current) return
+        setEntries(scoringRules?.score_points ?? defaultScorePoints)
+    }, [scoringRules, defaultScorePoints])
 
     const updateEntry = (index: number, field: keyof ScorePointsEntry, value: string | number) => {
+        touched.current = true
         setEntries(prev => prev.map((entry, i) =>
             i === index ? { ...entry, [field]: value } : entry
         ))
     }
 
     const addEntry = () => {
+        touched.current = true
         setEntries(prev => [...prev, { score: "", winner_points: 0, loser_points: 0 }])
     }
 
     const removeEntry = (index: number) => {
+        touched.current = true
         setEntries(prev => prev.filter((_, i) => i !== index))
     }
 
