@@ -202,8 +202,20 @@ export function useAdminPlayers() {
 
     /**
      * Crée un nouveau joueur via la fonction RPC upsert_player.
+     *
+     * @param options.registerToCurrentEvent - inscrit aussi le joueur à
+     *   l'événement sélectionné. Vrai par défaut, parce qu'un joueur ajouté
+     *   depuis la page Joueurs pendant un événement vient y jouer.
+     *   **À passer à faux pour tout ajout en masse** : un import de fichier
+     *   alimente le club, pas l'événement qui se trouve ouvert à cet instant.
+     *   C'est ainsi que des dizaines de joueurs d'un événement se sont
+     *   retrouvés inscrits à un autre.
      */
-    const addPlayer = async (player: Partial<PlayerType>) => {
+    const addPlayer = async (
+        player: Partial<PlayerType>,
+        options: { registerToCurrentEvent?: boolean } = {},
+    ) => {
+        const { registerToCurrentEvent = true } = options
 
         const playerStatuses = (player.status || []).filter(s => s !== "active" && s !== "inactive") as string[]
         const isPaid = player.payment_status === "paid"
@@ -225,8 +237,8 @@ export function useAdminPlayers() {
             p_statuses: rpcStatuses,
             p_arrival_time: player.arrival || null,
             p_departure_time: player.departure || null,
-            p_event_id: currentEventId,
-            p_round_id: currentRoundId,
+            p_event_id: registerToCurrentEvent ? currentEventId : null,
+            p_round_id: registerToCurrentEvent ? currentRoundId : null,
             p_event_date: null,
             p_payment_amount: 0
         }

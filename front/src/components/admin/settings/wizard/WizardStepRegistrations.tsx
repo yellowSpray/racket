@@ -1,6 +1,7 @@
 import type { Event, EventRound } from "@/types/event"
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { supabase } from "@/lib/supabaseClient"
+import { useRoundRegistrations } from "@/hooks/useRoundRegistrations"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -37,34 +38,46 @@ function toggleSetItem(setter: React.Dispatch<React.SetStateAction<Set<string>>>
 
 export function WizardStepRegistrations({ event, round, onRegistrationsChanged, onNext, onPrevious }: WizardStepRegistrationsProps) {
     const [allPlayers, setAllPlayers] = useState<RegistrationPlayer[]>([])
-    const [registeredIds, setRegisteredIds] = useState<Set<string>>(new Set())
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
     const [selectedRegisteredIds, setSelectedRegisteredIds] = useState<Set<string>>(new Set())
-    const [loading, setLoading] = useState(true)
+    const [loadingPlayers, setLoadingPlayers] = useState(true)
     const [search, setSearch] = useState("")
     const [searchRegistered, setSearchRegistered] = useState("")
 
-    const fetchData = useCallback(async () => {
-        setLoading(true)
-        const previousRound = (event.event_rounds ?? []).find(r => r.round_number === round.round_number - 1)
-        const noOp = Promise.resolve({ data: null as null, error: null })
+    /*
+     * La série précédente se cherche dans le même événement, par numéro. C'est
+     * elle qui fournit le pré-remplissage : les inscriptions au niveau de
+     * l'événement ne sont plus consultées dès la deuxième série, sans quoi deux
+     * événements du même club finissaient mélangés.
+     */
+    const previousRoundId = useMemo(() => {
+        const previous = (event.event_rounds ?? [])
+            .filter(r => r.round_number < round.round_number)
+            .sort((a, b) => b.round_number - a.round_number)[0]
+        return previous?.id ?? null
+    }, [event.event_rounds, round.round_number])
 
-        const [profilesRes, registrationsRes, prevGroupsRes] = await Promise.all([
-            supabase
-                .from("profiles")
-                .select("id, first_name, last_name, power_ranking, player_status(status)")
-                .eq("club_id", event.club_id)
-                .order("last_name"),
-            previousRound
-                ? supabase.from("event_players").select("profile_id").eq("event_id", event.id)
-                : noOp,
-            previousRound
-                ? supabase.from("groups").select("group_players(profile_id)").eq("round_id", previousRound.id)
-                : noOp,
-        ])
+    const {
+        registeredIds,
+        loading: loadingRegistrations,
+        addPlayers,
+        removePlayers,
+    } = useRoundRegistrations(event.id, round.id, previousRoundId)
 
-        if (profilesRes.data) {
-            setAllPlayers(profilesRes.data.map(p => ({
+    const loading = loadingPlayers || loadingRegistrations
+
+    /* La colonne de gauche reste volontairement ouverte à tout le club :
+     * l'admin doit pouvoir inscrire qui il veut, quel que soit son événement. */
+    const fetchPlayers = useCallback(async () => {
+        setLoadingPlayers(true)
+        const { data } = await supabase
+            .from("profiles")
+            .select("id, first_name, last_name, power_ranking, player_status(status)")
+            .eq("club_id", event.club_id)
+            .order("last_name")
+
+        if (data) {
+            setAllPlayers(data.map(p => ({
                 id: p.id,
                 first_name: p.first_name,
                 last_name: p.last_name,
@@ -72,56 +85,24 @@ export function WizardStepRegistrations({ event, round, onRegistrationsChanged, 
                 statuses: (p.player_status || []).map((s: { status: string }) => s.status),
             })))
         }
+        setLoadingPlayers(false)
+    }, [event.club_id])
 
-        const ids = new Set<string>()
-        if (registrationsRes.data) {
-            for (const r of registrationsRes.data) ids.add(r.profile_id as string)
-        }
-        if (prevGroupsRes.data) {
-            for (const group of prevGroupsRes.data) {
-                for (const gp of (group.group_players || [])) ids.add(gp.profile_id as string)
-            }
-        }
+    useEffect(() => { fetchPlayers() }, [fetchPlayers])
 
-        setRegisteredIds(ids)
-        onRegistrationsChanged(ids)
-        setLoading(false)
-    }, [event.id, round.round_number]) // eslint-disable-line react-hooks/exhaustive-deps
-
-    useEffect(() => { fetchData() }, [fetchData])
-
-    const updateIds = useCallback((next: Set<string>) => {
-        setRegisteredIds(next)
-        onRegistrationsChanged(next)
-    }, [onRegistrationsChanged])
+    useEffect(() => {
+        if (!loadingRegistrations) onRegistrationsChanged(registeredIds)
+    }, [registeredIds, loadingRegistrations]) // eslint-disable-line react-hooks/exhaustive-deps
 
     const addSelectedPlayers = async () => {
         if (selectedIds.size === 0) return
-        const inserts = Array.from(selectedIds).map(profileId => ({
-            event_id: event.id,
-            profile_id: profileId,
-        }))
-        const { error } = await supabase
-            .from("event_players")
-            .upsert(inserts, { onConflict: "event_id,profile_id", ignoreDuplicates: true })
-        if (error) return
-        const next = new Set(registeredIds)
-        for (const id of selectedIds) next.add(id)
-        updateIds(next)
+        await addPlayers([...selectedIds])
         setSelectedIds(new Set())
     }
 
     const removeSelectedPlayers = async () => {
         if (selectedRegisteredIds.size === 0) return
-        const { error } = await supabase
-            .from("event_players")
-            .delete()
-            .eq("event_id", event.id)
-            .in("profile_id", Array.from(selectedRegisteredIds))
-        if (error) return
-        const next = new Set(registeredIds)
-        for (const id of selectedRegisteredIds) next.delete(id)
-        updateIds(next)
+        await removePlayers([...selectedRegisteredIds])
         setSelectedRegisteredIds(new Set())
     }
 

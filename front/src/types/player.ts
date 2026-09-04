@@ -68,7 +68,8 @@ export interface PlayersContextType {
     players: PlayerType[];
     loading: boolean;
     error: string | null;
-    addPlayer: (player: Partial<PlayerType>) => Promise<void>;
+    /** `registerToCurrentEvent` à faux pour un ajout en masse : le joueur rejoint le club, pas l'événement ouvert. */
+    addPlayer: (player: Partial<PlayerType>, options?: { registerToCurrentEvent?: boolean }) => Promise<void>;
     updatePlayer: (id: string, updates: Partial<PlayerType>) => Promise<void>;
     deletePlayer: (id: string) => Promise<void>;
     removePlayerFromEvent: (id: string) => Promise<void>;

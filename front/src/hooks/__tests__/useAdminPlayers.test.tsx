@@ -207,6 +207,29 @@ describe('useAdminPlayers', () => {
             }))
         })
 
+        it('n\'inscrit pas le joueur a l\'evenement courant quand on le demande', async () => {
+            // Import en masse : les joueurs rejoignent le club, pas l'evenement
+            // qui se trouve selectionne dans le header a cet instant.
+            mockSupabase._builder._resolve([])
+            const { result } = renderHook(() => useAdminPlayers())
+            await waitFor(() => expect(result.current.loading).toBe(false))
+
+            mockSupabase.rpc.mockResolvedValueOnce({ data: { success: true }, error: null })
+            mockSupabase._builder._resolve([])
+
+            await act(async () => {
+                await result.current.addPlayer(
+                    { first_name: 'Import', last_name: 'Masse' },
+                    { registerToCurrentEvent: false },
+                )
+            })
+
+            expect(mockSupabase.rpc).toHaveBeenCalledWith('upsert_player', expect.objectContaining({
+                p_event_id: null,
+                p_round_id: null,
+            }))
+        })
+
         it('should set error when rpc fails', async () => {
             mockSupabase._builder._resolve([])
 

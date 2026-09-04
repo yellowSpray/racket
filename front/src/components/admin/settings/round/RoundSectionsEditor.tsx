@@ -1,8 +1,9 @@
 import type { Event, EventRound } from "@/types/event"
 import type { Group } from "@/types/draw"
 import type { Match } from "@/types/match"
-import { Fragment, useCallback, useEffect, useState, type ReactNode } from "react"
+import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } from "react"
 import { supabase } from "@/lib/supabaseClient"
+import { useRoundRegistrations } from "@/hooks/useRoundRegistrations"
 import { sortGroupsByName, intervalToMinutes, formatTimeForInput } from "@/lib/utils"
 import { transformGroups } from "@/types/draw"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -51,28 +52,42 @@ function configFromRound(round: EventRound): WizardRoundConfigData {
 export function RoundSectionsEditor({ event, round, onSaved, leading }: RoundSectionsEditorProps) {
     const [currentRound, setCurrentRound] = useState<EventRound>(round)
     const [roundConfig, setRoundConfig] = useState<WizardRoundConfigData>(() => configFromRound(round))
-    const [registeredPlayerIds, setRegisteredPlayerIds] = useState<Set<string>>(new Set())
     const [groups, setGroups] = useState<Group[]>([])
     const [matches, setMatches] = useState<Match[]>([])
+
+    /** Série qui précède celle-ci dans le même événement, source du pré-remplissage. */
+    const previousRoundId = useMemo(() => {
+        const previous = (event.event_rounds ?? [])
+            .filter(r => r.round_number < round.round_number)
+            .sort((a, b) => b.round_number - a.round_number)[0]
+        return previous?.id ?? null
+    }, [event.event_rounds, round.round_number])
+
+    /*
+     * La section Inscriptions tient sa propre instance du hook. On garde donc
+     * une copie locale, initialisée par le hook et remise à jour par la section
+     * quand l'admin ajoute ou retire quelqu'un, pour que l'onglet Tableaux voie
+     * le changement sans recharger la page.
+     */
+    const { registeredIds: loadedRegistrations } = useRoundRegistrations(event.id, round.id, previousRoundId)
+    const [registeredPlayerIds, setRegisteredPlayerIds] = useState<Set<string>>(new Set())
+
+    useEffect(() => { setRegisteredPlayerIds(loadedRegistrations) }, [loadedRegistrations])
 
     useEffect(() => {
         setCurrentRound(round)
         setRoundConfig(configFromRound(round))
     }, [round])
 
-    const loadRoundData = useCallback(async (eventId: string, roundId: string) => {
-        const [registrationsRes, groupsRes] = await Promise.all([
-            supabase.from("event_players").select("profile_id").eq("event_id", eventId),
-            supabase
-                .from("groups")
-                .select("*, group_players(profile_id, profiles(id, first_name, last_name, phone, power_ranking))")
-                .eq("round_id", roundId)
-                .order("group_name"),
-        ])
-
-        if (registrationsRes.data) {
-            setRegisteredPlayerIds(new Set(registrationsRes.data.map(r => r.profile_id as string)))
-        }
+    const loadRoundData = useCallback(async (_eventId: string, roundId: string) => {
+        // Les inscrits ne sont plus lus ici : `useRoundRegistrations` les résout
+        // au niveau de la série. Relire `event_players` à l'échelle de
+        // l'événement ramenait des joueurs d'un autre événement dans les tableaux.
+        const groupsRes = await supabase
+            .from("groups")
+            .select("*, group_players(profile_id, profiles(id, first_name, last_name, phone, power_ranking))")
+            .eq("round_id", roundId)
+            .order("group_name")
 
         if (!groupsRes.data) return
 

@@ -179,10 +179,10 @@ function MappingStage({
                                             onValueChange={(v) => onAssignField(index, v as keyof ColumnMapping | "_none")}
                                         >
                                             <SelectTrigger className="h-7 text-xs">
-                                                <SelectValue placeholder="— ignorer —" />
+                                                <SelectValue placeholder="Ignorer" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="_none">— ignorer —</SelectItem>
+                                                <SelectItem value="_none">Ignorer</SelectItem>
                                                 {(Object.keys(FIELD_LABELS) as (keyof ColumnMapping)[]).map((field) => (
                                                     <SelectItem key={field} value={field}>
                                                         {FIELD_LABELS[field]}{REQUIRED_FIELDS.includes(field) ? " *" : ""}
@@ -207,7 +207,7 @@ function MappingStage({
                                         : String(raw ?? "")
                                     return (
                                         <td key={index} className="px-3 py-2 text-muted-foreground">
-                                            {display || "—"}
+                                            {display || "-"}
                                         </td>
                                     )
                                 })}
@@ -384,16 +384,22 @@ export function OnboardingImportPlayersStep({
         for (let i = 0; i < toImport.length; i++) {
             const p = toImport[i]
             try {
-                await addPlayer({
-                    first_name: p.first_name,
-                    last_name: p.last_name,
-                    phone: p.phone,
-                    email: p.email,
-                    arrival: p.arrival,
-                    departure: p.departure,
-                    power_ranking: p.power_ranking,
-                    status: p.status,
-                })
+                await addPlayer(
+                    {
+                        first_name: p.first_name,
+                        last_name: p.last_name,
+                        phone: p.phone,
+                        email: p.email,
+                        arrival: p.arrival,
+                        departure: p.departure,
+                        power_ranking: p.power_ranking,
+                        status: p.status,
+                    },
+                    // Un import alimente le club, pas l'événement ouvert au
+                    // moment de l'import. C'est ce raccourci qui avait inscrit
+                    // les joueurs d'un événement dans un autre.
+                    { registerToCurrentEvent: false },
+                )
             } catch {
                 errors++
             }
