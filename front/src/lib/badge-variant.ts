@@ -8,6 +8,9 @@ export const badgeVariants = cva(
       variant: {
         default:
           "border-transparent bg-gray-300 text-gray-700",
+        // Neutre et sans fond : se pose sur n'importe quelle surface sans la masquer.
+        outline:
+          "border-border text-foreground",
         member:
           "border-transparent bg-primary text-primary-foreground",
         visitor:

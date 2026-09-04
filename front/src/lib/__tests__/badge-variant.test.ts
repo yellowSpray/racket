@@ -89,6 +89,27 @@ describe("badgeVariants", () => {
     });
   });
 
+  describe("outline variant", () => {
+    // Trois ecrans la demandaient deja : les evenements d'un joueur, le box
+    // d'un match non place, le classement joueur. Elle n'existait pas.
+    it("should apply a neutral bordered style", () => {
+      const result = badgeVariants({ variant: "outline" });
+      expect(result).toContain("border-border");
+      expect(result).toContain("text-foreground");
+    });
+
+    it("should keep its border visible", () => {
+      const result = badgeVariants({ variant: "outline" });
+      expect(result).not.toContain("border-transparent");
+    });
+
+    it("should not paint a background", () => {
+      // Un badge outline se pose sur n'importe quel fond sans le masquer.
+      const result = badgeVariants({ variant: "outline" });
+      expect(result).not.toMatch(/\bbg-\S/);
+    });
+  });
+
   describe("paid variant", () => {
     it("should apply paid-specific classes", () => {
       const result = badgeVariants({ variant: "paid" });
