@@ -1,7 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { Group, GroupPlayer } from "@/types/draw";
 import type { Match } from "@/types/match";
-import type { ScoringRules } from "@/types/settings";
+import { DEFAULT_SCORE_POINTS, type ScoringSource } from "@/lib/effectiveRules";
 import { useMemo, useState } from "react";
 import { calculateGroupStandings, getPointsForScore } from "@/lib/rankingEngine";
 import type { PlayerMovement } from "@/lib/playerMovement";
@@ -10,7 +10,8 @@ import { PlayerMovementBadge } from "./PlayerMovementBadge";
 interface DrawTableProps {
     group: Group
     matches?: Match[]
-    scoringRules?: ScoringRules
+    /** Bareme deja resolu par l'appelant, via useEffectiveRules. */
+    scoringRules?: ScoringSource
     displayMode?: "score" | "points"
     playerAbsences?: Map<string, string[]>
     /**
@@ -31,16 +32,8 @@ interface DrawTableProps {
     onSelectPlayer?: (player: GroupPlayer) => void
 }
 
-const DEFAULT_SCORING: ScoringRules = {
-    id: "",
-    club_id: "",
-    score_points: [
-        { score: "3-0", winner_points: 5, loser_points: 0 },
-        { score: "3-1", winner_points: 4, loser_points: 1 },
-        { score: "3-2", winner_points: 3, loser_points: 2 },
-        { score: "ABS", winner_points: 3, loser_points: -1 },
-    ],
-}
+// Dernier recours si l'appelant n'a pas encore resolu de bareme.
+const DEFAULT_SCORING: ScoringSource = { score_points: [...DEFAULT_SCORE_POINTS] }
 
 export function DrawTable({ group, matches = [], scoringRules, displayMode = "score", playerAbsences, playerMovements, onSelectMatch, onSelectPlayer }: DrawTableProps) {
 

@@ -3,12 +3,12 @@ import { LayoutTable02Icon } from "hugeicons-react"
 import { DrawTable } from "@/components/admin/draws/DrawTable"
 import type { Group } from "@/types/draw"
 import type { Match } from "@/types/match"
-import type { ScoringRules } from "@/types/settings"
+import type { ScoringSource } from "@/lib/effectiveRules"
 
 interface MyDrawCardProps {
     myGroup: Group | null
     matches: Match[]
-    scoringRules?: ScoringRules
+    scoringRules?: ScoringSource
     className?: string
 }
 

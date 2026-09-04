@@ -6,6 +6,7 @@ import type { GroupStandings, PromotionResult } from "@/types/ranking"
 import { useGroups } from "@/hooks/useGroups"
 import { usePlayers } from "@/contexts/PlayersContext"
 import { useClubConfig } from "@/hooks/useClubConfig"
+import { useEffectiveRules } from "@/hooks/useEffectiveRules"
 import { useAuth } from "@/contexts/AuthContext"
 import { usePreviousRound } from "@/hooks/usePreviousRound"
 import { supabase } from "@/lib/supabaseClient"
@@ -100,7 +101,12 @@ export function WizardStepGroups({ event, round, groups, eventPlayerIds, onGroup
     const { createGroups, assignPlayersToGroup, loading: groupsLoading } = useGroups()
     const { players } = usePlayers()
     const { profile } = useAuth()
-    const { clubConfig, scoringRules, promotionRules, fetchClubConfig, defaultScoring, defaultPromotion } = useClubConfig()
+    const { clubConfig, fetchClubConfig } = useClubConfig()
+    // Montees, descentes et bareme viennent de l'evenement en cours de
+    // configuration, pas du club : c'est ce qui permet a deux evenements
+    // paralleles d'avoir des formats differents.
+    const { scoring: effectiveScoringRules, promotion: effectivePromotionRules } =
+        useEffectiveRules(event.id, profile?.club_id ?? null)
     const { previousRound, previousGroups, previousMatches, loading: prevLoading, fetchPreviousRound } = usePreviousRound()
 
     const [mode, setMode] = useState<CreationMode>("auto")
@@ -125,16 +131,6 @@ export function WizardStepGroups({ event, round, groups, eventPlayerIds, onGroup
             fetchPreviousRound(event.id, round.round_number)
         }
     }, [event.id, round.round_number, previousRound, prevLoading, fetchPreviousRound])
-
-    // Calculate standings and promotions from previous event data
-    const effectiveScoringRules = useMemo(
-        () => scoringRules ?? { id: "", club_id: "", score_points: defaultScoring.score_points },
-        [scoringRules, defaultScoring.score_points]
-    )
-    const effectivePromotionRules = useMemo(
-        () => promotionRules ?? { id: "", club_id: "", ...defaultPromotion },
-        [promotionRules, defaultPromotion]
-    )
 
     const previousStandings: GroupStandings[] = useMemo(() => {
         if (!previousRound || previousGroups.length === 0) return []

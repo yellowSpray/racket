@@ -4,6 +4,7 @@ import { useEvent } from "@/contexts/EventContext"
 import { useGroups } from "@/hooks/useGroups"
 import { useMatches } from "@/hooks/useMatches"
 import { useClubConfig } from "@/hooks/useClubConfig"
+import { useEffectiveRules } from "@/hooks/useEffectiveRules"
 import type { EventRound } from "@/types/event"
 import { DrawTable } from "@/components/admin/draws/DrawTable"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -19,7 +20,7 @@ export function UserDraws() {
     const { currentEvent, currentRound, events } = useEvent()
     const { groups, fetchGroupsByRound, loading: groupsLoading } = useGroups()
     const { matches, fetchMatchesByRound, loading: matchesLoading } = useMatches()
-    const { clubConfig, scoringRules, fetchClubConfig } = useClubConfig()
+    const { clubConfig, fetchClubConfig } = useClubConfig()
     const clubName = clubConfig?.club_name
 
     const defaultEventId = useMemo(() => {
@@ -44,6 +45,10 @@ export function UserDraws() {
         () => resolveRound(selectedEvent?.event_rounds) ?? currentRound,
         [selectedEvent, currentRound]
     )
+
+    // L'utilisateur choisit son evenement ici : le bareme doit suivre ce choix
+    // et non rester celui du club.
+    const { scoring } = useEffectiveRules(selectedEvent?.id ?? null, profile?.club_id ?? null)
 
     useEffect(() => {
         if (profile?.club_id) fetchClubConfig(profile.club_id)
@@ -128,7 +133,7 @@ export function UserDraws() {
                             key={group.id}
                             group={group}
                             matches={matchesByGroup.get(group.id) || []}
-                            scoringRules={scoringRules ?? undefined}
+                            scoringRules={scoring}
                         />
                     ))}
                 </div>

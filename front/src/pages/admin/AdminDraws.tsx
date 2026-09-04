@@ -4,7 +4,7 @@ import { useEvent } from "@/contexts/EventContext"
 import { useAuth } from "@/contexts/AuthContext"
 import { useGroups } from "@/hooks/useGroups"
 import { useMatches } from "@/hooks/useMatches"
-import { useClubConfig } from "@/hooks/useClubConfig"
+import { useEffectiveRules } from "@/hooks/useEffectiveRules"
 import { usePlayers } from "@/contexts/PlayersContext"
 import { useHeaderSlot, useHeaderActions } from "@/contexts/HeaderSlotContext"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
@@ -52,7 +52,8 @@ export function AdminDraws () {
             setSavingScore(false)
         }
     }
-    const { scoringRules, fetchClubConfig } = useClubConfig()
+    // Le bareme suit l'evenement affiche, et retombe sur le club a defaut.
+    const { scoring } = useEffectiveRules(currentEvent?.id ?? null, profile?.club_id ?? null)
     const { players } = usePlayers()
     const [displayMode, setDisplayMode] = useState<"score" | "points">("score")
 
@@ -87,8 +88,6 @@ export function AdminDraws () {
             toast.error("Échec de l'export PDF", { id: toastId })
         }
     }, [])
-
-    const clubId = profile?.club_id ?? null
 
     const headerPortal = useHeaderSlot(
         <>
@@ -125,10 +124,6 @@ export function AdminDraws () {
             fetchMatchesByRound(currentRound.id)
         }
     }, [currentRound, fetchGroupsByRound, fetchMatchesByRound])
-
-    useEffect(() => {
-        fetchClubConfig(clubId)
-    }, [clubId, fetchClubConfig])
 
     if(loading) {
         return <DrawSkeleton />
@@ -188,7 +183,7 @@ export function AdminDraws () {
                             const sortedGroup = sortPlayersByEarliestDates(group, groupMatches)
                             return (
                                 <div key={group.id}>
-                                    <DrawTable group={sortedGroup} matches={groupMatches} scoringRules={scoringRules ?? undefined} displayMode={displayMode} playerAbsences={playerAbsences} onSelectMatch={(match, rowPlayer, opponent) => setSelectedCell({ match, rowPlayer, opponent })} onSelectPlayer={setSelectedPlayer} />
+                                    <DrawTable group={sortedGroup} matches={groupMatches} scoringRules={scoring} displayMode={displayMode} playerAbsences={playerAbsences} onSelectMatch={(match, rowPlayer, opponent) => setSelectedCell({ match, rowPlayer, opponent })} onSelectPlayer={setSelectedPlayer} />
                                 </div>
                             )
                         })}

@@ -4,6 +4,7 @@ import { useEvent } from "@/contexts/EventContext"
 import { useMatches } from "@/hooks/useMatches"
 import { useGroups } from "@/hooks/useGroups"
 import { useClubConfig } from "@/hooks/useClubConfig"
+import { useEffectiveRules } from "@/hooks/useEffectiveRules"
 import { NextMatchCard } from "@/components/user/dashboard/NextMatchCard"
 import { EvolutionCard } from "@/components/user/dashboard/EvolutionCard"
 import { UserStatsCard } from "@/components/user/dashboard/UserStatsCard"
@@ -18,7 +19,9 @@ export function UserDashboard() {
     const { currentEvent, currentRound } = useEvent()
     const { matches, fetchMatchesByRound, submitPendingScore } = useMatches()
     const { groups, fetchGroupsByRound } = useGroups()
-    const { clubConfig, scoringRules, fetchClubConfig } = useClubConfig()
+    const { clubConfig, fetchClubConfig } = useClubConfig()
+    // Le bareme suit l'evenement affiche, et retombe sur le club a defaut.
+    const { scoring } = useEffectiveRules(currentEvent?.id ?? null, profile?.club_id ?? null)
 
     useEffect(() => {
         if (currentRound?.id) {
@@ -111,7 +114,7 @@ export function UserDashboard() {
                     className="col-start-8 col-span-13 row-start-5 row-span-12 min-h-0"
                     myGroup={myGroup}
                     matches={matches}
-                    scoringRules={scoringRules ?? undefined}
+                    scoringRules={scoring}
                 />
                 <EvolutionCard
                     className="col-start-8 col-span-13 row-start-1 row-span-4 min-h-0"

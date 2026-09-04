@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useEvent } from "@/contexts/EventContext"
 import { useGroups } from "@/hooks/useGroups"
 import { useMatches } from "@/hooks/useMatches"
-import { useClubConfig } from "@/hooks/useClubConfig"
+import { useEffectiveRules } from "@/hooks/useEffectiveRules"
 import { calculateGroupStandings } from "@/lib/rankingEngine"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -22,11 +22,11 @@ export function UserRankings() {
     const { currentEvent, currentRound } = useEvent()
     const { groups, fetchGroupsByRound, loading: groupsLoading } = useGroups()
     const { matches, fetchMatchesByRound, loading: matchesLoading } = useMatches()
-    const { scoringRules, fetchClubConfig } = useClubConfig()
-
-    useEffect(() => {
-        if (profile?.club_id) fetchClubConfig(profile.club_id)
-    }, [profile?.club_id, fetchClubConfig])
+    // Le bareme suit l'evenement affiche, et retombe sur le club a defaut.
+    const { scoring, loading: rulesLoading } = useEffectiveRules(
+        currentEvent?.id ?? null,
+        profile?.club_id ?? null,
+    )
 
     useEffect(() => {
         if (currentRound?.id) {
@@ -36,7 +36,9 @@ export function UserRankings() {
     }, [currentRound?.id, fetchGroupsByRound, fetchMatchesByRound])
 
     const standings: GroupStandings[] = useMemo(() => {
-        if (!scoringRules || groups.length === 0) return []
+        // Tant que les regles chargent, mieux vaut ne rien afficher qu'un
+        // classement calcule avec un bareme qui n'est pas le bon.
+        if (rulesLoading || groups.length === 0) return []
         return groups.map(group => {
             const groupMatches = matches.filter(m => m.group_id === group.id)
             const players = (group.players || []).map(p => ({
@@ -44,9 +46,9 @@ export function UserRankings() {
                 first_name: p.first_name,
                 last_name: p.last_name,
             }))
-            return calculateGroupStandings(groupMatches, group.id, group.group_name, players, scoringRules)
+            return calculateGroupStandings(groupMatches, group.id, group.group_name, players, scoring)
         })
-    }, [groups, matches, scoringRules])
+    }, [groups, matches, scoring, rulesLoading])
 
     const myStanding = useMemo(() => {
         if (!profile?.id) return null
