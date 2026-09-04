@@ -2,11 +2,14 @@ import { supabase } from "@/lib/supabaseClient"
 import { useEffect, useState } from "react"
 import { logger } from "@/lib/logger"
 
+/**
+ * Vue publique d'un club : ce qu'un visiteur non connecte a le droit de lire.
+ * L'adresse et l'email sont reserves aux utilisateurs connectes, et n'etaient
+ * de toute facon affiches nulle part.
+ */
 type Club = {
     id: string,
     club_name: string,
-    club_adress?: string,
-    club_email?: string
 }
 
 /**
@@ -28,7 +31,7 @@ export const useClubs = () => {
             // récupérer les clubs triés par nom
             const { data , error } = await supabase
                 .from("clubs")
-                .select("id, club_name, club_address, club_email")
+                .select("id, club_name")
                 .order("club_name", { ascending: true })
 
             if(error){

@@ -19,15 +19,41 @@ vi.mock('@/lib/supabaseClient', () => ({
 
 import { useClubs } from '../useClub'
 
+/**
+ * Colonnes de `clubs` reservees aux utilisateurs connectes. La liste des clubs
+ * alimente le menu deroulant de la page d'inscription, lue par le role anonyme
+ * qui n'a droit qu'aux colonnes publiques. En demander une reservee ferait
+ * echouer la requete entiere et viderait le menu.
+ */
+const COLONNES_RESERVEES = ['club_email', 'club_address', 'visitor_fee', 'default_', 'logo_url']
+
 describe('useClubs', () => {
     beforeEach(() => {
         vi.clearAllMocks()
     })
 
+    it('ne demande aucune colonne reservee au role anonyme', async () => {
+        mockSupabase._builder._resolve([{ id: 'c1', club_name: 'Alpha Club' }])
+
+        renderHook(() => useClubs())
+
+        await waitFor(() => expect(mockSupabase._builder.select).toHaveBeenCalled())
+
+        const demande = (mockSupabase._builder.select as unknown as { mock: { calls: string[][] } })
+            .mock.calls[0][0]
+        for (const colonne of COLONNES_RESERVEES) {
+            expect(demande).not.toContain(colonne)
+        }
+        // Une etoile ramenerait toutes les colonnes, donc les reservees aussi.
+        expect(demande).not.toContain('*')
+        expect(demande).toContain('id')
+        expect(demande).toContain('club_name')
+    })
+
     it('should fetch clubs on mount and populate state', async () => {
         const clubsData = [
-            { id: 'c1', club_name: 'Alpha Club', club_address: '123 Main St', club_email: 'alpha@club.com' },
-            { id: 'c2', club_name: 'Beta Club', club_address: '456 Oak Ave', club_email: 'beta@club.com' },
+            { id: 'c1', club_name: 'Alpha Club' },
+            { id: 'c2', club_name: 'Beta Club' },
         ]
 
         mockSupabase._builder._resolve(clubsData)
