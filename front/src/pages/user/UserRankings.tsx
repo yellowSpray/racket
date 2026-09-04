@@ -143,7 +143,7 @@ export function UserRankings() {
                                                         <TableCell className="text-center text-gray-400">
                                                             {s.walkoversWon > 0 || s.walkoversLost > 0
                                                                 ? `${s.walkoversWon}/${s.walkoversLost}`
-                                                                : "—"
+                                                                : "-"
                                                             }
                                                         </TableCell>
                                                         <TableCell className="text-center font-semibold">{s.points}</TableCell>

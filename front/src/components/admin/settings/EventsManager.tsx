@@ -172,16 +172,16 @@ function RoundRow({ round: r, deletingRoundId, onEdit, onDelete }: RoundRowProps
             {/* Heures */}
             <div className="flex items-center justify-center gap-1">
                 <Clock01Icon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-                <span className="text-xs text-gray-500">{formatTime(r.start_time) ?? <span className="text-gray-300">—</span>}</span>
+                <span className="text-xs text-gray-500">{formatTime(r.start_time) ?? <span className="text-gray-300">-</span>}</span>
                 <span className="text-xs text-gray-400">-</span>
-                <span className="text-xs text-gray-400">{formatTime(r.end_time) ?? <span className="text-gray-300">—</span>}</span>
+                <span className="text-xs text-gray-400">{formatTime(r.end_time) ?? <span className="text-gray-300">-</span>}</span>
             </div>
 
             {/* Terrains */}
             <div className="flex items-center justify-center gap-1">
                 <DashedLine02Icon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
                 <span className="text-xs text-gray-400">Terrains</span>
-                <span className="text-xs text-gray-700 font-medium">{r.number_of_courts ?? <span className="text-gray-300">—</span>}</span>
+                <span className="text-xs text-gray-700 font-medium">{r.number_of_courts ?? <span className="text-gray-300">-</span>}</span>
             </div>
 
             {/* Joueurs */}

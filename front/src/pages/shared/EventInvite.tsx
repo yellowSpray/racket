@@ -81,7 +81,7 @@ export function EventInvite() {
 
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Calendar03Icon size={16} />
-                        <span>{formatDate(eventInfo.start_date)} — {formatDate(eventInfo.end_date)}</span>
+                        <span>{formatDate(eventInfo.start_date)} au {formatDate(eventInfo.end_date)}</span>
                     </div>
 
                     {eventInfo.visitor_fee > 0 && (

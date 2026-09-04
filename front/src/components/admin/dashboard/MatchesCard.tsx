@@ -274,7 +274,7 @@ function MatchTableRow({ match, isLastOfSlot, scoreSelections, onScoreChange, on
                 </div>
             </TableCell>
             <TableCell className="text-xs text-muted-foreground">
-                {match.court_number ?? "—"}
+                {match.court_number ?? "-"}
             </TableCell>
             <TableCell>
                 <ScoreCell

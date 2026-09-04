@@ -32,7 +32,7 @@ const OPTIONS: CalendarOption[] = [
     {
         value: "period",
         title: "Période continue",
-        description: "Pour chaque round, l'admin définit une plage de dates — tous les jours de la période sont inclus.",
+        description: "Pour chaque round, l'admin définit une plage de dates : tous les jours de la période sont inclus.",
         example: "Ex : du 1er au 31 mars",
         icon: CalendarCheckOut02Icon,
     },

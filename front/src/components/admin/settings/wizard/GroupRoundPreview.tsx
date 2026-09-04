@@ -32,7 +32,7 @@ export function GroupRoundPreview({ round, groups, playerAbsences, playerMovemen
                 const name = player ? `${player.first_name} ${player.last_name}` : playerId
                 const relevant = absentDates.filter(d => dates.includes(d))
                 console.log(
-                    `  ${name} — absences : [${absentDates.join(", ")}]` +
+                    `  ${name} : absences : [${absentDates.join(", ")}]` +
                     (relevant.length > 0 ? ` → impact sur dates event : [${relevant.join(", ")}]` : " → aucun impact sur les dates de l'event")
                 )
             }

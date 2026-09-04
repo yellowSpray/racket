@@ -34,7 +34,7 @@ function parseScoreValue(value: string | undefined): [string, string] {
 export function MatchCell({ match, editMode, scoreValue, onScoreChange }: MatchCellProps) {
     if (!match) {
         return (
-            <div className="text-center text-gray-300 py-2">—</div>
+            <div className="text-center text-gray-300 py-2">-</div>
         )
     }
 

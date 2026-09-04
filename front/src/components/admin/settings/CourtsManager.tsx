@@ -100,7 +100,7 @@ export function CourtsManager() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Terrains — {currentEvent.event_name}</CardTitle>
+                <CardTitle>Terrains : {currentEvent.event_name}</CardTitle>
                 <CardDescription>
                     Configurez les terrains et leurs disponibilités pour cet événement
                 </CardDescription>
@@ -161,7 +161,7 @@ export function CourtsManager() {
                                                 />
                                             </TableCell>
                                             <TableCell className="text-center text-gray-500">
-                                                {calculateSlots(court.available_from, court.available_to) || "—"}
+                                                {calculateSlots(court.available_from, court.available_to) || "-"}
                                             </TableCell>
                                             <TableCell className="text-center">
                                                 <Button

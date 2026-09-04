@@ -292,7 +292,7 @@ export function EventDefaultsCard({
                         <div className="flex flex-col gap-3">
                             <Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                 <Link04Icon size={14} />
-                                Lien d'invitation — {eventName}
+                                Lien d'invitation : {eventName}
                             </Label>
                             <div className="flex items-center gap-2">
                                 <Input

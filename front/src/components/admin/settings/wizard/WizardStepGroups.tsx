@@ -616,7 +616,7 @@ export function WizardStepGroups({ event, round, groups, eventPlayerIds, onGroup
                                 )}
                                 {totalPlayers > 0 && allDistributions.length > 1 && (
                                     <>
-                                        {" "}— choisissez une configuration :
+                                        {" "}: choisissez une configuration
                                         <div className="flex flex-col gap-1.5 mt-2">
                                             {allDistributions.map((option, index) => (
                                                 <button

@@ -100,7 +100,7 @@ export function ClubCourtsCard({
                     Terrains du club
                 </CardTitle>
                 <CardDescription>
-                    Définissez les terrains de votre club — ils seront copiés automatiquement à chaque nouvel événement
+                    Définissez les terrains de votre club, ils seront copiés automatiquement à chaque nouvel événement
                 </CardDescription>
             </CardHeader>
             <CardContent>

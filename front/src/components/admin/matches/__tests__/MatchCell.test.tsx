@@ -30,7 +30,7 @@ describe('MatchCell', () => {
 
   it('displays a dash when match is null', () => {
     render(<MatchCell match={null} />)
-    expect(screen.getByText('—')).toBeInTheDocument()
+    expect(screen.getByText('-')).toBeInTheDocument()
   })
 
   it('displays player full names', () => {

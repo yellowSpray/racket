@@ -70,7 +70,7 @@ export function VisitorRequestDialog({
         <DialogHeader>
           <DialogTitle>Demander à rejoindre</DialogTitle>
           <DialogDescription>
-            {event.event_name} — {event.clubs.club_name}
+            {event.event_name} : {event.clubs.club_name}
           </DialogDescription>
         </DialogHeader>
 
@@ -78,7 +78,7 @@ export function VisitorRequestDialog({
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar03Icon className="h-4 w-4" />
             <span>
-              {formatDate(event.start_date)} — {formatDate(event.end_date)}
+              {formatDate(event.start_date)} au {formatDate(event.end_date)}
             </span>
           </div>
 

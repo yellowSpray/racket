@@ -26,7 +26,7 @@ export function PreviousBoxPreview({ standings, promotionResult, previousEventNa
     return (
         <div className="space-y-3">
             <h4 className="text-sm font-semibold text-muted-foreground">
-                Classements — {previousEventName}
+                Classements : {previousEventName}
             </h4>
             {standings.map((group) => (
                 <div key={group.groupId} className="border rounded-lg p-3">

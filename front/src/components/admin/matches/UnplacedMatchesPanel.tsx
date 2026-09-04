@@ -36,7 +36,7 @@ export function UnplacedMatchesPanel({ diagnostic }: UnplacedMatchesPanelProps) 
                 <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-amber-800">
                         {diagnostic.placedCount}/{diagnostic.totalCount} matchs planifies
-                        {" — "}
+                        {" - "}
                         {diagnostic.unplacedCount} match(s) sans creneau
                     </p>
 

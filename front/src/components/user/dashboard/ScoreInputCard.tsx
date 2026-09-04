@@ -194,7 +194,7 @@ function MatchRow({ match, myId, editMode, pendingScore, onScoreChange }: {
                         onChange={e => onScoreChange?.(match.id, e.target.value)}
                         className="text-xs xl:text-sm border rounded-md px-2 py-1 bg-background"
                     >
-                        <option value="">—</option>
+                        <option value="">-</option>
                         {SCORE_OPTIONS.map(opt => (
                             <option key={opt} value={opt}>{opt}</option>
                         ))}

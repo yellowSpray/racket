@@ -10,7 +10,7 @@ const TIERS = [
 ]
 
 function getEloInfo(elo?: number): { rankLabel: string; color: string } {
-    if (elo === undefined) return { rankLabel: "—", color: "text-muted-foreground" }
+    if (elo === undefined) return { rankLabel: "-", color: "text-muted-foreground" }
 
     let tier = TIERS[0]
     for (const t of TIERS) {
@@ -44,7 +44,7 @@ export function EloCard({ elo, className }: EloCardProps) {
                 <TennisBallIcon size={20} className={color} />
                 <span className={`text-sm uppercase font-semibold ${color}`}>{rankLabel}</span>
                 <span className={`text-[10px] font-bold text-foreground`}>
-                    {elo ?? "—"}
+                    {elo ?? "-"}
                 </span>
             </CardContent>
         </Card>
