@@ -11,6 +11,7 @@ import { MultiDateCalendar } from "@/components/ui/multi-date-calendar"
 import { UserAccountIcon, Mail01Icon, SmartPhone01Icon, Calendar03Icon, Notification03Icon, PencilEdit01Icon, Location01Icon, FloppyDiskIcon } from "hugeicons-react"
 import { useClubs } from "@/hooks/useClub"
 import { supabase } from "@/lib/supabaseClient"
+import { saveProfileChanges } from "@/lib/saveProfileChanges"
 import { useCallback, useEffect, useMemo, useState } from "react"
 
 const roleLabels: Record<string, string> = {
@@ -156,16 +157,23 @@ export function ProfilePage() {
         setEditError(null)
         setSavingProfile(true)
         try {
-            await supabase.from("profiles").update({
-                first_name: editForm.first_name,
-                last_name: editForm.last_name,
-                email: editForm.email,
-                phone: editForm.phone,
-                address: editForm.address,
-            }).eq("id", profile.id)
+            const { ok, error } = await saveProfileChanges(
+                profile.id,
+                {
+                    first_name: editForm.first_name,
+                    last_name: editForm.last_name,
+                    email: editForm.email,
+                    phone: editForm.phone,
+                    address: editForm.address,
+                },
+                editForm.newPassword || undefined,
+            )
 
-            if (editForm.newPassword) {
-                await supabase.auth.updateUser({ password: editForm.newPassword })
+            // L'echec restait invisible : la boite se fermait et l'ancien
+            // profil se rechargeait. Elle reste ouverte, avec le motif.
+            if (!ok) {
+                setEditError(error ?? "L'enregistrement a échoué.")
+                return
             }
 
             await refreshProfile()
