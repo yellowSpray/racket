@@ -140,4 +140,56 @@ describe('MatchScheduleGrid', () => {
     const dateHeaders = screen.getAllByText(/mars/i)
     expect(dateHeaders.length).toBe(2)
   })
+
+  describe('recherche', () => {
+    const alice = { id: 'p1', first_name: 'Alice', last_name: 'Martin' }
+    const bob = { id: 'p2', first_name: 'Bob', last_name: 'Dupont' }
+    const chloe = { id: 'p3', first_name: 'Chloe', last_name: 'Lefevre' }
+    const david = { id: 'p4', first_name: 'David', last_name: 'Petit' }
+
+    const matches = [
+      makeMatch({ id: 'm1', court_number: 'Terrain 1', player1: alice, player2: bob }),
+      makeMatch({ id: 'm2', court_number: 'Terrain 2', player1_id: 'p3', player2_id: 'p4', player1: chloe, player2: david }),
+    ]
+
+    function renderGrid(searchQuery?: string) {
+      return render(
+        <MatchScheduleGrid matches={matches} event={makeEvent()} round={makeRound()} searchQuery={searchQuery} />
+      )
+    }
+
+    it('ne masque aucun match', () => {
+      // La grille est un planning : masquer viderait des cases sans dire
+      // si le creneau est libre ou simplement filtre.
+      renderGrid('alice')
+      expect(screen.getAllByTestId('match-cell')).toHaveLength(2)
+    })
+
+    it('estompe les matchs qui ne correspondent pas', () => {
+      renderGrid('alice')
+      const cells = screen.getAllByTestId('match-slot')
+      const dimmed = cells.filter(c => c.className.includes('opacity-25'))
+      expect(dimmed).toHaveLength(1)
+      expect(dimmed[0]).toHaveTextContent('p3 vs p4')
+    })
+
+    it('met en valeur le match trouve', () => {
+      renderGrid('dupont')
+      const highlighted = screen.getAllByTestId('match-slot').find(c => c.dataset.highlighted === 'true')
+      expect(highlighted).toHaveTextContent('p1 vs p2')
+    })
+
+    it('laisse la grille intacte sans recherche', () => {
+      renderGrid()
+      const cells = screen.getAllByTestId('match-slot')
+      expect(cells.filter(c => c.className.includes('opacity-25'))).toHaveLength(0)
+      expect(cells.filter(c => c.dataset.highlighted === 'true')).toHaveLength(0)
+    })
+
+    it('ignore accents et casse', () => {
+      renderGrid('LEFÈVRE')
+      const highlighted = screen.getAllByTestId('match-slot').find(c => c.dataset.highlighted === 'true')
+      expect(highlighted).toHaveTextContent('p3 vs p4')
+    })
+  })
 })

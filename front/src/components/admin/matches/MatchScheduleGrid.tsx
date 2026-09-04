@@ -23,6 +23,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { MatchCell } from "./MatchCell"
 import { calculateTimeSlots, validateMatchSlot, type PlayerConstraints } from "@/lib/matchScheduler"
+import { matchesPlayerSearch, normalizeSearch } from "@/lib/matchSearch"
 import { intervalToMinutes } from "@/lib/utils"
 
 interface MatchScheduleGridProps {
@@ -34,6 +35,13 @@ interface MatchScheduleGridProps {
     onScoreChange?: (matchId: string, value: string) => void
     onMatchDrop?: (matchId: string, updates: { match_date: string; match_time: string; court_number: string }) => void
     playerConstraints?: Map<string, PlayerConstraints>
+    /**
+     * Nom de joueur recherché. La grille étant un planning à créneaux fixes,
+     * elle met en valeur les matchs concernés et estompe les autres, plutôt
+     * que de les masquer : une case vide ne dirait plus si le créneau est
+     * libre ou simplement filtré.
+     */
+    searchQuery?: string
 }
 
 function formatDateLabel(dateStr: string): string {
@@ -102,7 +110,7 @@ function DroppableSlot({ id }: { id: string }) {
                 isOver ? 'bg-green-100 ring-2 ring-green-400' : 'text-gray-300'
             }`}
         >
-            {isOver ? <span className="text-green-600 text-xs font-medium">Deposer ici</span> : "—"}
+            {isOver ? <span className="text-green-600 text-xs font-medium">Deposer ici</span> : "-"}
         </div>
     )
 }
@@ -116,7 +124,9 @@ export function MatchScheduleGrid({
     onScoreChange,
     onMatchDrop,
     playerConstraints,
+    searchQuery = "",
 }: MatchScheduleGridProps) {
+    const hasSearch = normalizeSearch(searchQuery).length > 0
     const dndEnabled = !!onMatchDrop
     const [activeMatch, setActiveMatch] = useState<Match | null>(null)
     const [dropError, setDropError] = useState<string | null>(null)
@@ -284,7 +294,18 @@ export function MatchScheduleGrid({
                                                                 className="text-center border-l p-1"
                                                             >
                                                                 {m ? (
-                                                                    dndEnabled ? (
+                                                                    <div
+                                                                        data-testid="match-slot"
+                                                                        data-highlighted={hasSearch && matchesPlayerSearch(m, searchQuery) ? "true" : undefined}
+                                                                        className={`rounded transition-opacity ${
+                                                                            hasSearch
+                                                                                ? matchesPlayerSearch(m, searchQuery)
+                                                                                    ? "ring-2 ring-primary"
+                                                                                    : "opacity-25"
+                                                                                : ""
+                                                                        }`}
+                                                                    >
+                                                                    {dndEnabled ? (
                                                                         <DraggableMatch
                                                                             match={m}
                                                                             editMode={editMode}
@@ -298,7 +319,8 @@ export function MatchScheduleGrid({
                                                                             scoreValue={pendingScores?.get(m.id)}
                                                                             onScoreChange={(v) => onScoreChange?.(m.id, v)}
                                                                         />
-                                                                    )
+                                                                    )}
+                                                                    </div>
                                                                 ) : (
                                                                     dndEnabled ? (
                                                                         <DroppableSlot id={slotId(date, time, court)} />

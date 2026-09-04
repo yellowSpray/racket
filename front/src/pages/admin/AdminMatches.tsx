@@ -149,8 +149,8 @@ export function AdminMatches() {
         <>
             <h3 className="text-lg font-semibold">Matchs</h3>
             <EventSelector />
-            {hasMatches && viewMode === "list" && (
-                <div className="relative flex-1 max-w-sm">
+            {hasMatches && (
+                <div className="relative flex-1 max-w-sm mx-auto">
                     <Search01Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         value={searchQuery}
@@ -163,7 +163,7 @@ export function AdminMatches() {
                             onClick={() => setSearchQuery("")}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                         >
-                            ×
+                            <Cancel01Icon className="h-4 w-4" />
                         </button>
                     )}
                 </div>
@@ -174,7 +174,7 @@ export function AdminMatches() {
     const actionsPortal = useHeaderActions(
         <>
             {hasMatches && (
-                <Button variant="icon" size="icon" onClick={() => { setViewMode(v => v === "grid" ? "list" : "grid"); setSearchQuery("") }}>
+                <Button variant="icon" size="icon" onClick={() => setViewMode(v => v === "grid" ? "list" : "grid")}>
                     {viewMode === "grid" ? <ListViewIcon size="20" strokeWidth={2} /> : <GridViewIcon size="20" strokeWidth={2} />}
                 </Button>
             )}
@@ -284,6 +284,7 @@ export function AdminMatches() {
                                 matches={matches}
                                 event={currentEvent}
                                 round={currentRound}
+                                searchQuery={searchQuery}
                                 editMode={editMode}
                                 pendingScores={pendingScores}
                                 onScoreChange={handleScoreChange}

@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/table"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { ArrowDown01Icon, ArrowUp01Icon } from "hugeicons-react"
+import { matchesPlayerSearch } from "@/lib/matchSearch"
 
 interface MatchListViewProps {
     matches: Match[]
@@ -158,16 +159,9 @@ function ScoreDisplay({ match }: { match: Match }) {
 export function MatchListView({ matches, players, searchQuery = "", editMode, pendingScores, onScoreChange, playerAbsences }: MatchListViewProps) {
     const restrictions = buildRestrictionsMap(players)
 
-    const normalizeStr = (s: string) => s.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "")
-    const query = normalizeStr(searchQuery.trim())
-
-    const filteredMatches = query
-        ? matches.filter(m => {
-            const p1 = m.player1 ? normalizeStr(`${m.player1.first_name} ${m.player1.last_name}`) : ""
-            const p2 = m.player2 ? normalizeStr(`${m.player2.first_name} ${m.player2.last_name}`) : ""
-            return p1.includes(query) || p2.includes(query)
-        })
-        : matches
+    // Meme regle de comparaison que la vue par terrain, pour que les deux vues
+    // repondent identiquement a une meme recherche.
+    const filteredMatches = matches.filter(m => matchesPlayerSearch(m, searchQuery))
 
     // Group matches by date, then by box (group_name)
     const matchesByDate = new Map<string, Match[]>()
