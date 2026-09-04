@@ -1,5 +1,5 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { Group } from "@/types/draw";
+import type { Group, GroupPlayer } from "@/types/draw";
 import type { Match } from "@/types/match";
 import type { ScoringRules } from "@/types/settings";
 import { useMemo, useState } from "react";
@@ -18,6 +18,17 @@ interface DrawTableProps {
      * Omis hors configuration de série : la table reste alors strictement inchangée.
      */
     playerMovements?: Map<string, PlayerMovement>
+    /**
+     * Rend les cases de match cliquables (saisie du score côté admin).
+     * Omis ailleurs, notamment sur les pages joueur, la table reste en lecture seule.
+     */
+    onSelectMatch?: (match: Match, rowPlayer: GroupPlayer, opponent: GroupPlayer) => void
+    /**
+     * Rend le nom des joueurs actionnable, pour ouvrir leur fiche.
+     * Omis ailleurs, le nom reste du texte simple : pas de rôle bouton trompeur
+     * sur les pages joueur.
+     */
+    onSelectPlayer?: (player: GroupPlayer) => void
 }
 
 const DEFAULT_SCORING: ScoringRules = {
@@ -31,7 +42,7 @@ const DEFAULT_SCORING: ScoringRules = {
     ],
 }
 
-export function DrawTable({ group, matches = [], scoringRules, displayMode = "score", playerAbsences, playerMovements }: DrawTableProps) {
+export function DrawTable({ group, matches = [], scoringRules, displayMode = "score", playerAbsences, playerMovements, onSelectMatch, onSelectPlayer }: DrawTableProps) {
 
     const players = useMemo(() => group.players || [], [group.players])
     const maxPlayers = group.max_players || 6
@@ -142,7 +153,24 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                         <span className="font-bold text-xs shrink-0 w-4">{getPlayerLetter(rowIndex)}</span>
                                         <div className="flex-1 text-center min-w-0">
                                             <p className="text-xs truncate font-bold flex items-center justify-center gap-1">
-                                                <span className="truncate">{player.first_name} {player.last_name}</span>
+                                                {onSelectPlayer ? (
+                                                    <span
+                                                        role="button"
+                                                        tabIndex={0}
+                                                        onClick={() => onSelectPlayer(player)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === "Enter" || e.key === " ") {
+                                                                e.preventDefault()
+                                                                onSelectPlayer(player)
+                                                            }
+                                                        }}
+                                                        className="truncate cursor-pointer hover:underline"
+                                                    >
+                                                        {player.first_name} {player.last_name}
+                                                    </span>
+                                                ) : (
+                                                    <span className="truncate">{player.first_name} {player.last_name}</span>
+                                                )}
                                                 {playerMovements?.get(player.id) && (
                                                     <PlayerMovementBadge movement={playerMovements.get(player.id)!} />
                                                 )}
@@ -202,6 +230,11 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                 const isAbsence = !!match?.score?.includes("ABS")
                                 const isRowPlayerAbsent = isAbsence && !isWinner
 
+                                const selectable = !!onSelectMatch && !!match
+                                const openMatch = () => {
+                                    if (match && onSelectMatch) onSelectMatch(match, player, opponent)
+                                }
+
                                 return (
                                     <TableCell
                                         key={colIndex}
@@ -212,6 +245,15 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                             `}
                                         onMouseEnter={() => setHoveredMatch({row: rowIndex, col: colIndex})}
                                         onMouseLeave={() => setHoveredMatch(null)}
+                                        onClick={selectable ? openMatch : undefined}
+                                        onKeyDown={selectable ? (e) => {
+                                            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openMatch() }
+                                        } : undefined}
+                                        role={selectable ? "button" : undefined}
+                                        tabIndex={selectable ? 0 : undefined}
+                                        aria-label={selectable
+                                            ? `Saisir le score : ${player.first_name} ${player.last_name} contre ${opponent.first_name} ${opponent.last_name}`
+                                            : undefined}
                                     >
                                         {(() => {
                                             if (!match) return (

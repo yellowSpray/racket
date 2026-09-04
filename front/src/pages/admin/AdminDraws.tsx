@@ -10,33 +10,61 @@ import { useHeaderSlot, useHeaderActions } from "@/contexts/HeaderSlotContext"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 import { useNavigate } from "react-router"
-import { Settings01Icon, PencilEdit02Icon, HashtagIcon, StarIcon, Download01Icon, SquareLock01Icon } from "hugeicons-react"
+import { Settings01Icon, PencilEdit02Icon, HashtagIcon, StarIcon, Download01Icon } from "hugeicons-react"
 import { Button } from "@/components/ui/button"
 import { DrawTable } from "@/components/admin/draws/DrawTable"
+import { MatchScoreDialog } from "@/components/admin/draws/MatchScoreDialog"
+import { PlayerInfoDialog } from "@/components/admin/draws/PlayerInfoDialog"
+import { normalizeScoreForDb, computeWinnerId } from "@/lib/matchScore"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { sortPlayersByEarliestDates } from "@/lib/matchScheduler"
+import type { Match } from "@/types/match"
+import type { GroupPlayer } from "@/types/draw"
 import { exportTablesToPdf } from "@/lib/exportPdf"
 
 export function AdminDraws () {
 
-    const { currentEvent, currentRound, fetchEvents } = useEvent()
+    const { currentEvent, currentRound } = useEvent()
     const { profile } = useAuth()
     const { groups, loading, fetchGroupsByRound } = useGroups()
-    const { matches, fetchMatchesByRound, closeRound, error: matchError } = useMatches()
+    const { matches, fetchMatchesByRound, updateMatchResults, error: matchError } = useMatches()
+
+    // Saisie du score depuis une case du tableau
+    const [selectedCell, setSelectedCell] = useState<{ match: Match; rowPlayer: GroupPlayer; opponent: GroupPlayer } | null>(null)
+    const [savingScore, setSavingScore] = useState(false)
+
+    // Fiche d'un joueur, ouverte depuis son nom dans la première colonne
+    const [selectedPlayer, setSelectedPlayer] = useState<GroupPlayer | null>(null)
+
+    /** Le dialog renvoie le score vu du joueur de la ligne ; la base le stocke player1-player2. */
+    const handleSaveScore = async (matchId: string, orientedScore: string) => {
+        const match = matches.find(m => m.id === matchId)
+        const rowPlayerId = selectedCell?.rowPlayer.id
+        if (!match || !rowPlayerId) return
+
+        setSavingScore(true)
+        try {
+            const dbScore = normalizeScoreForDb(orientedScore, match.player1_id === rowPlayerId)
+            const winnerId = computeWinnerId(dbScore, match.player1_id, match.player2_id)
+            await updateMatchResults([{ matchId, winnerId, score: dbScore }])
+            setSelectedCell(null)
+        } finally {
+            setSavingScore(false)
+        }
+    }
     const { scoringRules, fetchClubConfig } = useClubConfig()
     const { players } = usePlayers()
     const [displayMode, setDisplayMode] = useState<"score" | "points">("score")
+
+    /*
+     * Fiche complète du joueur sélectionné. Elle peut manquer : un joueur retiré
+     * de la série reste visible dans un tableau déjà généré, mais sort du
+     * contexte des joueurs. Le dialog sait fonctionner sans.
+     */
+    const selectedPlayerDetails = useMemo(
+        () => players.find(p => p.id === selectedPlayer?.id) ?? null,
+        [players, selectedPlayer],
+    )
 
     const playerAbsences = useMemo(() => {
         const map = new Map<string, string[]>()
@@ -45,7 +73,6 @@ export function AdminDraws () {
         }
         return map
     }, [players])
-    const [closing, setClosing] = useState(false)
     const navigate = useNavigate()
     const tablesRef = useRef<HTMLDivElement>(null)
 
@@ -60,19 +87,6 @@ export function AdminDraws () {
             toast.error("Échec de l'export PDF", { id: toastId })
         }
     }, [])
-
-    const handleCloseEvent = useCallback(async () => {
-        if (!currentEvent) return
-        setClosing(true)
-        const result = await closeRound(currentRound!.id)
-        setClosing(false)
-        if (result.success) {
-            toast.success("Événement clôturé")
-            fetchEvents()
-        }
-    }, [currentEvent, closeRound, fetchEvents])
-
-    const isCompleted = currentRound?.status === "completed"
 
     const clubId = profile?.club_id ?? null
 
@@ -97,41 +111,9 @@ export function AdminDraws () {
                 )}
             </Button>
             {groups.length > 0 && (
-                <>
-                    <Button variant="outline" size="icon" onClick={handleExportPdf}>
-                        <Download01Icon size="20" strokeWidth={2} />
-                    </Button>
-                    {!isCompleted && (
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button size="lg" disabled={closing}>
-                                    <SquareLock01Icon size={20} />
-                                    {closing ? "Clôture..." : "Clôturer"}
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Clôturer l'événement ?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Cette action va calculer les classements Elo de tous les joueurs et marquer l'événement comme terminé. Assurez-vous que tous les résultats sont saisis.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleCloseEvent}>
-                                        Confirmer la clôture
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    )}
-                    {isCompleted && (
-                        <Button variant="default" size="lg">
-                            <SquareLock01Icon size={20} strokeWidth={2} />
-                            Clôturé
-                        </Button>
-                    )}
-                </>
+                <Button variant="outline" size="icon" onClick={handleExportPdf}>
+                    <Download01Icon size="20" strokeWidth={2} />
+                </Button>
             )}
         </>
     )
@@ -179,7 +161,6 @@ export function AdminDraws () {
         {headerPortal}
         {actionsPortal}
         <div className="flex flex-col h-full min-h-0">
-            {/* Erreur cloture */}
             {matchError && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4 text-sm">
                     {matchError}
@@ -207,13 +188,30 @@ export function AdminDraws () {
                             const sortedGroup = sortPlayersByEarliestDates(group, groupMatches)
                             return (
                                 <div key={group.id}>
-                                    <DrawTable group={sortedGroup} matches={groupMatches} scoringRules={scoringRules ?? undefined} displayMode={displayMode} playerAbsences={playerAbsences} />
+                                    <DrawTable group={sortedGroup} matches={groupMatches} scoringRules={scoringRules ?? undefined} displayMode={displayMode} playerAbsences={playerAbsences} onSelectMatch={(match, rowPlayer, opponent) => setSelectedCell({ match, rowPlayer, opponent })} onSelectPlayer={setSelectedPlayer} />
                                 </div>
                             )
                         })}
                     </div>
                 </ScrollArea>
             )}
+
+            <MatchScoreDialog
+                open={!!selectedCell}
+                onOpenChange={(open) => { if (!open) setSelectedCell(null) }}
+                match={selectedCell?.match ?? null}
+                rowPlayer={selectedCell?.rowPlayer ?? null}
+                opponent={selectedCell?.opponent ?? null}
+                onSave={handleSaveScore}
+                saving={savingScore}
+            />
+
+            <PlayerInfoDialog
+                open={!!selectedPlayer}
+                onOpenChange={(open) => { if (!open) setSelectedPlayer(null) }}
+                player={selectedPlayer}
+                details={selectedPlayerDetails}
+            />
         </div>
         </>
     )

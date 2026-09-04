@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react'
-import { describe, it, expect } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
 import { DrawTable } from '../DrawTable'
 import type { Group, GroupPlayer } from '@/types/draw'
 import type { Match } from '@/types/match'
@@ -198,5 +198,51 @@ describe('DrawTable', () => {
     render(<DrawTable group={makeGroup({ players, max_players: 2 })} matches={matches} scoringRules={defaultRules} />)
     // Score should be displayed in the cells
     expect(screen.getAllByText('3-1').length).toBeGreaterThanOrEqual(1)
+  })
+
+  // --- Ouverture de la fiche joueur ---
+
+  describe('onSelectPlayer', () => {
+    const players = [makePlayer({ id: 'p1', first_name: 'Alice', last_name: 'Martin' })]
+
+    it('ouvre la fiche au clic sur le nom', () => {
+      const onSelectPlayer = vi.fn()
+      render(
+        <DrawTable group={makeGroup({ players, max_players: 1 })} onSelectPlayer={onSelectPlayer} />
+      )
+
+      fireEvent.click(screen.getByRole('button', { name: /Alice Martin/ }))
+
+      expect(onSelectPlayer).toHaveBeenCalledWith(players[0])
+    })
+
+    it('ouvre la fiche au clavier', () => {
+      const onSelectPlayer = vi.fn()
+      render(
+        <DrawTable group={makeGroup({ players, max_players: 1 })} onSelectPlayer={onSelectPlayer} />
+      )
+
+      fireEvent.keyDown(screen.getByRole('button', { name: /Alice Martin/ }), { key: 'Enter' })
+
+      expect(onSelectPlayer).toHaveBeenCalledTimes(1)
+    })
+
+    it('laisse le nom inerte sans callback', () => {
+      // Les pages joueur reutilisent cette table en lecture seule : pas de
+      // curseur main ni de role bouton trompeur.
+      render(<DrawTable group={makeGroup({ players, max_players: 1 })} />)
+
+      expect(screen.queryByRole('button', { name: /Alice Martin/ })).not.toBeInTheDocument()
+    })
+
+    it('ne rend pas cliquable une place vide', () => {
+      const onSelectPlayer = vi.fn()
+      render(
+        <DrawTable group={makeGroup({ players, max_players: 3 })} onSelectPlayer={onSelectPlayer} />
+      )
+
+      // Une seule place occupee, donc un seul nom actionnable
+      expect(screen.getAllByRole('button', { name: /Martin/ })).toHaveLength(1)
+    })
   })
 })

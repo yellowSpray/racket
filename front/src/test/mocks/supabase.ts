@@ -5,7 +5,7 @@ type MockFn = ReturnType<typeof vi.fn>
 export interface MockQueryBuilder {
     select: MockFn; insert: MockFn; update: MockFn; delete: MockFn; upsert: MockFn
     eq: MockFn; in: MockFn; order: MockFn; single: MockFn; maybeSingle: MockFn
-    limit: MockFn; lt: MockFn; neq: MockFn; not: MockFn; is: MockFn
+    limit: MockFn; lt: MockFn; neq: MockFn; not: MockFn; is: MockFn; or: MockFn
     then: MockFn
     _resolve: (data: unknown) => MockQueryBuilder
     _reject: (error: string) => MockQueryBuilder
@@ -39,6 +39,7 @@ export function createMockQueryBuilder(): MockQueryBuilder {
     qb.neq = vi.fn(() => qb)
     qb.not = vi.fn(() => qb)
     qb.is = vi.fn(() => qb)
+    qb.or = vi.fn(() => qb)
     qb.then = vi.fn()
     qb._resolve = (data: unknown) => {
         const p = Promise.resolve({ data, error: null })
