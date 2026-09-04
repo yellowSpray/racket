@@ -26,26 +26,30 @@ const SLIDES = [
 
 interface PlayersStatusCardProps {
     clubId: string | null
+    /** Série en cours : les mouvements se lisent d'une série à l'autre. */
+    roundId: string | null
+    /** Série qui précède, dans le même événement. */
+    previousRoundId: string | null
     className?: string
 }
 
-export function PlayersStatusCard({ clubId, className }: PlayersStatusCardProps) {
-    const { movements, loading: movementsLoading } = usePlayerMovements(clubId)
+export function PlayersStatusCard({ clubId, roundId, previousRoundId, className }: PlayersStatusCardProps) {
+    const { movements, loading: movementsLoading } = usePlayerMovements(roundId, previousRoundId)
     const { requests, loading: requestsLoading, fetchPendingForClub, reviewRequest } = useVisitorRequests()
     const [slideIndex, setSlideIndex] = useState(0)
 
     useEffect(() => {
-        fetchPendingForClub()
-    }, [fetchPendingForClub])
+        if (clubId) fetchPendingForClub(clubId)
+    }, [clubId, fetchPendingForClub])
 
     async function handleApprove(requestId: string) {
         await reviewRequest(requestId, "approved")
-        fetchPendingForClub()
+        fetchPendingForClub(clubId)
     }
 
     async function handleReject(requestId: string) {
         await reviewRequest(requestId, "rejected")
-        fetchPendingForClub()
+        fetchPendingForClub(clubId)
     }
 
     return (
@@ -131,13 +135,13 @@ function MovementsList({ movements, loading, emptyLabel }: { movements: PlayerMo
             <Table>
                 <TableBody>
                     {movements.map((m) => (
-                        <TableRow key={`${m.profileId}-${m.eventId}`}>
+                        <TableRow key={`${m.profileId}-${m.roundId}`}>
                             <TableCell className="text-sm truncate py-1.5">
                                 {m.firstName} {m.lastName}
                             </TableCell>
                             <TableCell className="py-1.5">
                                 <Badge variant="default" className="text-[10px] px-1.5 py-0 truncate max-w-[120px]">
-                                    {m.eventName}
+                                    Série {m.roundNumber}
                                 </Badge>
                             </TableCell>
                             <TableCell className="text-right whitespace-nowrap py-1.5">

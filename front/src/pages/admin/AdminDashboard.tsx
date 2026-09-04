@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { Navigate } from "react-router"
 import { useEvent } from "@/contexts/EventContext"
 import { useAuth } from "@/contexts/AuthContext"
@@ -11,7 +11,16 @@ import { AlertsCard } from "@/components/admin/dashboard/AlertsCard"
 
 export function AdminDashboard() {
     const { profile } = useAuth()
-    const { currentRound, events, loading: eventsLoading } = useEvent()
+    const { currentEvent, currentRound, events, loading: eventsLoading } = useEvent()
+
+    /** Série qui précède la série en cours dans le même événement. */
+    const previousRoundId = useMemo(() => {
+        if (!currentRound) return null
+        const previous = (currentEvent?.event_rounds ?? [])
+            .filter(r => r.round_number < currentRound.round_number)
+            .sort((a, b) => b.round_number - a.round_number)[0]
+        return previous?.id ?? null
+    }, [currentEvent?.event_rounds, currentRound])
     const { clubConfig, fetchClubConfig } = useClubConfig()
 
     useEffect(() => {
@@ -42,6 +51,8 @@ export function AdminDashboard() {
                     <PlayersStatusCard
                         className="col-start-1 col-span-10 row-start-1 row-span-7"
                         clubId={profile?.club_id ?? null}
+                        roundId={currentRound?.id ?? null}
+                        previousRoundId={previousRoundId}
                     />
                     <UnpaidPaymentsCard
                         className="col-start-11 col-span-9 row-start-1 row-span-7"

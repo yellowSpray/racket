@@ -42,8 +42,8 @@ function makeMovement(overrides: Partial<PlayerMovement> & { profileId: string }
         lastName: 'Martin',
         status: 'active',
         registeredAt: '2026-04-18T10:00:00Z',
-        eventName: 'Test Event',
-        eventId: 'ev1',
+        roundId: 'r-current',
+        roundNumber: 4,
         ...overrides,
     }
 }
@@ -74,35 +74,35 @@ beforeEach(() => {
 
 describe('PlayersStatusCard', () => {
     it('shows "Inscrits" by default', () => {
-        render(<PlayersStatusCard clubId="c1" />)
+        render(<PlayersStatusCard clubId="c1" roundId="r-current" previousRoundId="r-previous" />)
         expect(screen.getByText('Inscrits')).toBeInTheDocument()
     })
 
     it('prev button is disabled on first slide', () => {
-        render(<PlayersStatusCard clubId="c1" />)
+        render(<PlayersStatusCard clubId="c1" roundId="r-current" previousRoundId="r-previous" />)
         expect(screen.getByLabelText('Slide précédent')).toBeDisabled()
     })
 
     it('next button is enabled on first slide', () => {
-        render(<PlayersStatusCard clubId="c1" />)
+        render(<PlayersStatusCard clubId="c1" roundId="r-current" previousRoundId="r-previous" />)
         expect(screen.getByLabelText('Slide suivant')).not.toBeDisabled()
     })
 
     it('navigates to "Désinscrits" on next click', () => {
-        render(<PlayersStatusCard clubId="c1" />)
+        render(<PlayersStatusCard clubId="c1" roundId="r-current" previousRoundId="r-previous" />)
         fireEvent.click(screen.getByLabelText('Slide suivant'))
         expect(screen.getByText('Désinscrits')).toBeInTheDocument()
     })
 
     it('navigates to "Liste d\'attente" after two next clicks', () => {
-        render(<PlayersStatusCard clubId="c1" />)
+        render(<PlayersStatusCard clubId="c1" roundId="r-current" previousRoundId="r-previous" />)
         fireEvent.click(screen.getByLabelText('Slide suivant'))
         fireEvent.click(screen.getByLabelText('Slide suivant'))
         expect(screen.getByText("Liste d'attente")).toBeInTheDocument()
     })
 
     it('navigates to "Demandes visiteurs" after three next clicks', () => {
-        render(<PlayersStatusCard clubId="c1" />)
+        render(<PlayersStatusCard clubId="c1" roundId="r-current" previousRoundId="r-previous" />)
         fireEvent.click(screen.getByLabelText('Slide suivant'))
         fireEvent.click(screen.getByLabelText('Slide suivant'))
         fireEvent.click(screen.getByLabelText('Slide suivant'))
@@ -110,7 +110,7 @@ describe('PlayersStatusCard', () => {
     })
 
     it('next button is disabled on last slide', () => {
-        render(<PlayersStatusCard clubId="c1" />)
+        render(<PlayersStatusCard clubId="c1" roundId="r-current" previousRoundId="r-previous" />)
         fireEvent.click(screen.getByLabelText('Slide suivant'))
         fireEvent.click(screen.getByLabelText('Slide suivant'))
         fireEvent.click(screen.getByLabelText('Slide suivant'))
@@ -119,63 +119,71 @@ describe('PlayersStatusCard', () => {
 
     it('shows loading state on Inscrits slide', () => {
         mockMovementsLoading = true
-        render(<PlayersStatusCard clubId="c1" />)
+        render(<PlayersStatusCard clubId="c1" roundId="r-current" previousRoundId="r-previous" />)
         expect(screen.getByText('Chargement...')).toBeInTheDocument()
     })
 
-    it('shows empty state when no movements', () => {
-        render(<PlayersStatusCard clubId="c1" />)
-        expect(screen.getByText('Aucun mouvement récent')).toBeInTheDocument()
+    it('annonce l\'absence de nouvel inscrit', () => {
+        render(<PlayersStatusCard clubId="c1" roundId="r-current" previousRoundId="r-previous" />)
+        expect(screen.getByText('Aucun nouvel inscrit')).toBeInTheDocument()
     })
 
     it('shows player names for active movements', () => {
         mockMovements = [
             makeMovement({ profileId: 'p1', firstName: 'Alice', lastName: 'Martin', status: 'active' }),
         ]
-        render(<PlayersStatusCard clubId="c1" />)
+        render(<PlayersStatusCard clubId="c1" roundId="r-current" previousRoundId="r-previous" />)
         expect(screen.getByText('Alice Martin')).toBeInTheDocument()
     })
 
-    it('shows "Inscrit" badge for active movement', () => {
-        mockMovements = [makeMovement({ profileId: 'p1', status: 'active' })]
-        render(<PlayersStatusCard clubId="c1" />)
-        expect(screen.getByText('Inscrit')).toBeInTheDocument()
+    it('nomme la serie du mouvement, pas l\'evenement', () => {
+        mockMovements = [makeMovement({ profileId: 'p1', status: 'active', roundNumber: 4 })]
+        render(<PlayersStatusCard clubId="c1" roundId="r-current" previousRoundId="r-previous" />)
+        expect(screen.getByText('Série 4')).toBeInTheDocument()
     })
 
-    it('shows "Désinscrit" badge for inactive movement', () => {
-        mockMovements = [makeMovement({ profileId: 'p1', status: 'inactive' })]
-        render(<PlayersStatusCard clubId="c1" />)
-        expect(screen.getByText('Désinscrit')).toBeInTheDocument()
+    it('range les departs dans la deuxieme diapositive', () => {
+        // Un depart appartient a la serie precedente : il ne doit pas apparaitre
+        // parmi les nouveaux inscrits.
+        mockMovements = [makeMovement({ profileId: 'p1', firstName: 'Chloe', lastName: 'Lefevre', status: 'inactive', roundNumber: 3 })]
+        render(<PlayersStatusCard clubId="c1" roundId="r-current" previousRoundId="r-previous" />)
+
+        expect(screen.getByText('Aucun nouvel inscrit')).toBeInTheDocument()
+
+        fireEvent.click(screen.getByLabelText('Slide suivant'))
+        expect(screen.getByText('Chloe Lefevre')).toBeInTheDocument()
+        expect(screen.getByText('Série 3')).toBeInTheDocument()
     })
 
     it('shows relative time for movements', () => {
         mockMovements = [makeMovement({ profileId: 'p1', registeredAt: '2026-04-18T10:00:00Z' })]
-        render(<PlayersStatusCard clubId="c1" />)
+        render(<PlayersStatusCard clubId="c1" roundId="r-current" previousRoundId="r-previous" />)
         expect(screen.getByText('mock-2026-04-18T10:00:00Z')).toBeInTheDocument()
     })
 
     it('shows pending requests count badge on "Demandes visiteurs" slide', () => {
         mockRequests = [sampleRequest]
-        render(<PlayersStatusCard clubId="c1" />)
+        render(<PlayersStatusCard clubId="c1" roundId="r-current" previousRoundId="r-previous" />)
         fireEvent.click(screen.getByLabelText('Slide suivant'))
         fireEvent.click(screen.getByLabelText('Slide suivant'))
         fireEvent.click(screen.getByLabelText('Slide suivant'))
         expect(screen.getByText('1')).toBeInTheDocument()
     })
 
-    it('calls fetchPendingForClub on mount', () => {
-        render(<PlayersStatusCard clubId="c1" />)
+    it('demande les visiteurs du club, et de lui seul', () => {
+        // Sans ce filtre, la requete remontait les demandes de tous les clubs.
+        render(<PlayersStatusCard clubId="c1" roundId="r-current" previousRoundId="r-previous" />)
         expect(mockFetchPendingForClub).toHaveBeenCalledWith('c1')
     })
 
-    it('does not fetch when clubId is null', () => {
-        render(<PlayersStatusCard clubId={null} />)
+    it('ne demande rien sans club', () => {
+        render(<PlayersStatusCard clubId={null} roundId={null} previousRoundId={null} />)
         expect(mockFetchPendingForClub).not.toHaveBeenCalled()
     })
 
     it('shows visitor request data on "Demandes visiteurs" slide', () => {
         mockRequests = [sampleRequest]
-        render(<PlayersStatusCard clubId="c1" />)
+        render(<PlayersStatusCard clubId="c1" roundId="r-current" previousRoundId="r-previous" />)
         fireEvent.click(screen.getByLabelText('Slide suivant'))
         fireEvent.click(screen.getByLabelText('Slide suivant'))
         fireEvent.click(screen.getByLabelText('Slide suivant'))
@@ -185,7 +193,7 @@ describe('PlayersStatusCard', () => {
 
     it('calls reviewRequest with "approved" on approve click', async () => {
         mockRequests = [sampleRequest]
-        render(<PlayersStatusCard clubId="c1" />)
+        render(<PlayersStatusCard clubId="c1" roundId="r-current" previousRoundId="r-previous" />)
         fireEvent.click(screen.getByLabelText('Slide suivant'))
         fireEvent.click(screen.getByLabelText('Slide suivant'))
         fireEvent.click(screen.getByLabelText('Slide suivant'))
@@ -198,7 +206,7 @@ describe('PlayersStatusCard', () => {
 
     it('calls reviewRequest with "rejected" on reject click', async () => {
         mockRequests = [sampleRequest]
-        render(<PlayersStatusCard clubId="c1" />)
+        render(<PlayersStatusCard clubId="c1" roundId="r-current" previousRoundId="r-previous" />)
         fireEvent.click(screen.getByLabelText('Slide suivant'))
         fireEvent.click(screen.getByLabelText('Slide suivant'))
         fireEvent.click(screen.getByLabelText('Slide suivant'))
@@ -211,7 +219,7 @@ describe('PlayersStatusCard', () => {
 
     it('refetches after approving a request', async () => {
         mockRequests = [sampleRequest]
-        render(<PlayersStatusCard clubId="c1" />)
+        render(<PlayersStatusCard clubId="c1" roundId="r-current" previousRoundId="r-previous" />)
         fireEvent.click(screen.getByLabelText('Slide suivant'))
         fireEvent.click(screen.getByLabelText('Slide suivant'))
         fireEvent.click(screen.getByLabelText('Slide suivant'))

@@ -7,6 +7,20 @@ vi.mock('@/hooks/useMatchesByDay', () => ({
     useMatchesByDay: vi.fn(),
 }))
 
+/*
+ * La carte embarque le selecteur d'evenement, qui remonte jusqu'a
+ * `EventContext`, lequel construit le client Supabase au chargement du module.
+ * Sans ces deux mocks, tout le fichier echoue sur « supabaseUrl is required »
+ * avant d'executer le moindre test.
+ */
+vi.mock('@/lib/supabaseClient', () => ({
+    supabase: { from: vi.fn(), rpc: vi.fn(), channel: vi.fn(), removeChannel: vi.fn() },
+}))
+
+vi.mock('@/components/admin/settings/EventSelector', () => ({
+    EventSelector: () => <div data-testid="event-selector" />,
+}))
+
 import { useMatchesByDay } from '@/hooks/useMatchesByDay'
 
 const mockUseMatchesByDay = useMatchesByDay as ReturnType<typeof vi.fn>

@@ -32,16 +32,29 @@ export function useVisitorRequests() {
         setLoading(false)
     }, [])
 
-    /** Récupère toutes les demandes en attente pour le club (vue admin globale). */
-    const fetchPendingForClub = useCallback(async () => {
+    /**
+     * Demandes en attente adressées aux événements d'un club.
+     *
+     * Le filtre par club est indispensable : sans lui, la requête remontait les
+     * demandes de **tous** les clubs de la plateforme. Les politiques RLS les
+     * masquent sans doute en pratique, mais l'intention doit être dans la
+     * requête, pas dans un filet de sécurité.
+     */
+    const fetchPendingForClub = useCallback(async (clubId: string | null) => {
+        if (!clubId) {
+            setRequests([])
+            return
+        }
+
         setLoading(true)
         setError(null)
         const endLog = logger.start("useVisitorRequests.fetchPendingForClub")
 
         const { data, error: fetchError } = await supabase
             .from("visitor_requests")
-            .select("*, profile:profiles(first_name, last_name, email, clubs(club_name)), event:events(event_name)")
+            .select("*, profile:profiles(first_name, last_name, email, clubs(club_name)), event:events!inner(event_name, club_id)")
             .eq("status", "pending")
+            .eq("event.club_id", clubId)
             .order("created_at", { ascending: false })
 
         if (fetchError) {

@@ -8,134 +8,102 @@ export interface PlayerMovement {
     lastName: string
     status: "active" | "inactive"
     registeredAt: string
-    eventName: string
-    eventId: string
+    /** Série du mouvement : la courante pour une arrivée, la précédente pour un départ. */
+    roundId: string
+    roundNumber: number
 }
 
-interface EventPlayerRow {
+interface RoundPlayerRow {
     profile_id: string
     registered_at: string
-    profiles: { first_name: string; last_name: string }
+    profiles: { first_name: string; last_name: string } | null
 }
 
 /**
- * Compare les joueurs entre le dernier événement du club et l'avant-dernier.
- * Nouveaux inscrits → active (eventName = dernier événement)
- * Désinscrits → inactive (eventName = avant-dernier événement)
+ * Arrivées et départs entre une série et celle qui la précède.
+ *
+ * L'unité de comparaison est la **série**, pas l'événement. Un joueur s'inscrit
+ * à une série, et un club fait tourner plusieurs événements en parallèle :
+ * comparer deux événements mélangeait des populations sans rapport. La lecture
+ * se limite donc aux inscriptions portant un `round_id`.
+ *
+ * @param roundId - série en cours
+ * @param previousRoundId - série qui la précède, `null` pour la première
  */
-export function usePlayerMovements(clubId: string | null) {
+export function usePlayerMovements(roundId: string | null, previousRoundId: string | null) {
     const [movements, setMovements] = useState<PlayerMovement[]>([])
     const [loading, setLoading] = useState(false)
 
     const fetchMovements = useCallback(async () => {
-        if (!clubId) {
+        if (!roundId) {
             setMovements([])
             return
         }
 
         setLoading(true)
 
+        const registrationsOf = (id: string) =>
+            supabase
+                .from("event_players")
+                .select("profile_id, registered_at, profiles!inner(first_name, last_name)")
+                .eq("round_id", id)
+
         try {
-            // 1. Les deux derniers événements du club
-            const { data: recentEvents, error: eventsError } = await withTimeout(
-                supabase
-                    .from("events")
-                    .select("id, event_name, start_date")
-                    .eq("club_id", clubId)
-                    .order("start_date", { ascending: false })
-                    .limit(2),
-                "usePlayerMovements.recentEvents"
-            )
+            const roundIds = previousRoundId ? [roundId, previousRoundId] : [roundId]
 
-            if (eventsError || !recentEvents || recentEvents.length === 0) {
+            const [roundsRes, currentRes, previousRes] = await Promise.all([
+                withTimeout(
+                    supabase.from("event_rounds").select("id, round_number").in("id", roundIds),
+                    "usePlayerMovements.rounds",
+                ),
+                withTimeout(registrationsOf(roundId), "usePlayerMovements.current"),
+                previousRoundId
+                    ? withTimeout(registrationsOf(previousRoundId), "usePlayerMovements.previous")
+                    : Promise.resolve({ data: [] as unknown[], error: null }),
+            ])
+
+            if (currentRes.error || !currentRes.data) {
                 setMovements([])
                 return
             }
 
-            const latestEvent = recentEvents[0]
-            const prevEvent = recentEvents[1] ?? null
-
-            // 2. Joueurs du dernier événement
-            const { data: latestPlayers, error: latestError } = await withTimeout(
-                supabase
-                    .from("event_players")
-                    .select("profile_id, registered_at, profiles!inner(first_name, last_name)")
-                    .eq("event_id", latestEvent.id),
-                "usePlayerMovements.latestPlayers"
+            const numbers = new Map<string, number>(
+                ((roundsRes.data ?? []) as { id: string; round_number: number }[])
+                    .map(r => [r.id, r.round_number]),
             )
 
-            if (latestError || !latestPlayers) {
-                setMovements([])
-                return
-            }
+            const current = (currentRes.data as unknown as RoundPlayerRow[]).filter(r => r.profiles)
+            const previous = ((previousRes.data ?? []) as unknown as RoundPlayerRow[]).filter(r => r.profiles)
 
-            const latest = latestPlayers as unknown as EventPlayerRow[]
+            const currentIds = new Set(current.map(r => r.profile_id))
+            const previousIds = new Set(previous.map(r => r.profile_id))
 
-            // Pas d'événement précédent → tous les inscrits sont nouveaux
-            if (!prevEvent) {
-                setMovements(
-                    latest.map((row) => ({
-                        profileId: row.profile_id,
-                        firstName: row.profiles.first_name,
-                        lastName: row.profiles.last_name,
-                        status: "active" as const,
-                        registeredAt: row.registered_at,
-                        eventName: latestEvent.event_name,
-                        eventId: latestEvent.id,
-                    }))
-                )
-                return
-            }
+            const toMovement = (
+                row: RoundPlayerRow,
+                status: "active" | "inactive",
+                round: string,
+            ): PlayerMovement => ({
+                profileId: row.profile_id,
+                firstName: row.profiles!.first_name,
+                lastName: row.profiles!.last_name,
+                status,
+                registeredAt: row.registered_at,
+                roundId: round,
+                roundNumber: numbers.get(round) ?? 0,
+            })
 
-            // 3. Joueurs de l'avant-dernier événement
-            const { data: prevPlayers, error: prevError } = await withTimeout(
-                supabase
-                    .from("event_players")
-                    .select("profile_id, registered_at, profiles!inner(first_name, last_name)")
-                    .eq("event_id", prevEvent.id),
-                "usePlayerMovements.prevPlayers"
-            )
-
-            if (prevError) {
-                setMovements([])
-                return
-            }
-
-            const previous = (prevPlayers ?? []) as unknown as EventPlayerRow[]
-            const prevIds = new Set(previous.map((p) => p.profile_id))
-            const latestIds = new Set(latest.map((p) => p.profile_id))
-
-            const results: PlayerMovement[] = []
-
-            // Nouveaux inscrits : dans le dernier mais pas dans l'avant-dernier
-            for (const row of latest) {
-                if (!prevIds.has(row.profile_id)) {
-                    results.push({
-                        profileId: row.profile_id,
-                        firstName: row.profiles.first_name,
-                        lastName: row.profiles.last_name,
-                        status: "active",
-                        registeredAt: row.registered_at,
-                        eventName: latestEvent.event_name,
-                        eventId: latestEvent.id,
-                    })
-                }
-            }
-
-            // Désinscrits : dans l'avant-dernier mais pas dans le dernier
-            for (const row of previous) {
-                if (!latestIds.has(row.profile_id)) {
-                    results.push({
-                        profileId: row.profile_id,
-                        firstName: row.profiles.first_name,
-                        lastName: row.profiles.last_name,
-                        status: "inactive",
-                        registeredAt: row.registered_at,
-                        eventName: prevEvent.event_name,
-                        eventId: prevEvent.id,
-                    })
-                }
-            }
+            const results: PlayerMovement[] = [
+                // Arrivées : inscrits à la série en cours, absents de la précédente.
+                ...current
+                    .filter(row => !previousIds.has(row.profile_id))
+                    .map(row => toMovement(row, "active", roundId)),
+                // Départs : inscrits à la précédente, absents de la série en cours.
+                ...(previousRoundId
+                    ? previous
+                        .filter(row => !currentIds.has(row.profile_id))
+                        .map(row => toMovement(row, "inactive", previousRoundId))
+                    : []),
+            ]
 
             results.sort((a, b) => {
                 if (a.status !== b.status) return a.status === "active" ? -1 : 1
@@ -148,11 +116,11 @@ export function usePlayerMovements(clubId: string | null) {
         } finally {
             setLoading(false)
         }
-    }, [clubId])
+    }, [roundId, previousRoundId])
 
     useEffect(() => {
         fetchMovements()
     }, [fetchMovements])
 
-    return { movements, loading }
+    return { movements, loading, refetch: fetchMovements }
 }
