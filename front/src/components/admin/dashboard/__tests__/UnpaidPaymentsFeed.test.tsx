@@ -15,11 +15,16 @@ vi.mock('@/hooks/useUnpaidPayments', () => ({
 
 import { UnpaidPaymentsCard } from '../UnpaidPaymentsCard'
 
+/** Raccourci : une liste de numeros de serie devient des lignes d'impaye. */
+function rounds(...numbers: number[]) {
+    return numbers.map(n => ({ paymentId: `pay-${n}`, roundNumber: n, eventName: 'Mixed' }))
+}
+
 function makeGrouped(overrides: Partial<GroupedUnpaidPayment> & { profileId: string }): GroupedUnpaidPayment {
     return {
         firstName: 'Alice',
         lastName: 'Martin',
-        events: ['Série 5'],
+        rounds: rounds(5),
         count: 1,
         ...overrides,
     }
@@ -45,7 +50,7 @@ describe('UnpaidPaymentsCard', () => {
     it('should display player names', () => {
         mockGrouped = [
             makeGrouped({ profileId: 'p1', firstName: 'Alice', lastName: 'Martin' }),
-            makeGrouped({ profileId: 'p2', firstName: 'Bob', lastName: 'Dupont', events: ['Série 4'], count: 1 }),
+            makeGrouped({ profileId: 'p2', firstName: 'Bob', lastName: 'Dupont', rounds: rounds(4), count: 1 }),
         ]
 
         render(<UnpaidPaymentsCard clubId="c1" />)
@@ -54,16 +59,19 @@ describe('UnpaidPaymentsCard', () => {
         expect(screen.getByText('Bob Dupont')).toBeInTheDocument()
     })
 
-    it('should show event name in badge for each player', () => {
+    it('nomme la serie dans le badge, pas l\'evenement', () => {
         mockGrouped = [
-            makeGrouped({ profileId: 'p1', events: ['Série 4'], count: 1 }),
-            makeGrouped({ profileId: 'p2', firstName: 'Bob', lastName: 'Dupont', events: ['Série 5'], count: 1 }),
+            makeGrouped({ profileId: 'p1', rounds: rounds(4), count: 1 }),
+            makeGrouped({ profileId: 'p2', firstName: 'Bob', lastName: 'Dupont', rounds: rounds(5), count: 1 }),
         ]
 
         render(<UnpaidPaymentsCard clubId="c1" />)
 
         expect(screen.getByText('Série 4')).toBeInTheDocument()
         expect(screen.getByText('Série 5')).toBeInTheDocument()
+        expect(screen.queryByText('Mixed')).not.toBeInTheDocument()
+        // L'evenement reste accessible au survol, pour distinguer deux series 4
+        expect(screen.getByTitle('Mixed, série 4')).toBeInTheDocument()
     })
 
     it('should show count badge when there are unpaid players', () => {
@@ -82,9 +90,9 @@ describe('UnpaidPaymentsCard', () => {
         expect(screen.getByText('Paiements')).toBeInTheDocument()
     })
 
-    it('should show +N badge when player has more than 2 unpaid events', () => {
+    it('affiche +N au dela de deux series impayees', () => {
         mockGrouped = [
-            makeGrouped({ profileId: 'p1', events: ['Série 3', 'Série 4', 'Série 5'], count: 3 }),
+            makeGrouped({ profileId: 'p1', rounds: rounds(3, 4, 5), count: 3 }),
         ]
 
         render(<UnpaidPaymentsCard clubId="c1" />)

@@ -3,6 +3,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { PlayerType } from "@/types/player";
+import { paymentSeriesLabel, paymentFullLabel } from "@/lib/paymentLabels"
 
 export const columns = (): ColumnDef<PlayerType>[] => [
     {
@@ -113,14 +114,14 @@ export const columns = (): ColumnDef<PlayerType>[] => [
                             <TooltipContent side="left" className="bg-gray-300 border-gray-400">
                                 <div className="flex gap-1">
                                     {hidden.map((p, i) => (
-                                        <Badge key={i} variant={p.status} className="z-100">{p.event_name}</Badge>
+                                        <Badge key={i} variant={p.status} title={paymentFullLabel(p)} className="z-100">{paymentSeriesLabel(p)}</Badge>
                                     ))}
                                 </div>
                             </TooltipContent>
                         </Tooltip>
                     )}
                     {visible.map((p, i) => (
-                        <Badge key={i} variant={p.status}>{p.event_name}</Badge>
+                        <Badge key={i} variant={p.status} title={paymentFullLabel(p)}>{paymentSeriesLabel(p)}</Badge>
                     ))}
                 </div>
             )

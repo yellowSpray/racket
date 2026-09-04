@@ -33,70 +33,102 @@ vi.mock('@/lib/supabaseClient', () => ({
 
 import { useUnpaidPayments } from '../useUnpaidPayments'
 
+/** Ligne telle que la renvoie la jointure payments > event_rounds > events. */
+function row(id: string, profileId: string, first: string, last: string, roundNumber: number, eventName = 'Mixed') {
+    return {
+        id,
+        profile_id: profileId,
+        profiles: { first_name: first, last_name: last },
+        event_rounds: { round_number: roundNumber, events: { event_name: eventName } },
+    }
+}
+
 describe('useUnpaidPayments', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockSupabase.from = vi.fn(() => paymentsBuilder) as MockSupabase['from']
     })
 
-    it('should return empty state when clubId is null', () => {
+    it('rend un etat vide sans club', () => {
         const { result } = renderHook(() => useUnpaidPayments(null))
 
         expect(result.current.payments).toEqual([])
         expect(result.current.loading).toBe(false)
     })
 
-    it('should return unpaid payments with player and event names', async () => {
+    it('remonte la serie et son evenement', async () => {
         paymentsBuilder._resolve([
-            {
-                id: 'pay1',
-                profile_id: 'p1',
-                profiles: { first_name: 'Alice', last_name: 'Martin' },
-                events: { event_name: 'Série 4' },
-            },
-            {
-                id: 'pay2',
-                profile_id: 'p2',
-                profiles: { first_name: 'Bob', last_name: 'Dupont' },
-                events: { event_name: 'Série 5' },
-            },
+            row('pay1', 'p1', 'Alice', 'Martin', 4),
+            row('pay2', 'p2', 'Bob', 'Dupont', 5, 'Test'),
         ])
 
         const { result } = renderHook(() => useUnpaidPayments('club1'))
 
-        await waitFor(() => {
-            expect(result.current.loading).toBe(false)
-        })
+        await waitFor(() => expect(result.current.loading).toBe(false))
 
         expect(result.current.payments).toEqual([
-            { id: 'pay1', profileId: 'p1', firstName: 'Alice', lastName: 'Martin', eventName: 'Série 4' },
-            { id: 'pay2', profileId: 'p2', firstName: 'Bob', lastName: 'Dupont', eventName: 'Série 5' },
+            { id: 'pay1', profileId: 'p1', firstName: 'Alice', lastName: 'Martin', roundNumber: 4, eventName: 'Mixed' },
+            { id: 'pay2', profileId: 'p2', firstName: 'Bob', lastName: 'Dupont', roundNumber: 5, eventName: 'Test' },
         ])
     })
 
-    it('should return empty on fetch error', async () => {
-        paymentsBuilder._reject('Fetch failed')
-
-        const { result } = renderHook(() => useUnpaidPayments('club1'))
-
-        await waitFor(() => {
-            expect(result.current.loading).toBe(false)
-        })
-
-        expect(result.current.payments).toEqual([])
-    })
-
-    it('should query payments table with correct filters', async () => {
+    it('passe par event_rounds pour atteindre le club', async () => {
+        // `payments` ne porte pas de colonne event_id : le lien vers l'evenement,
+        // et donc vers le club, passe par la serie. Filtrer sur `events.club_id`
+        // echouait, et le hook avalait l'erreur en affichant une carte vide.
         paymentsBuilder._resolve([])
 
         renderHook(() => useUnpaidPayments('club1'))
 
-        await waitFor(() => {
-            expect(mockSupabase.from).toHaveBeenCalledWith('payments')
-        })
+        await waitFor(() => expect(mockSupabase.from).toHaveBeenCalledWith('payments'))
 
-        expect(paymentsBuilder.select).toHaveBeenCalled()
         expect(paymentsBuilder.eq).toHaveBeenCalledWith('status', 'unpaid')
-        expect(paymentsBuilder.eq).toHaveBeenCalledWith('events.club_id', 'club1')
+        expect(paymentsBuilder.eq).toHaveBeenCalledWith('event_rounds.events.club_id', 'club1')
+
+        const selection = (paymentsBuilder.select as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0] as string
+        expect(selection).toContain('event_rounds!inner')
+        expect(selection).toContain('events!inner')
+    })
+
+    it('regroupe par joueur, du plus endette au moins endette', async () => {
+        paymentsBuilder._resolve([
+            row('pay1', 'p1', 'Alice', 'Martin', 3),
+            row('pay2', 'p2', 'Bob', 'Dupont', 4),
+            row('pay3', 'p1', 'Alice', 'Martin', 4),
+        ])
+
+        const { result } = renderHook(() => useUnpaidPayments('club1'))
+
+        await waitFor(() => expect(result.current.loading).toBe(false))
+
+        expect(result.current.grouped).toHaveLength(2)
+        expect(result.current.grouped[0].firstName).toBe('Alice')
+        expect(result.current.grouped[0].count).toBe(2)
+        expect(result.current.grouped[0].rounds.map(r => r.roundNumber)).toEqual([3, 4])
+        expect(result.current.grouped[1].count).toBe(1)
+    })
+
+    it('ignore une ligne dont la serie ne se resout pas', async () => {
+        // Serie supprimee : la ligne existe encore mais n'est plus rattachable.
+        paymentsBuilder._resolve([
+            row('pay1', 'p1', 'Alice', 'Martin', 3),
+            { id: 'pay2', profile_id: 'p2', profiles: { first_name: 'Bob', last_name: 'Dupont' }, event_rounds: null },
+        ])
+
+        const { result } = renderHook(() => useUnpaidPayments('club1'))
+
+        await waitFor(() => expect(result.current.loading).toBe(false))
+
+        expect(result.current.payments).toHaveLength(1)
+    })
+
+    it('rend un etat vide en cas d\'erreur', async () => {
+        paymentsBuilder._reject('Fetch failed')
+
+        const { result } = renderHook(() => useUnpaidPayments('club1'))
+
+        await waitFor(() => expect(result.current.loading).toBe(false))
+
+        expect(result.current.payments).toEqual([])
     })
 })

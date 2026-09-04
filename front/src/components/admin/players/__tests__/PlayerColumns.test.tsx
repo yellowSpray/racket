@@ -117,15 +117,17 @@ describe('PlayerColumns', () => {
       const mockRow = {
         original: makePlayer({
           payments: [
-            { round_id: 'r1', round_number: 1, event_name: 'Série 41', status: 'paid' },
-            { round_id: 'r2', round_number: 2, event_name: 'Série 42', status: 'unpaid' },
+            { round_id: 'r1', round_number: 1, event_name: 'Mixed', status: 'paid' },
+            { round_id: 'r2', round_number: 2, event_name: 'Mixed', status: 'unpaid' },
           ],
         }),
         getValue: vi.fn(),
       }
       render(<CellComponent row={mockRow} />)
-      expect(screen.getByText('Série 41')).toBeInTheDocument()
-      expect(screen.getByText('Série 42')).toBeInTheDocument()
+      // Le badge nomme la serie, pas l'evenement
+      expect(screen.getByText('Série 1')).toBeInTheDocument()
+      expect(screen.getByText('Série 2')).toBeInTheDocument()
+      expect(screen.queryByText('Mixed')).not.toBeInTheDocument()
       expect(screen.queryByText(/\+\d/)).not.toBeInTheDocument()
     }
   })
@@ -139,25 +141,41 @@ describe('PlayerColumns', () => {
       const mockRow = {
         original: makePlayer({
           payments: [
-            { round_id: 'r1', round_number: 1, event_name: 'Série 41', status: 'paid' },
-            { round_id: 'r2', round_number: 2, event_name: 'Série 42', status: 'unpaid' },
-            { round_id: 'r3', round_number: 3, event_name: 'Série 43', status: 'paid' },
-            { round_id: 'r4', round_number: 4, event_name: 'Série 44', status: 'unpaid' },
+            { round_id: 'r1', round_number: 1, event_name: 'Mixed', status: 'paid' },
+            { round_id: 'r2', round_number: 2, event_name: 'Mixed', status: 'unpaid' },
+            { round_id: 'r3', round_number: 3, event_name: 'Mixed', status: 'paid' },
+            { round_id: 'r4', round_number: 4, event_name: 'Mixed', status: 'unpaid' },
           ],
         }),
         getValue: vi.fn(),
       }
       render(<CellComponent row={mockRow} />)
-      // Visible badges (also duplicated in tooltip)
-      expect(screen.getAllByText('Série 41').length).toBeGreaterThanOrEqual(1)
-      expect(screen.getAllByText('Série 42').length).toBeGreaterThanOrEqual(1)
-      // +N badge
+      // Les deux dernieres series restent visibles
+      expect(screen.getAllByText('Série 3').length).toBeGreaterThanOrEqual(1)
+      expect(screen.getAllByText('Série 4').length).toBeGreaterThanOrEqual(1)
       expect(screen.getByText('+2')).toBeInTheDocument()
-      // Tooltip content with all badges
       expect(screen.getByTestId('tooltip-content')).toBeInTheDocument()
-      // Hidden badges only appear in tooltip
-      expect(screen.getByText('Série 43')).toBeInTheDocument()
-      expect(screen.getByText('Série 44')).toBeInTheDocument()
+      // Les plus anciennes ne sont que dans l'infobulle
+      expect(screen.getByText('Série 1')).toBeInTheDocument()
+      expect(screen.getByText('Série 2')).toBeInTheDocument()
+    }
+  })
+
+  it('porte l\'evenement et l\'etat dans l\'infobulle du badge', () => {
+    // Deux evenements peuvent avoir une serie 4 : le badge reste court,
+    // le survol leve l'ambiguite.
+    const cols = columns()
+    const paymentCol = cols.find(c => c.header === 'Paiement')
+    if (paymentCol && 'cell' in paymentCol && paymentCol.cell) {
+      const CellComponent = paymentCol.cell as unknown as React.FC<{ row: { original: PlayerType; getValue: ReturnType<typeof vi.fn> } }>
+      const mockRow = {
+        original: makePlayer({
+          payments: [{ round_id: 'r4', round_number: 4, event_name: 'Mixed', status: 'unpaid' }],
+        }),
+        getValue: vi.fn(),
+      }
+      render(<CellComponent row={mockRow} />)
+      expect(screen.getByTitle('Mixed, série 4 : non payé')).toBeInTheDocument()
     }
   })
 })

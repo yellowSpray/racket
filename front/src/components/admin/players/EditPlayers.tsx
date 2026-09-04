@@ -35,6 +35,7 @@ import { Input } from "@/components/ui/input"
 import { MultiDateCalendar } from "@/components/ui/multi-date-calendar"
 import { UserGroupIcon, EuroIcon, Add01Icon } from 'hugeicons-react';
 import type { PlayerType, PaymentStatus } from "@/types/player";
+import { paymentSeriesLabel, paymentFullLabel } from "@/lib/paymentLabels"
 
 interface EditPlayersProps {
     mode?: "edit" | "create"
@@ -365,7 +366,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
                                     const currentStatus = localPayments[payment.round_id] ?? payment.status
                                     return (
                                         <div key={payment.round_id} className="flex items-center justify-between gap-4">
-                                            <span className="text-sm truncate">{payment.event_name}</span>
+                                            <span className="text-sm truncate" title={paymentFullLabel(payment)}>{paymentSeriesLabel(payment)}</span>
                                             <ToggleGroup
                                                 type="multiple"
                                                 variant="outline"
@@ -378,7 +379,7 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
                                             >
                                                 <ToggleGroupItem
                                                     value="paid"
-                                                    aria-label={`Toggle paid ${payment.event_name}`}
+                                                    aria-label={paymentFullLabel(payment)}
                                                     className="data-[state=off]:bg-gray-100 data-[state=off]:text-muted-foreground data-[state=on]:bg-transparent data-[state=on]:*:[svg]:text-green-500"
                                                 >
                                                     <EuroIcon /> {currentStatus === "paid" ? "Payé" : "Non payé"}

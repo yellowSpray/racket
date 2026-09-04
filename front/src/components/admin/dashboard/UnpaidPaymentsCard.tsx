@@ -66,18 +66,19 @@ function UnpaidPaymentsFeed({ grouped, loading }: { grouped: GroupedUnpaidPaymen
                             </TableCell>
                             <TableCell className="text-right py-1.5">
                                 <div className="flex flex-wrap items-center justify-end gap-1">
-                                    {p.events.length > 2 && (
+                                    {p.rounds.length > 2 && (
                                         <Badge className="text-[10px] px-1.5 py-0">
-                                            +{p.events.length - 2}
+                                            +{p.rounds.length - 2}
                                         </Badge>
                                     )}
-                                    {p.events.slice(-2).map((eventName) => (
+                                    {p.rounds.slice(-2).map((round) => (
                                         <Badge
-                                            key={eventName}
+                                            key={round.paymentId}
                                             variant="unpaid"
+                                            title={`${round.eventName}, série ${round.roundNumber}`}
                                             className="text-[10px] px-1.5 py-0"
                                         >
-                                            {eventName}
+                                            Série {round.roundNumber}
                                         </Badge>
                                     ))}
                                 </div>
