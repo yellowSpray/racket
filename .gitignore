@@ -50,5 +50,8 @@ docs/
 #screenshot inspiration
 screenshot/
 
+#journaux de l'outil navigateur
+.playwright-mcp/
+
 #sheet
 *.xlsx

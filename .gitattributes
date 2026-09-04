@@ -1,0 +1,48 @@
+# Fins de ligne
+#
+# Le dépôt stocke tout en LF ; Git restitue selon la plateforme. Sans cette
+# règle, un fichier édité sous Windows revenait en CRLF et apparaissait comme
+# modifié de bout en bout, noyant les vraies différences.
+* text=auto
+
+# Fichiers dont la fin de ligne ne se négocie pas
+*.sh    text eol=lf
+*.bash  text eol=lf
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+*.ps1   text eol=crlf
+
+# Texte, à normaliser explicitement
+*.ts    text
+*.tsx   text
+*.js    text
+*.jsx   text
+*.json  text
+*.css   text
+*.html  text
+*.md    text
+*.sql   text
+*.svg   text
+*.yml   text
+*.yaml  text
+*.toml  text
+
+# Binaires : aucune conversion, aucun diff textuel
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.webp  binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.eot   binary
+*.pdf   binary
+*.xlsx  binary
+*.xls   binary
+*.zip   binary
+
+# Fichiers générés : hors des diffs, et sans conflit à résoudre à la main
+package-lock.json -diff merge=binary linguist-generated
