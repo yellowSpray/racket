@@ -11,7 +11,18 @@ const { mockSupabase } = vi.hoisted(() => {
     qb.maybeSingle = vi.fn(() => qb); qb.then = vi.fn()
     qb._resolve = (data: unknown) => { const p = Promise.resolve({ data, error: null }); qb.then = p.then.bind(p) as unknown as ReturnType<typeof vi.fn>; return qb }
     qb._reject = (error: string) => { const p = Promise.resolve({ data: null, error: { message: error } }); qb.then = p.then.bind(p) as unknown as ReturnType<typeof vi.fn>; return qb }
-    return { mockSupabase: { from: vi.fn(() => qb), rpc: vi.fn(), _builder: qb } as MockSupabase }
+    // Le hook ouvre une souscription Realtime au montage : sans ces deux methodes,
+    // tous les tests du fichier echouent avant meme d'atteindre leur assertion.
+    const channel = { on: vi.fn(() => channel), subscribe: vi.fn(() => channel) }
+    return {
+        mockSupabase: {
+            from: vi.fn(() => qb),
+            rpc: vi.fn(),
+            channel: vi.fn(() => channel),
+            removeChannel: vi.fn(),
+            _builder: qb,
+        } as unknown as MockSupabase,
+    }
 })
 
 vi.mock('@/lib/supabaseClient', () => ({
@@ -241,290 +252,83 @@ describe('useMatches', () => {
         })
     })
 
-    describe('applyRoundElo', () => {
-        it('should return 0 when no groups exist for event', async () => {
-            mockSupabase.from.mockImplementation(() => {
-                mockSupabase._builder._resolve([])
-                return mockSupabase._builder
-            })
-
-            const { result } = renderHook(() => useMatches())
-            let count: number | undefined
-
-            await act(async () => {
-                count = await result.current.applyRoundElo('e1')
-            })
-
-            expect(count).toBe(0)
-            expect(result.current.error).toBeNull()
-        })
-
-        it('should return 0 when no completed matches exist', async () => {
-            let callCount = 0
-            mockSupabase.from.mockImplementation(() => {
-                callCount++
-                if (callCount === 1) {
-                    mockSupabase._builder._resolve([{ id: 'g1' }])
-                } else {
-                    mockSupabase._builder._resolve([])
-                }
-                return mockSupabase._builder
-            })
-
-            const { result } = renderHook(() => useMatches())
-            let count: number | undefined
-
-            await act(async () => {
-                count = await result.current.applyRoundElo('e1')
-            })
-
-            expect(count).toBe(0)
-        })
-
-        it('should compute and update ratings for completed matches', async () => {
-            const completedMatches = [
-                { id: 'm1', player1_id: 'p1', player2_id: 'p2', winner_id: 'p1', score: '3-2' },
-                { id: 'm2', player1_id: 'p1', player2_id: 'p3', winner_id: 'p3', score: '3-0' },
-            ]
-
-            const profiles = [
-                { id: 'p1', power_ranking: 1500 },
-                { id: 'p2', power_ranking: 1500 },
-                { id: 'p3', power_ranking: 1500 },
-            ]
-
-            let callCount = 0
-            mockSupabase.from.mockImplementation(() => {
-                callCount++
-                if (callCount === 1) {
-                    // groups
-                    mockSupabase._builder._resolve([{ id: 'g1' }])
-                } else if (callCount === 2) {
-                    // completed matches
-                    mockSupabase._builder._resolve(completedMatches)
-                } else if (callCount === 3) {
-                    // profiles (read ratings)
-                    mockSupabase._builder._resolve(profiles)
-                } else {
-                    // profile updates
-                    mockSupabase._builder._resolve(null)
-                }
-                return mockSupabase._builder
-            })
-
-            const { result } = renderHook(() => useMatches())
-            let count: number | undefined
-
-            await act(async () => {
-                count = await result.current.applyRoundElo('e1')
-            })
-
-            // 3 players had their ratings changed
-            expect(count).toBe(3)
-            expect(result.current.error).toBeNull()
-            // Verify profiles table was updated
-            expect(mockSupabase.from).toHaveBeenCalledWith('profiles')
-            expect(mockSupabase._builder.update).toHaveBeenCalled()
-        })
-
-        it('should set error when groups fetch fails', async () => {
-            mockSupabase.from.mockImplementation(() => {
-                mockSupabase._builder._reject('Groups fetch failed')
-                return mockSupabase._builder
-            })
-
-            const { result } = renderHook(() => useMatches())
-            let count: number | undefined
-
-            await act(async () => {
-                count = await result.current.applyRoundElo('e1')
-            })
-
-            expect(count).toBe(0)
-            expect(result.current.error).toBe('Groups fetch failed')
-        })
-
-        it('should skip matches with ABS score (no rating change)', async () => {
-            const completedMatches = [
-                { id: 'm1', player1_id: 'p1', player2_id: 'p2', winner_id: 'p1', score: 'ABS' },
-            ]
-
-            const profiles = [
-                { id: 'p1', power_ranking: 1500 },
-                { id: 'p2', power_ranking: 1500 },
-            ]
-
-            let callCount = 0
-            mockSupabase.from.mockImplementation(() => {
-                callCount++
-                if (callCount === 1) {
-                    mockSupabase._builder._resolve([{ id: 'g1' }])
-                } else if (callCount === 2) {
-                    mockSupabase._builder._resolve(completedMatches)
-                } else if (callCount === 3) {
-                    mockSupabase._builder._resolve(profiles)
-                } else {
-                    mockSupabase._builder._resolve(null)
-                }
-                return mockSupabase._builder
-            })
-
-            const { result } = renderHook(() => useMatches())
-            let count: number | undefined
-
-            await act(async () => {
-                count = await result.current.applyRoundElo('e1')
-            })
-
-            // ABS gives 0 delta, so no players updated
-            expect(count).toBe(0)
-        })
-
-        it('should handle players with null power_ranking', async () => {
-            const completedMatches = [
-                { id: 'm1', player1_id: 'p1', player2_id: 'p2', winner_id: 'p1', score: '3-0' },
-            ]
-
-            const profiles = [
-                { id: 'p1', power_ranking: 1500 },
-                { id: 'p2', power_ranking: null },
-            ]
-
-            let callCount = 0
-            mockSupabase.from.mockImplementation(() => {
-                callCount++
-                if (callCount === 1) {
-                    mockSupabase._builder._resolve([{ id: 'g1' }])
-                } else if (callCount === 2) {
-                    mockSupabase._builder._resolve(completedMatches)
-                } else if (callCount === 3) {
-                    mockSupabase._builder._resolve(profiles)
-                } else {
-                    mockSupabase._builder._resolve(null)
-                }
-                return mockSupabase._builder
-            })
-
-            const { result } = renderHook(() => useMatches())
-            let count: number | undefined
-
-            await act(async () => {
-                count = await result.current.applyRoundElo('e1')
-            })
-
-            // p2 has null rating → match skipped by computeEloUpdates
-            expect(count).toBe(0)
-        })
-    })
-
     describe('closeRound', () => {
-        it('should set status to completed when all matches are played', async () => {
-            const allMatches = [
-                { id: 'm1', player1_id: 'p1', player2_id: 'p2', winner_id: 'p1', score: '3-1' },
-            ]
-
-            let callCount = 0
-            mockSupabase.from.mockImplementation(() => {
-                callCount++
-                if (callCount === 1) {
-                    mockSupabase._builder._resolve([{ id: 'g1' }])
-                } else if (callCount === 2) {
-                    mockSupabase._builder._resolve(allMatches)
+        function mockClose(opts: { statusFails?: boolean } = {}) {
+            mockSupabase.from.mockImplementation((table: string) => {
+                if (table === 'event_rounds') {
+                    if (opts.statusFails) mockSupabase._builder._reject('Status update failed')
+                    else mockSupabase._builder._resolve(null)
                 } else {
-                    // update event status
                     mockSupabase._builder._resolve(null)
                 }
                 return mockSupabase._builder
             })
+        }
+
+        it('passe la serie en completed', async () => {
+            mockClose()
 
             const { result } = renderHook(() => useMatches())
             let returnVal: { success: boolean } | undefined
 
             await act(async () => {
-                returnVal = await result.current.closeRound('e1')
+                returnVal = await result.current.closeRound('r1')
             })
 
             expect(returnVal?.success).toBe(true)
-            expect(mockSupabase.from).toHaveBeenCalledWith('events')
-            expect(mockSupabase._builder.update).toHaveBeenCalled()
+            // Le statut vit sur la serie, pas sur l'evenement
+            expect(mockSupabase.from).toHaveBeenCalledWith('event_rounds')
+            expect(mockSupabase._builder.update).toHaveBeenCalledWith({ status: 'completed' })
         })
 
-        it('should fail when some matches have no winner', async () => {
-            const matchesWithMissing = [
-                { id: 'm1', player1_id: 'p1', player2_id: 'p2', winner_id: 'p1', score: '3-0' },
-                { id: 'm2', player1_id: 'p1', player2_id: 'p3', winner_id: null, score: null },
-            ]
+        it('n\'applique pas les Elo lui-meme', async () => {
+            // Les Elo sont recalcules en base a chaque saisie de score, par le
+            // trigger trg_elo_on_match_result. Y toucher ici doublerait les deltas.
+            mockClose()
 
-            let callCount = 0
-            mockSupabase.from.mockImplementation(() => {
-                callCount++
-                if (callCount === 1) {
-                    mockSupabase._builder._resolve([{ id: 'g1' }])
-                } else {
-                    mockSupabase._builder._resolve(matchesWithMissing)
-                }
-                return mockSupabase._builder
-            })
+            const { result } = renderHook(() => useMatches())
+            await act(async () => { await result.current.closeRound('r1') })
+
+            expect(mockSupabase.from).not.toHaveBeenCalledWith('profiles')
+        })
+
+        it('n\'ecrit qu\'une seule fois sur event_rounds', async () => {
+            // Le trigger se declenche sur la transition vers 'completed'. Une
+            // seconde ecriture serait inutile, et masquerait un jour un effet
+            // de bord si la garde OLD.status du trigger venait a sauter.
+            mockClose()
+
+            const { result } = renderHook(() => useMatches())
+            await act(async () => { await result.current.closeRound('r1') })
+
+            expect(mockSupabase._builder.update).toHaveBeenCalledTimes(1)
+        })
+
+        it('ne verifie plus que tous les matchs sont joues', async () => {
+            // Dans un club il reste toujours des matchs non joues. Ils n'empechent
+            // plus la cloture : aucune lecture de matches n'a meme lieu.
+            mockClose()
 
             const { result } = renderHook(() => useMatches())
             let returnVal: { success: boolean } | undefined
 
             await act(async () => {
-                returnVal = await result.current.closeRound('e1')
+                returnVal = await result.current.closeRound('r1')
             })
 
-            expect(returnVal?.success).toBe(false)
-            expect(result.current.error).toMatch(/1 match\(s\) sans résultat/)
+            expect(returnVal?.success).toBe(true)
+            expect(result.current.error).toBeNull()
+            expect(mockSupabase.from).not.toHaveBeenCalledWith('matches')
         })
 
-        it('should fail when no matches exist', async () => {
-            let callCount = 0
-            mockSupabase.from.mockImplementation(() => {
-                callCount++
-                if (callCount === 1) {
-                    mockSupabase._builder._resolve([{ id: 'g1' }])
-                } else {
-                    mockSupabase._builder._resolve([])
-                }
-                return mockSupabase._builder
-            })
+        it('remonte une erreur de mise a jour du statut', async () => {
+            mockClose({ statusFails: true })
 
             const { result } = renderHook(() => useMatches())
             let returnVal: { success: boolean } | undefined
 
             await act(async () => {
-                returnVal = await result.current.closeRound('e1')
-            })
-
-            expect(returnVal?.success).toBe(false)
-            expect(result.current.error).toMatch(/Aucun match/)
-        })
-
-        it('should set error when event status update fails', async () => {
-            const allMatches = [
-                { id: 'm1', player1_id: 'p1', player2_id: 'p2', winner_id: 'p1', score: '3-0' },
-            ]
-
-            let callCount = 0
-            mockSupabase.from.mockImplementation((table: string) => {
-                callCount++
-                if (callCount === 1) {
-                    mockSupabase._builder._resolve([{ id: 'g1' }])
-                } else if (callCount === 2) {
-                    mockSupabase._builder._resolve(allMatches)
-                } else if (table === 'events') {
-                    mockSupabase._builder._reject('Status update failed')
-                } else {
-                    mockSupabase._builder._resolve(null)
-                }
-                return mockSupabase._builder
-            })
-
-            const { result } = renderHook(() => useMatches())
-            let returnVal: { success: boolean } | undefined
-
-            await act(async () => {
-                returnVal = await result.current.closeRound('e1')
+                returnVal = await result.current.closeRound('r1')
             })
 
             expect(returnVal?.success).toBe(false)

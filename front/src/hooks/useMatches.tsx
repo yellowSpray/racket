@@ -6,6 +6,7 @@ import type { UnplacedMatch } from "@/lib/matchScheduler"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { handleHookError, withTimeout } from "@/lib/handleHookError"
 import { logger } from "@/lib/logger"
+import { normalizeScoreForDb, computeWinnerId } from "@/lib/matchScore"
 import { intervalToMinutes } from "@/lib/utils"
 import {
     generateGroupRounds,
@@ -17,7 +18,6 @@ import {
     SCHEDULE_TEMPLATES,
     type PlayerConstraints,
 } from "@/lib/matchScheduler"
-import { computeEloUpdates, type EloMatchResult } from "@/lib/eloEngine"
 
 /**
  * Extrait "HH:MM" depuis un timestamp Supabase (ex: "2026-03-05T20:00:00+00:00")
@@ -31,29 +31,6 @@ function extractTime(value: string): string {
     const timeMatch = value.match(/^(\d{2}:\d{2})/)
     if (timeMatch) return timeMatch[1]
     return ""
-}
-
-/**
- * Normalise un score du point de vue du joueur vers le format DB (toujours player1-player2).
- * Ex: si isPlayer1=false et score="3-1" → "1-3" (inversé car c'est du point de vue player2)
- */
-function normalizeScoreForDb(score: string, isPlayer1: boolean): string {
-    if (score === "ABS") return isPlayer1 ? "ABS-0" : "0-ABS"
-    if (isPlayer1) return score
-    const parts = score.split("-")
-    if (parts.length !== 2) return score
-    return `${parts[1]}-${parts[0]}`
-}
-
-/**
- * Détermine le winner_id à partir d'un score normalisé (format player1-player2).
- */
-function computeWinnerId(score: string, player1Id: string, player2Id: string): string | null {
-    if (score.startsWith("ABS")) return player2Id
-    if (score.endsWith("ABS")) return player1Id
-    const parts = score.split("-").map(Number)
-    if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1])) return null
-    return parts[0] > parts[1] ? player1Id : player2Id
 }
 
 export function useMatches() {
@@ -422,154 +399,21 @@ export function useMatches() {
     }, [])
 
     /**
-     * Recalcule les Elo de tous les joueurs d'un événement en batch.
-     * Récupère tous les matchs terminés, calcule les deltas depuis les ratings initiaux,
-     * et met à jour les profiles. Retourne le nombre de joueurs mis à jour.
-     */
-    const applyRoundElo = async (roundId: string): Promise<number> => {
-        setError(null)
-
-        try {
-            const { data: groups, error: groupsError } = await supabase
-                .from("groups")
-                .select("id")
-                .eq("round_id", roundId)
-
-            if (groupsError) {
-                handleHookError(groupsError, setError, "useMatches.applyRoundElo")
-                return 0
-            }
-
-            if (!groups || groups.length === 0) return 0
-
-            const groupIds = groups.map(g => g.id)
-
-            // 2. Récupérer tous les matchs terminés (avec winner_id)
-            const { data: completedMatches, error: matchesError } = await supabase
-                .from("matches")
-                .select("id, player1_id, player2_id, winner_id, score")
-                .in("group_id", groupIds)
-                .not("winner_id", "is", null)
-
-            if (matchesError) {
-                handleHookError(matchesError, setError, "useMatches.applyRoundElo")
-                return 0
-            }
-
-            if (!completedMatches || completedMatches.length === 0) return 0
-
-            // 3. Construire les EloMatchResults
-            const eloResults: EloMatchResult[] = completedMatches
-                .filter(m => m.winner_id && m.score)
-                .map(m => ({
-                    matchId: m.id,
-                    winnerId: m.winner_id!,
-                    loserId: m.winner_id === m.player1_id ? m.player2_id : m.player1_id,
-                    score: m.score!,
-                }))
-
-            if (eloResults.length === 0) return 0
-
-            // 4. Récupérer les ratings actuels des joueurs concernés
-            const playerIds = new Set<string>()
-            for (const r of eloResults) {
-                playerIds.add(r.winnerId)
-                playerIds.add(r.loserId)
-            }
-
-            const { data: profiles, error: profilesError } = await supabase
-                .from("profiles")
-                .select("id, power_ranking")
-                .in("id", Array.from(playerIds))
-
-            if (profilesError) {
-                handleHookError(profilesError, setError, "useMatches.applyRoundElo")
-                return 0
-            }
-
-            if (!profiles) return 0
-
-            const currentRatings = new Map<string, number>()
-            for (const p of profiles) {
-                if (p.power_ranking != null) {
-                    currentRatings.set(p.id, p.power_ranking)
-                }
-            }
-
-            // 5. Calcul batch des nouveaux ratings
-            const newRatings = computeEloUpdates(eloResults, currentRatings)
-
-            if (newRatings.size === 0) return 0
-
-            // 6. Mise à jour en base
-            const profileUpdates = Array.from(newRatings.entries()).map(([id, rating]) =>
-                supabase.from("profiles").update({ power_ranking: rating }).eq("id", id)
-            )
-
-            const responses = await Promise.all(profileUpdates)
-            const updateError = responses.find(r => r.error)
-            if (updateError?.error) {
-                handleHookError(updateError.error, setError, "useMatches.applyRoundElo")
-                return 0
-            }
-
-            return newRatings.size
-        } catch (err) {
-            handleHookError(err, setError, "useMatches.applyRoundElo")
-            return 0
-        }
-    }
-
-    /**
-     * Clôture un round : vérifie que tous les matchs sont joués,
-     * puis passe le statut à 'completed'.
-     * L'ELO est appliqué automatiquement par le trigger trg_auto_elo_on_event_complete.
+     * Clôture une série en anticipé : passe le statut à 'completed'.
+     *
+     * Sans intervention, la série serait clôturée de toute façon : le RPC
+     * `update_event_statuses`, appelé à chaque chargement, bascule celles dont
+     * la date de fin est passée.
+     *
+     * **Les classements Elo ne dépendent plus de cette clôture.** Ils sont
+     * recalculés en base à chaque saisie de score, par le trigger
+     * `trg_elo_on_match_result`. Clôturer ne fait donc que marquer la série
+     * comme terminée, et aucune condition ne bloque l'opération.
      */
     const closeRound = async (roundId: string): Promise<{ success: boolean }> => {
         setError(null)
 
         try {
-            // 1. Récupérer les groupes du round
-            const { data: groups, error: groupsError } = await supabase
-                .from("groups")
-                .select("id")
-                .eq("round_id", roundId)
-
-            if (groupsError) {
-                handleHookError(groupsError, setError, "useMatches.closeRound")
-                return { success: false }
-            }
-
-            if (!groups || groups.length === 0) {
-                setError("Aucun groupe pour ce round")
-                return { success: false }
-            }
-
-            const groupIds = groups.map(g => g.id)
-
-            // 2. Vérifier que tous les matchs sont joués
-            const { data: allMatches, error: matchesError } = await supabase
-                .from("matches")
-                .select("id, winner_id")
-                .in("group_id", groupIds)
-
-            if (matchesError) {
-                handleHookError(matchesError, setError, "useMatches.closeRound")
-                return { success: false }
-            }
-
-            if (!allMatches || allMatches.length === 0) {
-                setError("Aucun match dans ce round")
-                return { success: false }
-            }
-
-            const incomplete = allMatches.filter(m => !m.winner_id)
-            if (incomplete.length > 0) {
-                setError(`${incomplete.length} match(s) sans résultat. Complétez tous les matchs avant de clôturer.`)
-                return { success: false }
-            }
-
-            // 3. Passer le round en 'completed' (le trigger applique l'ELO automatiquement)
             const { error: statusError } = await supabase
                 .from("event_rounds")
                 .update({ status: "completed" })
@@ -758,7 +602,6 @@ export function useMatches() {
         updateMatchResults,
         updateMatchSchedule,
         submitPendingScore,
-        applyRoundElo,
         closeRound,
     }
 }
