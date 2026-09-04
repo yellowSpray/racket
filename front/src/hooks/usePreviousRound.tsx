@@ -9,7 +9,7 @@ import type { Match } from "@/types/match"
 /**
  * Charge la série qui précède immédiatement une série donnée, dans le même événement.
  *
- * Remplace `usePreviousEvent`, qui remontait vers le dernier *événement* du club — un
+ * Remplace un ancien hook qui remontait vers le dernier *événement* du club, un
  * reste du modèle d'avant l'introduction des séries. Depuis, un événement contient
  * plusieurs séries et « le tableau précédent » de la Série 3 est la Série 2 du même
  * événement, pas un autre événement.
