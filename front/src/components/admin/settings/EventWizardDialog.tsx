@@ -280,9 +280,12 @@ export function EventWizardDialog({ open, onOpenChange, event, onSuccess, clubDe
                     </StepperContent>
 
                     <StepperContent value={3}>
-                        {wizardEvent && (
+                        {/* La série conditionne le rendu comme aux étapes 4 et 5 :
+                            les inscriptions se résolvent au niveau de la série. */}
+                        {wizardEvent && wizardRound && (
                             <WizardStepRegistrations
                                 event={wizardEvent}
+                                round={wizardRound}
                                 onRegistrationsChanged={handleRegistrationsChanged}
                                 onNext={() => setActiveStep(4)}
                                 onPrevious={() => setActiveStep(2)}
