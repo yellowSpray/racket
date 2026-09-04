@@ -20,7 +20,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { sortPlayersByEarliestDates } from "@/lib/matchScheduler"
 import type { Match } from "@/types/match"
 import type { GroupPlayer } from "@/types/draw"
-import { exportTablesToPdf } from "@/lib/exportPdf"
+import { exportTablesToPdfLazy } from "@/lib/exportPdfLazy"
 
 export function AdminDraws () {
 
@@ -81,7 +81,8 @@ export function AdminDraws () {
         if (!tablesRef.current) return
         const toastId = toast.loading("Génération du PDF en cours...")
         try {
-            await exportTablesToPdf(tablesRef.current, "tableaux.pdf")
+            // Le moteur PDF n'est telecharge qu'ici, au premier clic.
+            await exportTablesToPdfLazy(tablesRef.current, "tableaux.pdf")
             toast.success("PDF téléchargé", { id: toastId })
         } catch (err) {
             console.error("Export PDF error:", err)
