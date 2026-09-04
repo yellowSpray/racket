@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
-import { PencilEdit01Icon, Tick02Icon, Loading03Icon, Calendar03Icon, Link04Icon } from "hugeicons-react"
+import { PencilEdit01Icon, Tick02Icon, Loading03Icon, Calendar03Icon } from "hugeicons-react"
 
 interface EventDefaultsCardProps {
     defaultStartTime: string
@@ -18,8 +18,6 @@ interface EventDefaultsCardProps {
     visitorFee: number
     openToVisitors: boolean
     autoRenewPlayers: boolean
-    inviteUrl: string
-    eventName: string
     className?: string
     onSave: (data: {
         default_start_time: string
@@ -42,8 +40,6 @@ export function EventDefaultsCard({
     visitorFee,
     openToVisitors,
     autoRenewPlayers,
-    inviteUrl,
-    eventName,
     className,
     onSave,
     onToggleVisitors,
@@ -57,7 +53,6 @@ export function EventDefaultsCard({
     const [maxPlayers, setMaxPlayers] = useState(defaultMaxPlayers)
     const [fee, setFee] = useState(visitorFee)
     const [calendarMode, setCalendarMode] = useState<'days' | 'period'>('days')
-    const [copied, setCopied] = useState(false)
     const { handleError, clearError } = useErrorHandler()
     const [editing, setEditing] = useState(false)
     const [saving, setSaving] = useState(false)
@@ -288,40 +283,6 @@ export function EventDefaultsCard({
                             />
                         </div>
                     </div>
-                    {openToVisitors && inviteUrl && (
-                        <div className="flex flex-col gap-3">
-                            <Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                <Link04Icon size={14} />
-                                Lien d'invitation : {eventName}
-                            </Label>
-                            <div className="flex items-center gap-2">
-                                <Input
-                                    readOnly
-                                    value={inviteUrl}
-                                    className="text-sm text-muted-foreground bg-background"
-                                />
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={async () => {
-                                        await navigator.clipboard.writeText(inviteUrl)
-                                        setCopied(true)
-                                        setTimeout(() => setCopied(false), 2000)
-                                    }}
-                                    aria-label="Copier le lien"
-                                >
-                                    {copied ? (
-                                        <><Tick02Icon size={14} className="text-green-600" /> Copié</>
-                                    ) : (
-                                        "Copier"
-                                    )}
-                                </Button>
-                            </div>
-                            <p className="text-xs text-muted-foreground/60">
-                                Partagez ce lien pour inviter des joueurs d'autres clubs.
-                            </p>
-                        </div>
-                    )}
                 </div>
             </CardContent>
         </Card>

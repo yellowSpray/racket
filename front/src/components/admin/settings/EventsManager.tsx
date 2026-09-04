@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { PlusSignIcon, Delete02Icon, Calendar03Icon, Settings01Icon, DashedLine02Icon, UserGroupIcon, Clock01Icon } from "hugeicons-react"
 import { EventCreateWizardDialog } from "./EventCreateWizardDialog"
+import { EventInviteLink } from "./EventInviteLink"
+import { useInviteLink } from "@/hooks/useInviteLink"
 
 // — Helpers purs
 
@@ -220,6 +222,7 @@ function RoundRow({ round: r, deletingRoundId, onEdit, onDelete }: RoundRowProps
 export function EventsManager() {
     const { events, loading, fetchEvents } = useEvent()
     const navigate = useNavigate()
+    const { getInviteUrl } = useInviteLink()
 
     const [eventDialogOpen, setEventDialogOpen] = useState(false)
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
@@ -300,7 +303,13 @@ export function EventsManager() {
                                         <span className="font-semibold text-sm truncate">{event.event_name}</span>
                                         <Settings01Icon className="h-3.5 w-3.5 shrink-0 text-gray-400 group-hover:text-gray-600 transition-colors" />
                                     </button>
-                                    <div className="col-span-8" />
+                                    <div className="col-span-8 flex items-center justify-end pr-3">
+                                        {/* Le lien appartient a l'evenement, il est donc pose sur sa ligne. */}
+                                        <EventInviteLink
+                                            inviteUrl={event.invite_token ? getInviteUrl(event.invite_token) : ""}
+                                            eventName={event.event_name}
+                                        />
+                                    </div>
                                     <label className="flex items-center justify-center gap-1.5 py-2 cursor-pointer select-none">
                                         <span className="text-xs text-gray-500">Renouvellement auto</span>
                                         <Switch
