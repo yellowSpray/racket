@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react"
 import { EventsManager } from "@/components/admin/settings/EventsManager"
-import { EventParamsManager } from "@/components/admin/settings/EventParamsManager"
-import { ClubConfigManager } from "@/components/admin/settings/ClubConfigManager"
+import { SettingsManager } from "@/components/admin/settings/SettingsManager"
 import { UsersManager } from "@/components/admin/settings/UsersManager"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
@@ -60,8 +59,7 @@ export function AdminSettings () {
             )}
             <TabsList className="h-10 rounded-full">
                 <TabsTrigger value="manage">Gestion</TabsTrigger>
-                <TabsTrigger value="events">Événements</TabsTrigger>
-                <TabsTrigger value="clubs">Mon club</TabsTrigger>
+                <TabsTrigger value="settings">Paramètres</TabsTrigger>
                 <TabsTrigger value="users">Utilisateurs</TabsTrigger>
             </TabsList>
         </>
@@ -73,14 +71,13 @@ export function AdminSettings () {
             {headerPortal}
             {actionsPortal}
             <div className="flex-1 min-h-0 overflow-hidden rounded-md">
-                <TabsContent value="events" className="h-full">
-                    <EventParamsManager />
-                </TabsContent>
                 <TabsContent value="manage" className="h-full">
                     <EventsManager />
                 </TabsContent>
-                <TabsContent value="clubs" className="h-full">
-                    <ClubConfigManager />
+                {/* Les onglets Evenements et Mon club ne contenaient que des
+                    reglages de club : ils sont reunis ici. */}
+                <TabsContent value="settings" className="h-full">
+                    <SettingsManager />
                 </TabsContent>
                 <TabsContent value="users" className="h-full">
                     <UsersManager
