@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { UnplacedMatchesPanel } from '../UnplacedMatchesPanel'
 import type { SchedulerDiagnostic } from '@/lib/schedulerSuggestions'
-import type { UnplacedMatch } from '@/lib/matchScheduler'
 
 function makeDiagnostic(overrides: Partial<SchedulerDiagnostic> = {}): SchedulerDiagnostic {
   return {

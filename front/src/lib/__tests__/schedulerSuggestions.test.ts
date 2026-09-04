@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  analyzeUnplaced,
-  type SchedulerDiagnostic,
-  type Suggestion,
-} from '@/lib/schedulerSuggestions'
+import { analyzeUnplaced } from '@/lib/schedulerSuggestions'
 import type { UnplacedMatch } from '@/lib/matchScheduler'
 import type { MatchPairing } from '@/types/match'
 

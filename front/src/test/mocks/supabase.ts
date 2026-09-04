@@ -6,7 +6,13 @@ export interface MockQueryBuilder {
     select: MockFn; insert: MockFn; update: MockFn; delete: MockFn; upsert: MockFn
     eq: MockFn; in: MockFn; order: MockFn; single: MockFn; maybeSingle: MockFn
     limit: MockFn; lt: MockFn; neq: MockFn; not: MockFn; is: MockFn; or: MockFn
-    then: MockFn
+    gte: MockFn
+    /**
+     * Soit un espion, soit le `then` d'une promesse liee : les tests posent
+     * directement `builder.then = promesse.then.bind(promesse)` pour resoudre
+     * la requete sans passer par `_resolve`.
+     */
+    then: MockFn | PromiseLike<unknown>["then"]
     _resolve: (data: unknown) => MockQueryBuilder
     _reject: (error: string) => MockQueryBuilder
 }
@@ -40,6 +46,7 @@ export function createMockQueryBuilder(): MockQueryBuilder {
     qb.not = vi.fn(() => qb)
     qb.is = vi.fn(() => qb)
     qb.or = vi.fn(() => qb)
+    qb.gte = vi.fn(() => qb)
     qb.then = vi.fn()
     qb._resolve = (data: unknown) => {
         const p = Promise.resolve({ data, error: null })

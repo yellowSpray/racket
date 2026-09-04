@@ -149,10 +149,10 @@ describe('suggestGroupForPlayer', () => {
       makeGroup(
         'g1',
         'Box 1',
-        [makePlayer('1', '20'), makePlayer('2', 20)],
+        [makePlayer('1', 20), makePlayer('2', 20)],
         2, // full
       ),
-      makeGroup('g2', 'Box 2', [makePlayer('3', '10')]),
+      makeGroup('g2', 'Box 2', [makePlayer('3', 10)]),
     ]
     const result = suggestGroupForPlayer(20, groups)
     expect(result).not.toBeNull()

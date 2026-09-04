@@ -4,7 +4,6 @@ import {
     getMarginMultiplier,
     calculateEloChange,
     computeEloUpdates,
-    DEFAULT_K_FACTOR,
     type EloMatchResult,
 } from "../eloEngine"
 

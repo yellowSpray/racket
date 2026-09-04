@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import type { MockQueryBuilder, MockSupabase } from '@/test/mocks/supabase'
@@ -72,9 +72,10 @@ const mockEvents = [
 ]
 
 describe('EventContext', () => {
-    let mockGetItem: ReturnType<typeof vi.fn>
-    let mockSetItem: ReturnType<typeof vi.fn>
-    let mockRemoveItem: ReturnType<typeof vi.fn>
+    // Les signatures sont celles de Storage : mockImplementation les exige.
+    let mockGetItem: Mock<(key: string) => string | null>
+    let mockSetItem: Mock<(key: string, value: string) => void>
+    let mockRemoveItem: Mock<(key: string) => void>
 
     beforeEach(() => {
         vi.clearAllMocks()
