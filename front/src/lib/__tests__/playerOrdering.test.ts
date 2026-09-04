@@ -48,7 +48,7 @@ function fixture() {
 
     const promotionResult = calculatePromotions(
         previousStandings,
-        { id: '', club_id: '', promoted_count: 2, relegated_count: 2 },
+        { promoted_count: 2, relegated_count: 2 },
         previousGroups.map(g => g.id),
     )
 

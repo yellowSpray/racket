@@ -1,5 +1,6 @@
 import type { Match } from "@/types/match"
-import type { ScorePointsEntry, ScoringRules } from "@/types/settings"
+import type { ScorePointsEntry } from "@/types/settings"
+import type { ScoringSource } from "@/lib/effectiveRules"
 import type { GroupStandings, PlayerStanding } from "@/types/ranking"
 
 export type MatchOutcome = "win" | "loss" | "walkover_win" | "walkover_loss" | "absence"
@@ -148,7 +149,9 @@ export function calculateGroupStandings(
     groupId: string,
     groupName: string,
     players: { id: string; first_name: string; last_name: string }[],
-    scoringRules: ScoringRules
+    // Seul le bareme est lu : accepter la forme minimale evite de fabriquer
+    // de faux objets ScoringRules avec un id et un club_id vides.
+    scoringRules: ScoringSource
 ): GroupStandings {
     // Initialiser les stats de chaque joueur
     const statsMap = new Map<string, PlayerStats>()

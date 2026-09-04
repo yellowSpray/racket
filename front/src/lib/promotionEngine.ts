@@ -1,5 +1,5 @@
 import type { GroupStandings, PromotionMove, PromotionResult } from "@/types/ranking"
-import type { PromotionRules } from "@/types/settings"
+import type { PromotionSource } from "@/lib/effectiveRules"
 
 /**
  * Calcule les promotions et relegations entre groupes sur base des classements.
@@ -11,7 +11,8 @@ import type { PromotionRules } from "@/types/settings"
  */
 export function calculatePromotions(
   standings: GroupStandings[],
-  promotionRules: PromotionRules,
+  // Seuls les deux compteurs sont lus, d'ou la forme minimale.
+  promotionRules: PromotionSource,
   groupOrder: string[]
 ): PromotionResult {
   const { promoted_count, relegated_count } = promotionRules

@@ -46,7 +46,7 @@ function realCase() {
     const previousStandings = rosters.map(([id, name, ids]) => standings(id, name, ids))
     const promotionResult = calculatePromotions(
         previousStandings,
-        { id: '', club_id: '', promoted_count: 2, relegated_count: 2 },
+        { promoted_count: 2, relegated_count: 2 },
         previousGroups.map(g => g.id),
     )
     return { previousGroups, promotionResult }
@@ -159,9 +159,9 @@ describe('coherence avec le moteur de classement', () => {
         const gs = groups.map(g => calculateGroupStandings(
             [], g.id, g.group_name,
             (g.players ?? []).map(p => ({ id: p.id, first_name: p.first_name, last_name: p.last_name })),
-            { id: '', club_id: '', score_points: [] },
+            { score_points: [] },
         ))
-        const result = calculatePromotions(gs, { id: '', club_id: '', promoted_count: 1, relegated_count: 1 }, ['g1', 'g2'])
+        const result = calculatePromotions(gs, { promoted_count: 1, relegated_count: 1 }, ['g1', 'g2'])
         const after = applyPromotionMoves(groups, result)
 
         const lastOfBox1 = gs[0].standings[gs[0].standings.length - 1].playerId
