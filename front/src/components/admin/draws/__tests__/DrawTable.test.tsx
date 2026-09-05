@@ -158,6 +158,21 @@ describe('DrawTable', () => {
       expect(screen.queryByText('R.')).toBeNull()
     })
 
+    it('reduit le tableau plutot que de le faire defiler', () => {
+      /*
+       * Passe une certaine etroitesse, les colonnes ne retrecissent plus. Les
+       * anciens tableaux du club etaient des images, qui se redimensionnent :
+       * on reproduit ce comportement avec zoom, pilote par useFitToWidth.
+       */
+      const { container } = render(<DrawTable group={makeGroup({ max_players: 6 })} />)
+
+      const cadre = container.querySelector('[data-draw-table]') as HTMLElement
+
+      // jsdom ne mesure rien, le facteur vaut donc 1 : ce qui compte ici est
+      // que le cadre soit bien pilote.
+      expect(cadre.style.zoom).toBe('1')
+    })
+
     it('raccourcit le libelle de la colonne des points', () => {
       const { container } = render(<DrawTable group={makeGroup({ max_players: 6 })} />)
 

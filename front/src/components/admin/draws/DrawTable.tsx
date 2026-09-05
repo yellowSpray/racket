@@ -2,10 +2,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import type { Group, GroupPlayer } from "@/types/draw";
 import type { Match } from "@/types/match";
 import { DEFAULT_SCORE_POINTS, type ScoringSource } from "@/lib/effectiveRules";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { calculateGroupStandings, getPointsForScore } from "@/lib/rankingEngine";
 import type { PlayerMovement } from "@/lib/playerMovement";
 import { PlayerMovementBadge } from "./PlayerMovementBadge";
+import { useFitToWidth } from "@/hooks/useFitToWidth";
 
 interface DrawTableProps {
     group: Group
@@ -152,12 +153,20 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
     )
 
     /*
+     * Quand meme les colonnes au plus court ne suffisent pas, on reduit
+     * l'affichage au lieu de faire apparaitre une barre : c'est le
+     * comportement qu'avaient les anciens tableaux publies en image.
+     */
+    const cadre = useRef<HTMLDivElement>(null)
+    useFitToWidth(cadre, `${slots.length}:${matches.length}`, "table")
+
+    /*
      * Le cadre defile horizontalement au lieu de rogner : une box de six
      * joueurs depasse la largeur d'un telephone, et overflow-hidden coupait
      * les dernieres colonnes sans que rien ne l'indique.
      */
     return (
-        <div className="rounded-lg overflow-x-auto h-full border border-foreground" data-draw-table>
+        <div ref={cadre} className="rounded-lg overflow-x-auto h-full border border-foreground" data-draw-table>
             <Table className="w-full h-full border-collapse">
                 <TableHeader>
                     <TableRow>
