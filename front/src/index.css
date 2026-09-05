@@ -62,6 +62,18 @@ html[data-embed] #root {
   height: auto;
 }
 
+/*
+ * La coquille de la page integree est blanche, le fond de l'application est
+ * legerement grise. Des que le cadre est un peu plus haut que son contenu, ne
+ * serait-ce que d'un pixel d'arrondi, cette difference se lit comme un trait
+ * sous la derniere ligne. Ici la coquille est toute la page : son fond et
+ * celui du document doivent etre le meme.
+ */
+html[data-embed],
+html[data-embed] body {
+  background-color: #fff;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
