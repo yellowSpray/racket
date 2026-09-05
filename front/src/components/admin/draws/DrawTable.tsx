@@ -128,6 +128,30 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
     }
 
     /*
+     * Sous 640 pixels la colonne des noms est bornee : tronquer « Renaud
+     * Vandenplas » y coupait le nom, la seule partie qui distingue deux
+     * joueurs d'une box. L'initiale du prenom suffit et rend une quarantaine
+     * de pixels a la grille. Sans nom de famille, abreger ne designerait plus
+     * personne : on garde alors le prenom entier.
+     *
+     * Les deux libelles sont rendus, le CSS choisit lequel s'affiche.
+     */
+    const shortName = (p: GroupPlayer) => {
+        const first = (p.first_name ?? "").trim()
+        const last = (p.last_name ?? "").trim()
+        if (!last) return first
+        if (!first) return last
+        return `${first.charAt(0).toUpperCase()}. ${last}`
+    }
+
+    const PlayerName = ({ player }: { player: GroupPlayer }) => (
+        <>
+            <span className="sm:hidden">{shortName(player)}</span>
+            <span className="hidden sm:inline">{`${player.first_name} ${player.last_name}`.trim()}</span>
+        </>
+    )
+
+    /*
      * Le cadre defile horizontalement au lieu de rogner : une box de six
      * joueurs depasse la largeur d'un telephone, et overflow-hidden coupait
      * les dernieres colonnes sans que rien ne l'indique.
@@ -162,7 +186,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                         <TableRow key={rowIndex} className="group hover:bg-transparent">
                             <TableCell className={`font-medium ${!player ? 'bg-gray-200' : 'bg-yellow-100'} border-r border-b border-foreground group-last:border-b-0`}>
                                 {player ? (
-                                    <div className="flex items-center px-1 py-0.5 w-24 sm:w-auto">
+                                    <div className="flex items-center px-1 py-0.5 w-[5.5rem] sm:w-auto">
                                         <span className="font-bold text-xs shrink-0 w-4">{getPlayerLetter(rowIndex)}</span>
                                         <div className="flex-1 text-center min-w-0">
                                             <p className="text-xs truncate font-bold flex items-center justify-center gap-1">
@@ -179,10 +203,10 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                                         }}
                                                         className="truncate cursor-pointer hover:underline"
                                                     >
-                                                        {player.first_name} {player.last_name}
+                                                        <PlayerName player={player} />
                                                     </span>
                                                 ) : (
-                                                    <span className="truncate">{player.first_name} {player.last_name}</span>
+                                                    <span className="truncate"><PlayerName player={player} /></span>
                                                 )}
                                                 {playerMovements?.get(player.id) && (
                                                     <PlayerMovementBadge movement={playerMovements.get(player.id)!} />
@@ -192,7 +216,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="flex items-center px-1 py-0.5 w-24 sm:w-auto">
+                                    <div className="flex items-center px-1 py-0.5 w-[5.5rem] sm:w-auto">
                                         <span className="font-bold text-xs shrink-0 w-4">{getPlayerLetter(rowIndex)}</span>
                                         <div className="flex-1 text-center min-w-0">
                                             <p className="text-xs truncate invisible">placeholder</p>

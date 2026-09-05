@@ -128,8 +128,34 @@ describe('DrawTable', () => {
       const cellule = screen.getByText('Alice A').closest('td')!
       const contenu = cellule.querySelector('div')!
 
-      expect(contenu.className).toContain('w-24')
+      expect(contenu.className).toContain('w-[5.5rem]')
       expect(contenu.className).toContain('sm:w-auto')
+    })
+
+    it('abrege le prenom et garde le nom entier', () => {
+      /*
+       * Tronquer « Renaud Vandenplas » coupait le nom, la seule partie qui
+       * distingue deux joueurs. L'initiale du prenom suffit dans une box de
+       * six, et rend une quarantaine de pixels a la grille.
+       */
+      const players = [makePlayer({ id: 'p1', first_name: 'Renaud', last_name: 'Vandenplas' })]
+      render(<DrawTable group={makeGroup({ players, max_players: 2 })} />)
+
+      const court = screen.getByText('R. Vandenplas')
+      const long = screen.getByText('Renaud Vandenplas')
+
+      expect(court.className).toContain('sm:hidden')
+      expect(long.className).toContain('hidden')
+      expect(long.className).toContain('sm:inline')
+    })
+
+    it('garde le prenom entier quand le joueur n a pas de nom', () => {
+      // Abreger donnerait « R. », qui ne designe plus personne.
+      const players = [makePlayer({ id: 'p1', first_name: 'Renaud', last_name: '' })]
+      render(<DrawTable group={makeGroup({ players, max_players: 2 })} />)
+
+      expect(screen.getAllByText('Renaud').length).toBeGreaterThanOrEqual(2)
+      expect(screen.queryByText('R.')).toBeNull()
     })
 
     it('raccourcit le libelle de la colonne des points', () => {
