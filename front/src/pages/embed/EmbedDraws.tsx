@@ -58,18 +58,21 @@ export function EmbedDraws() {
      * l'annonce. useLayoutEffect plutot que useEffect : la mesure doit avoir
      * lieu avant que le navigateur peigne, sinon la premiere valeur envoyee
      * est celle d'un contenu encore vide.
+     *
+     * L'observateur sert de declencheur, pas de source : son `contentRect`
+     * decrit la boite de contenu et ignore les marges interieures. Annoncer
+     * cette valeur laissait le cadre trop court de ces marges, d'ou une
+     * petite barre de defilement residuelle. On remesure donc le noeud.
      */
     useLayoutEffect(() => {
         const node = shell.current
         if (!node) return
 
-        publishEmbedHeight(node.getBoundingClientRect().height)
+        const annoncer = () => publishEmbedHeight(node.getBoundingClientRect().height)
 
-        const observer = new ResizeObserver(entries => {
-            for (const entry of entries) {
-                publishEmbedHeight(entry.contentRect.height)
-            }
-        })
+        annoncer()
+
+        const observer = new ResizeObserver(annoncer)
         observer.observe(node)
         return () => observer.disconnect()
     }, [draws, loading, error])
@@ -112,34 +115,37 @@ export function EmbedDraws() {
 
     return (
         <div ref={shell} className="bg-white p-4 sm:p-6 flex flex-col gap-4">
-            <header className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            {/*
+              * Cet en-tete remplace celui du site hote : c'est lui qui porte
+              * l'identite du club. Il se lit donc comme une carte de titre,
+              * en colonne centree, logo d'abord.
+              */}
+            <header className="flex flex-col items-center gap-1.5 text-center">
                 {/* object-contain et non cover : un logo de club est souvent
                     large, le recadrer en rond le tronquait. */}
                 {draws.logo_url && (
                     <img
                         src={draws.logo_url}
                         alt=""
-                        className="h-10 w-auto max-w-32 object-contain shrink-0"
+                        className="mb-1 h-14 w-auto max-w-40 object-contain"
                     />
                 )}
-                <div className="flex flex-col min-w-0">
-                    <h1 className="text-base font-semibold leading-tight truncate">
-                        {draws.event_name}
-                        <span className="text-muted-foreground font-normal">
-                            {" "}· Série {current}
-                        </span>
-                    </h1>
-                    <p className="text-xs text-muted-foreground truncate">{draws.club_name}</p>
-                </div>
+                <h1 className="text-base font-semibold leading-tight text-balance">
+                    {draws.event_name}
+                    <span className="text-muted-foreground font-normal">
+                        {" "}· Série {current}
+                    </span>
+                </h1>
+                <p className="text-xs text-muted-foreground">{draws.club_name}</p>
                 {majDate && (
-                    <span className="ml-auto shrink-0 rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground">
+                    <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground">
                         Mis à jour le {majDate}
                     </span>
                 )}
             </header>
 
             {showNav && (
-                <nav aria-label="Séries" className="flex flex-wrap items-center gap-1.5">
+                <nav aria-label="Séries" className="flex flex-wrap items-center justify-center gap-1.5">
                     {draws.series.map(s => {
                         const active = s.round_number === current
                         return (
