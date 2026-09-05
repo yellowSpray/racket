@@ -10,11 +10,12 @@ import { useHeaderSlot, useHeaderActions } from "@/contexts/HeaderSlotContext"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 import { useNavigate } from "react-router"
-import { Settings01Icon, PencilEdit02Icon, HashtagIcon, StarIcon, Download01Icon } from "hugeicons-react"
+import { Settings01Icon, PencilEdit02Icon, HashtagIcon, StarIcon, Download01Icon, CodeIcon } from "hugeicons-react"
 import { Button } from "@/components/ui/button"
 import { DrawTable } from "@/components/admin/draws/DrawTable"
 import { MatchScoreDialog } from "@/components/admin/draws/MatchScoreDialog"
 import { PlayerInfoDialog } from "@/components/admin/draws/PlayerInfoDialog"
+import { EmbedDrawsDialog } from "@/components/admin/draws/EmbedDrawsDialog"
 import { normalizeScoreForDb, computeWinnerId } from "@/lib/matchScore"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { sortPlayersByEarliestDates } from "@/lib/matchScheduler"
@@ -56,6 +57,7 @@ export function AdminDraws () {
     const { scoring } = useEffectiveRules(currentEvent?.id ?? null, profile?.club_id ?? null)
     const { players } = usePlayers()
     const [displayMode, setDisplayMode] = useState<"score" | "points">("score")
+    const [embedOpen, setEmbedOpen] = useState(false)
 
     /*
      * Fiche complète du joueur sélectionné. Elle peut manquer : un joueur retiré
@@ -109,6 +111,16 @@ export function AdminDraws () {
                 ) : (
                     <HashtagIcon size="20" strokeWidth={2} />
                 )}
+            </Button>
+            {/* Entre les deux boutons existants : afficher, partager, exporter. */}
+            <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setEmbedOpen(true)}
+                title="Intégrer les tableaux sur un site"
+                aria-label="Intégrer les tableaux sur un site"
+            >
+                <CodeIcon size="20" strokeWidth={2} />
             </Button>
             {groups.length > 0 && (
                 <Button variant="outline" size="icon" onClick={handleExportPdf}>
@@ -207,6 +219,14 @@ export function AdminDraws () {
                 onOpenChange={(open) => { if (!open) setSelectedPlayer(null) }}
                 player={selectedPlayer}
                 details={selectedPlayerDetails}
+            />
+
+            <EmbedDrawsDialog
+                open={embedOpen}
+                onOpenChange={setEmbedOpen}
+                embedToken={currentEvent?.embed_token ?? null}
+                eventName={currentEvent?.event_name ?? ""}
+                roundNumber={currentRound?.round_number ?? null}
             />
         </div>
         </>

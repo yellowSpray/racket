@@ -26,6 +26,7 @@ const AdminEmail = lazy(() => import("@/pages/admin/AdminEmail").then(m => ({ de
 const AdminOnboarding = lazy(() => import("@/pages/admin/AdminOnboarding").then(m => ({ default: m.AdminOnboarding })))
 const ProfilePage = lazy(() => import("@/pages/shared/ProfilePage").then(m => ({ default: m.ProfilePage })))
 const ResetPassword = lazy(() => import("@/pages/auth/ResetPassword"))
+const EmbedDraws = lazy(() => import("@/pages/embed/EmbedDraws").then(m => ({ default: m.EmbedDraws })))
 
 function withSuspense(Component: React.LazyExoticComponent<React.ComponentType>) {
     return (
@@ -93,7 +94,15 @@ const router = createBrowserRouter([
                 ]
             }
         ]
-    }
+    },
+
+    /*
+     * Tableaux integres sur le site d'un club. Route soeur de « / », donc
+     * hors de Rootlayout : pas d'en-tete, pas de pied de page, et surtout pas
+     * d'EventProvider, qui irait chercher des evenements pour un visiteur non
+     * connecte. Le jeton de l'URL est la seule cle.
+     */
+    { path: "/embed/tableaux/:token", element: withSuspense(EmbedDraws) },
 
 ])
 

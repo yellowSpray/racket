@@ -49,6 +49,8 @@ export interface Event {
   open_to_visitors?: boolean
   auto_renew?: boolean
   invite_token?: string
+  /** Jeton de lecture publique des tableaux, distinct de invite_token. */
+  embed_token?: string
   calendar_type?: CalendarType
   created_at?: string
   updated_at?: string
