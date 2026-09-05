@@ -66,4 +66,19 @@ describe("buildEmbedSnippet", () => {
     it("rend une chaine vide sans jeton", () => {
         expect(buildEmbedSnippet("https://eventfest.app", "")).toBe("")
     })
+
+    it("n ajoute aucun script par defaut", () => {
+        const html = buildEmbedSnippet("https://eventfest.app", TOKEN)
+
+        expect(html).not.toContain("<script")
+    })
+
+    it("ajoute le script de hauteur quand on le demande", () => {
+        // Sans lui, la hauteur reste figee : barre de defilement ou vide.
+        const html = buildEmbedSnippet("https://eventfest.app", TOKEN, { autoResize: true })
+
+        expect(html).toContain("<iframe")
+        expect(html).toContain("<script>")
+        expect(html).toContain("addEventListener")
+    })
 })

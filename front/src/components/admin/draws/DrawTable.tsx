@@ -115,8 +115,13 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
         return `${parts[1]}-${parts[0]}`
     }
 
+    /*
+     * Le cadre defile horizontalement au lieu de rogner : une box de six
+     * joueurs depasse la largeur d'un telephone, et overflow-hidden coupait
+     * les dernieres colonnes sans que rien ne l'indique.
+     */
     return (
-        <div className="rounded-lg overflow-hidden h-full border border-foreground" data-draw-table>
+        <div className="rounded-lg overflow-x-auto h-full border border-foreground" data-draw-table>
             <Table className="w-full h-full border-collapse">
                 <TableHeader>
                     <TableRow>

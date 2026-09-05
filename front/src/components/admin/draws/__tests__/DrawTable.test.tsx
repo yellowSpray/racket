@@ -54,6 +54,17 @@ describe('DrawTable', () => {
     render(<DrawTable group={makeGroup()} />)
   })
 
+  it('laisse le tableau defiler plutot que de le rogner', () => {
+    // Une box de six joueurs fait environ 430 pixels de large : elle deborde
+    // sur telephone et sur un petit ecran. Avec overflow-hidden, les
+    // dernieres colonnes etaient coupees sans que rien ne l'indique.
+    const { container } = render(<DrawTable group={makeGroup({ max_players: 6 })} />)
+
+    const cadre = container.querySelector('[data-draw-table]')!
+    expect(cadre.className).toContain('overflow-x-auto')
+    expect(cadre.className).not.toContain('overflow-hidden')
+  })
+
   it('displays the group name in the header', () => {
     render(<DrawTable group={makeGroup({ group_name: 'Groupe B' })} />)
     expect(screen.getByText('Groupe B')).toBeInTheDocument()

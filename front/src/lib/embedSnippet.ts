@@ -7,15 +7,23 @@
  * permet au club de coller le code une seule fois.
  */
 
+import { buildEmbedResizeScript } from "@/lib/embedHeight"
+
 const EMBED_PATH = "/embed/tableaux"
 
 export interface EmbedSnippetOptions {
     /** Serie a epingler. Omis, l'embed suit la serie active. */
     roundNumber?: number
-    /** Hauteur du cadre en pixels. Un iframe n'a pas de hauteur automatique. */
+    /** Hauteur de depart en pixels, avant que le cadre annonce la sienne. */
     height?: number
     /** Titre du cadre, lu par les lecteurs d'ecran. */
     title?: string
+    /**
+     * Ajoute le script qui ajuste la hauteur du cadre sur son contenu.
+     * Sans lui, la hauteur reste celle de `height`, avec une barre de
+     * defilement ou du vide selon le nombre de boxes.
+     */
+    autoResize?: boolean
 }
 
 /** Echappe ce qui casserait un attribut HTML entre guillemets doubles. */
@@ -47,7 +55,7 @@ export function buildEmbedSnippet(
     const height = options.height ?? 800
     const title = escapeAttribute(options.title ?? "Tableaux")
 
-    return [
+    const iframe = [
         `<iframe src="${url}"`,
         `        title="${title}"`,
         `        width="100%"`,
@@ -55,4 +63,8 @@ export function buildEmbedSnippet(
         `        style="border:0"`,
         `        loading="lazy"></iframe>`,
     ].join("\n")
+
+    if (!options.autoResize) return iframe
+
+    return `${iframe}\n${buildEmbedResizeScript(origin)}`
 }

@@ -37,6 +37,7 @@ export function EmbedDrawsDialog({
     roundNumber,
 }: EmbedDrawsDialogProps) {
     const [pinned, setPinned] = useState(false)
+    const [autoResize, setAutoResize] = useState(true)
     const [height, setHeight] = useState(800)
     const [copied, setCopied] = useState<"lien" | "code" | null>(null)
 
@@ -52,8 +53,9 @@ export function EmbedDrawsDialog({
             roundNumber: pinnedRound,
             height,
             title: `Tableaux ${eventName}`,
+            autoResize,
         }),
-        [embedToken, pinnedRound, height, eventName],
+        [embedToken, pinnedRound, height, eventName, autoResize],
     )
 
     const copy = async (value: string, which: "lien" | "code") => {
@@ -100,9 +102,28 @@ export function EmbedDrawsDialog({
                             />
                         </div>
 
+                        <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
+                            <div className="flex flex-col gap-0.5">
+                                <Label htmlFor="embed-resize" className="text-sm">
+                                    Ajuster la hauteur automatiquement
+                                </Label>
+                                <span className="text-xs text-muted-foreground">
+                                    {autoResize
+                                        ? "Le cadre s'adapte au nombre de boxes. Collez le script avec l'iframe."
+                                        : "Hauteur figée, avec une barre de défilement si besoin."}
+                                </span>
+                            </div>
+                            <Switch
+                                id="embed-resize"
+                                checked={autoResize}
+                                onCheckedChange={setAutoResize}
+                                aria-label="Ajuster la hauteur automatiquement"
+                            />
+                        </div>
+
                         <div className="flex flex-col gap-2">
                             <Label htmlFor="embed-height" className="text-xs text-muted-foreground">
-                                Hauteur du cadre, en pixels
+                                {autoResize ? "Hauteur de départ, en pixels" : "Hauteur du cadre, en pixels"}
                             </Label>
                             <Input
                                 id="embed-height"

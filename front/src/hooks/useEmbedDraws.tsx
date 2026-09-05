@@ -20,6 +20,14 @@ export interface EmbedRound {
     start_date: string | null
     end_date: string | null
     status: string
+    /** Derniere saisie de score, `null` tant qu'aucun match n'a de resultat. */
+    updated_at: string | null
+}
+
+/** Une serie de l'evenement, pour la navigation du cadre. */
+export interface EmbedSeries {
+    round_number: number
+    status: string
 }
 
 export interface EmbedDraws {
@@ -27,6 +35,7 @@ export interface EmbedDraws {
     logo_url: string | null
     event_name: string
     round: EmbedRound
+    series: EmbedSeries[]
     groups: Group[]
     matches: Match[]
 }
@@ -39,6 +48,7 @@ interface EmbedPayload {
     logo_url?: string | null
     event_name?: string
     round?: EmbedRound
+    series?: EmbedSeries[]
     groups?: {
         id: string
         round_id: string
@@ -90,6 +100,7 @@ export function useEmbedDraws(token: string | undefined, roundNumber: number | n
             logo_url: payload.logo_url ?? null,
             event_name: payload.event_name ?? "",
             round: payload.round as EmbedRound,
+            series: payload.series ?? [],
             // `phone` et `power_ranking` ne sortent pas de la base : ils sont
             // remplis de valeurs vides pour satisfaire le type partage avec
             // l'application, et ne sont affiches nulle part sur cette page.
