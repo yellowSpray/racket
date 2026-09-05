@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from "react-router"
 import { useEmbedDraws } from "@/hooks/useEmbedDraws"
 import { DrawTable } from "@/components/admin/draws/DrawTable"
 import { sortGroupsByName } from "@/lib/utils"
+import { sortPlayersByEarliestDates } from "@/lib/matchScheduler"
 import { publishEmbedHeight } from "@/lib/embedHeight"
 
 /**
@@ -39,6 +40,17 @@ export function EmbedDraws() {
     )
 
     const shell = useRef<HTMLDivElement>(null)
+
+    /*
+     * `#root` est fige a 100vh pour la coquille applicative. La page integree
+     * doit au contraire grandir avec son contenu, sinon elle defile dans
+     * l'iframe qui defile deja. Le marqueur pose ici active la regle
+     * `html[data-embed] #root` de index.css.
+     */
+    useLayoutEffect(() => {
+        document.documentElement.dataset.embed = "true"
+        return () => { delete document.documentElement.dataset.embed }
+    }, [])
 
     /*
      * La page hote ne peut pas deviner la hauteur d'un cadre. On la mesure
@@ -101,11 +113,13 @@ export function EmbedDraws() {
     return (
         <div ref={shell} className="bg-white p-4 sm:p-6 flex flex-col gap-4">
             <header className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                {/* object-contain et non cover : un logo de club est souvent
+                    large, le recadrer en rond le tronquait. */}
                 {draws.logo_url && (
                     <img
                         src={draws.logo_url}
                         alt=""
-                        className="h-10 w-10 rounded-full object-cover shrink-0"
+                        className="h-10 w-auto max-w-32 object-contain shrink-0"
                     />
                 )}
                 <div className="flex flex-col min-w-0">
@@ -153,14 +167,24 @@ export function EmbedDraws() {
                 </p>
             ) : (
                 <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
-                    {groups.map(group => (
-                        <DrawTable
-                            key={group.id}
-                            group={group}
-                            matches={draws.matches.filter(m => m.group_id === group.id)}
-                            displayMode="score"
-                        />
-                    ))}
+                    {groups.map(group => {
+                        const groupMatches = draws.matches.filter(m => m.group_id === group.id)
+                        /*
+                         * Meme tri que la page des tableaux : les lettres A a F
+                         * suivent les premieres dates de match, pas l'ordre
+                         * alphabetique. Sans cela, un joueur n'occupe pas la
+                         * meme ligne ici et dans l'application.
+                         */
+                        const sorted = sortPlayersByEarliestDates(group, groupMatches)
+                        return (
+                            <DrawTable
+                                key={group.id}
+                                group={sorted}
+                                matches={groupMatches}
+                                displayMode="score"
+                            />
+                        )
+                    })}
                 </div>
             )}
 

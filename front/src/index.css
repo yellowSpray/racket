@@ -52,6 +52,16 @@
   height: 100vh;
 }
 
+/*
+ * La page integree vit hors de la coquille applicative : elle doit grandir
+ * avec son contenu et laisser le cadre qui l'accueille gerer la hauteur.
+ * Enfermee dans les 100vh ci-dessus, elle defilait a l'interieur de l'iframe,
+ * qui defilait lui-meme : deux barres de defilement au lieu d'aucune.
+ */
+html[data-embed] #root {
+  height: auto;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
