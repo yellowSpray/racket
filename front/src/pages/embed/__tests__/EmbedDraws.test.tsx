@@ -114,6 +114,17 @@ describe('EmbedDraws', () => {
         expect(screen.getByText(/Mis à jour le/)).toBeInTheDocument()
     })
 
+    it('resserre ses marges sous 640 pixels', () => {
+        // Chaque pixel de marge est un pixel de moins pour la grille, qui est
+        // deja a l'etroit sur telephone.
+        const { container } = afficher()
+
+        const coque = container.querySelector('[data-embed-shell]')!
+
+        expect(coque.className).toContain('p-3')
+        expect(coque.className).toContain('sm:p-6')
+    })
+
     it('annonce la hauteur marges comprises', () => {
         /*
          * `contentRect` d'un ResizeObserver decrit la boite de contenu : il

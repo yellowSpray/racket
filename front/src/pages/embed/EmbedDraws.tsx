@@ -114,7 +114,7 @@ export function EmbedDraws() {
     const showNav = !pinned && draws.series.length > 1
 
     return (
-        <div ref={shell} className="bg-white p-4 sm:p-6 flex flex-col gap-4">
+        <div ref={shell} data-embed-shell className="bg-white p-3 sm:p-6 flex flex-col gap-4">
             {/*
               * Cet en-tete remplace celui du site hote : c'est lui qui porte
               * l'identite du club. Il se lit donc comme une carte de titre,

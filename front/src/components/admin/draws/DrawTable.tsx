@@ -78,6 +78,18 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
         return `${day}-${MONTHS[parseInt(month, 10) - 1]}`
     }
 
+    /*
+     * Meme date, en chiffres. Une box de six joueurs fait huit colonnes : sous
+     * 640 pixels, « 05-mars » est le libelle le plus large de la grille et il
+     * suffit a la faire deborder. Les deux versions sont rendues, le CSS
+     * choisit : pas de mesure de largeur en JavaScript, pas de premier rendu
+     * dans le mauvais format.
+     */
+    const formatDateShort = (dateStr: string) => {
+        const [, month, day] = dateStr.split('-')
+        return `${day}/${month}`
+    }
+
     const formatTime = (timeStr: string) => {
         const match = timeStr.match(/(\d{2}:\d{2})/)
         return match ? match[1] : timeStr
@@ -125,20 +137,23 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
             <Table className="w-full h-full border-collapse">
                 <TableHeader>
                     <TableRow>
-                        <TableHead className="bg-blue-200 font-bold min-w-24 text-center border-r border-b border-foreground">
+                        <TableHead className="bg-blue-200 font-bold min-w-20 sm:min-w-24 text-center border-r border-b border-foreground">
                             {group.group_name}
                         </TableHead>
 
                         {slots.map((slot, index) => (
                             <TableHead
                                 key={index}
-                                className={`text-center font-bold text-xs min-w-12 ${!slot ? 'bg-gray-200': 'bg-yellow-100'} border-r border-b border-foreground`}
+                                className={`text-center font-bold text-xs min-w-9 sm:min-w-12 ${!slot ? 'bg-gray-200': 'bg-yellow-100'} border-r border-b border-foreground`}
                             >
                                 {getPlayerLetter(index)}
                             </TableHead>
                         ))}
 
-                        <TableHead className="bg-green-200 text-center font-bold min-w-12 border-b border-foreground">Total</TableHead>
+                        <TableHead className="bg-green-200 text-center font-bold min-w-9 sm:min-w-12 border-b border-foreground">
+                            <span className="sm:hidden">Pts</span>
+                            <span className="hidden sm:inline">Total</span>
+                        </TableHead>
                     </TableRow>
                 </TableHeader>
 
@@ -147,7 +162,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                         <TableRow key={rowIndex} className="group hover:bg-transparent">
                             <TableCell className={`font-medium ${!player ? 'bg-gray-200' : 'bg-yellow-100'} border-r border-b border-foreground group-last:border-b-0`}>
                                 {player ? (
-                                    <div className="flex items-center px-1 py-0.5">
+                                    <div className="flex items-center px-1 py-0.5 w-24 sm:w-auto">
                                         <span className="font-bold text-xs shrink-0 w-4">{getPlayerLetter(rowIndex)}</span>
                                         <div className="flex-1 text-center min-w-0">
                                             <p className="text-xs truncate font-bold flex items-center justify-center gap-1">
@@ -177,7 +192,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="flex items-center px-1 py-0.5">
+                                    <div className="flex items-center px-1 py-0.5 w-24 sm:w-auto">
                                         <span className="font-bold text-xs shrink-0 w-4">{getPlayerLetter(rowIndex)}</span>
                                         <div className="flex-1 text-center min-w-0">
                                             <p className="text-xs truncate invisible">placeholder</p>
@@ -197,7 +212,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                     return (
                                         <TableCell
                                             key={colIndex}
-                                            className="bg-gray-400 p-2 border-r border-b border-foreground group-last:border-b-0"
+                                            className="bg-gray-400 p-1 sm:p-2 border-r border-b border-foreground group-last:border-b-0"
                                         >
                                             <div className="invisible text-[10px]">
                                                 <div>-</div>
@@ -212,7 +227,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                     return (
                                         <TableCell
                                             key={colIndex}
-                                            className="bg-gray-200 p-2 border-r border-b border-foreground group-last:border-b-0"
+                                            className="bg-gray-200 p-1 sm:p-2 border-r border-b border-foreground group-last:border-b-0"
                                         >
                                             <div className="invisible text-[10px]">
                                                 <div>-</div>
@@ -236,7 +251,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                 return (
                                     <TableCell
                                         key={colIndex}
-                                        className={`text-center text-xs p-2 transition-colors cursor-pointer border-r border-b border-foreground group-last:border-b-0
+                                        className={`text-center text-xs p-1 sm:p-2 transition-colors cursor-pointer border-r border-b border-foreground group-last:border-b-0
                                                 ${isAbsence
                                                     ? (isHovered ? 'bg-amber-100' : 'bg-amber-50')
                                                     : (isHovered ? 'bg-gray-200' : '')}
@@ -281,7 +296,10 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                             )
                                             return (
                                                 <div className="flex flex-col items-center gap-0.5">
-                                                    <div className="text-foreground text-[10px]">{formatDate(match.match_date)}</div>
+                                                    <div className="text-foreground text-[10px]">
+                                                        <span className="sm:hidden">{formatDateShort(match.match_date)}</span>
+                                                        <span className="hidden sm:inline">{formatDate(match.match_date)}</span>
+                                                    </div>
                                                     <div className="font-bold text-[10px]">{formatTime(match.match_time)}</div>
                                                 </div>
                                             )

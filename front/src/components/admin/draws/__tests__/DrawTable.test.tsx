@@ -65,6 +65,85 @@ describe('DrawTable', () => {
     expect(cadre.className).not.toContain('overflow-hidden')
   })
 
+  /*
+   * Une box de six joueurs fait huit colonnes. Sur telephone, la largeur
+   * incompressible depassait celle de l'ecran et chaque box defilait
+   * horizontalement. On recupere les pixels sur les marges, les planchers de
+   * largeur et la longueur du libelle de date, sans toucher a la grille.
+   */
+  describe('sur petit ecran', () => {
+    const deuxJoueurs = [
+      makePlayer({ id: 'p1', first_name: 'Alice', last_name: 'A' }),
+      makePlayer({ id: 'p2', first_name: 'Bob', last_name: 'B' }),
+    ]
+
+    it('propose une date courte a cote de la date longue', () => {
+      const matches = [makeMatch({ player1_id: 'p1', player2_id: 'p2', match_date: '2026-03-05' })]
+      render(<DrawTable group={makeGroup({ players: deuxJoueurs, max_players: 2 })} matches={matches} />)
+
+      const courte = screen.getAllByText('05/03')[0]
+      const longue = screen.getAllByText('05-mars')[0]
+
+      expect(courte.className).toContain('sm:hidden')
+      expect(longue.className).toContain('hidden')
+      expect(longue.className).toContain('sm:inline')
+    })
+
+    it('reduit les marges interieures des cellules', () => {
+      const matches = [makeMatch({ player1_id: 'p1', player2_id: 'p2', match_date: '2026-03-05' })]
+      render(<DrawTable group={makeGroup({ players: deuxJoueurs, max_players: 2 })} matches={matches} />)
+
+      const cellule = screen.getAllByText('05-mars')[0].closest('td')!
+
+      expect(cellule.className).toContain('p-1')
+      expect(cellule.className).toContain('sm:p-2')
+    })
+
+    it('abaisse le plancher de largeur des colonnes', () => {
+      const { container } = render(<DrawTable group={makeGroup({ group_name: 'Box 1', max_players: 6 })} />)
+
+      const entetes = Array.from(container.querySelectorAll('th'))
+      const nom = entetes[0]
+      const lettre = entetes[1]
+      const total = entetes[entetes.length - 1]
+
+      expect(nom.className).toContain('min-w-20')
+      expect(nom.className).toContain('sm:min-w-24')
+      expect(lettre.className).toContain('min-w-9')
+      expect(lettre.className).toContain('sm:min-w-12')
+      expect(total.className).toContain('min-w-9')
+      expect(total.className).toContain('sm:min-w-12')
+    })
+
+    it('borne la colonne des noms au lieu de la laisser s etaler', () => {
+      /*
+       * `truncate` pose white-space: nowrap : dans un tableau en disposition
+       * automatique, la colonne prend alors la largeur du nom le plus long et
+       * ne tronque jamais. Le plancher min-w ne sert a rien tant que le
+       * contenu n'est pas borne. Mesure a l'appui : la colonne faisait 155
+       * pixels sur un ecran de 320.
+       */
+      render(<DrawTable group={makeGroup({ players: deuxJoueurs, max_players: 2 })} />)
+
+      const cellule = screen.getByText('Alice A').closest('td')!
+      const contenu = cellule.querySelector('div')!
+
+      expect(contenu.className).toContain('w-24')
+      expect(contenu.className).toContain('sm:w-auto')
+    })
+
+    it('raccourcit le libelle de la colonne des points', () => {
+      const { container } = render(<DrawTable group={makeGroup({ max_players: 6 })} />)
+
+      const total = Array.from(container.querySelectorAll('th')).pop()!
+      const court = total.querySelector('.sm\\:hidden')!
+      const long = total.querySelector('.hidden')!
+
+      expect(court.textContent).toBe('Pts')
+      expect(long.textContent).toBe('Total')
+    })
+  })
+
   it('displays the group name in the header', () => {
     render(<DrawTable group={makeGroup({ group_name: 'Groupe B' })} />)
     expect(screen.getByText('Groupe B')).toBeInTheDocument()
