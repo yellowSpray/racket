@@ -195,7 +195,7 @@ export function EmbedDraws() {
             )}
 
             <p className="text-[11px] text-muted-foreground/70">
-                Tableaux publiés avec Event Fest
+                Tableaux publiés avec Racket Fest
             </p>
         </div>
     )

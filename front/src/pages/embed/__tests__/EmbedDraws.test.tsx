@@ -114,6 +114,15 @@ describe('EmbedDraws', () => {
         expect(screen.getByText(/Mis à jour le/)).toBeInTheDocument()
     })
 
+    it('signe du nom du produit', () => {
+        // Le pied du cadre est vu par tous les joueurs du club sur le site
+        // exterieur : c'est la seule mention du produit qu'ils croisent.
+        afficher()
+
+        expect(screen.getByText(/Racket Fest/)).toBeInTheDocument()
+        expect(screen.queryByText(/Event Fest/)).toBeNull()
+    })
+
     it('resserre ses marges sous 640 pixels', () => {
         // Chaque pixel de marge est un pixel de moins pour la grille, qui est
         // deja a l'etroit sur telephone.

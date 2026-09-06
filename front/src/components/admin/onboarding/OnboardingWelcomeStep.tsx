@@ -21,7 +21,7 @@ const steps = [
     {
         icon: Users,
         title: "C'est parti !",
-        description: "Votre club est opérationnel sur Event Fest.",
+        description: "Votre club est opérationnel sur Racket Fest.",
     },
 ]
 
@@ -29,7 +29,7 @@ export function OnboardingWelcomeStep({ onNext, className }: OnboardingWelcomeSt
     return (
         <div className={cn("flex flex-col items-center gap-10 py-8 max-w-xl mx-auto text-center", className)}>
             <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-bold tracking-tight">Bienvenue sur Event Fest</h1>
+                <h1 className="text-3xl font-bold tracking-tight">Bienvenue sur Racket Fest</h1>
                 <p className="text-muted-foreground text-base">
                     Votre club vient de rejoindre la plateforme. Suivez ces quelques étapes
                     pour démarrer rapidement.
