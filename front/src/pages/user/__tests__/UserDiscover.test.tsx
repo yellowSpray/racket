@@ -30,6 +30,24 @@ vi.mock('@/contexts/AuthContext', () => ({
     }),
 }))
 
+/*
+ * `UserDiscover` appelle `useClubConfig`, qui interroge la base. Sans ce faux,
+ * chaque test partait sur le reseau, attendait un demi-seconde le refus de
+ * connexion, et passait par le chemin d'erreur du hook : vert, mais pour la
+ * mauvaise raison, et quatorze traces d'echec dans la sortie. Ce fichier
+ * n'avait jamais tourne, personne ne l'avait vu.
+ */
+vi.mock('@/hooks/useClubConfig', () => ({
+    useClubConfig: () => ({
+        clubConfig: null,
+        scoringRules: null,
+        promotionRules: null,
+        loading: false,
+        error: null,
+        fetchClubConfig: vi.fn(),
+    }),
+}))
+
 vi.mock('@/hooks/useDiscoverEvents', () => ({
     useDiscoverEvents: () => ({
         events: mockEvents,

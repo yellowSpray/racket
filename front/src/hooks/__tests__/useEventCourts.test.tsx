@@ -264,11 +264,13 @@ describe('useEventCourts', () => {
             expect(returnVal).toBe(true)
             expect(result.current.courts).toHaveLength(3)
             expect(result.current.courts).toEqual(courtsData)
+            // La migration 14 a fait passer les terrains de l'evenement a la
+            // serie : la colonne est `round_id`, plus `event_id`.
             expect(mockSupabase._builder.insert).toHaveBeenCalledWith(
                 expect.arrayContaining([
-                    expect.objectContaining({ event_id: 'e1', court_name: 'Terrain 1', sort_order: 0 }),
-                    expect.objectContaining({ event_id: 'e1', court_name: 'Terrain 2', sort_order: 1 }),
-                    expect.objectContaining({ event_id: 'e1', court_name: 'Terrain 3', sort_order: 2 }),
+                    expect.objectContaining({ round_id: 'e1', court_name: 'Terrain 1', sort_order: 0 }),
+                    expect.objectContaining({ round_id: 'e1', court_name: 'Terrain 2', sort_order: 1 }),
+                    expect.objectContaining({ round_id: 'e1', court_name: 'Terrain 3', sort_order: 2 }),
                 ])
             )
         })

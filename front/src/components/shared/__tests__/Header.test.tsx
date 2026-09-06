@@ -9,9 +9,12 @@ vi.mock('react-router', () => ({
   Link: ({ children, to }: { children: React.ReactNode; to: string }) => <a href={to}>{children}</a>,
 }))
 
-vi.mock('@/components/ui/logo', () => ({
-  default: () => <div data-testid="logo">Logo</div>,
-}))
+/*
+ * Le Header n'affiche ni logo ni nom de produit : il reserve une colonne par
+ * un carre gris, `logo-placeholder`, que les tests ci-dessous couvrent. Deux
+ * tests cherchaient ici un composant logo et le texte « volena », reste d'un
+ * projet anterieur. Ils decrivaient une interface qui n'existe plus.
+ */
 
 const mockUseAuth = vi.fn()
 vi.mock('@/contexts/AuthContext', () => ({
@@ -47,13 +50,6 @@ describe('Header — alignement du bloc logo sur la sidebar', () => {
 })
 
 describe('Header', () => {
-  it('renders the logo and site name', () => {
-    mockUseAuth.mockReturnValue({ profile: null, isAuthenticated: false })
-    render(<Header />)
-    expect(screen.getByTestId('logo')).toBeInTheDocument()
-    expect(screen.getByText('volena')).toBeInTheDocument()
-  })
-
   it('renders login button when not authenticated', () => {
     mockUseAuth.mockReturnValue({ profile: null, isAuthenticated: false })
     render(<Header />)
@@ -82,13 +78,6 @@ describe('Header', () => {
     })
     render(<Header />)
     expect(screen.queryByText('Commencer')).not.toBeInTheDocument()
-  })
-
-  it('links logo to home page', () => {
-    mockUseAuth.mockReturnValue({ profile: null, isAuthenticated: false })
-    render(<Header />)
-    const homeLink = screen.getByText('volena').closest('a')
-    expect(homeLink).toHaveAttribute('href', '/')
   })
 
   it('links login button to /auth', () => {
