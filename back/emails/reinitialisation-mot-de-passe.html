@@ -1,0 +1,94 @@
+<!--
+  Gabarit Supabase : Reset Password.
+  A coller dans Authentication > Emails > Reset Password.
+  Objet suggere : Reinitialiser votre mot de passe Racket Fest
+
+  Tout est en style en ligne et en tableaux : Outlook ignore les feuilles de
+  style et les mises en page modernes. Aucune image n'est chargee de
+  l'exterieur, ce qui evite le message « images bloquees » et supprime tout
+  pretexte a un pixel de suivi.
+-->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0;padding:0;background-color:#f4f6f5;">
+  <tr>
+    <td align="center" style="padding:32px 12px;">
+
+      <!-- Texte d'apercu : ce que la boite affiche a cote de l'objet, sans etre visible dans le message. -->
+      <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#f4f6f5;">
+        Choisissez un nouveau mot de passe. Le lien est valable une heure.
+        &nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;
+      </div>
+
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background-color:#ffffff;border:1px solid #e4e9e6;border-radius:12px;">
+
+        <tr>
+          <td style="padding:28px 32px 0 32px;font-family:Nunito,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#66dea6;">
+            Racket Fest
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:16px 32px 0 32px;font-family:Nunito,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:22px;font-weight:700;line-height:1.3;color:#24312c;">
+            Choisissez un nouveau mot de passe
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:14px 32px 0 32px;font-family:Nunito,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#3c4a44;">
+            Une demande de réinitialisation vient d'être faite pour le compte
+            <strong style="color:#24312c;">{{ .Email }}</strong>.
+            Le bouton ci-dessous vous emmène sur une page où définir votre nouveau mot de passe.
+          </td>
+        </tr>
+
+        <tr>
+          <td align="left" style="padding:24px 32px 0 32px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td bgcolor="#66dea6" style="border-radius:8px;">
+                  <a href="{{ .ConfirmationURL }}"
+                     style="display:inline-block;padding:13px 26px;font-family:Nunito,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;color:#1c2622;text-decoration:none;border-radius:8px;">
+                    Définir mon mot de passe
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:22px 32px 0 32px;font-family:Nunito,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.6;color:#6b7770;">
+            Ce lien est valable une heure et ne fonctionne qu'une seule fois.
+            Passé ce délai, refaites une demande depuis la page de connexion.
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:14px 32px 24px 32px;font-family:Nunito,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.6;color:#6b7770;">
+            Si le bouton ne fonctionne pas, copiez cette adresse dans votre navigateur :
+            <br>
+            <span style="font-size:12px;color:#8a958f;word-break:break-all;">{{ .ConfirmationURL }}</span>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:24px 32px 28px 32px;font-family:Nunito,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.6;color:#6b7770;border-top:1px solid #eef1ef;">
+              Vous n'êtes à l'origine d'aucune demande ? Ignorez ce message.
+              Votre mot de passe actuel reste valable et rien ne change tant que
+              personne n'ouvre le lien.
+          </td>
+        </tr>
+
+      </table>
+
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;">
+        <tr>
+          <td align="center" style="padding:18px 16px 0 16px;font-family:Nunito,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;color:#8a958f;">
+            Racket Fest, gestion des boxes de squash.<br>
+            Message automatique, envoyé à {{ .Email }}. Vous pouvez répondre à cet email, il arrive dans une vraie boîte.
+          </td>
+        </tr>
+      </table>
+
+    </td>
+  </tr>
+</table>

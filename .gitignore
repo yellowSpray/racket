@@ -55,3 +55,9 @@ screenshot/
 
 #sheet
 *.xlsx
+
+#scripts d administration ponctuels
+back/scripts/
+
+#sorties de l application de bureau
+Claude outputs/
