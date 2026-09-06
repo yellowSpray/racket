@@ -1,0 +1,73 @@
+# ===========================================================================
+# Verification a chaque pull request et a chaque poussee sur main.
+#
+# Pourquoi ce fichier existe : deux deploiements ont ete bloques en deux jours
+# par des defauts qu'une machine Windows ne peut pas voir. Le premier etait une
+# casse de fichiers, `Button.tsx` dans l'index git contre `button` dans les
+# imports, invisible sur un systeme de fichiers insensible a la casse et fatale
+# sur Linux. Le second etait une construction qui ne passait que sur le poste.
+# Un runner Linux les attrape tous les deux avant la fusion.
+#
+# Les trois etapes reprennent exactement ce qui est verifie a la main :
+# le typage, les tests, la construction. Elles ne s'arretent pas a la premiere
+# qui echoue, pour qu'une seule execution dise tout ce qui ne va pas.
+# ===========================================================================
+
+name: Verification
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Une poussee supplementaire sur la meme branche annule l'execution en cours :
+# seule la derniere version compte, et le temps de calcul n'est pas gaspille.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  front:
+    name: Typage, tests et construction
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: front
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Meme version majeure que le poste de developpement.
+          node-version: 22
+          cache: npm
+          cache-dependency-path: front/package-lock.json
+
+      # `npm ci` et non `npm install` : il installe exactement ce que le
+      # verrou decrit et echoue si le verrou et le manifeste divergent, ce qui
+      # est precisement ce qu'on veut savoir.
+      - name: Installer les dependances
+        run: npm ci
+
+      - name: Typage
+        id: typage
+        run: npx tsc -b
+
+      # `if: always()` sur les deux suivantes : sans lui, une erreur de typage
+      # masquerait l'etat des tests et de la construction, et il faudrait
+      # plusieurs allers-retours pour voir l'ensemble des problemes.
+      - name: Tests
+        if: always()
+        run: npm test
+
+      - name: Construction
+        if: always()
+        env:
+          # Vite fige les variables VITE_ au moment de la construction. Aucune
+          # valeur reelle n'est necessaire ici : on verifie que le code
+          # compile, pas qu'il parle a la base. Surtout, aucune cle vraie n'a
+          # sa place dans un fichier de workflow.
+          VITE_SUPABASE_URL: http://localhost:54321
+          VITE_SUPABASE_ANON_KEY: cle-de-construction-sans-valeur
+        run: npx vite build
