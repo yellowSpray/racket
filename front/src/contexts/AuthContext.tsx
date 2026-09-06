@@ -4,6 +4,7 @@ import type { Session } from "@supabase/supabase-js"
 import type { UserProfile, AuthContextType } from "@/types/auth"
 import Loading from "@/components/shared/Loading"
 import { logger } from "@/lib/logger"
+import { syncProfileEmail } from "@/lib/syncProfileEmail"
 import { withTimeout } from "@/lib/handleHookError"
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -49,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode}) {
 
                 if (session) {
                     logger.info("AuthContext", `Session trouvée, fetch profil pour ${session.user.id.slice(0, 8)}...`)
-                    await fetchProfile(session.user.id)
+                    await fetchProfile(session.user.id, session.user.email)
                 } else {
                     logger.info("AuthContext", "Pas de session active")
                     setIsLoading(false)
@@ -115,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode}) {
                     // Skip si c'est le même user (re-validation au retour sur l'onglet)
                     if (profileRef.current?.id === session.user.id) return
                     isFetchingProfile.current = false
-                    await fetchProfile(session.user.id)
+                    await fetchProfile(session.user.id, session.user.email)
                 } else if (!session && event === 'SIGNED_OUT') {
                     updateProfile(null)
                     isFetchingProfile.current = false
@@ -133,7 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode}) {
     },[])
 
     // Fonction pour récupérer le profil avec retry sur timeout/erreur réseau
-    const fetchProfile = async (userId: string, retries = 2) => {
+    const fetchProfile = async (userId: string, authEmail: string | null | undefined, retries = 2) => {
 
         if(isFetchingProfile.current) return
 
@@ -159,7 +160,15 @@ export function AuthProvider({ children }: { children: ReactNode}) {
                 updateProfile(null);
             } else {
                 endLog()
-                updateProfile(data);
+                /*
+                 * `auth.users.email` fait foi pour un compte lie : c'est avec
+                 * elle qu'on se connecte. Un changement d'adresse ne prend
+                 * effet qu'apres confirmation par email, moment ou `profiles`
+                 * reste sur l'ancienne. On les realigne ici, ce qui repare
+                 * aussi les divergences deja en base.
+                 */
+                const { synced } = await syncProfileEmail(userId, authEmail, data.email)
+                updateProfile(synced ? { ...data, email: authEmail } : data);
             }
 
         } catch (err) {
@@ -168,7 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode}) {
             if (retries > 0) {
                 logger.info("AuthContext", `Retry fetchProfile (${retries} restant(s))...`)
                 isFetchingProfile.current = false
-                return fetchProfile(userId, retries - 1)
+                return fetchProfile(userId, authEmail, retries - 1)
             }
             // Plus de retries : garder le profil existant s'il y en a un
             if (!profileRef.current) updateProfile(null);
@@ -190,7 +199,7 @@ export function AuthProvider({ children }: { children: ReactNode}) {
     // Rafraîchit le profil depuis la base (utile après une mise à jour)
     const refreshProfile = async () => {
         const { data: { session: currentSession } } = await supabase.auth.getSession()
-        if (currentSession?.user.id) await fetchProfile(currentSession.user.id)
+        if (currentSession?.user.id) await fetchProfile(currentSession.user.id, currentSession.user.email)
     }
 
     const value: AuthContextType = {

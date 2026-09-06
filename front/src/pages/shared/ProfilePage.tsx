@@ -12,6 +12,7 @@ import { UserAccountIcon, Mail01Icon, SmartPhone01Icon, Calendar03Icon, Notifica
 import { useClubs } from "@/hooks/useClub"
 import { supabase } from "@/lib/supabaseClient"
 import { saveProfileChanges } from "@/lib/saveProfileChanges"
+import { toast } from "sonner"
 import { useCallback, useEffect, useMemo, useState } from "react"
 
 const roleLabels: Record<string, string> = {
@@ -157,7 +158,7 @@ export function ProfilePage() {
         setEditError(null)
         setSavingProfile(true)
         try {
-            const { ok, error } = await saveProfileChanges(
+            const { ok, error, emailConfirmationSent } = await saveProfileChanges(
                 profile.id,
                 {
                     first_name: editForm.first_name,
@@ -174,6 +175,19 @@ export function ProfilePage() {
             if (!ok) {
                 setEditError(error ?? "L'enregistrement a échoué.")
                 return
+            }
+
+            /*
+             * Supabase ne bascule pas l'adresse de connexion tout de suite :
+             * il envoie un lien de confirmation, et rien ne change avant le
+             * clic. Le taire laisserait l'utilisateur croire qu'il peut deja
+             * se connecter avec la nouvelle.
+             */
+            if (emailConfirmationSent) {
+                toast.success("Vérifiez votre boîte mail", {
+                    description: `Un lien de confirmation a été envoyé à ${editForm.email.trim()}. Votre adresse de connexion changera quand vous l'aurez ouvert. D'ici là, connectez-vous avec l'ancienne.`,
+                    duration: 10000,
+                })
             }
 
             await refreshProfile()

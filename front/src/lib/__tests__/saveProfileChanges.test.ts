@@ -2,12 +2,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { MockQueryBuilder } from '@/test/mocks/supabase'
 
 /**
- * L'ecriture du profil echouait en production, et l'ecran n'en savait rien :
- * l'appel n'etait pas destructure, donc l'erreur rendue par Supabase etait
- * jetee, la boite de dialogue se fermait et l'ancien profil se rechargeait.
- * Ce module rend l'echec au lieu de l'avaler.
+ * Deux defauts successifs sur cet ecran.
+ *
+ * Le premier : l'ecriture du profil echouait en production et l'ecran n'en
+ * savait rien, l'appel n'etant pas destructure. Ce module rend l'echec.
+ *
+ * Le second : l'email etait ecrit dans `profiles` et nulle part ailleurs.
+ * L'adresse de connexion vit dans `auth.users`, que seule l'API
+ * d'authentification met a jour. L'utilisateur croyait changer son
+ * identifiant, il ne changeait qu'un affichage.
  */
-const { mockSupabase, builder, updateUser } = vi.hoisted(() => {
+const { mockSupabase, builder, updateUser, getUser } = vi.hoisted(() => {
     const qb = {} as MockQueryBuilder
     qb.select = vi.fn(() => qb); qb.insert = vi.fn(() => qb); qb.update = vi.fn(() => qb)
     qb.delete = vi.fn(() => qb); qb.upsert = vi.fn(() => qb); qb.eq = vi.fn(() => qb)
@@ -21,11 +26,15 @@ const { mockSupabase, builder, updateUser } = vi.hoisted(() => {
     const updateUser = vi.fn<() => Promise<{ error: { message: string } | null }>>(
         () => Promise.resolve({ error: null }),
     )
+    const getUser = vi.fn<() => Promise<{ data: { user: { email: string } | null } }>>(
+        () => Promise.resolve({ data: { user: { email: 'tim@club.fr' } } }),
+    )
 
     return {
-        mockSupabase: { from: vi.fn(() => qb), auth: { updateUser } },
+        mockSupabase: { from: vi.fn(() => qb), auth: { updateUser, getUser } },
         builder: qb,
         updateUser,
+        getUser,
     }
 })
 
@@ -41,17 +50,24 @@ const EDITS = {
     address: '1 rue du Squash',
 }
 
+/** Ce qui a reellement ete envoye a `profiles.update`. */
+function champsEcrits() {
+    const appels = (builder.update as unknown as { mock: { calls: [Record<string, unknown>][] } }).mock.calls
+    return appels[0][0]
+}
+
 describe('saveProfileChanges', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         builder._resolve(null)
         updateUser.mockResolvedValue({ error: null })
+        getUser.mockResolvedValue({ data: { user: { email: 'tim@club.fr' } } })
     })
 
     it('rend un succes quand l ecriture passe', async () => {
         const r = await saveProfileChanges('p1', EDITS)
 
-        expect(r).toEqual({ ok: true, error: null })
+        expect(r).toEqual({ ok: true, error: null, emailConfirmationSent: false })
         expect(mockSupabase.from).toHaveBeenCalledWith('profiles')
         expect(builder.eq).toHaveBeenCalledWith('id', 'p1')
     })
@@ -66,10 +82,69 @@ describe('saveProfileChanges', () => {
         expect(r.error).toContain('infinite recursion')
     })
 
-    it('ne touche pas au mot de passe si le profil n a pas pu etre ecrit', async () => {
-        // Sinon on changerait le mot de passe d'un profil qu'on vient d'echouer
-        // a modifier, en laissant l'utilisateur croire que tout est passe.
+    it('n ecrit pas l email dans profiles', async () => {
+        /*
+         * `profiles.email` reflete l'adresse du compte, il ne la definit pas.
+         * L'ecrire ici recreerait la divergence qu'on repare : l'ecran
+         * afficherait une adresse avec laquelle personne ne peut se connecter.
+         */
+        await saveProfileChanges('p1', EDITS)
+
+        expect(champsEcrits()).toMatchObject({
+            first_name: 'Tim', last_name: 'Martin', phone: '0600000000',
+        })
+        expect(champsEcrits()).not.toHaveProperty('email')
+    })
+
+    it('demande le changement d adresse a l authentification', async () => {
+        getUser.mockResolvedValue({ data: { user: { email: 'ancienne@club.fr' } } })
+
+        const r = await saveProfileChanges('p1', EDITS)
+
+        expect(updateUser).toHaveBeenCalledWith({ email: 'tim@club.fr' })
+        expect(r.ok).toBe(true)
+        expect(r.emailConfirmationSent).toBe(true)
+    })
+
+    it('ne demande rien quand l adresse est la meme a la casse et aux espaces pres', async () => {
+        getUser.mockResolvedValue({ data: { user: { email: 'Tim@Club.FR' } } })
+
+        const r = await saveProfileChanges('p1', { ...EDITS, email: '  tim@club.fr ' })
+
+        expect(updateUser).not.toHaveBeenCalled()
+        expect(r.emailConfirmationSent).toBe(false)
+    })
+
+    it('ne demande rien sur une adresse vide', async () => {
+        // L'ecran peut envoyer une chaine vide : ce n'est pas une demande de
+        // changement, c'est un champ que l'utilisateur n'a pas rempli.
+        getUser.mockResolvedValue({ data: { user: { email: 'ancienne@club.fr' } } })
+
+        const r = await saveProfileChanges('p1', { ...EDITS, email: '   ' })
+
+        expect(updateUser).not.toHaveBeenCalled()
+        expect(r.emailConfirmationSent).toBe(false)
+    })
+
+    it('rend l erreur quand l adresse est deja prise', async () => {
+        getUser.mockResolvedValue({ data: { user: { email: 'ancienne@club.fr' } } })
+        updateUser.mockResolvedValue({
+            error: { message: 'A user with this email address has already been registered' },
+        })
+
+        const r = await saveProfileChanges('p1', EDITS)
+
+        expect(r.ok).toBe(false)
+        expect(r.error).toContain('already been registered')
+        expect(r.emailConfirmationSent).toBe(false)
+    })
+
+    it('ne touche a rien si le profil n a pas pu etre ecrit', async () => {
+        // Sinon on changerait l'adresse ou le mot de passe d'un profil qu'on
+        // vient d'echouer a modifier, en laissant l'utilisateur croire que
+        // tout est passe.
         builder._reject('permission denied for table profiles')
+        getUser.mockResolvedValue({ data: { user: { email: 'ancienne@club.fr' } } })
 
         const r = await saveProfileChanges('p1', EDITS, 'nouveau-mot-de-passe')
 
@@ -80,7 +155,7 @@ describe('saveProfileChanges', () => {
     it('change le mot de passe quand il est fourni et que le profil est ecrit', async () => {
         const r = await saveProfileChanges('p1', EDITS, 'nouveau-mot-de-passe')
 
-        expect(r).toEqual({ ok: true, error: null })
+        expect(r).toEqual({ ok: true, error: null, emailConfirmationSent: false })
         expect(updateUser).toHaveBeenCalledWith({ password: 'nouveau-mot-de-passe' })
     })
 
@@ -97,5 +172,16 @@ describe('saveProfileChanges', () => {
         await saveProfileChanges('p1', EDITS)
 
         expect(updateUser).not.toHaveBeenCalled()
+    })
+
+    it('ne change pas le mot de passe si l adresse a ete refusee', async () => {
+        getUser.mockResolvedValue({ data: { user: { email: 'ancienne@club.fr' } } })
+        updateUser.mockResolvedValue({ error: { message: 'adresse invalide' } })
+
+        const r = await saveProfileChanges('p1', EDITS, 'nouveau-mot-de-passe')
+
+        expect(r.ok).toBe(false)
+        expect(updateUser).toHaveBeenCalledTimes(1)
+        expect(updateUser).toHaveBeenCalledWith({ email: 'tim@club.fr' })
     })
 })
