@@ -1,5 +1,18 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react"
+import { createContext, useContext, useEffect, type ReactNode } from "react"
 import { createPortal } from "react-dom"
+
+/**
+ * Les emplacements du header, et les hooks qui y injectent du contenu.
+ *
+ * Le header porte deux div vides : une a gauche pour le titre ou le selecteur
+ * d'evenement, une a droite pour les boutons d'action. Chaque page y depose ce
+ * qu'elle veut par un portail, sans que le header ait a connaitre les pages.
+ *
+ * Le fournisseur, `HeaderSlotProvider`, est dans son propre fichier. Un fichier
+ * qui exporte un composant a cote d'autre chose n'est plus rechargeable a
+ * chaud : Fast Refresh recharge alors la page entiere au lieu de remplacer le
+ * composant, ce qui faisait perdre l'ecran en cours a chaque modification.
+ */
 
 type Ctx = {
   element: HTMLDivElement | null
@@ -10,7 +23,7 @@ type Ctx = {
   setHasActions: (v: boolean) => void
 }
 
-const HeaderSlotContext = createContext<Ctx>({
+export const HeaderSlotContext = createContext<Ctx>({
   element: null,
   registerSlot: () => {},
   actionsElement: null,
@@ -18,22 +31,6 @@ const HeaderSlotContext = createContext<Ctx>({
   hasActions: false,
   setHasActions: () => {},
 })
-
-export function HeaderSlotProvider({ children }: { children: ReactNode }) {
-  const [element, setElement] = useState<HTMLDivElement | null>(null)
-  const [actionsElement, setActionsElement] = useState<HTMLDivElement | null>(null)
-  const [hasActions, setHasActions] = useState(false)
-
-  const registerSlot = useCallback((el: HTMLDivElement | null) => setElement(el), [])
-  const registerActionsSlot = useCallback((el: HTMLDivElement | null) => setActionsElement(el), [])
-  const setHasActionsStable = useCallback((v: boolean) => setHasActions(v), [])
-
-  return (
-    <HeaderSlotContext.Provider value={{ element, registerSlot, actionsElement, registerActionsSlot, hasActions, setHasActions: setHasActionsStable }}>
-      {children}
-    </HeaderSlotContext.Provider>
-  )
-}
 
 export function useHeaderSlotRegister() {
   return useContext(HeaderSlotContext).registerSlot

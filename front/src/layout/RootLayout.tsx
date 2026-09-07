@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from "react-router";
 import Header from '@/components/shared/Header'
 import Footer from "@/components/shared/Footer"
-import { HeaderSlotProvider } from "@/contexts/HeaderSlotContext"
+import { HeaderSlotProvider } from "@/contexts/HeaderSlotProvider"
 import { EventProvider } from "@/contexts/EventContext"
 
 const Rootlayout = () => {
