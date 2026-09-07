@@ -518,33 +518,18 @@ USING (
   ))
 );
 
--- Les utilisateurs/admins peuvent créer des horaires pour leur club
-CREATE POLICY "Users and admins can insert club schedules"
-ON public.schedule
-FOR INSERT
-TO public
-WITH CHECK (
-  auth.uid() = profile_id
-  OR public.is_superadmin()
-  OR (public.is_admin() AND EXISTS (
-    SELECT 1 FROM public.profiles p
-    WHERE p.id = profile_id AND p.club_id = public.get_user_club_id()
-  ))
-);
-
--- Les utilisateurs/admins peuvent modifier des horaires de leur club
-CREATE POLICY "Users and admins can update club schedules"
-ON public.schedule
-FOR UPDATE
-TO public
-USING (
-  auth.uid() = profile_id
-  OR public.is_superadmin()
-  OR (public.is_admin() AND EXISTS (
-    SELECT 1 FROM public.profiles p
-    WHERE p.id = profile_id AND p.club_id = public.get_user_club_id()
-  ))
-);
+-- L'ecriture des horaires, INSERT et UPDATE, n'est PAS declaree ici.
+--
+-- Elle l'est dans la migration 04, sous les noms « Admins can insert club
+-- schedules » et « Admins can update club schedules ». Le nom ne dit pas tout :
+-- leur expression commence par `auth.uid() = profile_id`, donc un joueur y
+-- ecrit bien son propre horaire, ce que fait la page de profil.
+--
+-- Ce fichier en portait un doublon a l'identique, sous un autre nom. Deux
+-- policies permissives pour la meme commande, avec exactement la meme
+-- expression, ne changent rien a ce qui est autorise mais font evaluer le
+-- predicat deux fois par ligne, ce que la migration 29 s'emploie justement a
+-- supprimer ailleurs. La production n'a jamais eu ce doublon.
 
 -- Les utilisateurs/admins peuvent supprimer leurs horaires
 CREATE POLICY "Users and admins can delete club schedules"
