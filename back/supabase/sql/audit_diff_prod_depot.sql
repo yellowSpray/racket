@@ -3,24 +3,26 @@
 -- ===========================================================================
 --
 -- La liste `rejeu` ci-dessous est l'inventaire, objet par objet, de la base
--- reconstruite a partir des fichiers du depot sur PostgreSQL 16, migrations 36
--- et 37 comprises. La requete la confronte a la production et ne rend que les
--- ecarts.
+-- reconstruite a partir des fichiers du depot sur PostgreSQL 16. La requete la
+-- confronte a la base ou on la lance et ne rend que les ecarts.
 --
---   manque_en_prod    : le depot le cree, la production ne l'a pas.
---                       Soit un fichier n'a pas encore ete lance en production,
---                       soit l'objet y a ete supprime a la main.
---
---   absent_du_depot   : la production l'a, aucun fichier ne le cree.
---                       C'est un objet cree a la main dans le tableau de bord,
---                       donc perdu a la prochaine reconstruction.
+--   manque_en_prod    : le depot le cree, la base ne l'a pas.
+--   absent_du_depot   : la base l'a, aucun fichier ne le cree. Objet cree a la
+--                       main, donc perdu a la prochaine reconstruction.
 --
 -- Comparaison par nom, pas par definition : une difference de version de
--- PostgreSQL (16 ici, 17 en production) change le texte rendu par le
--- catalogue mais jamais les noms. Les fonctions fournies par une extension
--- sont exclues des deux cotes.
+-- PostgreSQL (16 ici, 17 en production) change le texte rendu par le catalogue
+-- mais jamais les noms. Les fonctions fournies par une extension sont exclues
+-- des deux cotes.
 --
--- Zero ligne veut dire que le depot decrit exactement la production.
+-- `droits_tables` et `droits_colonnes` sont dans la comparaison, et c'est
+-- volontaire. Une premiere version de cette requete les excluait, au motif que
+-- Supabase pose ces droits d'office : elle rendait zero ligne sur une base
+-- neuve ou anon, authenticated et service_role n'avaient aucun droit, et ou
+-- l'application entiere aurait refuse de fonctionner sur un
+-- « permission denied for table profiles ».
+--
+-- Zero ligne veut dire que le depot decrit exactement cette base.
 -- ===========================================================================
 
 with rejeu(categorie, objet) as (values
@@ -276,6 +278,81 @@ with rejeu(categorie, objet) as (values
   ('declencheurs','public.event_players trg_visitor_payment_insert'),
   ('declencheurs','public.event_rounds trg_cleanup_absences_on_event_complete'),
   ('declencheurs','public.matches trg_elo_on_match_result'),
+  ('droits_colonnes','clubs.club_name | anon | SELECT'),
+  ('droits_colonnes','clubs.country | anon | SELECT'),
+  ('droits_colonnes','clubs.id | anon | SELECT'),
+  ('droits_colonnes','clubs.region | anon | SELECT'),
+  ('droits_colonnes','profiles.address | authenticated | UPDATE'),
+  ('droits_colonnes','profiles.email | authenticated | UPDATE'),
+  ('droits_colonnes','profiles.first_name | authenticated | UPDATE'),
+  ('droits_colonnes','profiles.last_name | authenticated | UPDATE'),
+  ('droits_colonnes','profiles.phone | authenticated | UPDATE'),
+  ('droits_tables','absences | anon | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','absences | authenticated | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','absences | service_role | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','club_courts | anon | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','club_courts | authenticated | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','club_courts | service_role | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','clubs | anon | DELETE,INSERT,REFERENCES,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','clubs | authenticated | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','clubs | service_role | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','elo_adjustments | anon | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','elo_adjustments | authenticated | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','elo_adjustments | service_role | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','event_courts | anon | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','event_courts | authenticated | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','event_courts | service_role | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','event_players | anon | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','event_players | authenticated | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','event_players | service_role | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','event_promotion_rules | anon | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','event_promotion_rules | authenticated | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','event_promotion_rules | service_role | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','event_rounds | anon | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','event_rounds | authenticated | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','event_rounds | service_role | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','event_scoring_rules | anon | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','event_scoring_rules | authenticated | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','event_scoring_rules | service_role | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','events | anon | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','events | authenticated | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','events | service_role | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','group_players | anon | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','group_players | authenticated | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','group_players | service_role | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','groups | anon | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','groups | authenticated | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','groups | service_role | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','matches | anon | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','matches | authenticated | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','matches | service_role | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','payments | anon | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','payments | authenticated | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','payments | service_role | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','player_status | anon | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','player_status | authenticated | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','player_status | service_role | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','profile_sports | anon | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','profile_sports | authenticated | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','profile_sports | service_role | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','profiles | anon | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE'),
+  ('droits_tables','profiles | authenticated | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE'),
+  ('droits_tables','profiles | service_role | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','promotion_rules | anon | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','promotion_rules | authenticated | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','promotion_rules | service_role | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','schedule | anon | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','schedule | authenticated | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','schedule | service_role | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','scoring_rules | anon | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','scoring_rules | authenticated | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','scoring_rules | service_role | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','sports | anon | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','sports | authenticated | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','sports | service_role | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','visitor_requests | anon | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','visitor_requests | authenticated | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
+  ('droits_tables','visitor_requests | service_role | DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE'),
   ('enums','payment_status_enum = paid,unpaid'),
   ('enums','player_status_enum = active,inactive,member,visitor,withdrawn,new,paid,unpaid'),
   ('enums','user_role = user,admin,superadmin'),
@@ -464,11 +541,7 @@ with rejeu(categorie, objet) as (values
 ),
 prod as (
   select 'colonnes' as categorie, table_name||'.'||column_name as objet
-    from information_schema.columns c
-   where c.table_schema = 'public'
-     and not exists (select 1 from pg_class k join pg_namespace kn on kn.oid = k.relnamespace
-                      where kn.nspname = 'public' and k.relname = c.table_name
-                        and k.relkind in ('v','m'))
+    from information_schema.columns where table_schema = 'public'
   union all
   select 'contraintes', rel.relname||'.'||con.conname
     from pg_constraint con
@@ -505,6 +578,26 @@ prod as (
   select 'vues', c.relname
     from pg_class c join pg_namespace n on n.oid = c.relnamespace
    where n.nspname = 'public' and c.relkind in ('v','m')
+  union all
+  select 'droits_tables',
+         table_name||' | '||grantee||' | '||string_agg(privilege_type, ',' order by privilege_type)
+    from information_schema.role_table_grants
+   where table_schema = 'public'
+     and grantee in ('anon','authenticated','service_role')
+   group by table_name, grantee
+  union all
+  -- Uniquement les droits par colonne qui ne sont PAS deja portes par la table
+  -- entiere : sans ce filtre, chaque colonne de chaque table ressortirait.
+  select 'droits_colonnes',
+         table_name||'.'||column_name||' | '||grantee||' | '||privilege_type
+    from information_schema.column_privileges cp
+   where table_schema = 'public'
+     and grantee in ('anon','authenticated','service_role')
+     and not exists (select 1 from information_schema.role_table_grants g
+                      where g.table_schema = 'public'
+                        and g.table_name = cp.table_name
+                        and g.grantee = cp.grantee
+                        and g.privilege_type = cp.privilege_type)
 )
 select coalesce(r.categorie, p.categorie) as categorie,
        case when p.objet is null then 'manque_en_prod' else 'absent_du_depot' end as ecart,
