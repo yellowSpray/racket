@@ -5,6 +5,44 @@
 -- À exécuter en PREMIER
 
 -- ===================================
+-- DROITS DE BASE SUR LE SCHEMA PUBLIC
+-- ===================================
+-- Sans ces droits, PostgREST ne peut rien lire ni ecrire, et l'application
+-- entiere refuse de fonctionner. L'erreur n'est pas parlante :
+--
+--     permission denied for table profiles
+--
+-- Supabase pose ces droits a la creation du projet, sur les tables qui
+-- existent a ce moment-la, c'est-a-dire aucune. Les notres naissent plus tard,
+-- en passant ces fichiers. Sur le projet d'origine elles en ont herite, sur un
+-- projet neuf non : le trou est reste invisible jusqu'a ce qu'une base
+-- reconstruite refuse la premiere requete.
+--
+-- `ALTER DEFAULT PRIVILEGES` est pose AVANT toute creation de table, pour que
+-- chaque table de ce fichier et des trente-six suivants en herite d'office.
+-- Le `GRANT ON ALL TABLES` de la fin du fichier rattrape celles qui existeraient
+-- deja sur une base ou l'on repasserait ce fichier.
+--
+-- Ce que ces droits ouvrent, RLS le referme aussitot : ils donnent le droit de
+-- s'adresser a la table, pas celui d'en voir les lignes. Verifie sur
+-- PostgreSQL 16, avec ces droits et les policies en place, un admin voit les
+-- profils de son club et un seul, un visiteur non connecte n'en voit aucun.
+--
+-- ATTENTION : un droit pose sur la table entiere l'emporte sur les droits par
+-- colonne. Les fichiers 25 et 28 resserrent `clubs` et `profiles` colonne par
+-- colonne ; ils passent apres celui-ci dans la sequence, donc tout va bien.
+-- Mais si tu rejoues CE fichier seul sur une base vivante, repasse 25 et 28
+-- derriere, sinon les colonnes se rouvrent en silence.
+
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT ALL ON TABLES TO anon, authenticated, service_role;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+
+-- ===================================
 -- TYPES ENUM
 -- ===================================
 
@@ -328,3 +366,19 @@ CREATE TABLE IF NOT EXISTS public.event_courts (
 CREATE INDEX IF NOT EXISTS idx_scoring_rules_club_id ON public.scoring_rules(club_id);
 CREATE INDEX IF NOT EXISTS idx_promotion_rules_club_id ON public.promotion_rules(club_id);
 CREATE INDEX IF NOT EXISTS idx_event_courts_event_id ON public.event_courts(event_id);
+
+
+-- ===================================
+-- RATTRAPAGE DES DROITS
+-- ===================================
+-- `ALTER DEFAULT PRIVILEGES`, en tete de fichier, couvre tout ce qui est cree
+-- apres lui. Ce GRANT couvre le cas ou l'on repasse ce fichier sur une base
+-- dont les tables existaient deja.
+--
+-- Rappel de l'avertissement du haut : si tu lances cette ligne seule sur une
+-- base vivante, repasse ensuite les fichiers 25 et 28, qui resserrent `clubs`
+-- et `profiles` colonne par colonne. Un droit sur la table entiere annule le
+-- resserrage sans rien dire.
+
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
