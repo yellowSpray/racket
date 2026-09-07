@@ -50,7 +50,8 @@ vi.mock('../EventDefaultsCard', () => ({ EventDefaultsCard: () => <div>PANNEAU D
 vi.mock('../ScoringRulesCard', () => ({ ScoringRulesCard: () => <div>PANNEAU POINTAGE</div> }))
 vi.mock('../PromotionRulesCard', () => ({ PromotionRulesCard: () => <div>PANNEAU MONTEES</div> }))
 
-import { SettingsManager, SETTINGS_SECTIONS } from '../SettingsManager'
+import { SettingsManager } from '../SettingsManager'
+import { SETTINGS_SECTIONS } from '../settingsSections'
 
 describe('SettingsManager', () => {
     beforeEach(() => {
