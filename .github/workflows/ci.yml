@@ -8,9 +8,9 @@
 # sur Linux. Le second etait une construction qui ne passait que sur le poste.
 # Un runner Linux les attrape tous les deux avant la fusion.
 #
-# Les trois etapes reprennent exactement ce qui est verifie a la main :
-# le typage, les tests, la construction. Elles ne s'arretent pas a la premiere
-# qui echoue, pour qu'une seule execution dise tout ce qui ne va pas.
+# Les quatre etapes reprennent exactement ce qui est verifie a la main : le
+# typage, le style, les tests, la construction. Elles ne s'arretent pas a la
+# premiere qui echoue, pour qu'une seule execution dise tout ce qui ne va pas.
 # ===========================================================================
 
 name: Verification
@@ -28,7 +28,7 @@ concurrency:
 
 jobs:
   front:
-    name: Typage, tests et construction
+    name: Typage, style, tests et construction
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -54,7 +54,22 @@ jobs:
         id: typage
         run: npx tsc -b
 
-      # `if: always()` sur les deux suivantes : sans lui, une erreur de typage
+      # ESLint a ete ramene a zero erreur le 7 septembre. Sans cette etape,
+      # rien n'empeche les vingt erreurs de revenir une par une, sans que
+      # personne ne les voie : on les avait laissees s'accumuler precisement
+      # parce qu'aucune machine ne les regardait.
+      #
+      # Les avertissements ne font pas echouer, et c'est voulu. Les neuf qui
+      # restent sont tous des `react-hooks/exhaustive-deps`, de vrais risques de
+      # fermeture perimee, mais les corriger change le comportement : ajouter
+      # une dependance peut declencher une boucle de rendu. Chacun demande son
+      # propre examen et son propre test. Ce n'est pas du nettoyage de style,
+      # c'est de la chasse au bug, et ca ne doit pas bloquer une fusion.
+      - name: Style
+        if: always()
+        run: npm run lint
+
+      # `if: always()` sur les suivantes : sans lui, une erreur de typage
       # masquerait l'etat des tests et de la construction, et il faudrait
       # plusieurs allers-retours pour voir l'ensemble des problemes.
       - name: Tests
