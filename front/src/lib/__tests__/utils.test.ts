@@ -7,7 +7,16 @@ describe('cn utility', () => {
   })
 
   it('handles conditional classes', () => {
-    expect(cn('base', false && 'hidden', 'visible')).toBe('base visible')
+    /*
+     * La condition passe par une variable, et pas par un `false` ecrit en dur.
+     * Le test verifie la meme chose, mais `false && 'hidden'` est une
+     * expression dont le resultat est connu a l'ecriture : ESLint la signale a
+     * juste titre, parce que dans du code de production c'est presque toujours
+     * une branche morte. Ici c'est le cas d'usage reel de `cn`, une classe
+     * posee sous condition, et une variable le represente mieux.
+     */
+    const masque = false
+    expect(cn('base', masque && 'hidden', 'visible')).toBe('base visible')
   })
 
   it('merges tailwind conflicts correctly', () => {
