@@ -108,7 +108,11 @@ WHERE er.event_id = ec.event_id
 -- ÉTAPE 4 : SUPPRIMER LES VUES ET POLICIES QUI RÉFÉRENCENT LES COLONNES À SUPPRIMER
 -- ===================================
 
--- Vue dépendante de groups.event_id et payments.event_id
+-- `admin_event_players_view` est abandonnee. Elle n'etait appelee nulle part,
+-- et elle sortait l'email et le telephone de `auth.users` dans une vue du
+-- schema `public`, donc lisibles depuis le client. Le fichier 02 ne la cree
+-- plus et l'ETAPE 12 de ce fichier ne la recree plus. Ce DROP reste comme
+-- filet, pour une base qui la porterait encore.
 DROP VIEW IF EXISTS public.admin_event_players_view;
 
 -- Trigger dépendant de events.status
@@ -728,44 +732,14 @@ $$;
 GRANT EXECUTE ON FUNCTION public.create_new_round TO authenticated;
 
 -- ===================================
--- ÉTAPE 12 : NOUVELLE VUE ADMIN_EVENT_PLAYERS_VIEW
+-- ÉTAPE 12 : LA VUE ADMIN_EVENT_PLAYERS_VIEW EST ABANDONNEE
 -- ===================================
-
-CREATE OR REPLACE VIEW public.admin_event_players_view AS
-SELECT
-  e.id           AS event_id,
-  e.event_name,
-  er.id          AS round_id,
-  er.round_number,
-  g.group_name   AS table_number,
-  p.id           AS player_id,
-  p.first_name,
-  p.last_name,
-  p.avatar_url,
-  p.power_ranking,
-  au.email,
-  au.phone,
-  s.arrival,
-  s.departure,
-  array_agg(DISTINCT a.absent_date ORDER BY a.absent_date) AS absences,
-  array_agg(DISTINCT ps.status)                            AS player_statuses,
-  pay.status                                               AS payment_status,
-  pay.amount                                               AS payment_amount
-FROM public.events e
-LEFT JOIN public.event_rounds er ON er.event_id = e.id
-LEFT JOIN public.groups g ON g.round_id = er.id
-LEFT JOIN public.group_players gp ON gp.group_id = g.id
-LEFT JOIN public.profiles p ON p.id = gp.profile_id
-LEFT JOIN auth.users au ON au.id = p.id
-LEFT JOIN public.schedule s ON s.profile_id = p.id AND s.event_id IS NULL
-LEFT JOIN public.absences a ON a.profile_id = p.id AND a.round_id = er.id
-LEFT JOIN public.player_status ps ON ps.profile_id = p.id
-LEFT JOIN public.payments pay ON pay.profile_id = p.id AND pay.round_id = er.id
-GROUP BY
-  e.id, e.event_name, er.id, er.round_number,
-  g.group_name, p.id, p.first_name, p.last_name,
-  p.avatar_url, p.power_ranking, au.email, au.phone,
-  s.arrival, s.departure, pay.status, pay.amount;
+--
+-- Cette etape recreait la vue en version series, apres le DROP de l'etape 4.
+-- Elle est retiree : la vue n'etait appelee nulle part, ni dans le front ni
+-- dans les Edge Functions, et elle sortait l'email et le telephone de
+-- `auth.users` dans une vue du schema `public`, donc lisibles depuis le
+-- client. Elle a ete supprimee a la main en production.
 
 -- ===================================
 -- ÉTAPE 13 : INDEX

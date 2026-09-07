@@ -86,39 +86,21 @@ CREATE TRIGGER on_auth_user_created
 -- ===================================
 -- VUES
 -- ===================================
-
--- Vue qui agrège toutes les informations d'un joueur pour un événement
-CREATE OR REPLACE VIEW public.admin_event_players_view AS
-SELECT
-  e.id as event_id,
-  e.event_name,
-  g.group_name as table_number,
-  p.id as player_id,
-  p.first_name,
-  p.last_name,
-  p.avatar_url,
-  p.power_ranking,
-  au.email,
-  au.phone,
-  s.arrival,
-  s.departure,
-  array_agg(DISTINCT a.absent_date ORDER BY a.absent_date) as absences,
-  array_agg(DISTINCT ps.status) as player_statuses,
-  pay.status as payment_status,
-  pay.amount as payment_amount
-FROM public.events e
-LEFT JOIN public.groups g ON g.event_id = e.id
-LEFT JOIN public.group_players gp ON gp.group_id = g.id
-LEFT JOIN public.profiles p ON p.id = gp.profile_id
-LEFT JOIN auth.users au ON au.id = p.id
-LEFT JOIN public.schedule s ON s.profile_id = p.id AND s.event_id = e.id
-LEFT JOIN public.absences a ON a.profile_id = p.id AND a.event_id = e.id
-LEFT JOIN public.player_status ps ON ps.profile_id = p.id
-LEFT JOIN public.payments pay ON pay.profile_id = p.id AND pay.event_id = e.id
-GROUP BY 
-  e.id, e.event_name, g.group_name, p.id, p.first_name, p.last_name, 
-  p.avatar_url, p.power_ranking, au.email, au.phone, 
-  s.arrival, s.departure, pay.status, pay.amount;
+--
+-- Il n'y en a plus. `admin_event_players_view` agregeait les informations d'un
+-- joueur pour un evenement, et n'etait appelee nulle part : ni dans le front,
+-- ni dans les Edge Functions. Elle a ete supprimee a la main en production.
+--
+-- Elle est retiree d'ici pour qu'une base neuve ne la recree pas, et pour une
+-- raison de fond : elle joignait `auth.users` et sortait `email` et `phone`
+-- dans une vue du schema `public`. Une vue n'a pas de RLS a elle, et Supabase
+-- accorde d'office la lecture sur `public` a `anon` et `authenticated` :
+-- l'adresse et le telephone de tout le monde etaient lisibles depuis le
+-- client.
+--
+-- La migration 14 en creait une seconde version, adaptee aux series. Elle est
+-- retiree aussi. Le `DROP VIEW IF EXISTS` de la migration 14 reste en place,
+-- comme filet pour une base qui la porterait encore.
 
 -- ===================================
 -- TRIGGER : NETTOYAGE DES ABSENCES APRES FIN D'EVENEMENT
