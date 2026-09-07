@@ -53,10 +53,26 @@ CREATE TABLE IF NOT EXISTS public.sports (
   created_at timestamp with time zone default now()
 );
 
--- Table PROFILES : Profils utilisateurs liés à auth.users
+-- Table PROFILES : Profils des joueurs, lies ou non a un compte auth.users
 -- Note: phone est ici ET dans auth.users (synchronisé via trigger)
+--
+-- `id` n'a volontairement AUCUNE cle etrangere vers `auth.users`. Un profil
+-- doit pouvoir exister sans compte : c'est tout le modele des joueurs importes,
+-- que l'admin saisit d'abord et qui recoivent une invitation plus tard, ou
+-- jamais. Sur le club pilote, 94 profils sur 95 sont dans ce cas.
+--
+-- Quand l'invitation part, `invite-member` cree le compte en imposant
+-- l'identifiant du profil existant, et `handle_new_user` (migration 35) fait
+-- l'appariement par `ON CONFLICT (id)`. La colonne `is_linked` dit lequel des
+-- deux etats est le bon.
+--
+-- La contrainte existait a l'origine, avec `on delete cascade`, et a ete
+-- retiree a la main en production pour rendre l'import possible. Elle est
+-- retiree ici pour que le depot decrive ce qui tourne. La contrepartie est que
+-- supprimer un compte auth ne supprime plus son profil : c'est
+-- `remove_club_member` qui s'en charge.
 CREATE TABLE IF NOT EXISTS public.profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
+  id uuid primary key,
   first_name text,
   last_name text,
   phone text,  -- Synchronisé avec auth.users
@@ -158,8 +174,18 @@ CREATE TABLE IF NOT EXISTS public.schedule (
   event_id uuid references public.events(id) on delete cascade,
   arrival timestamp with time zone,   -- Date/heure d'arrivée prévue
   departure timestamp with time zone, -- Date/heure de départ prévue
-  created_at timestamp with time zone default now(),
-  unique(profile_id, event_id)  -- Un seul horaire par joueur par événement
+  created_at timestamp with time zone default now()
+  -- Il n'y a PAS de `unique(profile_id, event_id)` ici.
+  --
+  -- La contrainte existait a l'origine et a ete retiree a la main en
+  -- production. Depuis la migration 14, `event_id` est nul pour les horaires
+  -- generaux d'un joueur, ceux que la page de profil enregistre. Or un UNIQUE
+  -- traite chaque nul comme une valeur distincte : la contrainte laissait donc
+  -- passer autant de lignes `(joueur, null)` qu'on voulait, c'est-a-dire
+  -- exactement le cas qu'il fallait empecher.
+  --
+  -- C'est la migration 34 qui fait le travail, avec un index partiel :
+  --   idx_schedule_profile_no_event  unique (profile_id) where event_id is null
 );
 
 -- TABLE ABSENCES : Gestion des absences par date
