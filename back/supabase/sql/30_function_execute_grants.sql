@@ -81,10 +81,17 @@ $migration$;
 
 
 -- ===========================================================================
--- Rendre l'execution aux sept RPC que l'application appelle
+-- Rendre l'execution aux RPC que l'application appelle
 -- ===========================================================================
 -- Une fonction absente de cette liste n'est plus appelable depuis le client.
--- C'est volontairement le seul endroit ou cette decision se prend.
+--
+-- Il y a une exception, et une seule : `upsert_player`. Sa definition vivait
+-- dans `upsert_player_function.sql`, un fichier hors numerotation, donc jamais
+-- rejoue a sa place dans la sequence : au moment ou ce fichier s'executait sur
+-- une base neuve, la fonction n'existait pas encore et le GRANT echouait.
+-- La migration 34 l'a reecrite et porte desormais son propre REVOKE puis
+-- GRANT, juste sous sa definition. Le fichier hors numerotation a ete
+-- supprime du depot. Les droits d'`upsert_player` se lisent donc dans 34.
 
 GRANT EXECUTE ON FUNCTION public.get_event_by_invite_token(uuid)        TO authenticated;
 GRANT EXECUTE ON FUNCTION public.remove_club_member(uuid)               TO authenticated;
@@ -92,10 +99,6 @@ GRANT EXECUTE ON FUNCTION public.request_visitor_registration(uuid, text) TO aut
 GRANT EXECUTE ON FUNCTION public.review_visitor_request(uuid, text)     TO authenticated;
 GRANT EXECUTE ON FUNCTION public.update_event_statuses()                TO authenticated;
 GRANT EXECUTE ON FUNCTION public.update_member_role(uuid, user_role)    TO authenticated;
-GRANT EXECUTE ON FUNCTION public.upsert_player(
-    uuid, text, text, text, text, integer, text, uuid, text[],
-    time without time zone, time without time zone, uuid, uuid, date, numeric
-) TO authenticated;
 
 
 -- ===========================================================================
