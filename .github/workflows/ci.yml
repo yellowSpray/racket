@@ -35,9 +35,9 @@ jobs:
         working-directory: front
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           # Meme version majeure que le poste de developpement.
           node-version: 22
