@@ -9,13 +9,7 @@ import { ScoringRulesCard } from "./ScoringRulesCard"
 import { PromotionRulesCard } from "./PromotionRulesCard"
 import { ClubConfigSkeleton } from "@/components/shared/skeletons/SettingsSkeleton"
 import { cn } from "@/lib/utils"
-import {
-    Building02Icon,
-    VolleyballIcon,
-    Calendar03Icon,
-    Award01Icon,
-    ArrowUpDownIcon,
-} from "hugeicons-react"
+import { SETTINGS_SECTIONS } from "./settingsSections"
 
 /**
  * Reglages du club, en une seule page.
@@ -23,53 +17,16 @@ import {
  * Les onglets Evenements et Mon club presentaient deux moities d'une meme
  * chose : tout leur contenu est du reglage de club, applique a la creation
  * d'un evenement. Le nom du premier laissait croire qu'il agissait sur
- * l'evenement en cours, ce qui n'a jamais ete le cas. Les rubriques ci-dessous
- * le disent explicitement.
+ * l'evenement en cours, ce qui n'a jamais ete le cas. Les phrases d'en-tete de
+ * chaque rubrique, dans `settingsSections.ts`, le disent explicitement.
  *
  * Les regles propres a un evenement se modifient depuis la liste des
  * evenements, en rouvrant son assistant.
+ *
+ * Les rubriques vivent dans un fichier a part pour que celui-ci n'exporte que
+ * son composant : c'est la condition pour que Fast Refresh le remplace en
+ * place au lieu de recharger la page a chaque modification.
  */
-
-export interface SettingsSection {
-    id: string
-    label: string
-    /** Phrase affichee en tete du panneau, qui dit sur quoi la rubrique agit. */
-    hint: string
-    icon: typeof Building02Icon
-}
-
-export const SETTINGS_SECTIONS: SettingsSection[] = [
-    {
-        id: "club",
-        label: "Club",
-        hint: "Identite de votre club, visible par tous les joueurs.",
-        icon: Building02Icon,
-    },
-    {
-        id: "courts",
-        label: "Terrains",
-        hint: "Copies automatiquement dans chaque nouvel événement.",
-        icon: VolleyballIcon,
-    },
-    {
-        id: "defaults",
-        label: "Valeurs par défaut",
-        hint: "Point de départ des nouveaux événements : horaires, durée de match, taille des groupes, visiteurs.",
-        icon: Calendar03Icon,
-    },
-    {
-        id: "scoring",
-        label: "Pointage",
-        hint: "Barème appliqué aux nouveaux événements. Chaque événement peut ensuite avoir le sien.",
-        icon: Award01Icon,
-    },
-    {
-        id: "promotion",
-        label: "Montées et descentes",
-        hint: "Règle appliquée aux nouveaux événements. Chaque événement peut ensuite avoir la sienne.",
-        icon: ArrowUpDownIcon,
-    },
-]
 
 export function SettingsManager() {
     const { profile } = useAuth()
