@@ -2,6 +2,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import type { Group, GroupPlayer } from "@/types/draw";
 import type { Match } from "@/types/match";
 import { DEFAULT_SCORE_POINTS, type ScoringSource } from "@/lib/effectiveRules";
+import { isMatchUnplayed } from "@/lib/matchScore";
 import { useMemo, useRef, useState } from "react";
 import { calculateGroupStandings, getPointsForScore } from "@/lib/rankingEngine";
 import type { PlayerMovement } from "@/lib/playerMovement";
@@ -275,6 +276,15 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                 const isWinner = match?.winner_id ? isRowPlayerWinner(match, player.id) : false
                                 const isAbsence = !!match?.score?.includes("ABS")
                                 const isRowPlayerAbsent = isAbsence && !isWinner
+                                /*
+                                 * L'heure est passee et personne n'a saisi le
+                                 * score. Meme fond ambre qu'un forfait : pour
+                                 * qui lit le tableau, le message est le meme,
+                                 * il s'est passe quelque chose ici. Mais aucun
+                                 * point n'est en jeu, `calculateGroupStandings`
+                                 * ignore les matchs sans vainqueur.
+                                 */
+                                const nonJoue = !!match && isMatchUnplayed(match)
 
                                 const selectable = !!onSelectMatch && !!match
                                 const openMatch = () => {
@@ -285,7 +295,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                     <TableCell
                                         key={colIndex}
                                         className={`text-center text-xs p-1 sm:p-2 transition-colors cursor-pointer border-r border-b border-foreground group-last:border-b-0
-                                                ${isAbsence
+                                                ${isAbsence || nonJoue
                                                     ? (isHovered ? 'bg-amber-100' : 'bg-amber-50')
                                                     : (isHovered ? 'bg-gray-200' : '')}
                                             `}
@@ -314,6 +324,9 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                                 <div className="font-bold text-amber-600 text-xs">
                                                     {rowAbsent ? "Abs" : "-"}
                                                 </div>
+                                            )
+                                            if (nonJoue) return (
+                                                <div className="font-bold text-amber-600 text-xs">-</div>
                                             )
                                             if (match.score) return displayMode === "points" ? (
                                                 (() => {

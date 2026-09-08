@@ -58,3 +58,47 @@ export function summarizeHeadToHead(matches: Match[], playerId: string): HeadToH
 
     return { played: wins + losses, wins, losses }
 }
+
+/**
+ * Delai laisse apres l'heure prevue avant qu'un match sans score soit
+ * considere comme non joue.
+ *
+ * Une heure trente : le temps de jouer, puis de saisir le resultat depuis le
+ * club. En dessous, une case passerait au rouge alors que les joueurs sont
+ * encore sur le terrain.
+ */
+export const DELAI_AVANT_NON_JOUE_MINUTES = 90
+
+/**
+ * Dit si un match aurait du etre joue et n'a aucun resultat.
+ *
+ * Ces cases sont les seules du tableau qui demandent une action, et rien ne
+ * les distinguait d'un match a venir : elles affichaient une date et une
+ * heure, comme les autres. Un joueur devant le tableau publie ne pouvait pas
+ * savoir si le match se jouait jeudi prochain ou s'il devait se jouer jeudi
+ * dernier et que personne n'avait rien dit.
+ *
+ * Un forfait n'en fait pas partie : « ABS » est un resultat, pas une absence
+ * de resultat, et il rapporte des points.
+ *
+ * L'heure est lue comme une heure murale. La base rend `19:30:00+00`, mais ce
+ * decalage est decoratif dans toute l'application : `formatTimeForInput` le
+ * coupe et l'ecran affiche 19:30. La bascule doit suivre la meme lecture, sans
+ * quoi elle se produirait a une heure differente de celle qui est affichee.
+ *
+ * Une date ou une heure illisible rend `false` : mieux vaut montrer un match a
+ * venir que d'alarmer a tort.
+ */
+export function isMatchUnplayed(
+    match: Pick<Match, "score" | "match_date" | "match_time">,
+    now: Date = new Date(),
+): boolean {
+    if (match.score) return false
+    if (!match.match_date || !match.match_time) return false
+
+    const heure = match.match_time.replace(/([+-]\d{2}(:\d{2})?)$/, "").slice(0, 5)
+    const debut = new Date(`${match.match_date}T${heure}`)
+    if (Number.isNaN(debut.getTime())) return false
+
+    return now.getTime() >= debut.getTime() + DELAI_AVANT_NON_JOUE_MINUTES * 60_000
+}
