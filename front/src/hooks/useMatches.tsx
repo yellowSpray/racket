@@ -356,9 +356,14 @@ export function useMatches() {
     /**
      * Met à jour les résultats de plusieurs matchs en parallèle.
      * Applique les changements en local après succès pour un retour immédiat.
+     *
+     * Un `score` à `null` avec `winnerId` à `null` retire le résultat : le
+     * match redevient à jouer. Le déclencheur `trg_elo_on_match_result` rejoue
+     * alors la série sans ce match, et les classements reviennent d'eux-mêmes
+     * à ce qu'ils étaient. L'effacement est donc réversible, comme la saisie.
      */
     const updateMatchResults = useCallback(async (
-        results: { matchId: string; winnerId: string | null; score: string }[]
+        results: { matchId: string; winnerId: string | null; score: string | null }[]
     ): Promise<boolean> => {
         if (results.length === 0) return true
 
