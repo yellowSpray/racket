@@ -179,4 +179,88 @@ describe('EmbedDraws', () => {
 
         expect(screen.queryByRole('navigation', { name: 'Séries' })).toBeNull()
     })
+
+    /*
+     * Le bareme decide de la colonne Total. Il vient de la fonction SQL, qui
+     * resout evenement puis club : le cadre ne peut pas lire ces tables, elles
+     * sont derriere la RLS et son visiteur est anonyme.
+     *
+     * Le defaut constate en production : `DrawTable` ne recevait aucun bareme
+     * et retombait sur ses valeurs codees en dur. Une victoire 3-1 valait 5
+     * points dans l'application et 4 dans le cadre, sur les memes matchs.
+     */
+    describe('bareme des points', () => {
+        const BOX = {
+            id: 'g1',
+            round_id: 'r1',
+            group_name: 'Box 1',
+            max_players: 6,
+            created_at: '',
+            players: [
+                { id: 'p1', first_name: 'Fernando', last_name: 'Louge', phone: '', power_ranking: 0 },
+                { id: 'p2', first_name: 'Laurent', last_name: 'Evers', phone: '', power_ranking: 0 },
+            ],
+        }
+
+        const MATCH = {
+            id: 'm1',
+            group_id: 'g1',
+            player1_id: 'p1',
+            player2_id: 'p2',
+            score: '3-1',
+            winner_id: 'p1',
+            match_date: '2026-09-14',
+            match_time: '19:30',
+        }
+
+        /**
+         * Le total affiche sur la ligne d'un joueur : derniere cellule.
+         *
+         * `getAllByText` et pas `getByText` : le nom figure deux fois dans le
+         * DOM, en version abregee et en version complete, l'une des deux etant
+         * masquee par CSS selon la largeur. Les deux sont sur la meme ligne.
+         */
+        const total = (nom: string) => {
+            const ligne = screen.getAllByText(new RegExp(nom))[0].closest('tr')
+            const cellules = ligne!.querySelectorAll('td')
+            return cellules[cellules.length - 1].textContent
+        }
+
+        it('applique le bareme rendu par la base', () => {
+            useEmbedDraws.mockReturnValue({
+                draws: {
+                    ...DRAWS,
+                    groups: [BOX],
+                    matches: [MATCH],
+                    // 3-1 vaut 5 / 2 ici, la ou le defaut du code dit 4 / 1.
+                    score_points: [
+                        { score: '3-0', winner_points: 6, loser_points: 0 },
+                        { score: '3-1', winner_points: 5, loser_points: 2 },
+                        { score: '3-2', winner_points: 4, loser_points: 3 },
+                        { score: 'ABS', winner_points: 4, loser_points: 0 },
+                    ],
+                },
+                loading: false,
+                error: null,
+            })
+
+            afficher()
+
+            expect(total('Louge')).toBe('5')
+            expect(total('Evers')).toBe('2')
+        })
+
+        it('retombe sur le defaut quand la base n en porte aucun', () => {
+            useEmbedDraws.mockReturnValue({
+                draws: { ...DRAWS, groups: [BOX], matches: [MATCH], score_points: null },
+                loading: false,
+                error: null,
+            })
+
+            afficher()
+
+            expect(total('Louge')).toBe('4')
+            expect(total('Evers')).toBe('1')
+        })
+    })
 })

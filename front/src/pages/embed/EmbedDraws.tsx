@@ -85,6 +85,21 @@ export function EmbedDraws() {
         })
     }, [])
 
+    /*
+     * Le bareme decide de la colonne Total. Il vient de la fonction SQL, qui
+     * resout l'evenement puis le club : cette page ne peut pas lire
+     * `event_scoring_rules` ni `scoring_rules`, elles sont derriere la RLS et
+     * son visiteur est anonyme.
+     *
+     * `undefined` quand la base n'en porte aucun : `DrawTable` applique alors
+     * son propre defaut, le meme que dans l'application. Les deux pages
+     * affichent donc les memes totaux dans tous les cas.
+     */
+    const bareme = useMemo(
+        () => (draws?.score_points ? { score_points: draws.score_points } : undefined),
+        [draws],
+    )
+
     const majDate = useMemo(() => {
         if (!draws?.round.updated_at) return null
         return new Date(draws.round.updated_at).toLocaleDateString("fr-FR", {
@@ -187,6 +202,7 @@ export function EmbedDraws() {
                                 key={group.id}
                                 group={sorted}
                                 matches={groupMatches}
+                                scoringRules={bareme}
                                 displayMode="score"
                             />
                         )
