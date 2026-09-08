@@ -1,4 +1,4 @@
-import type { Group } from "@/types/draw"
+import type { Group, GroupPlayer } from "@/types/draw"
 import type { MatchPairing, MatchAssignment, Match } from "@/types/match"
 
 // --- Types ---
@@ -578,6 +578,32 @@ export function totalSlotCount(datesCount: number, timeSlotsCount: number, numbe
     return datesCount * timeSlotsCount * numberOfCourts
 }
 
+/**
+ * Departage deux joueurs quand les dates ne suffisent pas.
+ *
+ * Sans ce recours, les comparateurs de `sortPlayersByEarliestDates` rendaient
+ * `0` sur egalite. Le tri de JavaScript etant stable, l'ordre d'arrivee
+ * decidait alors. Or les joueurs n'arrivent pas dans le meme ordre partout :
+ * la page d'administration les recoit dans l'ordre de sa requete, et
+ * `get_draws_by_embed_token` les rend tries par nom. Une box dont tous les
+ * joueurs jouent sur les memes dates s'affichait donc dans deux ordres
+ * differents selon qu'on la regardait dans l'application ou dans le cadre
+ * integre sur le site du club.
+ *
+ * Le nom d'abord, parce que c'est ce qu'un lecteur peut verifier de lui-meme,
+ * puis le prenom, puis l'identifiant qui garantit qu'il ne reste plus jamais
+ * d'egalite.
+ */
+function departagerParNom(a: GroupPlayer, b: GroupPlayer): number {
+    const nom = (a.last_name ?? "").localeCompare(b.last_name ?? "", "fr")
+    if (nom !== 0) return nom
+
+    const prenom = (a.first_name ?? "").localeCompare(b.first_name ?? "", "fr")
+    if (prenom !== 0) return prenom
+
+    return a.id.localeCompare(b.id)
+}
+
 export function sortPlayersByEarliestDates(
     group: Group,
     assignments: MatchAssignment[] | Match[]
@@ -592,7 +618,12 @@ export function sortPlayersByEarliestDates(
         date: "matchDate" in a ? a.matchDate : a.match_date,
     })).filter(a => groupPlayerIds.has(a.p1) && groupPlayerIds.has(a.p2))
 
-    if (normalized.length === 0) return { ...group, players: [...players] }
+    // Une box dont le calendrier n'est pas encore genere : aucune date ne
+    // distingue personne, mais l'affichage doit quand meme etre le meme des
+    // deux cotes.
+    if (normalized.length === 0) {
+        return { ...group, players: [...players].sort(departagerParNom) }
+    }
 
     const playerDatesMap = new Map<string, string[]>()
     for (const player of players) {
@@ -610,7 +641,7 @@ export function sortPlayersByEarliestDates(
             const cmp = (datesA[i] || "").localeCompare(datesB[i] || "")
             if (cmp !== 0) return cmp
         }
-        return 0
+        return departagerParNom(a, b)
     })
 
     const playerA = sortedByGlobalDates[0]
@@ -621,9 +652,10 @@ export function sortPlayersByEarliestDates(
         else if (match.p2 === playerA.id) dateVsA.set(match.p1, match.date)
     }
 
-    const others = sortedByGlobalDates.slice(1).sort((a, b) =>
-        (dateVsA.get(a.id) || "").localeCompare(dateVsA.get(b.id) || "")
-    )
+    const others = sortedByGlobalDates.slice(1).sort((a, b) => {
+        const cmp = (dateVsA.get(a.id) || "").localeCompare(dateVsA.get(b.id) || "")
+        return cmp !== 0 ? cmp : departagerParNom(a, b)
+    })
 
     return { ...group, players: [playerA, ...others] }
 }
