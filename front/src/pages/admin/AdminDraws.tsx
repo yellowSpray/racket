@@ -53,6 +53,23 @@ export function AdminDraws () {
             setSavingScore(false)
         }
     }
+
+    /**
+     * Retire le résultat d'un match : il redevient à jouer.
+     *
+     * Le vainqueur part avec le score, sans quoi la base garderait un gagnant
+     * pour une rencontre sans résultat, et l'Elo continuerait de le compter.
+     */
+    const handleClearScore = async (matchId: string) => {
+        setSavingScore(true)
+        try {
+            await updateMatchResults([{ matchId, winnerId: null, score: null }])
+            setSelectedCell(null)
+        } finally {
+            setSavingScore(false)
+        }
+    }
+
     // Le bareme suit l'evenement affiche, et retombe sur le club a defaut.
     const { scoring } = useEffectiveRules(currentEvent?.id ?? null, profile?.club_id ?? null)
     const { players } = usePlayers()
@@ -211,6 +228,7 @@ export function AdminDraws () {
                 rowPlayer={selectedCell?.rowPlayer ?? null}
                 opponent={selectedCell?.opponent ?? null}
                 onSave={handleSaveScore}
+                onClear={handleClearScore}
                 saving={savingScore}
             />
 
