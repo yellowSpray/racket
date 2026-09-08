@@ -169,6 +169,49 @@ describe('MatchScoreDialog', () => {
         expect(screen.getByLabelText('Score Timothy Beek')).toHaveValue('')
     })
 
+    /*
+     * Un score se pose, se corrige, et doit aussi pouvoir se retirer : un
+     * admin qui saisit sur la mauvaise ligne, ou qui anticipe un match qui ne
+     * se jouera finalement pas, n'avait aucun recours dans l'interface. Les
+     * deux selecteurs sur « - » laissaient Enregistrer desactive.
+     */
+    describe('effacement du score', () => {
+        const joue = { ...match, score: '3-1', winner_id: 'a' }
+
+        it('propose d\'effacer un score deja enregistre', () => {
+            setup({ match: joue, onClear: vi.fn() })
+            expect(screen.getByRole('button', { name: /effacer le score/i })).toBeInTheDocument()
+        })
+
+        it('n\'offre pas d\'effacer un match qui n\'a pas de score', () => {
+            setup({ onClear: vi.fn() })
+            expect(screen.queryByRole('button', { name: /effacer le score/i })).not.toBeInTheDocument()
+        })
+
+        // L'appelant qui ne fournit pas `onClear` n'expose pas le bouton : la
+        // liste des matchs pourra reutiliser le dialogue sans ouvrir ce geste.
+        it('n\'offre pas d\'effacer quand l\'appelant ne le permet pas', () => {
+            setup({ match: joue })
+            expect(screen.queryByRole('button', { name: /effacer le score/i })).not.toBeInTheDocument()
+        })
+
+        it('remonte l\'effacement a l\'appelant', async () => {
+            const onClear = vi.fn()
+            setup({ match: joue, onClear })
+
+            fireEvent.click(screen.getByRole('button', { name: /effacer le score/i }))
+
+            await waitFor(() => expect(onClear).toHaveBeenCalledWith('m9'))
+        })
+
+        it('ne laisse pas effacer pendant un enregistrement en cours', () => {
+            const onClear = vi.fn()
+            setup({ match: joue, onClear, saving: true })
+
+            expect(screen.getByRole('button', { name: /effacer le score/i })).toBeDisabled()
+        })
+    })
+
     it('n\'utilise pas de tiret cadratin dans son texte', () => {
         const { container } = render(
             <MatchScoreDialog

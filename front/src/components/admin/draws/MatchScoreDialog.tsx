@@ -25,6 +25,12 @@ interface MatchScoreDialogProps {
     opponent: GroupPlayer | null
     /** Reçoit le score déjà orienté « joueur de la ligne d'abord ». */
     onSave: (matchId: string, orientedScore: string) => void | Promise<void>
+    /**
+     * Retire le score du match. Optionnel : sans ce rappel, le bouton
+     * d'effacement ne s'affiche pas. Un appelant qui ne veut pas ouvrir ce
+     * geste réutilise donc le dialogue sans rien changer.
+     */
+    onClear?: (matchId: string) => void | Promise<void>
     saving?: boolean
 }
 
@@ -54,9 +60,13 @@ function splitScore(score: string): [string, string] {
  * Le score se saisit **du point de vue du joueur de la ligne**, comme il s'affiche
  * dans la case : c'est ce que l'admin lit sous les yeux. La conversion vers le
  * format de la base (`player1-player2`) est faite par l'appelant.
+ *
+ * Un score posé peut aussi être retiré, par un bouton distinct qui n'apparaît
+ * que sur un match qui en porte un. Sans ce recours, une saisie sur la mauvaise
+ * ligne ne se corrigeait que dans l'éditeur SQL.
  */
 export function MatchScoreDialog({
-    open, onOpenChange, match, rowPlayer, opponent, onSave, saving,
+    open, onOpenChange, match, rowPlayer, opponent, onSave, onClear, saving,
 }: MatchScoreDialogProps) {
     const { matches: history, summary, loading, fetchHistory } = useHeadToHead()
 
@@ -103,6 +113,19 @@ export function MatchScoreDialog({
         if (!match || !complete) return
         const value = myScore === "ABS" ? "ABS" : theirScore === "ABS" ? "0-ABS" : `${myScore}-${theirScore}`
         onSave(match.id, value === "ABS" ? "ABS-0" : value)
+    }
+
+    /*
+     * L'effacement ne passe pas par les sélecteurs : deux « - » sont aussi
+     * l'état d'un match jamais joué, et Enregistrer déclencherait alors une
+     * écriture à chaque ouverture-fermeture. Un geste distinct, proposé
+     * seulement quand il y a quelque chose à retirer.
+     */
+    const canClear = !!match?.score && !!onClear
+
+    const handleClear = () => {
+        if (!match || !onClear) return
+        onClear(match.id)
     }
 
     if (!match || !rowPlayer || !opponent) return null
@@ -197,6 +220,17 @@ export function MatchScoreDialog({
                 </div>
 
                 <DialogFooter>
+                    {canClear && (
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            className="sm:mr-auto"
+                            onClick={handleClear}
+                            disabled={saving}
+                        >
+                            Effacer le score
+                        </Button>
+                    )}
                     <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
                         Annuler
                     </Button>
