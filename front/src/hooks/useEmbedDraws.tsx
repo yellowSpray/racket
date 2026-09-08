@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import type { Group } from "@/types/draw"
 import type { Match } from "@/types/match"
+import type { ScorePointsEntry } from "@/types/settings"
 
 /**
  * Tableaux d'une serie, lus sans connexion.
@@ -38,6 +39,15 @@ export interface EmbedDraws {
     series: EmbedSeries[]
     groups: Group[]
     matches: Match[]
+    /**
+     * Bareme applique par l'evenement, resolu cote base : celui de
+     * l'evenement, sinon celui du club. `null` quand la base n'en porte
+     * aucun, et le tableau applique alors son propre defaut.
+     *
+     * Il ne peut pas venir d'ailleurs : `event_scoring_rules` et
+     * `scoring_rules` sont derriere la RLS, fermees au role anonyme.
+     */
+    score_points: ScorePointsEntry[] | null
 }
 
 /** Ce que la fonction rend : les joueurs sans telephone ni classement. */
@@ -49,6 +59,7 @@ interface EmbedPayload {
     event_name?: string
     round?: EmbedRound
     series?: EmbedSeries[]
+    score_points?: ScorePointsEntry[] | null
     groups?: {
         id: string
         round_id: string
@@ -101,6 +112,7 @@ export function useEmbedDraws(token: string | undefined, roundNumber: number | n
             event_name: payload.event_name ?? "",
             round: payload.round as EmbedRound,
             series: payload.series ?? [],
+            score_points: payload.score_points ?? null,
             // `phone` et `power_ranking` ne sortent pas de la base : ils sont
             // remplis de valeurs vides pour satisfaire le type partage avec
             // l'application, et ne sont affiches nulle part sur cette page.

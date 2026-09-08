@@ -117,6 +117,39 @@ describe('useEmbedDraws', () => {
         expect(result.current.error).toBe('Tableaux indisponibles')
     })
 
+    /*
+     * Le bareme vient de la fonction SQL et de nulle part ailleurs. Les tables
+     * `event_scoring_rules` et `scoring_rules` sont derriere la RLS, et le
+     * visiteur d'un cadre integre est anonyme : ce hook ne peut pas les lire.
+     * Sans ce passage, `DrawTable` retombait sur ses valeurs codees en dur et
+     * le cadre affichait d'autres totaux que l'application.
+     */
+    it('transmet le bareme rendu par la fonction', async () => {
+        const bareme = [
+            { score: '3-0', winner_points: 6, loser_points: 0 },
+            { score: '3-1', winner_points: 5, loser_points: 2 },
+            { score: 'ABS', winner_points: 4, loser_points: 0 },
+        ]
+        rpc.mockResolvedValue({ data: { ...PAYLOAD, score_points: bareme }, error: null })
+
+        const { result } = renderHook(() => useEmbedDraws(TOKEN, null))
+
+        await waitFor(() => expect(result.current.loading).toBe(false))
+
+        expect(result.current.draws?.score_points).toEqual(bareme)
+    })
+
+    it('rend un bareme nul quand la base n en porte aucun', async () => {
+        // Le front applique alors son propre defaut, le meme que l'application.
+        rpc.mockResolvedValue({ data: { ...PAYLOAD, score_points: null }, error: null })
+
+        const { result } = renderHook(() => useEmbedDraws(TOKEN, null))
+
+        await waitFor(() => expect(result.current.loading).toBe(false))
+
+        expect(result.current.draws?.score_points).toBeNull()
+    })
+
     it('n appelle rien sans jeton', async () => {
         const { result } = renderHook(() => useEmbedDraws(undefined, null))
 
