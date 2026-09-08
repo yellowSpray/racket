@@ -4,6 +4,7 @@ import {
     computeWinnerId,
     orientScore,
     summarizeHeadToHead,
+    isMatchUnplayed,
 } from '../matchScore'
 import type { Match } from '@/types/match'
 
@@ -87,5 +88,66 @@ describe('summarizeHeadToHead', () => {
 
     it('renvoie un bilan vide sans historique', () => {
         expect(summarizeHeadToHead([], 'a')).toEqual({ played: 0, wins: 0, losses: 0 })
+    })
+})
+
+/**
+ * Un match dont l'heure est passee et dont personne n'a saisi le score.
+ *
+ * Le tableau le signalait comme n'importe quel match a venir, une date et une
+ * heure, alors que c'est la seule case qui demande une action. Un joueur
+ * regardant le tableau publie ne pouvait pas distinguer « ca se joue jeudi »
+ * de « ca devait se jouer jeudi dernier et personne n'a rien dit ».
+ *
+ * Le delai de 1h30 apres l'heure prevue laisse le temps de jouer le match et
+ * de saisir le resultat avant que la case ne change d'aspect.
+ */
+describe('isMatchUnplayed', () => {
+    const match = (score: string | null, date: string, time: string) =>
+        ({ score, match_date: date, match_time: time }) as Pick<
+            Match, 'score' | 'match_date' | 'match_time'
+        >
+
+    // Le match du 7 septembre a 19h30 : le delai expire a 21h00.
+    const LE_MATCH = match(null, '2026-09-07', '19:30:00+00')
+
+    it('reste a venir avant l heure du match', () => {
+        expect(isMatchUnplayed(LE_MATCH, new Date('2026-09-07T18:00'))).toBe(false)
+    })
+
+    it('reste a venir pendant le delai de saisie', () => {
+        expect(isMatchUnplayed(LE_MATCH, new Date('2026-09-07T20:59'))).toBe(false)
+    })
+
+    it('bascule une fois le delai passe', () => {
+        expect(isMatchUnplayed(LE_MATCH, new Date('2026-09-07T21:01'))).toBe(true)
+    })
+
+    it('ne bascule jamais si le score est saisi', () => {
+        const joue = match('3-1', '2026-09-07', '19:30:00+00')
+        expect(isMatchUnplayed(joue, new Date('2026-09-30T12:00'))).toBe(false)
+    })
+
+    it('traite un forfait comme un match joue', () => {
+        // « ABS » est un resultat, pas une absence de resultat.
+        const forfait = match('ABS-0', '2026-09-07', '19:30:00+00')
+        expect(isMatchUnplayed(forfait, new Date('2026-09-30T12:00'))).toBe(false)
+    })
+
+    it('lit l heure murale et ignore le decalage stocke', () => {
+        // La base rend « 19:30:00+00 », mais toute l'application traite cette
+        // valeur comme une heure locale : formatTimeForInput coupe le decalage
+        // et affiche 19:30. La bascule doit suivre la meme lecture, sans quoi
+        // elle se produirait a une heure differente de celle affichee.
+        expect(isMatchUnplayed(match(null, '2026-09-07', '19:30:00+02'),
+                               new Date('2026-09-07T20:59'))).toBe(false)
+        expect(isMatchUnplayed(match(null, '2026-09-07', '19:30:00+02'),
+                               new Date('2026-09-07T21:01'))).toBe(true)
+    })
+
+    it('ne bascule pas sur une date ou une heure illisible', () => {
+        // Mieux vaut afficher un match a venir qu'alarmer a tort.
+        expect(isMatchUnplayed(match(null, '', '19:30:00+00'), new Date('2026-09-30T12:00'))).toBe(false)
+        expect(isMatchUnplayed(match(null, '2026-09-07', ''), new Date('2026-09-30T12:00'))).toBe(false)
     })
 })

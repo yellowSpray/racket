@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { DrawTable } from '../DrawTable'
 import type { Group, GroupPlayer } from '@/types/draw'
 import type { Match } from '@/types/match'
@@ -50,6 +50,23 @@ const makeGroup = (overrides: Partial<Group> = {}): Group => ({
 })
 
 describe('DrawTable', () => {
+  /*
+   * Le tableau distingue desormais un match a venir d'un match dont l'heure est
+   * passee sans resultat. Les tests qui verifient l'affichage d'une date et
+   * d'une heure doivent donc fixer l'horloge : sinon leur resultat change le
+   * jour ou la date du jeu d'essai devient passee, et ils se sont mis a echouer
+   * tout seuls le jour ou le 5 mars 2026 est tombe dans le passe.
+   *
+   * `toFake: ['Date']` et pas les minuteries : React et la bibliotheque de test
+   * s'en servent, les remplacer casserait le rendu.
+   */
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-03-01T09:00'))
+  })
+
+  afterEach(() => { vi.useRealTimers() })
+
   it('renders without crashing with an empty group', () => {
     render(<DrawTable group={makeGroup()} />)
   })
@@ -374,6 +391,70 @@ describe('DrawTable', () => {
 
       // Une seule place occupee, donc un seul nom actionnable
       expect(screen.getAllByRole('button', { name: /Martin/ })).toHaveLength(1)
+    })
+  })
+
+  /*
+   * Un match dont l'heure est passee et dont personne n'a saisi le score.
+   * Ces cases sont les seules du tableau qui demandent une action, et rien ne
+   * les distinguait d'un match a venir : elles affichaient une date et une
+   * heure comme les autres.
+   *
+   * Le meme ambre que le forfait, parce que c'est le meme message pour qui lit
+   * le tableau, « il s'est passe quelque chose ici ». Mais aucun point n'est
+   * accorde : `calculateGroupStandings` ignore les matchs sans vainqueur.
+   */
+  describe('match non joue', () => {
+    const deuxJoueurs = makeGroup({
+      players: [
+        makePlayer({ id: 'p1', first_name: 'Alice', last_name: 'Martin' }),
+        makePlayer({ id: 'p2', first_name: 'Bob', last_name: 'Durand' }),
+      ],
+    })
+
+    const aVingtHeures = makeMatch({ match_date: '2026-03-05', match_time: '19:30:00+00' })
+
+    /** L'horloge est deja fixee par le describe parent, on la deplace. */
+    const a = (moment: string) => vi.setSystemTime(new Date(moment))
+
+    it('affiche la date tant que le delai n est pas passe', () => {
+      a('2026-03-05T20:59')
+      render(<DrawTable group={deuxJoueurs} matches={[aVingtHeures]} scoringRules={defaultRules} />)
+
+      expect(screen.getAllByText(/05\/03|5 mars/i).length).toBeGreaterThan(0)
+    })
+
+    it('remplace la date par un tiret ambre une fois le delai passe', () => {
+      a('2026-03-05T21:01')
+      const { container } = render(
+        <DrawTable group={deuxJoueurs} matches={[aVingtHeures]} scoringRules={defaultRules} />,
+      )
+
+      const ambres = container.querySelectorAll('.text-amber-600')
+      expect(ambres.length).toBeGreaterThan(0)
+      expect([...ambres].every(n => n.textContent === '-')).toBe(true)
+    })
+
+    it('n accorde aucun point', () => {
+      a('2026-03-05T21:01')
+      render(<DrawTable group={deuxJoueurs} matches={[aVingtHeures]} scoringRules={defaultRules} />)
+
+      const lignes = screen.getAllByText(/Martin|Durand/)[0].closest('tr')!
+      const cellules = lignes.querySelectorAll('td')
+      expect(cellules[cellules.length - 1].textContent).toBe('0')
+    })
+
+    it('laisse un score saisi tranquille', () => {
+      a('2026-03-30T12:00')
+      render(
+        <DrawTable
+          group={deuxJoueurs}
+          matches={[makeMatch({ score: '3-1', winner_id: 'p1' })]}
+          scoringRules={defaultRules}
+        />,
+      )
+
+      expect(screen.getAllByText('3-1').length).toBeGreaterThan(0)
     })
   })
 })
