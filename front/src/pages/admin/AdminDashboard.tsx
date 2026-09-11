@@ -7,7 +7,6 @@ import { useHeaderSlot } from "@/contexts/HeaderSlotContext"
 import { PlayersStatusCard } from "@/components/admin/dashboard/PlayersStatusCard"
 import { UnpaidPaymentsCard } from "@/components/admin/dashboard/UnpaidPaymentsCard"
 import { MatchesCard } from "@/components/admin/dashboard/MatchesCard"
-import { AlertsCard } from "@/components/admin/dashboard/AlertsCard"
 
 export function AdminDashboard() {
     const { profile } = useAuth()
@@ -46,22 +45,31 @@ export function AdminDashboard() {
     return (
         <>
             {headerPortal}
-            <div className="flex flex-col h-full min-h-0 gap-5">
-                <div className="flex-1 min-h-0 grid grid-cols-28 grid-rows-16 gap-5">
+            {/*
+              * Deux colonnes, et le rail de droite est une largeur, pas une
+              * fraction : ses cartes portent des noms et des pastilles, elles
+              * ne gagnent rien a s'elargir, alors que le tableau des matchs et
+              * ses cinq colonnes prend tout ce qui reste.
+              *
+              * La chaine de `min-h-0` compte : les trois cartes portent un
+              * `ScrollArea` en `h-full`, et sans elle elles cessent de defiler
+              * et poussent la page vers le bas.
+              */}
+            <div className="grid min-h-0 flex-1 grid-cols-[1fr_360px] gap-4">
+                <MatchesCard
+                    className="min-h-0"
+                    roundId={currentRound?.id ?? null}
+                />
+                <div className="grid min-h-0 grid-rows-2 gap-4">
                     <PlayersStatusCard
-                        className="col-start-1 col-span-10 row-start-1 row-span-7"
+                        className="min-h-0"
                         clubId={profile?.club_id ?? null}
                         roundId={currentRound?.id ?? null}
                         previousRoundId={previousRoundId}
                     />
                     <UnpaidPaymentsCard
-                        className="col-start-11 col-span-9 row-start-1 row-span-7"
+                        className="min-h-0"
                         clubId={profile?.club_id ?? null}
-                    />
-                    <AlertsCard className="col-start-20 col-span-9 row-start-1 row-span-7" />
-                    <MatchesCard
-                        className="col-start-1 col-span-28 row-start-8 row-span-9 min-h-0"
-                        roundId={currentRound?.id ?? null}
                     />
                 </div>
             </div>
