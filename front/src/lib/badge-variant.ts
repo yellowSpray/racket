@@ -23,6 +23,11 @@ export const badgeVariants = cva(
           "border-transparent bg-green-500 text-gray-50",
         unpaid:
           "border-transparent bg-red-500 text-gray-50",
+        // Rouge pâle, pour qualifier sans alerter. `unpaid` est l'alerte,
+        // un rouge plein ; en poser huit dans une colonne ferait crier la
+        // carte entière et le compte ne se verrait plus.
+        unpaidSoft:
+          "border-transparent bg-red-100 text-red-700",
         linked:
           "text-green-500 border-2 border-green-500",
         pending:
