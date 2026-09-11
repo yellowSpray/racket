@@ -1,4 +1,3 @@
-import { EventSelector } from "@/components/admin/settings/EventSelector"
 import { MatchScheduleGrid } from "@/components/admin/matches/MatchScheduleGrid"
 import { MatchListView } from "@/components/admin/matches/MatchListView"
 import { MatchSkeleton } from "@/components/shared/skeletons/MatchSkeleton"
@@ -148,7 +147,6 @@ export function AdminMatches() {
     const headerPortal = useHeaderSlot(
         <>
             <h3 className="text-lg font-semibold">Matchs</h3>
-            <EventSelector />
             {hasMatches && (
                 <div className="relative flex-1 max-w-sm mx-auto">
                     <Search01Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
