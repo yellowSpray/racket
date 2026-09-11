@@ -3,9 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Calendar03Icon, Clock01Icon, ArrowLeft01Icon, ArrowRight01Icon } from "hugeicons-react"
+import { Calendar03Icon, ArrowLeft01Icon, ArrowRight01Icon, ArrowDown01Icon } from "hugeicons-react"
 import { useMatchesByDay, type DayMatch, type MatchDay } from "@/hooks/useMatchesByDay"
-import { EventSelector } from "@/components/admin/settings/EventSelector"
+import { isMatchUnplayed } from "@/lib/matchScore"
 
 const SCORE_OPTIONS = [
     { value: "", label: "Score…" },
@@ -24,38 +24,87 @@ function formatTime(matchTime: string): string {
     return m ? m[1] : matchTime
 }
 
-function MatchProgressBadge({ played, total }: { played: number; total: number }) {
-    const allDone = played === total
-    const noneStarted = played === 0
+/** Accorde un libellé compté : 1 match, 2 matchs. */
+function pluriel(n: number, singulier: string, pluriel: string): string {
+    return `${n} ${n > 1 ? pluriel : singulier}`
+}
+
+/**
+ * Les trois chiffres du jour affiché.
+ *
+ * « Non joué » n'est pas « sans score » : un match de 23h vu à 20h attend son
+ * heure, il n'est en retard de rien. Le délai vit dans `isMatchUnplayed`, une
+ * seule fois pour toute l'application.
+ *
+ * Une absence est un résultat, pas une absence de résultat. Elle rapporte des
+ * points et compte donc parmi les matchs joués, d'où deux comptes séparés.
+ */
+function compterLeJour(day: MatchDay | undefined) {
+    const matches = day?.matches ?? []
+    return {
+        total: matches.length,
+        nonJoues: matches.filter(m => isMatchUnplayed(m)).length,
+        absences: matches.filter(m => m.score?.includes("ABS")).length,
+    }
+}
+
+/**
+ * Trois rôles, trois poids. Le total renseigne, d'où un gris neutre. Les
+ * absences sont un fait acquis, d'où un ambre plein. Les non joués sont les
+ * seuls des trois à demander une action : un contour ambre sur blanc, qui se
+ * détache des deux autres sans crier.
+ */
+function TagsDuJour({ day }: { day: MatchDay | undefined }) {
+    const { total, nonJoues, absences } = compterLeJour(day)
+    if (total === 0) return null
+
     return (
-        <Badge
-            variant="default"
-            className={`text-xs px-2 py-0.5 gap-1.5 ${
-                allDone
-                    ? "bg-green-500 text-white"
-                    : noneStarted
-                        ? "bg-gray-200 text-gray-700"
-                        : "bg-amber-100 text-amber-700 border border-amber-300"
-            }`}
-        >
-            <span className="relative flex h-2 w-2">
-                {!allDone && (
-                    <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${
-                        noneStarted ? "bg-gray-400" : "bg-amber-500"
-                    }`} />
-                )}
-                <span className={`relative inline-flex h-2 w-2 rounded-full ${
-                    allDone ? "bg-white" : noneStarted ? "bg-gray-500" : "bg-amber-500"
-                }`} />
-            </span>
-            {allDone
-                ? `${total} matchs terminés`
-                : noneStarted
-                    ? `${total} matchs à jouer`
-                    : `${played}/${total} joués`
-            }
-        </Badge>
+        <span className="ml-auto flex shrink-0 items-center gap-2">
+            <Badge variant="neutral" className="h-5 px-2 text-xs">
+                {pluriel(total, "match", "matchs")}
+            </Badge>
+            {/*
+              * Affiche meme a zero, a la difference des absences : c'est le
+              * seul des trois qui appelle une action, et « 0 non joué » est
+              * une bonne nouvelle qu'on vient chercher.
+              */}
+            <Badge variant="warningOutline" className="h-5 px-2 text-xs">
+                {pluriel(nonJoues, "non joué", "non joués")}
+            </Badge>
+            {absences > 0 && (
+                <Badge variant="warningSoft" className="h-5 px-2 text-xs">
+                    {pluriel(absences, "absence", "absences")}
+                </Badge>
+            )}
+        </span>
     )
+}
+
+/**
+ * Ce que le sélecteur de score montre une fois fermé, et la couleur qu'il
+ * porte. Trois états, trois poids : un résultat est acquis et se dit en vert ;
+ * une absence est un résultat elle aussi, mais qui n'a pas été joué, d'où un
+ * ambre plein ; un match en retard demande une action, d'où le seul contour
+ * des trois.
+ */
+function etatDuScore(match: DayMatch): { libelle: string; classe: string } {
+    if (match.status === "done" && match.score) {
+        return match.score.includes("ABS")
+            // « Abs » sur la pastille, qui fut absent dans le menu.
+            ? { libelle: "Abs", classe: "border-amber-200 bg-amber-100 text-amber-800" }
+            : { libelle: match.score, classe: "border-green-200 bg-green-100 text-green-900" }
+    }
+
+    const annonce = match.pending_score_p1 ?? match.pending_score_p2
+    if (match.status === "waiting_one" && annonce) {
+        return { libelle: annonce, classe: "border-amber-400 bg-white text-amber-800" }
+    }
+
+    if (isMatchUnplayed(match)) {
+        return { libelle: "Non joué", classe: "border-amber-400 bg-white text-amber-800" }
+    }
+
+    return { libelle: "Score…", classe: "border-border bg-white text-muted-foreground" }
 }
 
 interface MatchesCardProps {
@@ -66,31 +115,21 @@ interface MatchesCardProps {
 export function MatchesCard({ roundId, className }: MatchesCardProps) {
     const { days, loading, initialDayIndex, resolveScore } = useMatchesByDay(roundId)
     const [dayIndex, setDayIndex] = useState(0)
-    const [scoreSelections, setScoreSelections] = useState<Map<string, string>>(new Map())
 
     useEffect(() => {
         setDayIndex(initialDayIndex)
     }, [initialDayIndex])
 
-    const handleScoreChange = useCallback((matchId: string, value: string) => {
-        setScoreSelections(prev => new Map(prev).set(matchId, value))
-    }, [])
-
+    /*
+     * Choisir enregistre. Il n'y a plus de bouton a confirmer, donc plus de
+     * choix en attente a retenir : le score vit en base ou nulle part.
+     */
     const handleValidate = useCallback(async (match: DayMatch, score: string) => {
         if (!score) return
-        const ok = await resolveScore(match.id, score, match.player1_id, match.player2_id)
-        if (ok) {
-            setScoreSelections(prev => {
-                const next = new Map(prev)
-                next.delete(match.id)
-                return next
-            })
-        }
+        await resolveScore(match.id, score, match.player1_id, match.player2_id)
     }, [resolveScore])
 
     const currentDay = days[dayIndex]
-    const played = currentDay?.matches.filter(m => m.status === "done").length ?? 0
-    const total = currentDay?.matches.length ?? 0
 
     return (
         <Card className={className}>
@@ -98,7 +137,6 @@ export function MatchesCard({ roundId, className }: MatchesCardProps) {
                 <CardTitle className="flex items-center gap-2 text-sm">
                     <Calendar03Icon size={16} className="text-foreground shrink-0" />
                     <span className="font-semibold shrink-0">Matchs</span>
-                    <EventSelector />
                     <button
                         onClick={() => setDayIndex(i => i - 1)}
                         disabled={dayIndex === 0 || days.length === 0}
@@ -127,11 +165,7 @@ export function MatchesCard({ roundId, className }: MatchesCardProps) {
                     >
                         <ArrowRight01Icon size={14} />
                     </button>
-                    {total > 0 && (
-                        <span className="ml-auto shrink-0">
-                            <MatchProgressBadge played={played} total={total} />
-                        </span>
-                    )}
+                    <TagsDuJour day={currentDay} />
                 </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 min-h-0">
@@ -145,12 +179,7 @@ export function MatchesCard({ roundId, className }: MatchesCardProps) {
                         <p className="text-sm">Aucun match programmé</p>
                     </div>
                 ) : (
-                    <MatchesFeed
-                        day={currentDay}
-                        scoreSelections={scoreSelections}
-                        onScoreChange={handleScoreChange}
-                        onValidate={handleValidate}
-                    />
+                    <MatchesFeed day={currentDay} onValidate={handleValidate} />
                 )}
             </CardContent>
         </Card>
@@ -159,12 +188,10 @@ export function MatchesCard({ roundId, className }: MatchesCardProps) {
 
 interface MatchesFeedProps {
     day: MatchDay
-    scoreSelections: Map<string, string>
-    onScoreChange: (matchId: string, value: string) => void
     onValidate: (match: DayMatch, score: string) => Promise<void>
 }
 
-function MatchesFeed({ day, scoreSelections, onScoreChange, onValidate }: MatchesFeedProps) {
+function MatchesFeed({ day, onValidate }: MatchesFeedProps) {
     return (
         <div className="flex flex-col h-full min-h-0">
             <div className="flex-1 min-h-0">
@@ -194,14 +221,15 @@ function MatchesFeed({ day, scoreSelections, onScoreChange, onValidate }: Matche
                                     const nextTime = index < day.matches.length - 1
                                         ? formatTime(day.matches[index + 1].match_time)
                                         : null
-                                    const isLastOfSlot = nextTime !== null && currentTime !== nextTime
+                                    const previousTime = index > 0
+                                        ? formatTime(day.matches[index - 1].match_time)
+                                        : null
                                     return (
                                         <MatchTableRow
                                             key={match.id}
                                             match={match}
-                                            isLastOfSlot={isLastOfSlot}
-                                            scoreSelections={scoreSelections}
-                                            onScoreChange={onScoreChange}
+                                            isLastOfSlot={nextTime !== null && currentTime !== nextTime}
+                                            isFirstOfSlot={previousTime !== currentTime}
                                             onValidate={onValidate}
                                         />
                                     )
@@ -213,13 +241,7 @@ function MatchesFeed({ day, scoreSelections, onScoreChange, onValidate }: Matche
                     {/* Mobile : cartes */}
                     <div className="md:hidden flex flex-col gap-2">
                         {day.matches.map(match => (
-                            <MatchMobileCard
-                                key={match.id}
-                                match={match}
-                                scoreSelections={scoreSelections}
-                                onScoreChange={onScoreChange}
-                                onValidate={onValidate}
-                            />
+                            <MatchMobileCard key={match.id} match={match} onValidate={onValidate} />
                         ))}
                     </div>
                 </ScrollArea>
@@ -231,58 +253,58 @@ function MatchesFeed({ day, scoreSelections, onScoreChange, onValidate }: Matche
 interface MatchRowProps {
     match: DayMatch
     isLastOfSlot: boolean
-    scoreSelections: Map<string, string>
-    onScoreChange: (matchId: string, value: string) => void
+    isFirstOfSlot: boolean
     onValidate: (match: DayMatch, score: string) => Promise<void>
 }
 
-function MatchTableRow({ match, isLastOfSlot, scoreSelections, onScoreChange, onValidate }: MatchRowProps) {
-    const isP1Winner = match.winner_id === match.player1_id
-    const isP2Winner = match.winner_id === match.player2_id
-    const p1Name = match.player1 ? `${match.player1.first_name} ${match.player1.last_name}` : "?"
-    const p2Name = match.player2 ? `${match.player2.first_name} ${match.player2.last_name}` : "?"
+/** Le vainqueur se dit par la graisse, et rien d'autre. */
+function Affiche({ match }: { match: DayMatch }) {
+    const p1 = match.player1 ? `${match.player1.first_name} ${match.player1.last_name}` : "?"
+    const p2 = match.player2 ? `${match.player2.first_name} ${match.player2.last_name}` : "?"
+    return (
+        <div className="flex items-center gap-1.5">
+            <span className={`truncate ${match.winner_id === match.player1_id ? "font-semibold" : ""}`}>
+                {p1}
+            </span>
+            <span className="text-gray-400 shrink-0 text-xs">vs</span>
+            <span className={`truncate ${match.winner_id === match.player2_id ? "font-semibold" : ""}`}>
+                {p2}
+            </span>
+        </div>
+    )
+}
 
-    const initialScore = match.status === "waiting_one"
-        ? (match.pending_score_p1 ?? match.pending_score_p2 ?? "")
-        : ""
-    const selectedScore = scoreSelections.get(match.id) ?? initialScore
-
+function MatchTableRow({ match, isLastOfSlot, isFirstOfSlot, onValidate }: MatchRowProps) {
     return (
         <TableRow className={isLastOfSlot ? "border-b" : "border-b-0"}>
-            <TableCell className="text-xs font-medium">
-                <div className="flex items-center gap-1">
-                    <Clock01Icon size={13} className="text-muted-foreground shrink-0" />
-                    {formatTime(match.match_time)}
-                </div>
+            {/*
+              * L'heure ne s'ecrit qu'en tete de creneau. Trois matchs a 19h00
+              * repetaient trois fois la meme heure, et l'oeil devait comparer
+              * des chiffres pour voir un groupe que le blanc montre tout seul.
+              */}
+            <TableCell data-cellule-heure className="text-xs font-semibold">
+                {isFirstOfSlot ? formatTime(match.match_time) : ""}
             </TableCell>
             <TableCell>
                 {match.group?.group_name && (
-                    <Badge variant="default" className="text-xs px-2 py-0.5">
+                    <Badge variant="neutral" className="text-xs px-2 py-0.5">
                         {match.group.group_name}
                     </Badge>
                 )}
             </TableCell>
             <TableCell>
-                <div className="flex items-center gap-1.5">
-                    <span className={`truncate ${isP1Winner ? "font-semibold text-green-600" : ""}`}>
-                        {p1Name}
-                    </span>
-                    <span className="text-gray-400 shrink-0 text-xs">vs</span>
-                    <span className={`truncate ${isP2Winner ? "font-semibold text-green-600" : ""}`}>
-                        {p2Name}
-                    </span>
-                </div>
+                <Affiche match={match} />
             </TableCell>
-            <TableCell className="text-xs text-muted-foreground">
+            {/*
+              * `court_number` porte le nom du terrain, pas son numero : la
+              * colonne est mal nommee. Le prefixer donnait « Terrain Terrain 1 »,
+              * le defaut de `club_courts` etant deja « Terrain 1 ».
+              */}
+            <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                 {match.court_number ?? "-"}
             </TableCell>
             <TableCell>
-                <ScoreCell
-                    match={match}
-                    selectedScore={selectedScore}
-                    onScoreChange={onScoreChange}
-                    onValidate={onValidate}
-                />
+                <ScoreCell match={match} onValidate={onValidate} />
             </TableCell>
         </TableRow>
     )
@@ -290,142 +312,119 @@ function MatchTableRow({ match, isLastOfSlot, scoreSelections, onScoreChange, on
 
 interface MatchMobileCardProps {
     match: DayMatch
-    scoreSelections: Map<string, string>
-    onScoreChange: (matchId: string, value: string) => void
     onValidate: (match: DayMatch, score: string) => Promise<void>
 }
 
-function MatchMobileCard({ match, scoreSelections, onScoreChange, onValidate }: MatchMobileCardProps) {
-    const isP1Winner = match.winner_id === match.player1_id
-    const isP2Winner = match.winner_id === match.player2_id
-    const p1Name = match.player1 ? `${match.player1.first_name} ${match.player1.last_name}` : "?"
-    const p2Name = match.player2 ? `${match.player2.first_name} ${match.player2.last_name}` : "?"
-
-    const initialScore = match.status === "waiting_one"
-        ? (match.pending_score_p1 ?? match.pending_score_p2 ?? "")
-        : ""
-    const selectedScore = scoreSelections.get(match.id) ?? initialScore
-
+function MatchMobileCard({ match, onValidate }: MatchMobileCardProps) {
     return (
         <div className="rounded-md border p-3 text-sm flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-xs text-muted-foreground tabular-nums shrink-0">
-                        {formatTime(match.match_time)}
+            <div className="flex items-center gap-2 min-w-0">
+                <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                    {formatTime(match.match_time)}
+                </span>
+                {match.group?.group_name && (
+                    <Badge variant="neutral" className="text-xs px-2 py-0.5 shrink-0">
+                        {match.group.group_name}
+                    </Badge>
+                )}
+                {match.court_number && (
+                    <span className="text-xs text-muted-foreground shrink-0">
+                        {match.court_number}
                     </span>
-                    {match.group?.group_name && (
-                        <Badge variant="default" className="text-xs px-2 py-0.5 shrink-0">
-                            {match.group.group_name}
-                        </Badge>
-                    )}
-                    {match.court_number && (
-                        <span className="text-xs text-muted-foreground shrink-0">T{match.court_number}</span>
-                    )}
-                </div>
+                )}
             </div>
-            <div className="flex items-center gap-1.5">
-                <span className={`truncate text-sm ${isP1Winner ? "font-semibold text-green-600" : ""}`}>
-                    {p1Name}
-                </span>
-                <span className="text-gray-400 shrink-0 text-xs">vs</span>
-                <span className={`truncate text-sm ${isP2Winner ? "font-semibold text-green-600" : ""}`}>
-                    {p2Name}
-                </span>
-            </div>
-            <ScoreCell
-                match={match}
-                selectedScore={selectedScore}
-                onScoreChange={onScoreChange}
-                onValidate={onValidate}
-                compact
-            />
+            <Affiche match={match} />
+            <ScoreCell match={match} onValidate={onValidate} compact />
         </div>
     )
 }
 
 interface ScoreCellProps {
     match: DayMatch
-    selectedScore: string
-    onScoreChange: (matchId: string, value: string) => void
     onValidate: (match: DayMatch, score: string) => Promise<void>
     compact?: boolean
 }
 
-function ScoreCell({ match, selectedScore, onScoreChange, onValidate, compact }: ScoreCellProps) {
-    const alignClass = compact ? "" : "justify-end"
-
-    if (match.status === "done") {
-        const isAbs = match.score?.includes("ABS")
-        return (
-            <div className={`flex ${alignClass}`}>
-                <Badge
-                    variant={isAbs ? "pending" : "active"}
-                    className="text-xs px-2 py-0.5"
-                >
-                    {isAbs ? "Absent" : match.score}
-                </Badge>
-            </div>
-        )
-    }
-
+/**
+ * Un seul contrôle par rangée, quel que soit l'état du match.
+ *
+ * Avant, un match terminé montrait une pastille figée et un match sans score
+ * montrait une pastille, un sélecteur et un bouton Valider : trois objets dans
+ * une colonne d'un tiers, et deux grammaires à apprendre.
+ *
+ * Le sélecteur natif est posé en transparence sur la pastille, comme dans le
+ * fil d'Ariane. Le clavier marche sans une ligne de code, un `fireEvent.change`
+ * suffit à le tester, et sur téléphone c'est le système qui ouvre sa roulette.
+ */
+function ScoreCell({ match, onValidate, compact }: ScoreCellProps) {
     if (match.status === "conflict") {
-        return (
-            <div className="flex flex-col gap-1">
-                <div className={`flex ${alignClass}`}>
-                    <Badge variant="unpaid" className="text-[10px] px-1.5 py-0">Conflit</Badge>
-                </div>
-                <div className="flex items-center gap-1 justify-end">
-                    <span className="text-muted-foreground text-[10px]">P1 :</span>
-                    <span className="font-mono font-medium text-[11px]">{match.pending_score_p1}</span>
-                    <button
-                        onClick={() => onValidate(match, match.pending_score_p1!)}
-                        aria-label="Valider"
-                        className="text-[10px] px-2 py-0.5 rounded border border-gray-300 hover:bg-gray-50 transition-colors whitespace-nowrap"
-                    >
-                        Valider
-                    </button>
-                </div>
-                <div className="flex items-center gap-1 justify-end">
-                    <span className="text-muted-foreground text-[10px]">P2 :</span>
-                    <span className="font-mono font-medium text-[11px]">{match.pending_score_p2}</span>
-                    <button
-                        onClick={() => onValidate(match, match.pending_score_p2!)}
-                        aria-label="Valider"
-                        className="text-[10px] px-2 py-0.5 rounded border border-gray-300 hover:bg-gray-50 transition-colors whitespace-nowrap"
-                    >
-                        Valider
-                    </button>
-                </div>
-            </div>
-        )
+        return <ConflitCell match={match} onValidate={onValidate} compact={compact} />
     }
+
+    const { libelle, classe } = etatDuScore(match)
+    const enregistre = match.score ?? ""
+
+    /*
+     * Un score déjà posé n'offre plus l'entrée vide. La remettre serait un
+     * effacement, et l'effacement demande un geste explicite : dans une grille
+     * où l'on parcourt vingt lignes d'un coup, une entrée vide choisie par
+     * mégarde détruirait un résultat sans rien dire. Voir `MatchScoreDialog`,
+     * qui porte ce geste.
+     */
+    const options = enregistre
+        ? SCORE_OPTIONS.slice(1)
+        : [{ value: "", label: libelle }, ...SCORE_OPTIONS.slice(1)]
 
     return (
-        <div className={`flex items-center gap-1.5 ${alignClass}`}>
-            <Badge
-                variant={match.status === "waiting_one" ? "pending" : "inactive"}
-                className="text-[10px] px-1.5 py-0 shrink-0"
+        <div className={`flex ${compact ? "" : "justify-end"}`}>
+            <span
+                data-controle-score
+                className={`relative inline-flex h-6 w-[84px] items-center justify-between rounded-md border px-2 text-xs font-medium ${classe}`}
             >
-                {match.status === "waiting_one" ? "En attente" : "À saisir"}
-            </Badge>
-            <select
-                aria-label={`Score pour ${match.player1?.first_name ?? "P1"} vs ${match.player2?.first_name ?? "P2"}`}
-                value={selectedScore}
-                onChange={(e) => onScoreChange(match.id, e.target.value)}
-                className="h-6 text-[11px] border border-gray-300 rounded px-1 bg-white"
-            >
-                {SCORE_OPTIONS.map(o => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-            </select>
-            <button
-                onClick={() => onValidate(match, selectedScore)}
-                disabled={!selectedScore}
-                aria-label="Valider"
-                className="text-[10px] px-2 py-0.5 rounded border border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed whitespace-nowrap"
-            >
-                Valider
-            </button>
+                <span className="truncate">{libelle}</span>
+                <ArrowDown01Icon size={12} aria-hidden className="shrink-0 opacity-60" />
+                <select
+                    aria-label={`Score pour ${match.player1?.first_name ?? "P1"} vs ${match.player2?.first_name ?? "P2"}`}
+                    value={enregistre}
+                    onChange={(e) => onValidate(match, e.target.value)}
+                    className="absolute inset-0 w-full cursor-pointer opacity-0"
+                >
+                    {options.map(o => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                </select>
+            </span>
+        </div>
+    )
+}
+
+/**
+ * Le conflit garde son traitement à part, et c'est voulu : deux joueurs ont
+ * annoncé deux scores différents, et aucun contrôle unique ne peut montrer les
+ * deux valeurs en même temps. L'admin tranche entre elles.
+ */
+function ConflitCell({ match, onValidate, compact }: ScoreCellProps) {
+    const alignClass = compact ? "" : "justify-end"
+    return (
+        <div className="flex flex-col gap-1">
+            <div className={`flex ${alignClass}`}>
+                <Badge variant="unpaid" className="text-[10px] px-1.5 py-0">Conflit</Badge>
+            </div>
+            {([["P1", match.pending_score_p1], ["P2", match.pending_score_p2]] as const).map(
+                ([qui, annonce]) => annonce && (
+                    <div key={qui} className="flex items-center gap-1 justify-end">
+                        <span className="text-muted-foreground text-[10px]">{qui} :</span>
+                        <span className="font-mono font-medium text-[11px]">{annonce}</span>
+                        <button
+                            onClick={() => onValidate(match, annonce)}
+                            aria-label="Valider"
+                            className="text-[10px] px-2 py-0.5 rounded border border-gray-300 hover:bg-gray-50 transition-colors whitespace-nowrap"
+                        >
+                            Valider
+                        </button>
+                    </div>
+                ),
+            )}
         </div>
     )
 }
