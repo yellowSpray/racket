@@ -135,6 +135,20 @@ export function EventProvider({children}: {children: ReactNode}) {
         }
     }
 
+    /*
+     * Choisir une série à la main. Sans cela `currentRound` n'était que le
+     * résultat de `resolveCurrentRound`, et rien ne permettait de revenir sur
+     * une série passée : le fil d'Ariane en a besoin.
+     */
+    const selectRound = (roundId: string | null) => {
+        if (!roundId) {
+            setCurrentRound(resolveCurrentRound(currentEvent?.event_rounds || []))
+            return
+        }
+        const round = (currentEvent?.event_rounds || []).find(r => r.id === roundId)
+        if (round) setCurrentRound(round)
+    }
+
     useEffect(() => {
         if (profile) fetchEvents()
     }, [profile?.id])
@@ -146,6 +160,7 @@ export function EventProvider({children}: {children: ReactNode}) {
         loading,
         error,
         setCurrentEvent: selectEvent,
+        setCurrentRound: selectRound,
         fetchEvents
     }
 
