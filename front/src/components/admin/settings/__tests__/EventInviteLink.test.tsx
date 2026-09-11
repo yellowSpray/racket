@@ -31,4 +31,38 @@ describe('EventInviteLink', () => {
         expect(writeText).toHaveBeenCalledWith('https://ef.test/i/abc')
         await waitFor(() => expect(screen.getByText('Copié')).toBeInTheDocument())
     })
+
+    /*
+     * Le header n'a pas la place d'un bouton libelle. Le geste reste le meme,
+     * seul l'habillage change : c'est pour ca que ce mode vit ici plutot que
+     * dans un second composant qui dupliquerait la copie et sa confirmation.
+     */
+    describe('en pastille ronde, pour le header', () => {
+        it('se passe de libelle sans perdre son nom accessible', () => {
+            render(<EventInviteLink inviteUrl="https://ef.test/i/abc" eventName="Mixed" iconOnly />)
+
+            expect(screen.getByRole('button', { name: /Mixed/ })).toBeInTheDocument()
+            expect(screen.queryByText(/Lien d'invitation/)).not.toBeInTheDocument()
+        })
+
+        it('copie aussi', async () => {
+            render(<EventInviteLink inviteUrl="https://ef.test/i/abc" eventName="Mixed" iconOnly />)
+
+            fireEvent.click(screen.getByRole('button'))
+
+            expect(writeText).toHaveBeenCalledWith('https://ef.test/i/abc')
+            await waitFor(() =>
+                expect(screen.getByRole('button', { name: /copié/i })).toBeInTheDocument(),
+            )
+        })
+
+        // Un filet de 1 px, comme les autres pastilles de la barre du haut.
+        it('porte le filet fin des pastilles du header', () => {
+            render(<EventInviteLink inviteUrl="https://ef.test/i/abc" eventName="Mixed" iconOnly />)
+
+            const bouton = screen.getByRole('button')
+            expect(bouton.className).toContain('border')
+            expect(bouton.className).not.toContain('border-2')
+        })
+    })
 })
