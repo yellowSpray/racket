@@ -63,7 +63,6 @@ export function AdminDashboard() {
                 <div className="grid min-h-0 grid-rows-2 gap-4">
                     <PlayersStatusCard
                         className="min-h-0"
-                        clubId={profile?.club_id ?? null}
                         roundId={currentRound?.id ?? null}
                         previousRoundId={previousRoundId}
                     />

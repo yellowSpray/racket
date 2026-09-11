@@ -1,31 +1,27 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 import {
     UserGroupIcon,
     ArrowLeft01Icon,
     ArrowRight01Icon,
-    Tick02Icon,
-    Cancel01Icon,
     Clock01Icon,
 } from "hugeicons-react"
 import { usePlayerMovements, type PlayerMovement } from "@/hooks/usePlayerMovements"
-import { useVisitorRequests } from "@/hooks/useVisitorRequests"
 import { formatRelativeTime } from "@/lib/formatRelativeTime"
-import type { VisitorRequest } from "@/types/visitor"
 
-const SLIDES = [
-    { label: "Inscrits" },
-    { label: "Désinscrits" },
-    { label: "Liste d'attente" },
-    { label: "Demandes visiteurs" },
-]
+/**
+ * « Arrivées » et non « Inscrits » : la carte ne compte pas l'effectif de la
+ * série, elle compte ceux qui n'étaient pas là à la série précédente.
+ */
+const SLIDES = ["Arrivées", "Désinscrits", "Liste d'attente"] as const
+
+const ARRIVEES = 0
+const DEPARTS = 1
+const ATTENTE = 2
 
 interface PlayersStatusCardProps {
-    clubId: string | null
     /** Série en cours : les mouvements se lisent d'une série à l'autre. */
     roundId: string | null
     /** Série qui précède, dans le même événement. */
@@ -33,34 +29,28 @@ interface PlayersStatusCardProps {
     className?: string
 }
 
-export function PlayersStatusCard({ clubId, roundId, previousRoundId, className }: PlayersStatusCardProps) {
-    const { movements, loading: movementsLoading } = usePlayerMovements(roundId, previousRoundId)
-    const { requests, loading: requestsLoading, fetchPendingForClub, reviewRequest } = useVisitorRequests()
+export function PlayersStatusCard({ roundId, previousRoundId, className }: PlayersStatusCardProps) {
+    const { movements, loading } = usePlayerMovements(roundId, previousRoundId)
     const [slideIndex, setSlideIndex] = useState(0)
 
-    useEffect(() => {
-        if (clubId) fetchPendingForClub(clubId)
-    }, [clubId, fetchPendingForClub])
-
-    async function handleApprove(requestId: string) {
-        await reviewRequest(requestId, "approved")
-        fetchPendingForClub(clubId)
-    }
-
-    async function handleReject(requestId: string) {
-        await reviewRequest(requestId, "rejected")
-        fetchPendingForClub(clubId)
-    }
+    const visibles = movements.filter(m =>
+        slideIndex === ARRIVEES ? m.status === "active"
+            : slideIndex === DEPARTS ? m.status === "inactive"
+                : false,
+    )
 
     return (
         <Card className={className}>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-sm">
                     <UserGroupIcon size={16} className="text-foreground" />
-                    {SLIDES[slideIndex].label}
-                    {slideIndex === 3 && requests.length > 0 && (
-                        <Badge variant="pending" className="ml-1">
-                            {requests.length}
+                    {SLIDES[slideIndex]}
+                    {visibles.length > 0 && (
+                        // Vert et non le rouge des paiements : celui-ci renseigne,
+                        // il n'alerte pas. Un disque qui s'allonge en pastille
+                        // au-delà de deux chiffres.
+                        <Badge variant="count" className="h-5 min-w-5 px-1.5 text-[11px] leading-none">
+                            {visibles.length}
                         </Badge>
                     )}
                     <div className="ml-auto flex items-center gap-1">
@@ -83,28 +73,15 @@ export function PlayersStatusCard({ clubId, roundId, previousRoundId, className 
                     </div>
                 </CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 min-h-0">
-                {slideIndex === 0 && (
+
+            <CardContent className="flex-1 min-h-0 px-6 pt-1">
+                {slideIndex === ATTENTE ? (
+                    <ListeAttente />
+                ) : (
                     <MovementsList
-                        movements={movements.filter((m) => m.status === "active")}
-                        loading={movementsLoading}
-                        emptyLabel="Aucun nouvel inscrit"
-                    />
-                )}
-                {slideIndex === 1 && (
-                    <MovementsList
-                        movements={movements.filter((m) => m.status === "inactive")}
-                        loading={movementsLoading}
-                        emptyLabel="Aucun désinscrit"
-                    />
-                )}
-                {slideIndex === 2 && <WaitingListPlaceholder />}
-                {slideIndex === 3 && (
-                    <VisitorRequestsList
-                        requests={requests}
-                        loading={requestsLoading}
-                        onApprove={handleApprove}
-                        onReject={handleReject}
+                        movements={visibles}
+                        loading={loading}
+                        emptyLabel={slideIndex === ARRIVEES ? "Aucune arrivée" : "Aucun désinscrit"}
                     />
                 )}
             </CardContent>
@@ -132,127 +109,34 @@ function MovementsList({ movements, loading, emptyLabel }: { movements: PlayerMo
 
     return (
         <ScrollArea className="h-full" type="auto">
-            <Table>
-                <TableBody>
-                    {movements.map((m) => (
-                        <TableRow key={`${m.profileId}-${m.roundId}`}>
-                            <TableCell className="text-sm truncate py-1.5">
-                                {m.firstName} {m.lastName}
-                            </TableCell>
-                            <TableCell className="py-1.5">
-                                <Badge variant="default" className="text-[10px] px-1.5 py-0 truncate max-w-[120px]">
-                                    Série {m.roundNumber}
-                                </Badge>
-                            </TableCell>
-                            <TableCell className="text-right whitespace-nowrap py-1.5">
-                                <span className="text-xs text-muted-foreground">
-                                    {formatRelativeTime(m.registeredAt)}
-                                </span>
-                            </TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+            <ul>
+                {movements.map((m, i) => (
+                    <li
+                        key={`${m.profileId}-${m.roundId}`}
+                        data-ligne-mouvement
+                        className={`flex h-8 items-center gap-2 rounded-md px-4 ${
+                            i % 2 === 0 ? "bg-muted/40" : ""
+                        }`}
+                    >
+                        <span className="min-w-0 flex-1 truncate text-sm">
+                            {m.firstName} {m.lastName}
+                        </span>
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                            {formatRelativeTime(m.registeredAt)}
+                        </span>
+                    </li>
+                ))}
+            </ul>
         </ScrollArea>
     )
 }
 
-function WaitingListPlaceholder() {
+function ListeAttente() {
     return (
         <div className="h-full flex flex-col items-center justify-center text-gray-400">
             <Clock01Icon size={28} className="mb-3" />
             <p className="text-sm text-center">Joueurs inscrits en attente d'un groupe</p>
             <p className="text-xs mt-1">À venir</p>
-        </div>
-    )
-}
-
-function VisitorRequestsList({
-    requests, loading, onApprove, onReject,
-}: {
-    requests: VisitorRequest[]
-    loading: boolean
-    onApprove: (id: string) => void
-    onReject: (id: string) => void
-}) {
-    if (loading) {
-        return (
-            <div className="h-full flex items-center justify-center text-gray-400">
-                <p className="text-sm">Chargement...</p>
-            </div>
-        )
-    }
-
-    if (requests.length === 0) {
-        return (
-            <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                <Clock01Icon size={28} className="mb-3" />
-                <p className="text-sm">Aucune demande en attente</p>
-            </div>
-        )
-    }
-
-    return (
-        <div className="flex flex-col gap-3">
-            {requests.map((request) => (
-                <RequestRow
-                    key={request.id}
-                    request={request}
-                    onApprove={onApprove}
-                    onReject={onReject}
-                />
-            ))}
-        </div>
-    )
-}
-
-function RequestRow({ request, onApprove, onReject }: {
-    request: VisitorRequest
-    onApprove: (id: string) => void
-    onReject: (id: string) => void
-}) {
-    const playerName = request.profile
-        ? `${request.profile.first_name} ${request.profile.last_name}`
-        : "Joueur inconnu"
-    const clubName = request.profile?.clubs?.club_name
-
-    const formattedDate = new Date(request.created_at).toLocaleDateString("fr-FR", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-    })
-
-    return (
-        <div className="flex items-center justify-between rounded-md border p-3">
-            <div className="flex flex-col gap-1 min-w-0">
-                <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">{playerName}</span>
-                    {clubName && (
-                        <Badge variant="visitor" className="text-xs">
-                            {clubName}
-                        </Badge>
-                    )}
-                </div>
-                <span className="text-xs text-gray-400">{formattedDate}</span>
-                {request.message && (
-                    <p className="text-sm italic text-gray-500">{request.message}</p>
-                )}
-            </div>
-            <div className="flex items-center gap-2 shrink-0 ml-3">
-                <Button size="sm" variant="default" onClick={() => onApprove(request.id)}>
-                    <Tick02Icon size={16} className="mr-1" />
-                    Accepter
-                </Button>
-                <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-red-600 hover:text-red-700"
-                    onClick={() => onReject(request.id)}
-                >
-                    <Cancel01Icon size={16} className="mr-1" />
-                    Refuser
-                </Button>
-            </div>
         </div>
     )
 }
