@@ -10,11 +10,16 @@ const Rootlayout = () => {
   const isApp = location.pathname.startsWith('/admin') || location.pathname.startsWith('/user')
   const isAuth = location.pathname.startsWith('/auth')
 
+  /*
+   * Les pages de l'application ne portent plus de marges ici : la coque
+   * `DashboardLayout` tient la barre latérale contre le bord et donne au
+   * contenu son propre retrait. Hors application, `main` garde les siennes.
+   */
   return (
     <EventProvider>
     <HeaderSlotProvider>
       {!isAuth && <Header />}
-      <main className={`flex-1 flex flex-col min-h-0 w-full px-8 ${isApp ? 'pb-8' : ''} ${isAuth ? 'pt-8' : ''}`}>
+      <main className={`flex-1 flex flex-col min-h-0 w-full ${isApp ? '' : 'px-8'} ${isAuth ? 'pt-8' : ''}`}>
         <Outlet />
       </main>
       {showFooter && <Footer />}
