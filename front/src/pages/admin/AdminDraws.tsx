@@ -1,4 +1,3 @@
-import { EventSelector } from "@/components/admin/settings/EventSelector"
 import { DrawSkeleton } from "@/components/shared/skeletons/DrawSkeleton"
 import { useEvent } from "@/contexts/EventContext"
 import { useAuth } from "@/contexts/AuthContext"
@@ -112,7 +111,6 @@ export function AdminDraws () {
     const headerPortal = useHeaderSlot(
         <>
             <h3 className="text-lg font-semibold">Tableaux</h3>
-            <EventSelector />
         </>
     )
 
