@@ -1,8 +1,7 @@
-import { useEffect, useMemo } from "react"
+import { useMemo } from "react"
 import { Navigate } from "react-router"
 import { useEvent } from "@/contexts/EventContext"
 import { useAuth } from "@/contexts/AuthContext"
-import { useClubConfig } from "@/hooks/useClubConfig"
 import { useHeaderSlot } from "@/contexts/HeaderSlotContext"
 import { PlayersStatusCard } from "@/components/admin/dashboard/PlayersStatusCard"
 import { UnpaidPaymentsCard } from "@/components/admin/dashboard/UnpaidPaymentsCard"
@@ -20,21 +19,13 @@ export function AdminDashboard() {
             .sort((a, b) => b.round_number - a.round_number)[0]
         return previous?.id ?? null
     }, [currentEvent?.event_rounds, currentRound])
-    const { clubConfig, fetchClubConfig } = useClubConfig()
 
-    useEffect(() => {
-        fetchClubConfig(profile?.club_id ?? null)
-    }, [profile?.club_id, fetchClubConfig])
-
+    /*
+     * Le titre ne redit pas le nom du club : le fil d'Ariane l'affiche a
+     * quelques pixels de la, dans son premier segment.
+     */
     const headerPortal = useHeaderSlot(
-        <>
-            <h3 className="text-lg font-semibold">Dashboard</h3>
-            {clubConfig && (
-                <span className="text-sm text-muted-foreground">
-                    - {clubConfig.club_name}
-                </span>
-            )}
-        </>
+        <h3 className="text-lg font-semibold">Dashboard</h3>
     )
 
     // Nouveau club sans event → onboarding guidé
