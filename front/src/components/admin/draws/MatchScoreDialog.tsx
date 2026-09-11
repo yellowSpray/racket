@@ -148,7 +148,7 @@ export function MatchScoreDialog({
                                 {match.match_time.slice(0, 5)}
                             </span>
                         )}
-                        {match.court_number && <span>Terrain {match.court_number}</span>}
+                        {match.court_number && <span>{match.court_number}</span>}
                     </DialogDescription>
                 </DialogHeader>
 

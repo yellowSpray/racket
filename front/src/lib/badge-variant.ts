@@ -32,6 +32,16 @@ export const badgeVariants = cva(
         // l'alerte, ce compte-ci n'en est pas une : il renseigne.
         count:
           "border-transparent bg-green-800 text-gray-50",
+        // Les trois tags du jour, dans la tuile des matchs. Trois roles,
+        // trois poids : le total renseigne, les non joues appellent une
+        // action, les absences sont un fait acquis. D'ou le contour pour
+        // le seul des trois qui demande quelque chose.
+        neutral:
+          "border-transparent bg-gray-100 text-gray-700",
+        warningOutline:
+          "border-amber-400 bg-white text-amber-800",
+        warningSoft:
+          "border-transparent bg-amber-100 text-amber-800",
         linked:
           "text-green-500 border-2 border-green-500",
         pending:
