@@ -28,6 +28,10 @@ export const badgeVariants = cva(
         // carte entière et le compte ne se verrait plus.
         unpaidSoft:
           "border-transparent bg-red-100 text-red-700",
+        // Vert profond, pour un compte de personnes presentes. `unpaid` est
+        // l'alerte, ce compte-ci n'en est pas une : il renseigne.
+        count:
+          "border-transparent bg-green-800 text-gray-50",
         linked:
           "text-green-500 border-2 border-green-500",
         pending:
