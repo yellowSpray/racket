@@ -70,5 +70,7 @@ export interface EventContextType {
   loading: boolean
   error: string | null
   setCurrentEvent: (eventId: string | null) => void
+  /** Choisit la série affichée parmi celles de l'événement courant. */
+  setCurrentRound: (roundId: string | null) => void
   fetchEvents: () => Promise<void>
 }
