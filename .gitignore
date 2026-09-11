@@ -53,6 +53,9 @@ screenshot/
 #journaux de l'outil navigateur
 .playwright-mcp/
 
+#crochets d'outils de design, inertes sans leur script
+.github/hooks/
+
 #sheet
 *.xlsx
 
