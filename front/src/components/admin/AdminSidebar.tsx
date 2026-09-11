@@ -1,63 +1,47 @@
-import { Link, useLocation } from "react-router";
-import { DashboardSquare02Icon, Settings01Icon, UserGroupIcon, File01Icon, LayoutTable02Icon, Mail01Icon, Logout03Icon } from "hugeicons-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useLocation } from "react-router"
+import {
+    DashboardSquare02Icon, LayoutTable02Icon, File01Icon,
+    UserGroupIcon, Mail01Icon, Settings01Icon,
+} from "hugeicons-react"
+import { useAuth } from "@/contexts/AuthContext"
+import { SidebarGroup, SidebarSeparator, SidebarSignOut, type SidebarEntry } from "@/components/shared/SidebarNav"
 
+/**
+ * Barre latérale de l'administration.
+ *
+ * Les six entrées sont réparties en trois groupes, ce que la maquette marque
+ * par deux filets : ce qu'on consulte, ce qu'on gère, ce qu'on configure.
+ * `Réglages` quitte donc le pied de barre où il était relégué à côté de la
+ * déconnexion, deux gestes qui n'ont rien à voir l'un avec l'autre.
+ */
 
-const menuItems = [
-  { title: "Dashboard", url: "/admin", icon: DashboardSquare02Icon},
-  { title: "Tableaux", url: "/admin/draws", icon: LayoutTable02Icon},
-  { title: "Matchs", url: "/admin/matches", icon: File01Icon},
-  { title: "Joueurs", url: "/admin/players", icon: UserGroupIcon},
-  { title: "Email", url: "/admin/email", icon: Mail01Icon},
-];
+const consultation: SidebarEntry[] = [
+    { label: "Dashboard", to: "/admin",         icon: DashboardSquare02Icon, exact: true },
+    { label: "Tableaux",  to: "/admin/draws",   icon: LayoutTable02Icon },
+    { label: "Matchs",    to: "/admin/matches", icon: File01Icon },
+]
+
+const gestion: SidebarEntry[] = [
+    { label: "Joueurs", to: "/admin/players", icon: UserGroupIcon },
+    { label: "Email",   to: "/admin/email",   icon: Mail01Icon },
+]
+
+const configuration: SidebarEntry[] = [
+    { label: "Réglages", to: "/admin/settings", icon: Settings01Icon },
+]
 
 export function AdminSideBar() {
+    const { pathname } = useLocation()
+    const { signOut } = useAuth()
 
-  const location = useLocation()
-  const { signOut } = useAuth()
-
-  return (
-    <>
-      {/* Navigation */}
-      <nav className="w-full flex-1 flex flex-col items-center justify-between pt-3">
-        <ul className="space-y-4">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.url;
-            return (
-              <li key={item.title}>
-                <Link
-                  to={item.url}
-                  className={`
-                    flex items-center justify-center p-3 rounded-full border-2 border-border transition-colors
-                    ${isActive ? "bg-primary border-primary text-foreground" : "text-gray-500 hover:bg-border hover:text-foreground"}
-                  `}
-                >
-                  <Icon size={17} strokeWidth={2} />
-                  {/* <span className="hidden 2xl:inline text-sm">{item.title}</span> */}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-        <div className="flex flex-col items-center gap-4">
-          <Link
-            to="/admin/settings"
-            className={`
-              flex items-center justify-center p-3 rounded-full border-2 border-border transition-colors
-              ${location.pathname.startsWith("/admin/settings") ? "bg-primary border-primary text-foreground" : "text-gray-500 hover:bg-border hover:text-foreground"}
-            `}
-          >
-            <Settings01Icon size={17} strokeWidth={2} />
-          </Link>
-          <button
-            onClick={signOut}
-            className="flex items-center justify-center p-3 rounded-full border-2 border-border transition-colors text-gray-500 hover:bg-red-50 hover:border-red-300 hover:text-red-500"
-          >
-            <Logout03Icon size={17} strokeWidth={2} />
-          </button>
-        </div>
-      </nav>
-    </>
-  );
+    return (
+        <nav aria-label="Navigation principale" className="flex h-full w-full flex-col text-sm">
+            <SidebarGroup entries={consultation} pathname={pathname} />
+            <SidebarSeparator />
+            <SidebarGroup entries={gestion} pathname={pathname} />
+            <SidebarSeparator />
+            <SidebarGroup entries={configuration} pathname={pathname} />
+            <SidebarSignOut onSignOut={signOut} />
+        </nav>
+    )
 }
