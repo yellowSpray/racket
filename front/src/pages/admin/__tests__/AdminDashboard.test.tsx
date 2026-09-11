@@ -13,6 +13,12 @@ vi.mock('@/contexts/AuthContext', () => ({
     useAuth: () => ({ profile: { id: 'p1', club_id: 'c1', role: 'admin' } }),
 }))
 
+/*
+ * Le club porte un nom, et ce nom ne doit apparaitre nulle part dans la page.
+ * La simulation reste donc en place apres le retrait du hook : sans elle, le
+ * vrai `useClubConfig` partirait sur le reseau et rendrait `null`, et le test
+ * passerait sans rien prouver.
+ */
 vi.mock('@/hooks/useClubConfig', () => ({
     useClubConfig: () => ({ clubConfig: { club_name: 'Castle Club' }, fetchClubConfig: vi.fn() }),
 }))
@@ -95,6 +101,17 @@ describe('AdminDashboard, disposition', () => {
     it('n\'affiche plus la carte Alertes, absente de la maquette', () => {
         const { container } = setup()
         expect(container.querySelector('[data-tuile="alertes"]')).toBeNull()
+    })
+
+    /*
+     * Le titre ne redit pas le nom du club. Le fil d'Ariane l'affiche a
+     * quelques pixels de la, dans son premier segment : le repeter sur la
+     * meme horizontale prenait de la place pour rien.
+     */
+    it('ne redit pas le nom du club, que le fil d\'Ariane porte deja', () => {
+        setup()
+        expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
+        expect(screen.queryByText(/Castle Club/)).not.toBeInTheDocument()
     })
 
     it('redirige un club sans evenement vers l\'onboarding', () => {

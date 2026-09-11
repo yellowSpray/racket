@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { EventsManager } from "@/components/admin/settings/EventsManager"
 import { SettingsManager } from "@/components/admin/settings/SettingsManager"
 import { UsersManager } from "@/components/admin/settings/UsersManager"
@@ -6,27 +6,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { UserAdd01Icon, Search01Icon, Cancel01Icon } from "hugeicons-react"
-import { useAuth } from "@/contexts/AuthContext"
-import { useClubConfig } from "@/hooks/useClubConfig"
 import { useHeaderSlot, useHeaderActions } from "@/contexts/HeaderSlotContext"
 
 export function AdminSettings () {
-    const { profile } = useAuth()
-    const { clubConfig, fetchClubConfig } = useClubConfig()
     const [activeTab, setActiveTab] = useState("manage")
     const [usersSearch, setUsersSearch] = useState("")
     const [usersInviteOpen, setUsersInviteOpen] = useState(false)
 
-    useEffect(() => {
-        fetchClubConfig(profile?.club_id ?? null)
-    }, [profile?.club_id, fetchClubConfig])
-
     const headerPortal = useHeaderSlot(
         <>
+            {/*
+              * Le titre ne redit pas le nom du club : le fil d'Ariane
+              * l'affiche a quelques pixels de la, dans son premier segment.
+              */}
             <h3 className="text-lg font-semibold">Paramètres</h3>
-            {clubConfig && (
-                <span className="text-sm text-muted-foreground">- {clubConfig.club_name}</span>
-            )}
             {activeTab === "users" && (
                 <div className="relative flex-1 max-w-sm mx-auto">
                     <Search01Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
