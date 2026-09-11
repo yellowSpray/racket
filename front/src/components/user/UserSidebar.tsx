@@ -1,51 +1,27 @@
-import { Link, useLocation } from "react-router";
-import { Home01Icon, LayoutTable02Icon, Building04Icon, Logout03Icon } from "hugeicons-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useLocation } from "react-router"
+import { Home01Icon, LayoutTable02Icon, Building04Icon } from "hugeicons-react"
+import { useAuth } from "@/contexts/AuthContext"
+import { SidebarGroup, SidebarSignOut, type SidebarEntry } from "@/components/shared/SidebarNav"
 
-const menuItems = [
-  { title: "Accueil", url: "/user", icon: Home01Icon },
-  { title: "Tableaux", url: "/user/draws", icon: LayoutTable02Icon },
-  { title: "Découvrir", url: "/user/discover", icon: Building04Icon },
-];
+/**
+ * Barre latérale du joueur. Même grammaire que celle de l'administration, en
+ * plus court : trois entrées ne demandent pas de groupes.
+ */
+
+const entries: SidebarEntry[] = [
+    { label: "Accueil",   to: "/user",          icon: Home01Icon, exact: true },
+    { label: "Tableaux",  to: "/user/draws",    icon: LayoutTable02Icon },
+    { label: "Découvrir", to: "/user/discover", icon: Building04Icon },
+]
 
 export function UserSideBar() {
-  const location = useLocation();
-  const { signOut } = useAuth();
+    const { pathname } = useLocation()
+    const { signOut } = useAuth()
 
-  return (
-    <>
-      {/* Navigation */}
-      <nav className="w-full flex-1 flex flex-col items-center justify-between pt-3">
-        <ul className="space-y-4">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = item.url === "/user"
-              ? location.pathname === "/user"
-              : location.pathname.startsWith(item.url);
-            return (
-              <li key={item.title}>
-                <Link
-                  to={item.url}
-                  className={`
-                    flex items-center justify-center p-3 rounded-full border-2 border-border transition-colors
-                    ${isActive ? "bg-primary border-primary text-foreground" : "text-gray-500 hover:bg-border hover:text-foreground"}
-                  `}
-                >
-                  <Icon size={17} strokeWidth={2} />
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-        <div className="flex flex-col items-center gap-4">
-          <button
-            onClick={signOut}
-            className="flex items-center justify-center p-3 rounded-full border-2 border-border transition-colors text-gray-500 hover:bg-red-50 hover:border-red-300 hover:text-red-500"
-          >
-            <Logout03Icon size={17} strokeWidth={2} />
-          </button>
-        </div>
-      </nav>
-    </>
-  );
+    return (
+        <nav aria-label="Navigation principale" className="flex h-full w-full flex-col text-sm">
+            <SidebarGroup entries={entries} pathname={pathname} />
+            <SidebarSignOut onSignOut={signOut} />
+        </nav>
+    )
 }
