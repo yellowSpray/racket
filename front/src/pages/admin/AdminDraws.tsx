@@ -5,7 +5,7 @@ import { useGroups } from "@/hooks/useGroups"
 import { useMatches } from "@/hooks/useMatches"
 import { useEffectiveRules } from "@/hooks/useEffectiveRules"
 import { usePlayers } from "@/contexts/PlayersContext"
-import { useHeaderSlot, useHeaderActions } from "@/contexts/HeaderSlotContext"
+import { useHeaderSlot } from "@/contexts/HeaderSlotContext"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 import { useNavigate } from "react-router"
@@ -108,40 +108,50 @@ export function AdminDraws () {
         }
     }, [])
 
+    /*
+     * Les actions vivent sur la ligne du titre, pas dans le header.
+     *
+     * Elles y etaient en pastilles sans libelle, entre le fil d'Ariane et la
+     * recherche : trois pictogrammes qu'il fallait survoler pour savoir ce
+     * qu'ils font, et qui appartiennent a cet ecran seul alors que le header
+     * porte ce qui vaut pour toute l'application.
+     */
     const headerPortal = useHeaderSlot(
         <>
             <h3 className="text-lg font-semibold">Tableaux</h3>
-        </>
-    )
 
-    const actionsPortal = useHeaderActions(
-        <>
-            <Button
-                variant="icon"
-                size="icon"
-                onClick={() => setDisplayMode(prev => prev === "score" ? "points" : "score")}
-            >
-                {displayMode === "score" ? (
-                    <StarIcon size="20" strokeWidth={2} />
-                ) : (
-                    <HashtagIcon size="20" strokeWidth={2} />
-                )}
-            </Button>
-            {/* Entre les deux boutons existants : afficher, partager, exporter. */}
-            <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setEmbedOpen(true)}
-                title="Intégrer les tableaux sur un site"
-                aria-label="Intégrer les tableaux sur un site"
-            >
-                <CodeIcon size="20" strokeWidth={2} />
-            </Button>
-            {groups.length > 0 && (
-                <Button variant="outline" size="icon" onClick={handleExportPdf}>
-                    <Download01Icon size="20" strokeWidth={2} />
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="border"
+                    onClick={() => setDisplayMode(prev => prev === "score" ? "points" : "score")}
+                >
+                    {displayMode === "score" ? (
+                        <><HashtagIcon size={16} strokeWidth={2} />Points</>
+                    ) : (
+                        <><StarIcon size={16} strokeWidth={2} />Scores</>
+                    )}
                 </Button>
-            )}
+
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="border"
+                    onClick={() => setEmbedOpen(true)}
+                    title="Intégrer les tableaux sur un site"
+                >
+                    <CodeIcon size={16} strokeWidth={2} />
+                    Intégrer
+                </Button>
+
+                {groups.length > 0 && (
+                    <Button variant="outline" size="sm" className="border" onClick={handleExportPdf}>
+                        <Download01Icon size={16} strokeWidth={2} />
+                        PDF
+                    </Button>
+                )}
+            </div>
         </>
     )
 
@@ -161,7 +171,6 @@ export function AdminDraws () {
         return (
             <>
                 {headerPortal}
-                {actionsPortal}
                 <div className="h-full flex flex-col">
                     <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-lg">
                         <PencilEdit02Icon className="h-12 w-12 text-gray-300" />
@@ -182,7 +191,6 @@ export function AdminDraws () {
     return (
         <>
         {headerPortal}
-        {actionsPortal}
         <div className="flex flex-col h-full min-h-0">
             {matchError && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4 text-sm">
@@ -205,7 +213,28 @@ export function AdminDraws () {
                 </div>
             ) : (
                 <ScrollArea className="flex-1 min-h-0" type="auto">
-                    <div ref={tablesRef} className="grid grid-cols-2 3xl:grid-cols-3 gap-6">
+                    {/*
+                      * Un nombre de colonnes par palier, chaque piste plafonnee
+                      * a 532 px.
+                      *
+                      * En `grid-cols-N` seul, un tableau s'etirait avec l'ecran :
+                      * a 2560 px il faisait 800 de large pour le meme contenu,
+                      * ses colonnes de dates flottaient et le nom du joueur se
+                      * perdait a l'autre bout de la rangee. Un tableau de box a
+                      * une taille juste, 532 ; au-dela il en faut plus, pas des
+                      * plus gros.
+                      *
+                      * `minmax(0, 532px)` et non `532px` : sous le plafond la
+                      * piste se partage la place disponible, au-dessus elle
+                      * s'arrete. Des pistes fixes auraient debordé sous 532.
+                      *
+                      * Les paliers sont mesures, pas devines. A 1440 la place
+                      * utile est de 1168 px, ce qui donne trois tableaux de 373 ;
+                      * a 1920 elle est de 1648 et les trois atteignent leur
+                      * plafond. Passer a quatre des 1920 aurait rapetisse les
+                      * tableaux que 1440 venait d'elargir.
+                      */}
+                    <div ref={tablesRef} className="grid justify-start gap-6 [grid-template-columns:repeat(1,minmax(0,532px))] lg:[grid-template-columns:repeat(2,minmax(0,532px))] 2xl:[grid-template-columns:repeat(3,minmax(0,532px))] min-[2560px]:[grid-template-columns:repeat(4,minmax(0,532px))] min-[3440px]:[grid-template-columns:repeat(5,minmax(0,532px))]">
                         {groups.map(group => {
                             const groupMatches = matches.filter(m => m.group_id === group.id)
                             const sortedGroup = sortPlayersByEarliestDates(group, groupMatches)
