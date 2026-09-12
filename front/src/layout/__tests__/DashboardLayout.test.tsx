@@ -39,6 +39,24 @@ describe('DashboardLayout', () => {
         expect(aside.className).not.toContain('px-2.5')
     })
 
+    /*
+     * Les deux colonnes s'arretent sur la meme horizontale : `Quitter`, pousse
+     * en bas de la barre par son `mt-auto`, tombe donc sur le bas des cartes.
+     * La barre finissait 16 px plus bas, et ce decalage se voyait d'autant plus
+     * que les deux colonnes portent un fond different.
+     */
+    it('arrete la barre laterale sur le bas du contenu', () => {
+        const { container } = render(
+            <DashboardLayout sidebar={<nav>menu</nav>}>contenu</DashboardLayout>,
+        )
+        const aside = container.querySelector('aside')!
+        const contenu = container.querySelector('section')!
+
+        const basDe = (e: Element) => e.className.match(/\bp[by]-(\S+)/)?.[1]
+        expect(basDe(aside)).toBe(basDe(contenu))
+        expect(aside.className).toContain('pb-6')
+    })
+
     it('rend la barre laterale et le contenu', () => {
         render(<DashboardLayout sidebar={<nav>menu</nav>}>contenu</DashboardLayout>)
         expect(screen.getByText('menu')).toBeInTheDocument()
