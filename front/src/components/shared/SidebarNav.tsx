@@ -68,18 +68,19 @@ export function SidebarGroup({ entries, pathname }: { entries: SidebarEntry[]; p
 }
 
 /*
- * Le filet va du retrait de gauche jusqu'au bord droit de la barre, comme sur
- * la maquette : il rejoint le trait qui sépare la barre du contenu.
+ * Le filet traverse la barre de bord à bord : il annule ses deux retraits, 32 px
+ * à gauche et 10 à droite. Il sépare la colonne entière, pas la colonne de
+ * texte, et rejoint ainsi le trait qui borde la barre.
  */
 export function SidebarSeparator() {
-    return <div data-sidebar-separator className="-mr-2.5 my-3 h-px bg-border" />
+    return <div data-sidebar-separator className="-ml-8 -mr-2.5 my-3 h-px bg-border" />
 }
 
 /** Pied de barre, poussé en bas : aujourd'hui la seule déconnexion. */
 export function SidebarSignOut({ onSignOut }: { onSignOut: () => void }) {
     return (
         <div data-sidebar-footer className="mt-auto">
-            <div className="-mr-2.5 mb-2 h-px bg-border" />
+            <div className="-ml-8 -mr-2.5 mb-2 h-px bg-border" />
             <button
                 type="button"
                 onClick={onSignOut}

@@ -79,6 +79,29 @@ describe('AdminSideBar', () => {
         expect(container.querySelectorAll('[data-sidebar-separator]')).toHaveLength(2)
     })
 
+    /*
+     * Les filets traversent la barre de bord a bord : ils annulent ses deux
+     * retraits, 32 px a gauche et 10 a droite. Sans quoi ils flottent au milieu
+     * de la colonne, alors qu'ils separent la colonne entiere et rejoignent le
+     * trait qui la borde.
+     */
+    it('fait traverser les filets de bord a bord', () => {
+        const { container } = render(<AdminSideBar />)
+        for (const filet of container.querySelectorAll('[data-sidebar-separator]')) {
+            expect(filet.className).toContain('-ml-8')
+            expect(filet.className).toContain('-mr-2.5')
+        }
+    })
+
+    // Le filet du pied suit la meme regle, il n'est simplement pas un separateur
+    // entre deux groupes.
+    it('fait traverser le filet du pied de barre', () => {
+        const { container } = render(<AdminSideBar />)
+        const filet = container.querySelector('[data-sidebar-footer] .h-px')!
+        expect(filet.className).toContain('-ml-8')
+        expect(filet.className).toContain('-mr-2.5')
+    })
+
     it('pose la deconnexion en pied de barre', () => {
         render(<AdminSideBar />)
         const quitter = screen.getByRole('button', { name: 'Quitter' })
