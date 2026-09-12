@@ -48,7 +48,7 @@ export default function Header() {
     }, [darkMode])
 
     return (
-        <header className="flex h-12 shrink-0 items-center border-b border-border bg-card pr-3">
+        <header className="flex h-12 shrink-0 items-center border-b border-border bg-card pr-8">
 
             {/*
               * Bloc de marque, calé sur la colonne de la barre latérale : les
@@ -59,7 +59,7 @@ export default function Header() {
             <Link
                 to="/"
                 aria-label="Racket Fest"
-                className="flex w-[207px] shrink-0 items-center gap-2.5 px-2.5"
+                className="flex w-[207px] shrink-0 items-center gap-2.5 pl-8 pr-2.5"
             >
                 <span
                     data-testid="logo-icon-placeholder"
