@@ -77,6 +77,30 @@ describe('Header, barre pleine largeur', () => {
     expect(marque.className).toContain('w-[207px]')
   })
 
+  /*
+   * Le pictogramme demarre sur la meme verticale que les pastilles du menu,
+   * 32 px. Le bloc garde ses 207 px, donc seul son retrait interieur bouge :
+   * `pl-8` a gauche comme l'`aside`, `pr-2.5` a droite comme lui aussi.
+   */
+  it('demarre le pictogramme sur la verticale des entrees de menu', () => {
+    anonyme()
+    render(<Header />)
+    const marque = screen.getByRole('link', { name: 'Racket Fest' })
+    expect(marque.className).toContain('pl-8')
+    expect(marque.className).toContain('pr-2.5')
+  })
+
+  /*
+   * Le bloc de droite s'arrete sur la verticale du bord droit des cartes, soit
+   * les 32 px de `px-8`. Il tenait a 12 px, et l'avatar depassait donc de la
+   * colonne de contenu qu'il surplombe.
+   */
+  it('arrete le bloc de droite sur la verticale des cartes', () => {
+    anonyme()
+    const { container } = render(<Header />)
+    expect(container.querySelector('header')!.className).toContain('pr-8')
+  })
+
   it('reserve un emplacement pour le pictogramme et un pour le nom', () => {
     anonyme()
     render(<Header />)

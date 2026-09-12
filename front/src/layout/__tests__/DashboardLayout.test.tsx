@@ -21,6 +21,24 @@ describe('DashboardLayout', () => {
         expect(container.querySelector('.grid-cols-24')).toBeNull()
     })
 
+    /*
+     * La barre respire a gauche comme le contenu : 32 px, le meme `8` de
+     * Tailwind que le `px-8` de la colonne de droite. Ses pastilles collaient
+     * au bord de la fenetre a 10 px quand tout le reste etait a 32.
+     *
+     * A droite elle garde ses 10 px : c'est un retrait interieur, contre son
+     * propre filet, pas une gouttiere entre deux blocs.
+     */
+    it('pose le meme retrait a gauche que la colonne de contenu', () => {
+        const { container } = render(
+            <DashboardLayout sidebar={<nav>menu</nav>}>contenu</DashboardLayout>,
+        )
+        const aside = container.querySelector('aside')!
+        expect(aside.className).toContain('pl-8')
+        expect(aside.className).toContain('pr-2.5')
+        expect(aside.className).not.toContain('px-2.5')
+    })
+
     it('rend la barre laterale et le contenu', () => {
         render(<DashboardLayout sidebar={<nav>menu</nav>}>contenu</DashboardLayout>)
         expect(screen.getByText('menu')).toBeInTheDocument()
