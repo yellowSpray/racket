@@ -148,4 +148,20 @@ describe('AppBreadcrumb', () => {
         setup()
         expect(document.body.textContent).not.toContain('—')
     })
+
+    /*
+     * La liste deroulante d'un `select` natif est dessinee par le systeme, et
+     * son survol est la couleur d'accent de l'OS. `data-liste-stylee` fait
+     * basculer `index.css` sur `appearance: base-select`, qui rend la liste au
+     * navigateur. L'attribut est le seul lien entre la feuille et le composant :
+     * le retirer rend le bleu de Windows sans qu'aucun rendu ne casse.
+     */
+    it('confie ses listes a la feuille de style, pas au systeme', () => {
+        setup()
+        const listes = screen.getAllByRole('combobox')
+        expect(listes).toHaveLength(2)
+        for (const liste of listes) {
+            expect(liste).toHaveAttribute('data-liste-stylee')
+        }
+    })
 })

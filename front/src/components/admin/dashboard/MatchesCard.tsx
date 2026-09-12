@@ -384,6 +384,7 @@ function ScoreCell({ match, onValidate, compact }: ScoreCellProps) {
                 <span className="truncate">{libelle}</span>
                 <ArrowDown01Icon size={12} aria-hidden className="shrink-0 opacity-60" />
                 <select
+                    data-liste-stylee
                     aria-label={`Score pour ${match.player1?.first_name ?? "P1"} vs ${match.player2?.first_name ?? "P2"}`}
                     value={enregistre}
                     onChange={(e) => onValidate(match, e.target.value)}

@@ -98,6 +98,7 @@ function Segment({
             {children}
             <DoubleChevron />
             <select
+                data-liste-stylee
                 aria-label={ariaLabel}
                 value={value}
                 onChange={e => onChange(e.target.value)}

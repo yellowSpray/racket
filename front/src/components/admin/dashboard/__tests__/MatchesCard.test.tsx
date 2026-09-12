@@ -245,6 +245,20 @@ describe('MatchesCard', () => {
             vi.useRealTimers()
         })
 
+        /*
+         * Meme montage que le fil d'Ariane : `data-liste-stylee` fait basculer
+         * `index.css` sur `appearance: base-select`, faute de quoi la liste est
+         * dessinee par le systeme et son survol est le bleu de Windows.
+         */
+        it('confie sa liste a la feuille de style, pas au systeme', () => {
+            mockUseMatchesByDay.mockReturnValue({
+                ...defaultReturn,
+                days: [makeDay({ matches: [makeMatch({ status: 'no_score' })] })],
+            })
+            render(<MatchesCard roundId="round1" />)
+            expect(screen.getAllByRole('combobox')[0]).toHaveAttribute('data-liste-stylee')
+        })
+
         // « Abs » et non « ABS-0 » : la pastille dit le fait, le menu dit qui.
         it('abrege l\'absence sur la pastille', () => {
             mockUseMatchesByDay.mockReturnValue({
