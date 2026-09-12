@@ -173,7 +173,7 @@ describe('PlayersStatusCard', () => {
             mockMovements = [makeMovement({ profileId: 'p1' })]
             poser()
             const compte = screen.getByText('1')
-            expect(compte.className).toContain('bg-green-800')
+            expect(compte.className).toContain('bg-success-strong')
             expect(compte.className).toContain('min-w-5')
         })
     })

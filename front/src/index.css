@@ -2,6 +2,14 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/*
+ * En Tailwind v4, `dark:` suit `prefers-color-scheme` par defaut. Le bouton de
+ * theme, lui, bascule une classe sur `<html>` : sans cette ligne les deux ne se
+ * parlent pas, et les `dark:` de `components/ui` repondaient au reglage du
+ * systeme au milieu d'une application claire.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: oklch(98.288% 0.00104 11.251);
   --foreground: oklch(0.2626 0.0147 166.4589);
@@ -21,6 +29,36 @@
   --border: oklch(91.887% 0.0001 271.152);
   --input: oklch(86.686% 0.0001 271.152);
   --destructive: oklch(59.631% 0.2441 28.445);
+
+  /*
+   * Couleurs de sens, relevees sur ce que les ecrans utilisaient deja. Sans
+   * elles chaque ecran inventait son ambre et son vert, d'ou 472 couleurs
+   * ecrites en dur dans 80 fichiers. La graduation Tailwind d'origine est
+   * notee en face pour que l'origine reste tracable.
+   *
+   * Trois poids par couleur. Le plein affirme, le pale qualifie sans alerter,
+   * le contour appelle une action : c'est la seule des trois formes qui
+   * demande quelque chose au lecteur.
+   */
+  --success: #22c55e;                   /* green-500 */
+  --success-foreground: #f9fafb;        /* gray-50   */
+  --success-soft: #dcfce7;              /* green-100 */
+  --success-soft-border: #bbf7d0;       /* green-200 */
+  --success-soft-foreground: #14532d;   /* green-900 */
+  --success-strong: #166534;            /* green-800 */
+
+  --warning: #f59e0b;                   /* amber-500 */
+  --warning-foreground: #f9fafb;        /* gray-50   */
+  --warning-soft: #fef3c7;              /* amber-100 */
+  --warning-soft-border: #fde68a;       /* amber-200 */
+  --warning-soft-foreground: #92400e;   /* amber-800 */
+  --warning-border: #fbbf24;            /* amber-400 */
+
+  --destructive-soft: #fee2e2;          /* red-100 */
+  --destructive-soft-foreground: #b91c1c; /* red-700 */
+
+  --neutral-soft: #f3f4f6;              /* gray-100 */
+  --neutral-soft-foreground: #374151;   /* gray-700 */
   --destructive-hover: oklch(62.826% 0.25721 28.495);
   --destructive-foreground: oklch(0.985 0 0);
   --ring: rgb(102, 222, 166);
@@ -90,6 +128,22 @@ html[data-embed] body {
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-soft: var(--success-soft);
+  --color-success-soft-border: var(--success-soft-border);
+  --color-success-soft-foreground: var(--success-soft-foreground);
+  --color-success-strong: var(--success-strong);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-soft-border: var(--warning-soft-border);
+  --color-warning-soft-foreground: var(--warning-soft-foreground);
+  --color-warning-border: var(--warning-border);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-destructive-soft-foreground: var(--destructive-soft-foreground);
+  --color-neutral-soft: var(--neutral-soft);
+  --color-neutral-soft-foreground: var(--neutral-soft-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-hover: var(--destructive-hover); 
   --color-destructive-foreground: var(--destructive-foreground);

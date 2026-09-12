@@ -91,20 +91,20 @@ function etatDuScore(match: DayMatch): { libelle: string; classe: string } {
     if (match.status === "done" && match.score) {
         return match.score.includes("ABS")
             // « Abs » sur la pastille, qui fut absent dans le menu.
-            ? { libelle: "Abs", classe: "border-amber-200 bg-amber-100 text-amber-800" }
-            : { libelle: match.score, classe: "border-green-200 bg-green-100 text-green-900" }
+            ? { libelle: "Abs", classe: "border-warning-soft-border bg-warning-soft text-warning-soft-foreground" }
+            : { libelle: match.score, classe: "border-success-soft-border bg-success-soft text-success-soft-foreground" }
     }
 
     const annonce = match.pending_score_p1 ?? match.pending_score_p2
     if (match.status === "waiting_one" && annonce) {
-        return { libelle: annonce, classe: "border-amber-400 bg-white text-amber-800" }
+        return { libelle: annonce, classe: "border-warning-border bg-card text-warning-soft-foreground" }
     }
 
     if (isMatchUnplayed(match)) {
-        return { libelle: "Non joué", classe: "border-amber-400 bg-white text-amber-800" }
+        return { libelle: "Non joué", classe: "border-warning-border bg-card text-warning-soft-foreground" }
     }
 
-    return { libelle: "Score…", classe: "border-border bg-white text-muted-foreground" }
+    return { libelle: "Score…", classe: "border-border bg-card text-muted-foreground" }
 }
 
 interface MatchesCardProps {
@@ -140,7 +140,7 @@ export function MatchesCard({ roundId, className }: MatchesCardProps) {
                     <button
                         onClick={() => setDayIndex(i => i - 1)}
                         disabled={dayIndex === 0 || days.length === 0}
-                        className="p-0.5 rounded transition-colors hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+                        className="p-0.5 rounded transition-colors hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
                         aria-label="Jour précédent"
                     >
                         <ArrowLeft01Icon size={14} />
@@ -160,7 +160,7 @@ export function MatchesCard({ roundId, className }: MatchesCardProps) {
                     <button
                         onClick={() => setDayIndex(i => i + 1)}
                         disabled={dayIndex >= days.length - 1 || days.length === 0}
-                        className="p-0.5 rounded transition-colors hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+                        className="p-0.5 rounded transition-colors hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
                         aria-label="Jour suivant"
                     >
                         <ArrowRight01Icon size={14} />
@@ -170,11 +170,11 @@ export function MatchesCard({ roundId, className }: MatchesCardProps) {
             </CardHeader>
             <CardContent className="flex-1 min-h-0">
                 {loading ? (
-                    <div className="h-full flex items-center justify-center text-gray-400">
+                    <div className="h-full flex items-center justify-center text-muted-foreground">
                         <p className="text-sm">Chargement...</p>
                     </div>
                 ) : !currentDay ? (
-                    <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                    <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
                         <Calendar03Icon size={28} className="mb-3" />
                         <p className="text-sm">Aucun match programmé</p>
                     </div>
@@ -266,7 +266,7 @@ function Affiche({ match }: { match: DayMatch }) {
             <span className={`truncate ${match.winner_id === match.player1_id ? "font-semibold" : ""}`}>
                 {p1}
             </span>
-            <span className="text-gray-400 shrink-0 text-xs">vs</span>
+            <span className="text-muted-foreground shrink-0 text-xs">vs</span>
             <span className={`truncate ${match.winner_id === match.player2_id ? "font-semibold" : ""}`}>
                 {p2}
             </span>
@@ -419,7 +419,7 @@ function ConflitCell({ match, onValidate, compact }: ScoreCellProps) {
                         <button
                             onClick={() => onValidate(match, annonce)}
                             aria-label="Valider"
-                            className="text-[10px] px-2 py-0.5 rounded border border-gray-300 hover:bg-gray-50 transition-colors whitespace-nowrap"
+                            className="text-[10px] px-2 py-0.5 rounded border border-border hover:bg-muted transition-colors whitespace-nowrap"
                         >
                             Valider
                         </button>

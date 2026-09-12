@@ -29,15 +29,15 @@ describe("badgeVariants", () => {
   describe("default variant", () => {
     it("should apply default variant when no variant is specified", () => {
       const result = badgeVariants();
-      expect(result).toContain("bg-gray-300");
-      expect(result).toContain("text-gray-700");
+      expect(result).toContain("bg-neutral-soft");
+      expect(result).toContain("text-neutral-soft-foreground");
       expect(result).toContain("border-transparent");
     });
 
     it("should apply default variant when variant is explicitly 'default'", () => {
       const result = badgeVariants({ variant: "default" });
-      expect(result).toContain("bg-gray-300");
-      expect(result).toContain("text-gray-700");
+      expect(result).toContain("bg-neutral-soft");
+      expect(result).toContain("text-neutral-soft-foreground");
     });
   });
 
@@ -53,8 +53,8 @@ describe("badgeVariants", () => {
   describe("visitor variant", () => {
     it("should apply visitor-specific classes", () => {
       const result = badgeVariants({ variant: "visitor" });
-      expect(result).toContain("bg-amber-500");
-      expect(result).toContain("text-gray-50");
+      expect(result).toContain("bg-warning");
+      expect(result).toContain("text-warning-foreground");
       expect(result).toContain("border-transparent");
     });
   });
@@ -62,10 +62,9 @@ describe("badgeVariants", () => {
   describe("active variant", () => {
     it("should apply active-specific classes", () => {
       const result = badgeVariants({ variant: "active" });
-      expect(result).toContain("text-green-500");
-      expect(result).toContain("border-1");
-      expect(result).toContain("border-green-300");
-      expect(result).toContain("bg-green-500/10");
+      expect(result).toContain("text-success");
+      expect(result).toContain("border-success-soft-border");
+      expect(result).toContain("bg-success/10");
     });
 
     it("should not include border-transparent for active variant", () => {
@@ -77,10 +76,10 @@ describe("badgeVariants", () => {
   describe("inactive variant", () => {
     it("should apply inactive-specific classes", () => {
       const result = badgeVariants({ variant: "inactive" });
-      expect(result).toContain("text-gray-500");
-      expect(result).toContain("border-1");
-      expect(result).toContain("border-gray-300");
-      expect(result).toContain("bg-gray-500/10");
+      // Pas `text-muted-foreground` : #9C9C9C fait 2.6 pour 1 sur blanc.
+      expect(result).toContain("text-foreground/70");
+      expect(result).toContain("border-border");
+      expect(result).toContain("bg-muted/60");
     });
 
     it("should not include border-transparent for inactive variant", () => {
@@ -113,8 +112,8 @@ describe("badgeVariants", () => {
   describe("paid variant", () => {
     it("should apply paid-specific classes", () => {
       const result = badgeVariants({ variant: "paid" });
-      expect(result).toContain("bg-green-500");
-      expect(result).toContain("text-gray-50");
+      expect(result).toContain("bg-success");
+      expect(result).toContain("text-success-foreground");
       expect(result).toContain("border-transparent");
     });
   });
@@ -122,9 +121,31 @@ describe("badgeVariants", () => {
   describe("unpaid variant", () => {
     it("should apply unpaid-specific classes", () => {
       const result = badgeVariants({ variant: "unpaid" });
-      expect(result).toContain("bg-red-500");
-      expect(result).toContain("text-gray-50");
+      expect(result).toContain("bg-destructive");
+      expect(result).toContain("text-destructive-foreground");
       expect(result).toContain("border-transparent");
+    });
+  });
+
+  /*
+   * Le vocabulaire de couleur de l'application vit ici, et il ne doit plus
+   * contenir une seule graduation de palette. Chaque `bg-green-100` ecrit en
+   * dur est une couleur que le theme sombre ne saura pas retourner, et une
+   * decision de sens rendue invisible : `bg-success-soft` dit pourquoi,
+   * `bg-green-100` dit seulement quoi.
+   */
+  describe("le vocabulaire est en tokens", () => {
+    const variantes = [
+      "default", "outline", "member", "visitor", "active", "inactive",
+      "paid", "unpaid", "unpaidSoft", "count", "neutral",
+      "warningOutline", "warningSoft", "linked", "pending",
+      "approved", "rejected",
+    ] as const;
+
+    it.each(variantes)("%s n'ecrit aucune graduation de palette", (v) => {
+      const result = badgeVariants({ variant: v });
+      const palette = /\b(?:bg|text|border|ring)-(?:white|black|gray|slate|zinc|neutral|stone|red|green|amber|yellow|blue|orange)-\d{2,3}\b/;
+      expect(result).not.toMatch(palette);
     });
   });
 
@@ -138,8 +159,8 @@ describe("badgeVariants", () => {
 
     it("should fall back to default when variant is undefined", () => {
       const result = badgeVariants({ variant: undefined });
-      expect(result).toContain("bg-gray-300");
-      expect(result).toContain("text-gray-700");
+      expect(result).toContain("bg-neutral-soft");
+      expect(result).toContain("text-neutral-soft-foreground");
     });
 
     it("should produce distinct classes for each variant", () => {

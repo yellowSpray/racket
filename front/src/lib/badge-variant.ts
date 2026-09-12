@@ -6,50 +6,54 @@ export const badgeVariants = cva(
   {
     variants: {
       variant: {
+        // Gris neutre : situe sans rien annoncer.
         default:
-          "border-transparent bg-gray-300 text-gray-700",
+          "border-transparent bg-neutral-soft text-neutral-soft-foreground",
         // Neutre et sans fond : se pose sur n'importe quelle surface sans la masquer.
         outline:
           "border-border text-foreground",
         member:
           "border-transparent bg-primary text-primary-foreground",
         visitor:
-          "border-transparent bg-amber-500 text-gray-50",
+          "border-transparent bg-warning text-warning-foreground",
         active:
-          "text-green-500 border-1 border-green-300 bg-green-500/10",
+          "text-success border-success-soft-border bg-success/10",
+        // `text-foreground/70` et non `text-muted-foreground` : ce dernier
+        // vaut #9C9C9C, soit 2.6 pour 1 sur blanc, sous le minimum de 4.5.
+        // Meme correctif que les entrees au repos de la barre laterale.
         inactive:
-          "text-gray-500 border-1 border-gray-300 bg-gray-500/10",
+          "text-foreground/70 border-border bg-muted/60",
         paid:
-          "border-transparent bg-green-500 text-gray-50",
+          "border-transparent bg-success text-success-foreground",
         unpaid:
-          "border-transparent bg-red-500 text-gray-50",
+          "border-transparent bg-destructive text-destructive-foreground",
         // Rouge pâle, pour qualifier sans alerter. `unpaid` est l'alerte,
         // un rouge plein ; en poser huit dans une colonne ferait crier la
         // carte entière et le compte ne se verrait plus.
         unpaidSoft:
-          "border-transparent bg-red-100 text-red-700",
+          "border-transparent bg-destructive-soft text-destructive-soft-foreground",
         // Vert profond, pour un compte de personnes presentes. `unpaid` est
         // l'alerte, ce compte-ci n'en est pas une : il renseigne.
         count:
-          "border-transparent bg-green-800 text-gray-50",
+          "border-transparent bg-success-strong text-success-foreground",
         // Les trois tags du jour, dans la tuile des matchs. Trois roles,
         // trois poids : le total renseigne, les non joues appellent une
         // action, les absences sont un fait acquis. D'ou le contour pour
         // le seul des trois qui demande quelque chose.
         neutral:
-          "border-transparent bg-gray-100 text-gray-700",
+          "border-transparent bg-neutral-soft text-neutral-soft-foreground",
         warningOutline:
-          "border-amber-400 bg-white text-amber-800",
+          "border-warning-border bg-card text-warning-soft-foreground",
         warningSoft:
-          "border-transparent bg-amber-100 text-amber-800",
+          "border-transparent bg-warning-soft text-warning-soft-foreground",
         linked:
-          "text-green-500 border-2 border-green-500",
+          "text-success border-2 border-success",
         pending:
-          "text-amber-500 border-2 border-amber-500",
+          "text-warning border-2 border-warning",
         approved:
-          "border-transparent bg-green-500 text-gray-50",
+          "border-transparent bg-success text-success-foreground",
         rejected:
-          "border-transparent bg-red-500 text-gray-50",
+          "border-transparent bg-destructive text-destructive-foreground",
       },
     },
     defaultVariants: {
