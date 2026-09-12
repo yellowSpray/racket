@@ -23,7 +23,14 @@
   --secondary: oklch(0.9911 0 0);
   --secondary-foreground: oklch(0.2626 0.0147 166.4589);
   --muted: oklch(0.9461 0 0);
-  --muted-foreground: oklch(60.999% 0.00007 271.152);
+  /*
+   * #6E6E6E, et non le #9C9C9C d'avant. L'ancienne valeur donnait 2.68 pour 1
+   * sur le fond des cartes, sous le minimum de 4.5, et nous a mis en echec
+   * trois fois : les entrees au repos de la barre laterale, le badge
+   * `inactive`, puis les dates du tableau de box. Rustiner a chaque fois avec
+   * `text-foreground/70` revenait a corriger le symptome.
+   */
+  --muted-foreground: oklch(52% 0 0);
   --accent: oklch(100% 0.00011 271.152);
   --accent-foreground: oklch(0.2435 0 0);
   --border: oklch(91.887% 0.0001 271.152);
@@ -56,6 +63,44 @@
 
   --destructive-soft: #fee2e2;          /* red-100 */
   --destructive-soft-foreground: #b91c1c; /* red-700 */
+
+  /*
+   * Les deux axes d'identite d'un tableau de box : la rangee des lettres et la
+   * colonne des noms. Le jaune les distingue du corps de la grille, ou vivent
+   * les dates et les resultats.
+   */
+  /*
+   * Le bleu designe, il n'alerte pas : c'est la couleur du nom d'une box, qui
+   * identifie sans rien dire de son etat. Quatrieme famille, apres le vert,
+   * l'ambre et le rouge.
+   */
+  --info: #2563eb;                      /* blue-600 */
+  --info-foreground: #f9fafb;           /* gray-50  */
+  /*
+   * Le bleu pale descend d'un cran par rapport au vert et a l'ambre, qui
+   * s'arretent au 100 : il remplit la cellule d'en-tete d'un tableau, pas une
+   * pastille de douze pixels, et le 100 s'y perdait dans le blanc de la carte.
+   */
+  --info-soft: #bfdbfe;                 /* blue-200 */
+  --info-soft-border: #93c5fd;          /* blue-300 */
+  --info-soft-foreground: #1e40af;      /* blue-800 */
+
+  /*
+   * Le filet d'une grille de box, plus marque que `--border`.
+   *
+   * Mesure a l'appui : dans un tableau, les fonds ne separent rien. Le jaune
+   * des axes contre le blanc des cases donne 1.05 pour 1, le vert du total
+   * 1.07. C'est donc le filet **seul** qui dessine la grille, et a #E4E4E4 il
+   * tombait a 1.16, sous le 3 pour 1 attendu d'un objet graphique porteur de
+   * sens. Suivre une rangee sur huit colonnes demandait de deviner.
+   *
+   * #8C8C8C atteint 3 pour 1 contre les quatre surfaces du corps. Le contour
+   * d'une carte, lui, ne porte rien et garde `--border`.
+   */
+  --grid-line: #8c8c8c;
+
+  --axis: #fef9c2;                      /* yellow-100 */
+  --axis-foreground: #28322e;           /* --foreground */
 
   --neutral-soft: #f3f4f6;              /* gray-100 */
   --neutral-soft-foreground: #374151;   /* gray-700 */
@@ -142,6 +187,14 @@ html[data-embed] body {
   --color-warning-border: var(--warning-border);
   --color-destructive-soft: var(--destructive-soft);
   --color-destructive-soft-foreground: var(--destructive-soft-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-info-soft: var(--info-soft);
+  --color-info-soft-border: var(--info-soft-border);
+  --color-info-soft-foreground: var(--info-soft-foreground);
+  --color-grid-line: var(--grid-line);
+  --color-axis: var(--axis);
+  --color-axis-foreground: var(--axis-foreground);
   --color-neutral-soft: var(--neutral-soft);
   --color-neutral-soft-foreground: var(--neutral-soft-foreground);
   --color-destructive: var(--destructive);
