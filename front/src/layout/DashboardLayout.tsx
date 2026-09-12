@@ -36,7 +36,7 @@ export default function DashboardLayout({
         <div className="flex min-h-0 flex-1">
 
             {sidebar && (
-                <aside className="flex w-[207px] shrink-0 flex-col border-r border-border bg-card pl-8 pr-2.5 pt-6 pb-2">
+                <aside className="flex w-[207px] shrink-0 flex-col border-r border-border bg-card pl-8 pr-2.5 pt-6 pb-6">
                     {sidebar}
                 </aside>
             )}
