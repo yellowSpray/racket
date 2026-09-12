@@ -34,6 +34,35 @@ interface DrawTableProps {
     onSelectPlayer?: (player: GroupPlayer) => void
 }
 
+/**
+ * Le resultat d'une case, en pastille plutot qu'en texte colore.
+ *
+ * Quatre tons, les memes que la tuile des matchs du dashboard, et la regle est
+ * la meme des deux cotes : **un fond plein dit qu'un resultat est acquis, un
+ * contour dit qu'on attend encore quelque chose.** Le vert pour une victoire,
+ * le neutre pour une defaite, l'ambre plein pour un forfait, qui est un
+ * resultat et rapporte des points, l'ambre en contour pour un match dont
+ * l'heure est passee sans que personne n'ait rien saisi.
+ *
+ * Le tableau confondait les deux ambres : un forfait enregistre et un match
+ * oublie avaient la meme tete, alors que le second est le seul des deux qui
+ * demande une action.
+ */
+function Pastille({ ton, children }: { ton: "gagne" | "perdu" | "absence" | "nonJoue"; children: React.ReactNode }) {
+    const tons = {
+        gagne: "bg-success-soft border-success-soft-border text-success-soft-foreground",
+        perdu: "bg-card border-border text-foreground",
+        absence: "bg-warning-soft border-warning-soft-border text-warning-soft-foreground",
+        nonJoue: "bg-card border-warning-border text-warning-soft-foreground",
+    }
+    return (
+        <span data-pastille-resultat={ton}
+              className={`inline-block min-w-9 rounded-md border px-1.5 py-0.5 text-[11px] font-bold ${tons[ton]}`}>
+            {children}
+        </span>
+    )
+}
+
 // Dernier recours si l'appelant n'a pas encore resolu de bareme.
 const DEFAULT_SCORING: ScoringSource = { score_points: [...DEFAULT_SCORE_POINTS] }
 
@@ -167,24 +196,26 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
      * les dernieres colonnes sans que rien ne l'indique.
      */
     return (
-        <div ref={cadre} className="rounded-lg overflow-x-auto h-full border border-foreground" data-draw-table>
+        <div ref={cadre} className="rounded-xl overflow-x-auto h-full border border-grid-line bg-card" data-draw-table>
             <Table className="w-full h-full border-collapse">
                 <TableHeader>
                     <TableRow>
-                        <TableHead className="bg-blue-200 font-bold min-w-20 sm:min-w-24 text-center border-r border-b border-foreground">
+                        {/* Le nom de la box occupe la cellule du coin, la seule
+                            que la grille laisse libre. */}
+                        <TableHead className="bg-info-soft text-foreground font-bold min-w-20 sm:min-w-24 text-center border-r border-b border-grid-line">
                             {group.group_name}
                         </TableHead>
 
                         {slots.map((slot, index) => (
                             <TableHead
                                 key={index}
-                                className={`text-center font-bold text-xs min-w-9 sm:min-w-12 ${!slot ? 'bg-gray-200': 'bg-yellow-100'} border-r border-b border-foreground`}
+                                className={`text-center font-semibold text-xs min-w-9 sm:min-w-12 border-r border-b border-grid-line ${!slot ? 'bg-neutral-soft text-muted-foreground' : 'bg-axis text-axis-foreground'}`}
                             >
                                 {getPlayerLetter(index)}
                             </TableHead>
                         ))}
 
-                        <TableHead className="bg-green-200 text-center font-bold min-w-9 sm:min-w-12 border-b border-foreground">
+                        <TableHead className="bg-success-soft text-success-soft-foreground text-center font-bold min-w-9 sm:min-w-12 border-b border-grid-line">
                             <span className="sm:hidden">Pts</span>
                             <span className="hidden sm:inline">Total</span>
                         </TableHead>
@@ -194,44 +225,43 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                 <TableBody>
                     {slots.map((player, rowIndex) => (
                         <TableRow key={rowIndex} className="group hover:bg-transparent">
-                            <TableCell className={`font-medium ${!player ? 'bg-gray-200' : 'bg-yellow-100'} border-r border-b border-foreground group-last:border-b-0`}>
+                            <TableCell className={`font-medium border-r border-b border-grid-line group-last:border-b-0 ${player ? 'bg-axis text-axis-foreground' : 'bg-neutral-soft'}`}>
                                 {player ? (
-                                    <div className="flex items-center px-1 py-0.5 w-[5.5rem] sm:w-auto">
-                                        <span className="font-bold text-xs shrink-0 w-4">{getPlayerLetter(rowIndex)}</span>
-                                        <div className="flex-1 text-center min-w-0">
-                                            <p className="text-xs truncate font-bold flex items-center justify-center gap-1">
-                                                {onSelectPlayer ? (
-                                                    <span
-                                                        role="button"
-                                                        tabIndex={0}
-                                                        onClick={() => onSelectPlayer(player)}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === "Enter" || e.key === " ") {
-                                                                e.preventDefault()
-                                                                onSelectPlayer(player)
-                                                            }
-                                                        }}
-                                                        className="truncate cursor-pointer hover:underline"
-                                                    >
-                                                        <PlayerName player={player} />
-                                                    </span>
-                                                ) : (
-                                                    <span className="truncate"><PlayerName player={player} /></span>
-                                                )}
-                                                {playerMovements?.get(player.id) && (
-                                                    <PlayerMovementBadge movement={playerMovements.get(player.id)!} />
-                                                )}
-                                            </p>
-                                            <p className="text-[10px] text-foreground truncate">{player.phone}</p>
-                                        </div>
+                                    <div className="flex items-center gap-2 px-2 py-0.5 w-[5.5rem] sm:w-auto">
+                                        <span className="w-4 shrink-0 text-center text-xs font-semibold">
+                                            {getPlayerLetter(rowIndex)}
+                                        </span>
+                                        <span className="min-w-0 flex-1 truncate text-xs font-bold flex items-center gap-1">
+                                            {onSelectPlayer ? (
+                                                <span
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onClick={() => onSelectPlayer(player)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Enter" || e.key === " ") {
+                                                            e.preventDefault()
+                                                            onSelectPlayer(player)
+                                                        }
+                                                    }}
+                                                    className="truncate cursor-pointer hover:underline"
+                                                >
+                                                    <PlayerName player={player} />
+                                                </span>
+                                            ) : (
+                                                <span className="truncate"><PlayerName player={player} /></span>
+                                            )}
+                                            {playerMovements?.get(player.id) && (
+                                                <PlayerMovementBadge movement={playerMovements.get(player.id)!} />
+                                            )}
+                                        </span>
                                     </div>
                                 ) : (
-                                    <div className="flex items-center px-1 py-0.5 w-[5.5rem] sm:w-auto">
-                                        <span className="font-bold text-xs shrink-0 w-4">{getPlayerLetter(rowIndex)}</span>
-                                        <div className="flex-1 text-center min-w-0">
-                                            <p className="text-xs truncate invisible">placeholder</p>
-                                            <p className="text-[10px] truncate invisible">placeholder</p>
-                                        </div>
+                                    /* Une place libre ne s'annonce pas : la rangee
+                                       et la colonne grises le disent deja. */
+                                    <div className="flex items-center gap-2 px-2 py-0.5 w-[5.5rem] sm:w-auto">
+                                        <span className="w-4 shrink-0 text-center text-xs font-semibold text-muted-foreground">
+                                            {getPlayerLetter(rowIndex)}
+                                        </span>
                                     </div>
                                 )}
                             </TableCell>
@@ -242,11 +272,11 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                     (hoveredMatch.row === colIndex && hoveredMatch.col === rowIndex)
                                 )
 
-                                if (rowIndex === colIndex) {
+                                if (!player || !opponent) {
                                     return (
                                         <TableCell
                                             key={colIndex}
-                                            className="bg-gray-400 p-1 sm:p-2 border-r border-b border-foreground group-last:border-b-0"
+                                            className="bg-neutral-soft p-1 sm:p-2 border-r border-b border-grid-line group-last:border-b-0"
                                         >
                                             <div className="invisible text-[10px]">
                                                 <div>-</div>
@@ -257,11 +287,11 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                     )
                                 }
 
-                                if (!player || !opponent) {
+                                if (rowIndex === colIndex) {
                                     return (
                                         <TableCell
                                             key={colIndex}
-                                            className="bg-gray-200 p-1 sm:p-2 border-r border-b border-foreground group-last:border-b-0"
+                                            className="bg-neutral-soft [background-image:repeating-linear-gradient(135deg,transparent_0_5px,rgb(0_0_0/0.05)_5px_6px)] p-1 sm:p-2 border-r border-b border-grid-line group-last:border-b-0"
                                         >
                                             <div className="invisible text-[10px]">
                                                 <div>-</div>
@@ -294,10 +324,8 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                 return (
                                     <TableCell
                                         key={colIndex}
-                                        className={`text-center text-xs p-1 sm:p-2 transition-colors cursor-pointer border-r border-b border-foreground group-last:border-b-0
-                                                ${isAbsence || nonJoue
-                                                    ? (isHovered ? 'bg-amber-100' : 'bg-amber-50')
-                                                    : (isHovered ? 'bg-gray-200' : '')}
+                                        className={`text-center text-xs p-1 sm:p-2 transition-colors cursor-pointer border-r border-b border-grid-line group-last:border-b-0
+                                                ${isHovered ? 'bg-muted' : ''}
                                             `}
                                         onMouseEnter={() => setHoveredMatch({row: rowIndex, col: colIndex})}
                                         onMouseLeave={() => setHoveredMatch(null)}
@@ -313,7 +341,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                     >
                                         {(() => {
                                             if (!match) return (
-                                                <div className="flex flex-col items-center gap-0.5 text-gray-300 text-[10px]">
+                                                <div className="flex flex-col items-center gap-0.5 text-muted-foreground text-[10px]">
                                                     <div>-</div>
                                                     <div>--:--</div>
                                                 </div>
@@ -321,28 +349,26 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                             const rowAbsent = !match.score && !!playerAbsences?.get(player.id)?.includes(match.match_date)
                                             const oppAbsent = !match.score && !!playerAbsences?.get(opponent.id)?.includes(match.match_date)
                                             if (rowAbsent || oppAbsent) return (
-                                                <div className="font-bold text-amber-600 text-xs">
-                                                    {rowAbsent ? "Abs" : "-"}
-                                                </div>
+                                                <Pastille ton="nonJoue">{rowAbsent ? "Abs" : "-"}</Pastille>
                                             )
                                             if (nonJoue) return (
-                                                <div className="font-bold text-amber-600 text-xs">-</div>
+                                                <Pastille ton="nonJoue">-</Pastille>
                                             )
                                             if (match.score) return displayMode === "points" ? (
                                                 (() => {
                                                     const pts = getPointsForScore(match.score!, rules.score_points)
-                                                    if (!pts) return <div className="text-gray-300">-</div>
+                                                    if (!pts) return <div className="text-muted-foreground">-</div>
                                                     const playerPts = isWinner ? pts.winnerPts : pts.loserPts
-                                                    return <div className={`font-bold ${isAbsence ? 'text-amber-600' : ''}`}>{playerPts}</div>
+                                                    return <Pastille ton={isAbsence ? "absence" : isWinner ? "gagne" : "perdu"}>{playerPts}</Pastille>
                                                 })()
                                             ) : (
-                                                <div className={`font-bold ${isAbsence ? 'text-amber-600' : ''}`}>
+                                                <Pastille ton={isAbsence ? "absence" : isWinner ? "gagne" : "perdu"}>
                                                     {isRowPlayerAbsent ? "Abs" : isAbsence ? "-" : orientedScore(match, player.id)}
-                                                </div>
+                                                </Pastille>
                                             )
                                             return (
                                                 <div className="flex flex-col items-center gap-0.5">
-                                                    <div className="text-foreground text-[10px]">
+                                                    <div className="text-muted-foreground text-[10px]">
                                                         <span className="sm:hidden">{formatDateShort(match.match_date)}</span>
                                                         <span className="hidden sm:inline">{formatDate(match.match_date)}</span>
                                                     </div>
@@ -355,8 +381,10 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                             })}
 
                             {/* Cellule Total — points calculés */}
-                            <TableCell className="bg-green-100 text-center font-bold border-b border-foreground group-last:border-b-0">
-                                {player ? (pointsMap.get(player.id) ?? 0) : "-"}
+                            <TableCell className={`text-center font-bold border-b border-grid-line group-last:border-b-0 ${
+                                player ? 'bg-success-soft text-success-soft-foreground' : 'bg-neutral-soft'
+                            }`}>
+                                {player ? (pointsMap.get(player.id) ?? 0) : ""}
                             </TableCell>
                         </TableRow>
                     ))}

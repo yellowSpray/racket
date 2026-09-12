@@ -221,16 +221,22 @@ describe('DrawTable', () => {
     expect(screen.getByText('Total')).toBeInTheDocument()
   })
 
-  it('displays player name and phone when players exist', () => {
+  /*
+   * Le nom seul. Le telephone tenait sur une seconde ligne sous chaque nom,
+   * dans une colonne bornee a 5.5rem sur telephone : il etait tronque une fois
+   * sur deux, et personne n'appelle un joueur depuis un tableau de resultats.
+   * La fiche joueur, elle, le porte en entier.
+   */
+  it('affiche le nom du joueur, et pas son telephone', () => {
     const players = [
       makePlayer({ id: 'p1', first_name: 'Alice', last_name: 'Martin', phone: '0611111111' }),
       makePlayer({ id: 'p2', first_name: 'Bob', last_name: 'Dupont', phone: '0622222222' }),
     ]
     render(<DrawTable group={makeGroup({ players, max_players: 2 })} />)
     expect(screen.getByText('Alice Martin')).toBeInTheDocument()
-    expect(screen.getByText('0611111111')).toBeInTheDocument()
     expect(screen.getByText('Bob Dupont')).toBeInTheDocument()
-    expect(screen.getByText('0622222222')).toBeInTheDocument()
+    expect(screen.queryByText('0611111111')).not.toBeInTheDocument()
+    expect(screen.queryByText('0622222222')).not.toBeInTheDocument()
   })
 
   it('shows 0 in Total column for existing players', () => {
@@ -239,10 +245,23 @@ describe('DrawTable', () => {
     expect(screen.getByText('0')).toBeInTheDocument()
   })
 
-  it('shows "-" in Total column for empty slots', () => {
-    render(<DrawTable group={makeGroup({ players: [], max_players: 2 })} />)
-    const dashes = screen.getAllByText('-')
-    expect(dashes.length).toBeGreaterThanOrEqual(2)
+  /*
+   * Une place libre n'ecrit rien, ni nom ni total : sa rangee et sa colonne
+   * sont grises, ce qui le dit deja. « Place libre » ou un tiret occupaient la
+   * place d'une information sans en etre une.
+   */
+  it('n\'ecrit rien sur une place libre', () => {
+    const { container } = render(<DrawTable group={makeGroup({ players: [], max_players: 2 })} />)
+    const lignes = container.querySelectorAll('tbody tr')
+    for (const ligne of lignes) {
+      const cellules = ligne.querySelectorAll('td')
+      const nom = cellules[0]
+      const total = cellules[cellules.length - 1]
+      // La lettre de reperage reste, elle situe la colonne.
+      expect(nom.textContent!.trim()).toMatch(/^[A-Z]$/)
+      expect(total.textContent).toBe('')
+      expect(total.className).toContain('bg-neutral-soft')
+    }
   })
 
   it('respects max_players for number of slots', () => {
@@ -333,6 +352,26 @@ describe('DrawTable', () => {
     // Alice: 4 pts (3-1 win), Bob: 1 pt (3-1 loss)
     expect(screen.getByText('4')).toBeInTheDocument()
     expect(screen.getByText('1')).toBeInTheDocument()
+  })
+
+  /*
+   * Le gagnant se dit par une pastille verte, le perdant par une pastille
+   * neutre. Le texte vert d'avant se confondait avec la colonne des totaux,
+   * elle aussi verte, et ne disait rien a qui ne compare pas les deux cases.
+   */
+  it('distingue la case du gagnant de celle du perdant', () => {
+    const players = [
+      makePlayer({ id: 'p1', first_name: 'Alice', last_name: 'Martin' }),
+      makePlayer({ id: 'p2', first_name: 'Bob', last_name: 'Dupont' }),
+    ]
+    const matches = [makeMatch({ player1_id: 'p1', player2_id: 'p2', winner_id: 'p1', score: '3-1' })]
+    const { container } = render(
+      <DrawTable group={makeGroup({ players, max_players: 2 })} matches={matches} scoringRules={defaultRules} />,
+    )
+    const tons = [...container.querySelectorAll('[data-pastille-resultat]')]
+      .map(e => e.getAttribute('data-pastille-resultat'))
+    expect(tons).toContain('gagne')
+    expect(tons).toContain('perdu')
   })
 
   it('highlights winner score in match cell', () => {
@@ -430,9 +469,15 @@ describe('DrawTable', () => {
         <DrawTable group={deuxJoueurs} matches={[aVingtHeures]} scoringRules={defaultRules} />,
       )
 
-      const ambres = container.querySelectorAll('.text-amber-600')
+      /*
+       * Contour et non fond plein : c'est la regle du dashboard, un fond dit
+       * qu'un resultat est acquis, un contour qu'on attend encore. Un forfait
+       * enregistre garde l'ambre plein, il rapporte des points.
+       */
+      const ambres = container.querySelectorAll('[data-pastille-resultat="nonJoue"]')
       expect(ambres.length).toBeGreaterThan(0)
       expect([...ambres].every(n => n.textContent === '-')).toBe(true)
+      expect(container.querySelector('[data-pastille-resultat="absence"]')).toBeNull()
     })
 
     it('n accorde aucun point', () => {
