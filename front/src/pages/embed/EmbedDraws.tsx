@@ -225,7 +225,12 @@ export function EmbedDraws() {
                 </div>
             )}
 
-            <p className="text-[11px] text-muted-foreground/70">
+            {/*
+              * Centre comme tout le reste du cadre, et sans l'opacite de 70 %
+              * qui le mettait a 2.96 pour 1 sur le blanc. Une mention de pied
+              * reste du texte : le seuil de 4.5 vaut pour elle aussi.
+              */}
+            <p className="text-center text-[11px] text-muted-foreground">
                 Tableaux publiés avec Racket Fest
             </p>
         </div>
