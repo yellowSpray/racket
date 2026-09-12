@@ -15,7 +15,7 @@ export function AlertsCard({ className }: AlertsCardProps) {
                 </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 flex items-center justify-center">
-                <div className="flex flex-col items-center text-gray-400">
+                <div className="flex flex-col items-center text-muted-foreground">
                     <AlertCircleIcon size={24} className="mb-2" />
                     <p className="text-xs text-center">Matchs sans résultat, conflits de planning, absences signalées</p>
                     <p className="text-xs mt-1">À venir</p>

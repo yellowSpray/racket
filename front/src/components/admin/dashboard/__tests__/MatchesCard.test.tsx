@@ -239,9 +239,9 @@ describe('MatchesCard', () => {
             const classe = (i: number) =>
                 container.querySelectorAll('[data-controle-score]')[i].className
 
-            expect(classe(0)).toContain('bg-green-100')
-            expect(classe(1)).toContain('bg-amber-100')
-            expect(classe(2)).toContain('border-amber-400')
+            expect(classe(0)).toContain('bg-success-soft')
+            expect(classe(1)).toContain('bg-warning-soft')
+            expect(classe(2)).toContain('border-warning-border')
             vi.useRealTimers()
         })
 
@@ -339,7 +339,7 @@ describe('MatchesCard', () => {
         it('pose la boxe sur un gris clair', () => {
             mockUseMatchesByDay.mockReturnValue({ ...defaultReturn, days: [makeDay()] })
             render(<MatchesCard roundId="round1" />)
-            expect(screen.getAllByText('Box A')[0].className).toContain('bg-gray-100')
+            expect(screen.getAllByText('Box A')[0].className).toContain('bg-neutral-soft')
         })
     })
 
@@ -428,10 +428,10 @@ describe('MatchesCard', () => {
             mockUseMatchesByDay.mockReturnValue({ ...defaultReturn, days: [jour()] })
             render(<MatchesCard roundId="round1" />)
 
-            expect(screen.getByText('5 matchs').className).toContain('bg-gray-100')
-            expect(screen.getByText('1 non joué').className).toContain('border-amber-400')
-            expect(screen.getByText('1 non joué').className).toContain('bg-white')
-            expect(screen.getByText('2 absences').className).toContain('bg-amber-100')
+            expect(screen.getByText('5 matchs').className).toContain('bg-neutral-soft')
+            expect(screen.getByText('1 non joué').className).toContain('border-warning-border')
+            expect(screen.getByText('1 non joué').className).toContain('bg-card')
+            expect(screen.getByText('2 absences').className).toContain('bg-warning-soft')
         })
 
         // Zero non joue, zero absence : deux tags de moins, pas deux zeros.

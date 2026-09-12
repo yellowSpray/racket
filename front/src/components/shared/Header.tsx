@@ -1,5 +1,4 @@
 import { Link, useLocation } from "react-router"
-import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/contexts/AuthContext"
@@ -8,7 +7,7 @@ import { AppBreadcrumb } from "@/components/shared/AppBreadcrumb"
 import { EventInviteLink } from "@/components/admin/settings/EventInviteLink"
 import { useEvent } from "@/contexts/EventContext"
 import { useInviteLink } from "@/hooks/useInviteLink"
-import { Notification03Icon, Moon02Icon, Sun03Icon, Search01Icon } from "hugeicons-react"
+import { Notification03Icon, Search01Icon } from "hugeicons-react"
 
 /**
  * Barre du haut, pleine largeur, posée au-dessus de toute la coque.
@@ -39,13 +38,8 @@ export default function Header() {
     const hasActions = useHeaderHasActions()
     const { currentEvent } = useEvent()
     const { getInviteUrl } = useInviteLink()
-    const [darkMode, setDarkMode] = useState(false)
 
     const dansLApplication = pathname.startsWith("/admin") || pathname.startsWith("/user")
-
-    useEffect(() => {
-        document.documentElement.classList.toggle("dark", darkMode)
-    }, [darkMode])
 
     return (
         <header className="flex h-12 shrink-0 items-center border-b border-border bg-card pr-8">
@@ -127,16 +121,13 @@ export default function Header() {
                     </div>
                 )}
 
-                <Button
-                    variant="icon"
-                    size="iconSm"
-                    className="border"
-                    aria-label={darkMode ? "Thème clair" : "Thème sombre"}
-                    onClick={() => setDarkMode(!darkMode)}
-                >
-                    {darkMode ? <Sun03Icon size={16} strokeWidth={2} /> : <Moon02Icon size={16} strokeWidth={2} />}
-                </Button>
-
+                {/*
+                  * Le bouton de thème a été retiré le 12 septembre, le temps du
+                  * chantier des tokens. Il basculait une classe `dark` à
+                  * laquelle rien ne répondait : promettre un thème sombre qui
+                  * n'arrive pas est pire que ne rien proposer. Il revient
+                  * quand le bloc `.dark` existe.
+                  */}
                 {isAuthenticated && profile ? (
                     <>
                         <Button variant="icon" size="iconSm" aria-label="Notifications" className="relative border">

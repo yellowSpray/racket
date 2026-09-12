@@ -154,8 +154,8 @@ describe('UnpaidPaymentsCard', () => {
 
         render(<UnpaidPaymentsCard clubId="c1" />)
 
-        expect(screen.getByText('1').className).toContain('bg-red-500')
-        expect(screen.getByText('Série 4').className).toContain('bg-red-100')
+        expect(screen.getByText('1').className).toContain('bg-destructive')
+        expect(screen.getByText('Série 4').className).toContain('bg-destructive-soft')
     })
 
     describe('relance', () => {

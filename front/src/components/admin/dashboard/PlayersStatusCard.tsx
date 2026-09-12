@@ -57,7 +57,7 @@ export function PlayersStatusCard({ roundId, previousRoundId, className }: Playe
                         <button
                             onClick={() => setSlideIndex((i) => Math.max(0, i - 1))}
                             disabled={slideIndex === 0}
-                            className="p-0.5 rounded transition-colors hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="p-0.5 rounded transition-colors hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed"
                             aria-label="Slide précédent"
                         >
                             <ArrowLeft01Icon size={14} />
@@ -65,7 +65,7 @@ export function PlayersStatusCard({ roundId, previousRoundId, className }: Playe
                         <button
                             onClick={() => setSlideIndex((i) => Math.min(SLIDES.length - 1, i + 1))}
                             disabled={slideIndex === SLIDES.length - 1}
-                            className="p-0.5 rounded transition-colors hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="p-0.5 rounded transition-colors hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed"
                             aria-label="Slide suivant"
                         >
                             <ArrowRight01Icon size={14} />
@@ -92,7 +92,7 @@ export function PlayersStatusCard({ roundId, previousRoundId, className }: Playe
 function MovementsList({ movements, loading, emptyLabel }: { movements: PlayerMovement[]; loading: boolean; emptyLabel: string }) {
     if (loading) {
         return (
-            <div className="h-full flex items-center justify-center text-gray-400">
+            <div className="h-full flex items-center justify-center text-muted-foreground">
                 <p className="text-sm">Chargement...</p>
             </div>
         )
@@ -100,7 +100,7 @@ function MovementsList({ movements, loading, emptyLabel }: { movements: PlayerMo
 
     if (movements.length === 0) {
         return (
-            <div className="h-full flex flex-col items-center justify-center text-gray-400">
+            <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
                 <UserGroupIcon size={28} className="mb-3" />
                 <p className="text-sm">{emptyLabel}</p>
             </div>
@@ -133,7 +133,7 @@ function MovementsList({ movements, loading, emptyLabel }: { movements: PlayerMo
 
 function ListeAttente() {
     return (
-        <div className="h-full flex flex-col items-center justify-center text-gray-400">
+        <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
             <Clock01Icon size={28} className="mb-3" />
             <p className="text-sm text-center">Joueurs inscrits en attente d'un groupe</p>
             <p className="text-xs mt-1">À venir</p>

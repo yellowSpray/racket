@@ -66,7 +66,7 @@ export function UnpaidPaymentsCard({ clubId, className, onRelancer }: UnpaidPaym
 function UnpaidPaymentsFeed({ grouped, loading }: { grouped: GroupedUnpaidPayment[]; loading: boolean }) {
     if (loading) {
         return (
-            <div className="h-full flex items-center justify-center text-gray-400">
+            <div className="h-full flex items-center justify-center text-muted-foreground">
                 <p className="text-sm">Chargement...</p>
             </div>
         )
@@ -74,7 +74,7 @@ function UnpaidPaymentsFeed({ grouped, loading }: { grouped: GroupedUnpaidPaymen
 
     if (grouped.length === 0) {
         return (
-            <div className="h-full flex flex-col items-center justify-center text-gray-400">
+            <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
                 <CreditCardIcon size={28} className="mb-3" />
                 <p className="text-sm">Tous les paiements sont à jour</p>
             </div>

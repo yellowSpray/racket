@@ -130,11 +130,22 @@ describe('Header, barre pleine largeur', () => {
     mockPathname.value = '/admin'
   })
 
-  it('offre la recherche et le theme a un utilisateur connecte', () => {
+  it('offre la recherche a un utilisateur connecte', () => {
     connecte()
     render(<Header />)
     expect(screen.getByRole('searchbox', { name: /rechercher/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /th[eè]me/i })).toBeInTheDocument()
+  })
+
+  /*
+   * Le bouton de theme est retire le temps du chantier des tokens. Il basculait
+   * une classe `dark` a laquelle `index.css` ne repondait pas, et que Tailwind
+   * n'ecoutait meme pas faute de `@custom-variant`. Ce test dit que son absence
+   * est une decision, et il tombera le jour ou le bouton revient.
+   */
+  it('ne propose pas de theme tant que le sombre n\'existe pas', () => {
+    connecte()
+    render(<Header />)
+    expect(screen.queryByRole('button', { name: /th[eè]me/i })).not.toBeInTheDocument()
   })
 
   // Les pages deposent leurs boutons ici, juste avant le bloc global.
@@ -151,7 +162,7 @@ describe('Header, barre pleine largeur', () => {
   it('affine le filet de ses pastilles', () => {
     connecte()
     render(<Header />)
-    for (const nom of [/th[eè]me/i, /notifications/i]) {
+    for (const nom of [/notifications/i, /Mixed/]) {
       const bouton = screen.getByRole('button', { name: nom })
       expect(bouton.className).toContain('border')
       expect(bouton.className).not.toContain('border-2')
@@ -193,7 +204,7 @@ describe('Header, barre pleine largeur', () => {
     connecte()
     render(<Header />)
     expect(screen.getByRole('searchbox', { name: /rechercher/i }).className).toContain('h-8')
-    for (const nom of [/th[eè]me/i, /notifications/i, /Mixed/]) {
+    for (const nom of [/notifications/i, /Mixed/]) {
       expect(screen.getByRole('button', { name: nom }).className).toContain('size-8')
     }
   })
