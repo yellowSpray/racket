@@ -196,8 +196,13 @@ export function EmbedDraws() {
                  *
                  * La gouttiere reste a 16 et non 24 : le cadre est enchasse
                  * dans le site d'un club, il n'a pas les marges d'une page.
+                 *
+                 * `justify-center` et non `justify-start` comme l'ecran admin :
+                 * ici tout est centre, le logo du club, le titre de la serie, la
+                 * navigation entre series. Des tableaux colles a gauche sous un
+                 * en-tete centre se lisent comme un defaut d'alignement.
                  */
-                <div className="grid justify-start gap-4 [grid-template-columns:repeat(1,minmax(0,532px))] lg:[grid-template-columns:repeat(2,minmax(0,532px))] 2xl:[grid-template-columns:repeat(3,minmax(0,532px))] min-[2560px]:[grid-template-columns:repeat(4,minmax(0,532px))] min-[3440px]:[grid-template-columns:repeat(5,minmax(0,532px))]">
+                <div className="grid justify-center gap-4 [grid-template-columns:repeat(1,minmax(0,532px))] lg:[grid-template-columns:repeat(2,minmax(0,532px))] 2xl:[grid-template-columns:repeat(3,minmax(0,532px))] min-[2560px]:[grid-template-columns:repeat(4,minmax(0,532px))] min-[3440px]:[grid-template-columns:repeat(5,minmax(0,532px))]">
                     {groups.map(group => {
                         const groupMatches = draws.matches.filter(m => m.group_id === group.id)
                         /*
