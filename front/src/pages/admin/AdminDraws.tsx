@@ -214,27 +214,26 @@ export function AdminDraws () {
             ) : (
                 <ScrollArea className="flex-1 min-h-0" type="auto">
                     {/*
-                      * Un nombre de colonnes par palier, chaque piste plafonnee
-                      * a 532 px.
+                      * Des pistes a la taille d'un tableau, et autant que l'ecran
+                      * en porte.
                       *
-                      * En `grid-cols-N` seul, un tableau s'etirait avec l'ecran :
-                      * a 2560 px il faisait 800 de large pour le meme contenu,
-                      * ses colonnes de dates flottaient et le nom du joueur se
-                      * perdait a l'autre bout de la rangee. Un tableau de box a
-                      * une taille juste, 532 ; au-dela il en faut plus, pas des
-                      * plus gros.
+                      * Un tableau de box mesure **519 px au minimum**, somme des
+                      * planchers de ses huit colonnes, et 532 au maximum. Treize
+                      * pixels d'elasticite : ce n'est pas un objet fluide. En
+                      * fractions, trois colonnes a 1440 donnaient des pistes de
+                      * 374 ; `useFitToWidth` reduisait alors le tableau a 72 %
+                      * puis s'arretait a son plancher de 0.6, et le reste partait
+                      * en barre de defilement. Rapetisse **et** coupe.
                       *
-                      * `minmax(0, 532px)` et non `532px` : sous le plafond la
-                      * piste se partage la place disponible, au-dessus elle
-                      * s'arrete. Des pistes fixes auraient debordé sous 532.
+                      * `auto-fill` compte les pistes lui-meme a partir du
+                      * minimum, au lieu d'un nombre fixe par palier qu'il
+                      * faudrait recalculer a chaque changement de gouttiere. Le
+                      * `min(100%, 519px)` evite le debordement sous 519.
                       *
-                      * Les paliers sont mesures, pas devines. A 1440 la place
-                      * utile est de 1168 px, ce qui donne trois tableaux de 373 ;
-                      * a 1920 elle est de 1648 et les trois atteignent leur
-                      * plafond. Passer a quatre des 1920 aurait rapetisse les
-                      * tableaux que 1440 venait d'elargir.
+                      * `justify-center` parce que la colonne de contenu est
+                      * centree : voir `DashboardLayout`.
                       */}
-                    <div ref={tablesRef} className="grid justify-start gap-6 [grid-template-columns:repeat(1,minmax(0,532px))] lg:[grid-template-columns:repeat(2,minmax(0,532px))] 2xl:[grid-template-columns:repeat(3,minmax(0,532px))] min-[2560px]:[grid-template-columns:repeat(4,minmax(0,532px))] min-[3440px]:[grid-template-columns:repeat(5,minmax(0,532px))]">
+                    <div ref={tablesRef} className="grid justify-center gap-6 [grid-template-columns:repeat(auto-fill,minmax(min(100%,519px),532px))]">
                         {groups.map(group => {
                             const groupMatches = matches.filter(m => m.group_id === group.id)
                             const sortedGroup = sortPlayersByEarliestDates(group, groupMatches)

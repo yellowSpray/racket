@@ -202,7 +202,7 @@ export function EmbedDraws() {
                  * navigation entre series. Des tableaux colles a gauche sous un
                  * en-tete centre se lisent comme un defaut d'alignement.
                  */
-                <div className="grid justify-center gap-4 [grid-template-columns:repeat(1,minmax(0,532px))] lg:[grid-template-columns:repeat(2,minmax(0,532px))] 2xl:[grid-template-columns:repeat(3,minmax(0,532px))] min-[2560px]:[grid-template-columns:repeat(4,minmax(0,532px))] min-[3440px]:[grid-template-columns:repeat(5,minmax(0,532px))]">
+                <div className="grid justify-center gap-4 [grid-template-columns:repeat(auto-fill,minmax(min(100%,519px),532px))]">
                     {groups.map(group => {
                         const groupMatches = draws.matches.filter(m => m.group_id === group.id)
                         /*

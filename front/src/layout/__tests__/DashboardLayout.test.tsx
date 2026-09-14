@@ -57,6 +57,23 @@ describe('DashboardLayout', () => {
         expect(aside.className).toContain('pb-6')
     })
 
+    /*
+     * Le contenu a une largeur definie et se centre, les marges absorbent le
+     * reste. 2200 px, soit quatre tableaux de box de 532 avec leurs gouttieres :
+     * un tableau mesure 519 au minimum, somme de ses planchers de colonnes, et
+     * ne se negocie pas. C'est donc lui qui fixe le pas de l'application.
+     */
+    it('borne et centre la colonne de contenu', () => {
+        const { container } = render(
+            <DashboardLayout sidebar={<nav>menu</nav>}>contenu</DashboardLayout>,
+        )
+        const borne = container.querySelector('[data-contenu-borne]')!
+        expect(borne.className).toContain('max-w-[2200px]')
+        expect(borne.className).toContain('mx-auto')
+        // Le titre de page vit dedans, sinon il ne suivrait pas le centrage.
+        expect(borne.querySelector('[data-page-heading]')).not.toBeNull()
+    })
+
     it('rend la barre laterale et le contenu', () => {
         render(<DashboardLayout sidebar={<nav>menu</nav>}>contenu</DashboardLayout>)
         expect(screen.getByText('menu')).toBeInTheDocument()
@@ -96,9 +113,11 @@ describe('DashboardLayout', () => {
         const { container } = render(
             <DashboardLayout sidebar={<nav>menu</nav>}>contenu</DashboardLayout>,
         )
-        const section = container.querySelector('section')
+        // En tete de la colonne bornee, et non de la `section` : le titre doit
+        // suivre le centrage du contenu, pas rester colle au bord.
+        const borne = container.querySelector('[data-contenu-borne]')
         const titre = container.querySelector('[data-page-heading]')
         expect(titre).not.toBeNull()
-        expect(section!.firstElementChild).toBe(titre)
+        expect(borne!.firstElementChild).toBe(titre)
     })
 })

@@ -42,12 +42,31 @@ export default function DashboardLayout({
             )}
 
             <section className="flex min-h-0 min-w-0 flex-1 flex-col px-8 py-6">
+                {/*
+                  * Le contenu a une largeur, et les marges absorbent le reste.
+                  *
+                  * 2200 px, soit quatre tableaux de box de 532 avec leurs trois
+                  * gouttieres de 24. Ce n'est pas un chiffre rond par hasard :
+                  * un tableau de box mesure 519 px au minimum, somme de ses
+                  * planchers de colonnes, et 532 au maximum. Il ne se negocie
+                  * pas, donc c'est lui qui fixe le pas de toute l'application.
+                  *
+                  * Au-dela, la colonne cesse de s'etirer et se centre. Un
+                  * tableau de matchs de 2500 px de large n'est pas plus lisible
+                  * qu'un de 2200, il est seulement plus fatigant a parcourir de
+                  * l'oeil.
+                  */}
                 <div
-                    ref={registerSlot}
-                    data-page-heading
-                    className="flex min-h-[34px] min-w-0 items-center gap-3 empty:hidden [&:not(:empty)]:mb-4"
-                />
-                {children}
+                    data-contenu-borne
+                    className="mx-auto flex min-h-0 w-full max-w-[2200px] flex-1 flex-col"
+                >
+                    <div
+                        ref={registerSlot}
+                        data-page-heading
+                        className="flex min-h-[34px] min-w-0 items-center gap-3 empty:hidden [&:not(:empty)]:mb-4"
+                    />
+                    {children}
+                </div>
             </section>
 
         </div>
