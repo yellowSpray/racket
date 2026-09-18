@@ -10,6 +10,7 @@ import {
 } from "hugeicons-react"
 import { usePlayerMovements, type PlayerMovement } from "@/hooks/usePlayerMovements"
 import { formatRelativeTime } from "@/lib/formatRelativeTime"
+import { BLOC_DEFILANT } from "@/lib/scrollArea"
 
 /**
  * « Arrivées » et non « Inscrits » : la carte ne compte pas l'effectif de la
@@ -108,7 +109,7 @@ function MovementsList({ movements, loading, emptyLabel }: { movements: PlayerMo
     }
 
     return (
-        <ScrollArea className="h-full" type="auto">
+        <ScrollArea className={`h-full ${BLOC_DEFILANT}`} type="auto">
             <ul>
                 {movements.map((m, i) => (
                     <li

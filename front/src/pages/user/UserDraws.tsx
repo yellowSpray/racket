@@ -9,6 +9,7 @@ import type { EventRound } from "@/types/event"
 import { DrawTable } from "@/components/admin/draws/DrawTable"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { BLOC_DEFILANT } from "@/lib/scrollArea"
 
 function resolveRound(rounds: EventRound[] | undefined): EventRound | null {
     if (!rounds || rounds.length === 0) return null
@@ -126,7 +127,16 @@ export function UserDraws() {
     return (
         <div className="flex flex-col h-full min-h-0">
             {header}
-            <ScrollArea className="flex-1 min-h-0" type="auto">
+            {/*
+              * Le `!block` : ScrollArea enveloppe ses enfants dans un div en
+              * `display: table`, qui se dimensionne sur son contenu. La grille
+              * cesse alors d'etre bornee par la colonne et le tableau sort de
+              * l'ecran sur un telephone. Meme correctif que `AdminDraws`.
+              */}
+            <ScrollArea
+                className={`flex-1 min-h-0 ${BLOC_DEFILANT}`}
+                type="auto"
+            >
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                     {groups.map(group => (
                         <DrawTable

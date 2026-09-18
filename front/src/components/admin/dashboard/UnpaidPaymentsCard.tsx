@@ -5,6 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { CreditCardIcon } from "hugeicons-react"
 import { useUnpaidPayments } from "@/hooks/useUnpaidPayments"
 import type { GroupedUnpaidPayment } from "@/hooks/useUnpaidPayments"
+import { BLOC_DEFILANT } from "@/lib/scrollArea"
 
 interface UnpaidPaymentsCardProps {
     clubId: string | null
@@ -82,7 +83,7 @@ function UnpaidPaymentsFeed({ grouped, loading }: { grouped: GroupedUnpaidPaymen
     }
 
     return (
-        <ScrollArea className="h-full" type="auto">
+        <ScrollArea className={`h-full ${BLOC_DEFILANT}`} type="auto">
             <ul>
                 {grouped.map((p, i) => (
                     <li
