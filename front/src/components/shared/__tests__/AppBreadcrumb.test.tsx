@@ -164,4 +164,20 @@ describe('AppBreadcrumb', () => {
             expect(liste).toHaveAttribute('data-liste-stylee')
         }
     })
+
+    /*
+     * Dans la seconde barre du telephone le fil est seul : il prend toute la
+     * largeur et repartit ses trois segments d'un bord a l'autre. Dans le
+     * header il reste cale a gauche, contre le titre de page qui demarre sur la
+     * meme verticale.
+     */
+    it('prend toute la largeur quand on le lui demande', () => {
+        const { container, rerender } = render(<AppBreadcrumb />)
+        const nav = () => container.querySelector('nav')!
+        expect(nav().className).not.toContain('justify-between')
+
+        rerender(<AppBreadcrumb pleineLargeur />)
+        expect(nav().className).toContain('w-full')
+        expect(nav().className).toContain('justify-between')
+    })
 })
