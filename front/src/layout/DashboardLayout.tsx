@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import { useHeaderSlotRegister } from "@/contexts/HeaderSlotContext"
+import { GOUTTIERE, RAIL, RAIL_PADDING } from "@/layout/rail"
 
 /**
  * La coque de l'application : barre latérale à gauche, contenu à droite.
@@ -25,9 +26,16 @@ import { useHeaderSlotRegister } from "@/contexts/HeaderSlotContext"
  */
 export default function DashboardLayout({
     sidebar,
+    onglets,
     children,
 }: {
     sidebar?: ReactNode
+    /**
+     * La meme navigation, en onglets au bas de l'ecran, sous 640 px. Elle est
+     * rendue hors de l'`aside` : celui-ci est masque a cette largeur, et un
+     * element `fixed` place dans un parent en `display: none` ne s'affiche pas.
+     */
+    onglets?: ReactNode
     children: ReactNode
 }) {
     const registerSlot = useHeaderSlotRegister()
@@ -36,12 +44,17 @@ export default function DashboardLayout({
         <div className="flex min-h-0 flex-1">
 
             {sidebar && (
-                <aside className="flex w-[207px] shrink-0 flex-col border-r border-border bg-card pl-8 pr-2.5 pt-6 pb-6">
+                <aside className={`hidden shrink-0 flex-col border-r border-border bg-card pt-6 pb-6 sm:flex ${RAIL} ${RAIL_PADDING}`}>
                     {sidebar}
                 </aside>
             )}
 
-            <section className="flex min-h-0 min-w-0 flex-1 flex-col px-8 py-6">
+            {/*
+              * Le bas laisse passer la barre d'onglets, 56 px plus la zone sure
+              * des telephones a barre de geste. Elle est `fixed` : sans ce
+              * retrait, elle couvrirait la derniere ligne du contenu.
+              */}
+            <section className={`flex min-h-0 min-w-0 flex-1 flex-col pt-6 pb-[calc(3.5rem+env(safe-area-inset-bottom)+1.5rem)] sm:pb-6 ${GOUTTIERE}`}>
                 {/*
                   * Le contenu a une largeur, et les marges absorbent le reste.
                   *
@@ -60,14 +73,32 @@ export default function DashboardLayout({
                     data-contenu-borne
                     className="mx-auto flex min-h-0 w-full max-w-[2200px] flex-1 flex-col"
                 >
+                    {/*
+                      * `flex-wrap` : les actions de page passent sous le titre
+                      * quand la ligne ne les tient plus. Les trois boutons des
+                      * tableaux font 271 px a eux seuls, soit plus que la
+                      * colonne d'un telephone une fois le titre servi, et la
+                      * page debordait de 56 px a 320.
+                      *
+                      * Elles gardent leurs libelles en passant a la ligne : un
+                      * pictogramme seul rendrait « Points » et « Scores »
+                      * indistinguables, et c'est l'etat du bouton qui compte.
+                      *
+                      * `shrink-0` va avec : cette bande est un element d'une
+                      * colonne flex bornee en hauteur, donc sans lui elle reste
+                      * ecrasee a ses 34 px pendant que sa seconde ligne deborde
+                      * sous le contenu.
+                      */}
                     <div
                         ref={registerSlot}
                         data-page-heading
-                        className="flex min-h-[34px] min-w-0 items-center gap-3 empty:hidden [&:not(:empty)]:mb-4"
+                        className="flex min-h-[34px] min-w-0 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 empty:hidden [&:not(:empty)]:mb-4"
                     />
                     {children}
                 </div>
             </section>
+
+            {onglets}
 
         </div>
     )
