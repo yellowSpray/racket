@@ -1,6 +1,7 @@
 import { Link } from "react-router"
 import { Logout03Icon } from "hugeicons-react"
 import type { ComponentType } from "react"
+import { RAIL_BLEED } from "@/layout/rail"
 
 /**
  * Les briques communes aux deux barres latérales, admin et joueur.
@@ -52,14 +53,21 @@ export function SidebarGroup({ entries, pathname }: { entries: SidebarEntry[]; p
                         key={entry.to}
                         to={entry.to}
                         aria-current={active ? "page" : undefined}
-                        className={`flex h-[34px] items-center gap-2.5 rounded-md px-2.5 transition-colors ${
+                        title={entry.label}
+                        className={`flex h-[34px] items-center justify-center gap-0 rounded-md px-2.5 transition-colors lg:justify-start lg:gap-2.5 ${
                             active
                                 ? "bg-muted font-semibold text-foreground hover:bg-border"
                                 : "text-foreground/70 hover:bg-muted/60 hover:text-foreground"
                         }`}
                     >
                         <Icon size={16} strokeWidth={2} className="shrink-0" />
-                        <span className="truncate">{entry.label}</span>
+                        {/*
+                          * Repliee, la barre cache le libelle mais ne le
+                          * supprime pas : `sr-only` le garde pour un lecteur
+                          * d'ecran, qui n'aurait sinon que des pictogrammes
+                          * muets. Le `title` donne la meme chose a la souris.
+                          */}
+                        <span className="sr-only truncate lg:not-sr-only">{entry.label}</span>
                     </Link>
                 )
             })}
@@ -73,21 +81,22 @@ export function SidebarGroup({ entries, pathname }: { entries: SidebarEntry[]; p
  * texte, et rejoint ainsi le trait qui borde la barre.
  */
 export function SidebarSeparator() {
-    return <div data-sidebar-separator className="-ml-8 -mr-2.5 my-3 h-px bg-border" />
+    return <div data-sidebar-separator className={`my-3 h-px bg-border ${RAIL_BLEED}`} />
 }
 
 /** Pied de barre, poussé en bas : aujourd'hui la seule déconnexion. */
 export function SidebarSignOut({ onSignOut }: { onSignOut: () => void }) {
     return (
         <div data-sidebar-footer className="mt-auto">
-            <div className="-ml-8 -mr-2.5 mb-2 h-px bg-border" />
+            <div className={`mb-2 h-px bg-border ${RAIL_BLEED}`} />
             <button
                 type="button"
                 onClick={onSignOut}
-                className="flex h-[34px] w-full items-center gap-2.5 rounded-md px-2.5 text-foreground/70 transition-colors hover:bg-destructive/10 hover:text-destructive"
+                title="Quitter"
+                className="flex h-[34px] w-full items-center justify-center gap-0 rounded-md px-2.5 text-foreground/70 transition-colors hover:bg-destructive/10 hover:text-destructive lg:justify-start lg:gap-2.5"
             >
                 <Logout03Icon size={16} strokeWidth={2} className="shrink-0" />
-                <span>Quitter</span>
+                <span className="sr-only lg:not-sr-only">Quitter</span>
             </button>
         </div>
     )
