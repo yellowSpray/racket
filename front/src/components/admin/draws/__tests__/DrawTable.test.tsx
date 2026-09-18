@@ -132,47 +132,57 @@ describe('DrawTable', () => {
       expect(total.className).toContain('sm:min-w-12')
     })
 
+    /*
+     * `truncate` pose white-space: nowrap : dans un tableau en disposition
+     * automatique, la colonne prend alors la largeur du nom le plus long et ne
+     * tronque jamais. Sans plafond, un seul nom long elargit la colonne, donc
+     * le tableau, donc le facteur de reduction de tous les autres. Mesure a
+     * l'appui : « Jean-Christophe Vandenplas-Martin » faisait passer la largeur
+     * naturelle de la box de 466 a 605 px et la reduisait a 88 % sur un ecran
+     * de bureau ou elle tenait sans reduction.
+     */
     it('borne la colonne des noms au lieu de la laisser s etaler', () => {
-      /*
-       * `truncate` pose white-space: nowrap : dans un tableau en disposition
-       * automatique, la colonne prend alors la largeur du nom le plus long et
-       * ne tronque jamais. Le plancher min-w ne sert a rien tant que le
-       * contenu n'est pas borne. Mesure a l'appui : la colonne faisait 155
-       * pixels sur un ecran de 320.
-       */
       render(<DrawTable group={makeGroup({ players: deuxJoueurs, max_players: 2 })} />)
 
       const cellule = screen.getByText('Alice A').closest('td')!
       const contenu = cellule.querySelector('div')!
 
-      expect(contenu.className).toContain('w-[5.5rem]')
-      expect(contenu.className).toContain('sm:w-auto')
+      expect(contenu.className).toContain('max-w-40')
+      expect(contenu.className).not.toContain('w-[5.5rem]')
     })
 
-    it('abrege le prenom et garde le nom entier', () => {
-      /*
-       * Tronquer « Renaud Vandenplas » coupait le nom, la seule partie qui
-       * distingue deux joueurs. L'initiale du prenom suffit dans une box de
-       * six, et rend une quarantaine de pixels a la grille.
-       */
+    /*
+     * LE NOM COMPLET A TOUTES LES LARGEURS. L'abreviation « R. Vandenplas » des
+     * petits ecrans rendait une quarantaine de pixels a la grille, mais au prix
+     * de la seule colonne qui porte une information non repetable : une date se
+     * devine, un prenom non. `useFitToWidth` rend ces pixels autrement, en
+     * reduisant tout proportionnellement plutot qu'en mutilant une colonne.
+     */
+    it('ecrit le nom en entier, sans abreger le prenom', () => {
       const players = [makePlayer({ id: 'p1', first_name: 'Renaud', last_name: 'Vandenplas' })]
       render(<DrawTable group={makeGroup({ players, max_players: 2 })} />)
 
-      const court = screen.getByText('R. Vandenplas')
-      const long = screen.getByText('Renaud Vandenplas')
-
-      expect(court.className).toContain('sm:hidden')
-      expect(long.className).toContain('hidden')
-      expect(long.className).toContain('sm:inline')
+      expect(screen.getByText('Renaud Vandenplas')).toBeInTheDocument()
+      expect(screen.queryByText('R. Vandenplas')).toBeNull()
     })
 
-    it('garde le prenom entier quand le joueur n a pas de nom', () => {
-      // Abreger donnerait « R. », qui ne designe plus personne.
+    it('se contente du prenom quand le joueur n a pas de nom', () => {
       const players = [makePlayer({ id: 'p1', first_name: 'Renaud', last_name: '' })]
       render(<DrawTable group={makeGroup({ players, max_players: 2 })} />)
+      expect(screen.getByText('Renaud')).toBeInTheDocument()
+    })
 
-      expect(screen.getAllByText('Renaud').length).toBeGreaterThanOrEqual(2)
-      expect(screen.queryByText('R.')).toBeNull()
+    /*
+     * Plus de lettre de reperage en tete de rangee. Les rangees suivent l'ordre
+     * des colonnes, la premiere est A, et la case hachuree de la diagonale
+     * situe la ligne a elle seule. Ces 24 px reviennent au nom.
+     */
+    it('ne repete plus la lettre de rangee devant le nom', () => {
+      const players = [makePlayer({ id: 'p1', first_name: 'Renaud', last_name: 'Vandenplas' })]
+      render(<DrawTable group={makeGroup({ players, max_players: 2 })} />)
+
+      const cellule = screen.getByText('Renaud Vandenplas').closest('td')!
+      expect(cellule.textContent!.trim()).toBe('Renaud Vandenplas')
     })
 
     it('reduit le tableau plutot que de le faire defiler', () => {
@@ -257,8 +267,8 @@ describe('DrawTable', () => {
       const cellules = ligne.querySelectorAll('td')
       const nom = cellules[0]
       const total = cellules[cellules.length - 1]
-      // La lettre de reperage reste, elle situe la colonne.
-      expect(nom.textContent!.trim()).toMatch(/^[A-Z]$/)
+      // Rien du tout, pas meme la lettre : la rangee grise le dit deja.
+      expect(nom.textContent!.trim()).toBe('')
       expect(total.textContent).toBe('')
       expect(total.className).toContain('bg-neutral-soft')
     }
