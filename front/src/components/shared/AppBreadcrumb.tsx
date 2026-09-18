@@ -112,7 +112,7 @@ function Segment({
     )
 }
 
-export function AppBreadcrumb() {
+export function AppBreadcrumb({ pleineLargeur = false }: { pleineLargeur?: boolean } = {}) {
     const { profile } = useAuth()
     const { clubConfig, fetchClubConfig } = useClubConfig()
     const { currentEvent, currentRound, events, setCurrentEvent, setCurrentRound } = useEvent()
@@ -127,7 +127,18 @@ export function AppBreadcrumb() {
         .sort((a, b) => b.round_number - a.round_number)
 
     return (
-        <nav aria-label="Fil d'Ariane" className="flex min-w-0 items-center text-sm">
+        /*
+         * `pleineLargeur` : dans la seconde barre du telephone, le fil est seul
+         * et occupe toute la largeur, ses trois segments repartis d'un bord a
+         * l'autre. Dans le header il reste cale a gauche, contre le titre de la
+         * page qui demarre sur la meme verticale.
+         */
+        <nav
+            aria-label="Fil d'Ariane"
+            className={`flex min-w-0 items-center text-sm ${
+                pleineLargeur ? "w-full justify-between" : ""
+            }`}
+        >
             <span className="inline-flex min-w-0 items-center gap-2 pr-1.5 py-0.5">
                 <Home01Icon
                     data-crumb-icon="club"
