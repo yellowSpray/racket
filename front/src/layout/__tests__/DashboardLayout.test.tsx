@@ -16,14 +16,14 @@ describe('DashboardLayout', () => {
         )
         const aside = container.querySelector('aside')
         expect(aside).not.toBeNull()
-        expect(aside!.className).toContain('w-[207px]')
+        expect(aside!.className).toContain('lg:w-[207px]')
         expect(aside!.className).toContain('shrink-0')
         expect(container.querySelector('.grid-cols-24')).toBeNull()
     })
 
     /*
-     * La barre respire a gauche comme le contenu : 32 px, le meme `8` de
-     * Tailwind que le `px-8` de la colonne de droite. Ses pastilles collaient
+     * Deployee, la barre respire a gauche comme le contenu : 32 px, le meme `8`
+     * de Tailwind que le `px-8` de la colonne de droite. Ses pastilles collaient
      * au bord de la fenetre a 10 px quand tout le reste etait a 32.
      *
      * A droite elle garde ses 10 px : c'est un retrait interieur, contre son
@@ -34,9 +34,33 @@ describe('DashboardLayout', () => {
             <DashboardLayout sidebar={<nav>menu</nav>}>contenu</DashboardLayout>,
         )
         const aside = container.querySelector('aside')!
-        expect(aside.className).toContain('pl-8')
-        expect(aside.className).toContain('pr-2.5')
-        expect(aside.className).not.toContain('px-2.5')
+        expect(aside.className).toContain('lg:pl-8')
+        expect(aside.className).toContain('lg:pr-2.5')
+    })
+
+    /*
+     * LA BARRE SE REPLIE SUR SES PICTOGRAMMES sous 1024. Elle fait 207 px fixes,
+     * soit 55 % d'un telephone de 375 : a cette largeur elle ne peut pas rester
+     * une colonne. Repliee elle fait 54, la pastille carree de 34 px d'une
+     * entree plus ses deux retraits de 10.
+     *
+     * Ce que ca rend au contenu se mesure : un tableau de box demande 519 px
+     * plus les deux gouttieres de 32, soit 583. Avec la barre deployee il faut
+     * 791 px de fenetre pour qu'il tienne, avec le rail 638.
+     *
+     * Trois choses sont calees sur cette largeur et doivent bouger ensemble : la
+     * barre, le bloc de marque du header qui occupe exactement sa colonne, et le
+     * fil d'Ariane qui demarre juste apres. D'ou la source unique, `layout/rail`.
+     */
+    it('replie la barre laterale sur ses pictogrammes', () => {
+        const { container } = render(
+            <DashboardLayout sidebar={<nav>menu</nav>}>contenu</DashboardLayout>,
+        )
+        const aside = container.querySelector('aside')!
+        expect(aside.className).toContain('w-[54px]')
+        expect(aside.className).toContain('lg:w-[207px]')
+        // Repliee, le retrait de 32 px n'a plus lieu d'etre : symetrique a 10.
+        expect(aside.className).toContain('px-2.5')
     })
 
     /*
@@ -52,9 +76,12 @@ describe('DashboardLayout', () => {
         const aside = container.querySelector('aside')!
         const contenu = container.querySelector('section')!
 
-        const basDe = (e: Element) => e.className.match(/\bp[by]-(\S+)/)?.[1]
-        expect(basDe(aside)).toBe(basDe(contenu))
         expect(aside.className).toContain('pb-6')
+        // A partir de 640 la barre d'onglets n'est plus la : les deux colonnes
+        // s'arretent alors sur la meme horizontale. En dessous, le contenu
+        // reserve en plus la hauteur des onglets, qui sont `fixed`.
+        expect(contenu.className).toContain('sm:pb-6')
+        expect(contenu.className).toContain('env(safe-area-inset-bottom)')
     })
 
     /*
@@ -72,6 +99,56 @@ describe('DashboardLayout', () => {
         expect(borne.className).toContain('mx-auto')
         // Le titre de page vit dedans, sinon il ne suivrait pas le centrage.
         expect(borne.querySelector('[data-page-heading]')).not.toBeNull()
+    })
+
+    /*
+     * SOUS 640 PX LA BARRE QUITTE L'ECRAN. Meme repliee a 54 elle vole de la
+     * largeur, qui est la dimension rare sur un telephone alors que la hauteur
+     * ne l'est pas. La navigation descend en onglets au bas de l'ecran, ou le
+     * pouce l'atteint.
+     */
+    it('range la barre laterale et sort les onglets sur telephone', () => {
+        const { container } = render(
+            <DashboardLayout sidebar={<nav>menu</nav>} onglets={<nav>onglets</nav>}>
+                contenu
+            </DashboardLayout>,
+        )
+        const aside = container.querySelector('aside')!
+        expect(aside.className).toContain('hidden')
+        expect(aside.className).toContain('sm:flex')
+        expect(screen.getByText('onglets')).toBeInTheDocument()
+        // Hors de l'`aside` : un element `fixed` dans un parent masque ne
+        // s'affiche pas.
+        expect(aside.contains(screen.getByText('onglets'))).toBe(false)
+    })
+
+    /*
+     * Les gouttieres descendent a 16 px sur telephone. A 32 elles coutaient 64
+     * des 375 disponibles, et le fil d'Ariane a besoin de ses 336. La barre
+     * laterale ayant quitte l'ecran, la colonne de gauche ne reclame plus rien.
+     */
+    it('resserre les gouttieres sur telephone', () => {
+        const { container } = render(<DashboardLayout>contenu</DashboardLayout>)
+        const contenu = container.querySelector('section')!
+        expect(contenu.className).toContain('px-4')
+        expect(contenu.className).toContain('sm:px-8')
+    })
+
+    /*
+     * La bande du titre laisse passer ses actions a la ligne quand elles ne
+     * tiennent plus : les trois boutons des tableaux font 235 px compactes,
+     * plus que la colonne d'un ecran de 320 une fois le titre servi.
+     *
+     * `shrink-0` va avec : cette bande est un element d'une colonne flex bornee
+     * en hauteur, donc sans lui elle reste ecrasee a ses 34 px pendant que sa
+     * seconde ligne s'affiche par-dessus le contenu. C'est exactement ce qui
+     * s'est passe, et seule la mesure l'a montre.
+     */
+    it('laisse les actions de page passer a la ligne sans se faire ecraser', () => {
+        const { container } = render(<DashboardLayout>contenu</DashboardLayout>)
+        const titre = container.querySelector('[data-page-heading]')!
+        expect(titre.className).toContain('flex-wrap')
+        expect(titre.className).toContain('shrink-0')
     })
 
     it('rend la barre laterale et le contenu', () => {
@@ -105,7 +182,7 @@ describe('DashboardLayout', () => {
             <DashboardLayout sidebar={<nav>menu</nav>}>contenu</DashboardLayout>,
         )
         expect(container.querySelector('aside')!.className).toContain('pt-6')
-        expect(container.querySelector('section')!.className).toContain('py-6')
+        expect(container.querySelector('section')!.className).toContain('pt-6')
         expect(container.querySelector('[data-page-heading]')!.className).toContain('min-h-[34px]')
     })
 
