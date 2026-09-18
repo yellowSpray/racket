@@ -2,6 +2,7 @@ import { useLocation } from "react-router"
 import { Home01Icon, LayoutTable02Icon, Building04Icon } from "hugeicons-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { SidebarGroup, SidebarSignOut, type SidebarEntry } from "@/components/shared/SidebarNav"
+import { BottomTabs } from "@/components/shared/BottomTabs"
 
 /**
  * Barre latérale du joueur. Même grammaire que celle de l'administration, en
@@ -24,4 +25,10 @@ export function UserSideBar() {
             <SidebarSignOut onSignOut={signOut} />
         </nav>
     )
+}
+
+/** La même navigation, en onglets, pour le téléphone. */
+export function UserTabs() {
+    const { pathname } = useLocation()
+    return <BottomTabs entries={entries} pathname={pathname} />
 }
