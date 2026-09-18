@@ -21,6 +21,7 @@ import { sortPlayersByEarliestDates } from "@/lib/matchScheduler"
 import type { Match } from "@/types/match"
 import type { GroupPlayer } from "@/types/draw"
 import { exportTablesToPdfLazy } from "@/lib/exportPdfLazy"
+import { BLOC_DEFILANT } from "@/lib/scrollArea"
 
 /*
  * Les trois actions de la page, en version compacte sur telephone.
@@ -226,7 +227,23 @@ export function AdminDraws () {
                     </Button>
                 </div>
             ) : (
-                <ScrollArea className="flex-1 min-h-0" type="auto">
+                /*
+                 * `display: block` impose au conteneur interne de Radix.
+                  *
+                 * ScrollArea enveloppe ses enfants dans un div en
+                 * `display: table; min-width: 100%`. Une boite de table se
+                 * dimensionne sur son contenu : la grille cessait donc d'etre
+                 * bornee par la colonne, son `min(100%, 519px)` se resolvait
+                 * sur une largeur indefinie, et la piste grandissait jusqu'a
+                 * 519. Sur un telephone, le tableau sortait de l'ecran et la
+                 * page partait en defilement horizontal. Pire, `useFitToWidth`
+                 * ne corrigeait rien : il voyait une place de 519 pour un
+                 * contenu de 413, donc rien a reduire.
+                 */
+                <ScrollArea
+                    className={`flex-1 min-h-0 ${BLOC_DEFILANT}`}
+                    type="auto"
+                >
                     {/*
                       * Des pistes a la taille d'un tableau, et autant que l'ecran
                       * en porte.
