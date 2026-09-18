@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render } from '@testing-library/react'
 import { useRef } from 'react'
 import { useFitToWidth } from '../useFitToWidth'
+// 0.745 et non 0.75 : `computeZoom` garde deux pixels de marge, voir MARGE.
 
 /**
  * jsdom ne fait pas de mise en page : toutes les largeurs valent zero. On les
@@ -67,7 +68,7 @@ describe('useFitToWidth', () => {
     it('reduit le contenu qui deborde', () => {
         const { getByTestId } = render(<Sujet dispo={300} naturel={400} />)
 
-        expect((getByTestId('cadre') as HTMLElement).style.zoom).toBe('0.75')
+        expect((getByTestId('cadre') as HTMLElement).style.zoom).toBe('0.745')
     })
 
     it('ne reduit rien quand le contenu tient', () => {
@@ -90,7 +91,7 @@ describe('useFitToWidth', () => {
 
     it('remesure quand le contenu change', () => {
         const { getByTestId, rerender } = render(<Sujet dispo={300} naturel={400} signature="a" />)
-        expect((getByTestId('cadre') as HTMLElement).style.zoom).toBe('0.75')
+        expect((getByTestId('cadre') as HTMLElement).style.zoom).toBe('0.745')
 
         rerender(<Sujet dispo={300} naturel={600} signature="b" />)
 
@@ -109,7 +110,7 @@ describe('useFitToWidth', () => {
         )
 
         // 0.75 et non 1 : la mesure vient bien du tableau, pas du conteneur.
-        expect((getByTestId('cadre') as HTMLElement).style.zoom).toBe('0.75')
+        expect((getByTestId('cadre') as HTMLElement).style.zoom).toBe('0.745')
     })
 
     it('retombe sur le conteneur si le contenu designe est absent', () => {
@@ -117,7 +118,7 @@ describe('useFitToWidth', () => {
             <Sujet dispo={300} naturel={400} selecteur=".introuvable" />,
         )
 
-        expect((getByTestId('cadre') as HTMLElement).style.zoom).toBe('0.75')
+        expect((getByTestId('cadre') as HTMLElement).style.zoom).toBe('0.745')
     })
 
     it('rend sa taille normale au demontage', () => {
