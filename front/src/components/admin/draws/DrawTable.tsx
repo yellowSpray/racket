@@ -159,27 +159,16 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
     }
 
     /*
-     * Sous 640 pixels la colonne des noms est bornee : tronquer « Renaud
-     * Vandenplas » y coupait le nom, la seule partie qui distingue deux
-     * joueurs d'une box. L'initiale du prenom suffit et rend une quarantaine
-     * de pixels a la grille. Sans nom de famille, abreger ne designerait plus
-     * personne : on garde alors le prenom entier.
+     * Le nom complet, prenom et nom, a toutes les largeurs.
      *
-     * Les deux libelles sont rendus, le CSS choisit lequel s'affiche.
+     * L'abreviation « C. Bouchard » des petits ecrans a disparu. Elle rendait
+     * une quarantaine de pixels a la grille, mais au prix de la seule colonne
+     * qui porte de l'information non repetable : les dates se devinent, un
+     * prenom non. `useFitToWidth` rend ces pixels autrement, en reduisant tout
+     * proportionnellement au lieu de mutiler une colonne.
      */
-    const shortName = (p: GroupPlayer) => {
-        const first = (p.first_name ?? "").trim()
-        const last = (p.last_name ?? "").trim()
-        if (!last) return first
-        if (!first) return last
-        return `${first.charAt(0).toUpperCase()}. ${last}`
-    }
-
     const PlayerName = ({ player }: { player: GroupPlayer }) => (
-        <>
-            <span className="sm:hidden">{shortName(player)}</span>
-            <span className="hidden sm:inline">{`${player.first_name} ${player.last_name}`.trim()}</span>
-        </>
+        <>{`${player.first_name} ${player.last_name}`.trim()}</>
     )
 
     /*
@@ -227,10 +216,25 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                         <TableRow key={rowIndex} className="group hover:bg-transparent">
                             <TableCell className={`font-medium border-r border-b border-grid-line group-last:border-b-0 ${player ? 'bg-axis text-axis-foreground' : 'bg-neutral-soft'}`}>
                                 {player ? (
-                                    <div className="flex items-center gap-2 px-2 py-0.5 w-[5.5rem] sm:w-auto">
-                                        <span className="w-4 shrink-0 text-center text-xs font-semibold">
-                                            {getPlayerLetter(rowIndex)}
-                                        </span>
+                                    /*
+                                     * Plus de lettre de reperage en tete de
+                                     * rangee. Les rangees suivent l'ordre des
+                                     * colonnes, la premiere est A, et la case
+                                     * hachuree de la diagonale situe la ligne a
+                                     * elle seule. Ces 24 px, plus les 88 de
+                                     * largeur bornee, reviennent au nom.
+                                     *
+                                     * `max-w-40` : sans plafond, un seul nom
+                                     * long elargit la colonne, donc le tableau,
+                                     * donc le facteur de reduction de tous les
+                                     * autres. Mesure : « Jean-Christophe
+                                     * Vandenplas-Martin » faisait passer la
+                                     * largeur naturelle de 466 a 605 px et
+                                     * reduisait la box entiere a 88 % sur un
+                                     * ecran de bureau ou elle tenait. Au-dela
+                                     * de 160 px le nom se tronque, lui seul.
+                                     */
+                                    <div className="flex max-w-40 items-center px-2 py-0.5">
                                         <span className="min-w-0 flex-1 truncate text-xs font-bold flex items-center gap-1">
                                             {onSelectPlayer ? (
                                                 <span
@@ -258,11 +262,7 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                 ) : (
                                     /* Une place libre ne s'annonce pas : la rangee
                                        et la colonne grises le disent deja. */
-                                    <div className="flex items-center gap-2 px-2 py-0.5 w-[5.5rem] sm:w-auto">
-                                        <span className="w-4 shrink-0 text-center text-xs font-semibold text-muted-foreground">
-                                            {getPlayerLetter(rowIndex)}
-                                        </span>
-                                    </div>
+                                    <div className="h-6 px-2 py-0.5" />
                                 )}
                             </TableCell>
 
