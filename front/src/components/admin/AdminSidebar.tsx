@@ -5,6 +5,7 @@ import {
 } from "hugeicons-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { SidebarGroup, SidebarSeparator, SidebarSignOut, type SidebarEntry } from "@/components/shared/SidebarNav"
+import { BottomTabs } from "@/components/shared/BottomTabs"
 
 /**
  * Barre latérale de l'administration.
@@ -44,4 +45,16 @@ export function AdminSideBar() {
             <SidebarSignOut onSignOut={signOut} />
         </nav>
     )
+}
+
+/**
+ * La même navigation, en onglets, pour le téléphone.
+ *
+ * Cinq onglets et non six : `Réglages` reste dans la page des réglages, que le
+ * profil ouvre, et `Quitter` y descend aussi. Au-delà de cinq, chaque onglet
+ * passe sous les 44 px d'une cible tactile sur un écran de 320.
+ */
+export function AdminTabs() {
+    const { pathname } = useLocation()
+    return <BottomTabs entries={[...consultation, ...gestion]} pathname={pathname} />
 }

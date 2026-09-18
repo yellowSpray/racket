@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { AdminSideBar } from '../AdminSidebar'
+import { AdminSideBar, AdminTabs } from '../AdminSidebar'
 
 const mockLocation = { pathname: '/admin' }
 vi.mock('react-router', () => ({
@@ -88,8 +88,10 @@ describe('AdminSideBar', () => {
     it('fait traverser les filets de bord a bord', () => {
         const { container } = render(<AdminSideBar />)
         for (const filet of container.querySelectorAll('[data-sidebar-separator]')) {
-            expect(filet.className).toContain('-ml-8')
-            expect(filet.className).toContain('-mr-2.5')
+            expect(filet.className).toContain('lg:-ml-8')
+            expect(filet.className).toContain('lg:-mr-2.5')
+            // Repliee, la barre a un retrait symetrique : le filet l'annule aussi.
+            expect(filet.className).toContain('-mx-2.5')
         }
     })
 
@@ -98,8 +100,46 @@ describe('AdminSideBar', () => {
     it('fait traverser le filet du pied de barre', () => {
         const { container } = render(<AdminSideBar />)
         const filet = container.querySelector('[data-sidebar-footer] .h-px')!
-        expect(filet.className).toContain('-ml-8')
-        expect(filet.className).toContain('-mr-2.5')
+        expect(filet.className).toContain('lg:-ml-8')
+        expect(filet.className).toContain('lg:-mr-2.5')
+        expect(filet.className).toContain('-mx-2.5')
+    })
+
+    /*
+     * REPLIEE, LA BARRE CACHE SES LIBELLES SANS LES SUPPRIMER. `sr-only` et non
+     * `hidden` : un lecteur d'ecran n'aurait sinon que six pictogrammes muets.
+     * Le `title` donne la meme chose a la souris, et le nom accessible du lien
+     * reste inchange dans les deux etats, ce que verifie `getByRole` ci-dessus.
+     */
+    it('garde le nom de ses entrees quand elle se replie', () => {
+        render(<AdminSideBar />)
+        for (const nom of ['Dashboard', 'Tableaux', 'Matchs', 'Joueurs', 'Email', 'Réglages']) {
+            const lien = screen.getByRole('link', { name: nom })
+            expect(lien).toHaveAttribute('title', nom)
+            const libelle = lien.querySelector('span')!
+            expect(libelle.className).toContain('sr-only')
+            expect(libelle.className).toContain('lg:not-sr-only')
+        }
+    })
+
+    // Le pictogramme se centre dans la pastille tant qu'il est seul dedans.
+    it('centre ses pictogrammes tant qu\'ils sont seuls', () => {
+        render(<AdminSideBar />)
+        const lien = screen.getByRole('link', { name: 'Dashboard' })
+        expect(lien.className).toContain('justify-center')
+        expect(lien.className).toContain('lg:justify-start')
+        // L'ecart entre l'icone et le mot n'a pas lieu d'etre sans le mot.
+        expect(lien.className).toContain('gap-0')
+        expect(lien.className).toContain('lg:gap-2.5')
+    })
+
+    it('replie la deconnexion comme les autres entrees', () => {
+        render(<AdminSideBar />)
+        const quitter = screen.getByRole('button', { name: 'Quitter' })
+        expect(quitter).toHaveAttribute('title', 'Quitter')
+        expect(quitter.querySelector('span')!.className).toContain('sr-only')
+        expect(quitter.className).toContain('justify-center')
+        expect(quitter.className).toContain('lg:justify-start')
     })
 
     it('pose la deconnexion en pied de barre', () => {
@@ -118,5 +158,24 @@ describe('AdminSideBar', () => {
     it('n\'utilise pas de tiret cadratin', () => {
         const { container } = render(<AdminSideBar />)
         expect(container.textContent).not.toContain('—')
+    })
+
+    /*
+     * LES ONGLETS DU TELEPHONE NE PRENNENT QUE CINQ DES SIX ENTREES. Au-dela,
+     * chaque onglet passe sous les 44 px d'une cible tactile sur un ecran de
+     * 320. `Reglages` et `Quitter` descendent dans la page profil, que l'avatar
+     * du header ouvre deja : ce sont les deux gestes qu'on fait rarement, et ils
+     * n'ont rien a voir avec la consultation quotidienne.
+     *
+     * A FAIRE : cette maison n'existe pas encore. Tant qu'elle n'est pas la, un
+     * admin sur telephone ne peut ni ouvrir ses reglages ni se deconnecter.
+     */
+    it('ne descend que cinq entrees dans les onglets', () => {
+        render(<AdminTabs />)
+        for (const nom of ['Dashboard', 'Tableaux', 'Matchs', 'Joueurs', 'Email']) {
+            expect(screen.getByRole('link', { name: nom })).toBeInTheDocument()
+        }
+        expect(screen.queryByRole('link', { name: 'Réglages' })).not.toBeInTheDocument()
+        expect(screen.queryByRole('button', { name: 'Quitter' })).not.toBeInTheDocument()
     })
 })
