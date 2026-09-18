@@ -169,6 +169,22 @@ describe('Header, barre pleine largeur', () => {
     }
   })
 
+  /*
+   * La pastille de la cloche est une alerte, donc le rouge plein du systeme,
+   * celui de la tuile des paiements. Elle etait en `bg-rose-500`, seul emploi
+   * du rose dans toute l'application : proche du rouge d'alerte sans etre le
+   * meme, donc le jour ou celui-ci change, elle ne suit pas.
+   */
+  it('dit son alerte avec le rouge du systeme', () => {
+    connecte()
+    render(<Header />)
+    const bouton = screen.getByRole('button', { name: /notifications/i })
+    const pastille = bouton.querySelector('span')
+    expect(pastille).not.toBeNull()
+    expect(pastille!.className).toContain('bg-destructive')
+    expect(pastille!.className).not.toMatch(/bg-(rose|red|pink|orange)-\d/)
+  })
+
   it('arrondit completement le champ de recherche', () => {
     connecte()
     render(<Header />)

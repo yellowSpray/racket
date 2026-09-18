@@ -132,7 +132,8 @@ export default function Header() {
                     <>
                         <Button variant="icon" size="iconSm" aria-label="Notifications" className="relative border">
                             <Notification03Icon size={16} strokeWidth={2} />
-                            <span className="absolute right-1 top-1 size-1.5 rounded-full border border-card bg-rose-500" />
+                            {/* Le rouge plein du systeme, celui de l'alerte. */}
+                            <span className="absolute right-1 top-1 size-1.5 rounded-full border border-card bg-destructive" />
                         </Button>
                         <Link
                             to={profile.role === "user" ? "/user/profile" : "/admin/profile"}
