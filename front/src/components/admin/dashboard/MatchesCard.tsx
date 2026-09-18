@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Calendar03Icon, ArrowLeft01Icon, ArrowRight01Icon, ArrowDown01Icon } from "hugeicons-react"
 import { useMatchesByDay, type DayMatch, type MatchDay } from "@/hooks/useMatchesByDay"
 import { isMatchUnplayed } from "@/lib/matchScore"
+import { BLOC_DEFILANT } from "@/lib/scrollArea"
 
 const SCORE_OPTIONS = [
     { value: "", label: "Score…" },
@@ -134,7 +135,14 @@ export function MatchesCard({ roundId, className }: MatchesCardProps) {
     return (
         <Card className={className}>
             <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm">
+                {/*
+                  * `flex-wrap` : cette ligne porte le titre, la navigation de
+                  * jour, la date et les trois tags, tous insecables sauf la
+                  * date. Sa largeur minimale est de 488 px, donc elle faisait
+                  * deborder la page de 113 px sur un telephone de 375. Les tags
+                  * passent dessous quand la place manque.
+                  */}
+                <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                     <Calendar03Icon size={16} className="text-foreground shrink-0" />
                     <span className="font-semibold shrink-0">Matchs</span>
                     <button
@@ -195,7 +203,7 @@ function MatchesFeed({ day, onValidate }: MatchesFeedProps) {
     return (
         <div className="flex flex-col h-full min-h-0">
             <div className="flex-1 min-h-0">
-                <ScrollArea className="h-full" type="auto">
+                <ScrollArea className={`h-full ${BLOC_DEFILANT}`} type="auto">
                     {/* Desktop : tableau */}
                     <div className="hidden md:block overflow-hidden">
                         <Table className="table-fixed">
