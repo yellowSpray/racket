@@ -7,6 +7,7 @@ import { Calendar03Icon, ArrowLeft01Icon, ArrowRight01Icon, ArrowDown01Icon } fr
 import { useMatchesByDay, type DayMatch, type MatchDay } from "@/hooks/useMatchesByDay"
 import { isMatchUnplayed } from "@/lib/matchScore"
 import { BLOC_DEFILANT } from "@/lib/scrollArea"
+import { TUILE, TUILE_RETRAIT } from "./tuile"
 
 const SCORE_OPTIONS = [
     { value: "", label: "Score…" },
@@ -23,6 +24,13 @@ const SCORE_OPTIONS = [
 function formatTime(matchTime: string): string {
     const m = matchTime.match(/^(\d{2}:\d{2})/)
     return m ? m[1] : matchTime
+}
+
+/** La date du téléphone : « sam. 18 avr. », là où le bureau écrit « samedi 18 avril ». */
+function dateCourte(date: string): string {
+    return new Date(`${date}T12:00:00`).toLocaleDateString("fr-FR", {
+        weekday: "short", day: "numeric", month: "short",
+    })
 }
 
 /** Accorde un libellé compté : 1 match, 2 matchs. */
@@ -60,7 +68,12 @@ function TagsDuJour({ day }: { day: MatchDay | undefined }) {
     if (total === 0) return null
 
     return (
-        <span className="ml-auto flex shrink-0 items-center gap-2">
+        /*
+         * Sur telephone les tags prennent une ligne a eux, calee a gauche sous
+         * le titre. Ils passaient deja a la ligne faute de place, mais pousses
+         * a droite par leur `ml-auto` ils flottaient loin de tout.
+         */
+        <span data-tags-du-jour className="flex shrink-0 basis-full items-center gap-2 md:ml-auto md:basis-auto">
             <Badge variant="neutral" className="h-5 px-2 text-xs">
                 {pluriel(total, "match", "matchs")}
             </Badge>
@@ -133,8 +146,8 @@ export function MatchesCard({ roundId, className }: MatchesCardProps) {
     const currentDay = days[dayIndex]
 
     return (
-        <Card className={className}>
-            <CardHeader>
+        <Card className={`${TUILE} ${className ?? ""}`}>
+            <CardHeader className={TUILE_RETRAIT}>
                 {/*
                   * `flex-wrap` : cette ligne porte le titre, la navigation de
                   * jour, la date et les trois tags, tous insecables sauf la
@@ -142,22 +155,32 @@ export function MatchesCard({ roundId, className }: MatchesCardProps) {
                   * deborder la page de 113 px sur un telephone de 375. Les tags
                   * passent dessous quand la place manque.
                   */}
-                <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-3 text-sm md:gap-y-1">
                     <Calendar03Icon size={16} className="text-foreground shrink-0" />
                     <span className="font-semibold shrink-0">Matchs</span>
                     <button
                         onClick={() => setDayIndex(i => i - 1)}
                         disabled={dayIndex === 0 || days.length === 0}
-                        className="p-0.5 rounded transition-colors hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+                        className="ml-auto p-0.5 rounded transition-colors hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed shrink-0 md:ml-0"
                         aria-label="Jour précédent"
                     >
                         <ArrowLeft01Icon size={14} />
                     </button>
                     {currentDay && (
                         <>
-                            <span className="text-xs text-muted-foreground font-normal truncate">
+                            <span className="hidden text-xs text-muted-foreground font-normal truncate md:inline">
                                 {currentDay.label}
                             </span>
+                            {/*
+                              * Sur telephone, « aujourd'hui » remplace la date au
+                              * lieu de s'y ajouter : les deux ensemble faisaient
+                              * passer la ligne du titre a deux.
+                              */}
+                            {!currentDay.isToday && (
+                                <span className="text-xs text-muted-foreground font-normal md:hidden">
+                                    {dateCourte(currentDay.date)}
+                                </span>
+                            )}
                             {currentDay.isToday && (
                                 <Badge variant="default" className="text-[10px] px-1.5 py-0 shrink-0 bg-primary text-primary-foreground">
                                     aujourd'hui
@@ -176,7 +199,7 @@ export function MatchesCard({ roundId, className }: MatchesCardProps) {
                     <TagsDuJour day={currentDay} />
                 </CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 min-h-0">
+            <CardContent className={`flex-1 min-h-0 ${TUILE_RETRAIT}`}>
                 {loading ? (
                     <div className="h-full flex items-center justify-center text-muted-foreground">
                         <p className="text-sm">Chargement...</p>
@@ -246,12 +269,7 @@ function MatchesFeed({ day, onValidate }: MatchesFeedProps) {
                         </Table>
                     </div>
 
-                    {/* Mobile : cartes */}
-                    <div className="md:hidden flex flex-col gap-2">
-                        {day.matches.map(match => (
-                            <MatchMobileCard key={match.id} match={match} onValidate={onValidate} />
-                        ))}
-                    </div>
+                    <ListeTelephone day={day} onValidate={onValidate} />
                 </ScrollArea>
             </div>
         </div>
@@ -318,31 +336,92 @@ function MatchTableRow({ match, isLastOfSlot, isFirstOfSlot, onValidate }: Match
     )
 }
 
-interface MatchMobileCardProps {
-    match: DayMatch
-    onValidate: (match: DayMatch, score: string) => Promise<void>
+/**
+ * La liste du téléphone.
+ *
+ * Elle ne met plus de cartes dans la carte. Le double cadre mangeait la
+ * largeur, les noms se coupaient, le score prenait une ligne à lui et l'on ne
+ * voyait que deux matchs et demi à 320 px. Elle reprend la grammaire du
+ * tableau de bureau : l'heure une seule fois, en intertitre de créneau, et un
+ * filet entre deux rangées plutôt qu'un cadre autour de chacune.
+ */
+function ListeTelephone({ day, onValidate }: { day: MatchDay; onValidate: (match: DayMatch, score: string) => Promise<void> }) {
+    const creneaux: { heure: string; matches: DayMatch[] }[] = []
+    for (const match of day.matches) {
+        const heure = formatTime(match.match_time)
+        const dernier = creneaux[creneaux.length - 1]
+        if (dernier?.heure === heure) dernier.matches.push(match)
+        else creneaux.push({ heure, matches: [match] })
+    }
+
+    return (
+        <div data-liste-telephone className="md:hidden">
+            {creneaux.map(({ heure, matches }) => (
+                <div key={heure} data-groupe-creneau>
+                    {/*
+                      * Le filet de l'intertitre sépare aussi deux créneaux :
+                      * la dernière rangée de chacun n'en porte donc pas. Le
+                      * premier garde son retrait haut, qui le détache des tags.
+                      */}
+                    <div
+                        data-creneau
+                        className="flex items-center gap-2 pb-1 pt-3 text-xs font-semibold text-muted-foreground"
+                    >
+                        {heure}
+                        <span aria-hidden className="h-px flex-1 bg-border" />
+                    </div>
+                    {matches.map((match, j) => (
+                        <LigneTelephone
+                            key={match.id}
+                            match={match}
+                            derniere={j === matches.length - 1}
+                            onValidate={onValidate}
+                        />
+                    ))}
+                </div>
+            ))}
+        </div>
+    )
 }
 
-function MatchMobileCard({ match, onValidate }: MatchMobileCardProps) {
+/*
+ * Les deux noms l'un sous l'autre, en entier, plutôt que côte à côte coupés
+ * en « Ramiro S… vs Nicolas Debu… ». Le vainqueur se dit par la graisse,
+ * comme sur le bureau. La boxe et le terrain situent le match en petit gris
+ * dessous : ils n'annoncent rien.
+ */
+function LigneTelephone({ match, derniere, onValidate }: {
+    match: DayMatch
+    derniere: boolean
+    onValidate: (match: DayMatch, score: string) => Promise<void>
+}) {
+    const joueurs = [
+        { id: match.player1_id, p: match.player1 },
+        { id: match.player2_id, p: match.player2 },
+    ]
+    const situation = [match.group?.group_name, match.court_number].filter(Boolean).join(" · ")
+
     return (
-        <div className="rounded-md border p-3 text-sm flex flex-col gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-                <span className="text-xs text-muted-foreground tabular-nums shrink-0">
-                    {formatTime(match.match_time)}
-                </span>
-                {match.group?.group_name && (
-                    <Badge variant="neutral" className="text-xs px-2 py-0.5 shrink-0">
-                        {match.group.group_name}
-                    </Badge>
-                )}
-                {match.court_number && (
-                    <span className="text-xs text-muted-foreground shrink-0">
-                        {match.court_number}
+        <div data-ligne-match className={`flex items-center gap-3 py-2.5 ${derniere ? "" : "border-b border-border"}`}>
+            <div className="min-w-0 flex-1 text-sm leading-5">
+                {joueurs.map(({ id, p }) => (
+                    <span
+                        key={id}
+                        data-joueur
+                        className={`block truncate ${match.winner_id === id ? "font-semibold" : ""}`}
+                    >
+                        {p ? `${p.first_name} ${p.last_name}` : "?"}
+                    </span>
+                ))}
+                {situation && (
+                    <span data-situation className="block truncate text-xs text-muted-foreground">
+                        {situation}
                     </span>
                 )}
             </div>
-            <Affiche match={match} />
-            <ScoreCell match={match} onValidate={onValidate} compact />
+            <div className="shrink-0">
+                <ScoreCell match={match} onValidate={onValidate} />
+            </div>
         </div>
     )
 }
@@ -350,7 +429,6 @@ function MatchMobileCard({ match, onValidate }: MatchMobileCardProps) {
 interface ScoreCellProps {
     match: DayMatch
     onValidate: (match: DayMatch, score: string) => Promise<void>
-    compact?: boolean
 }
 
 /**
@@ -364,9 +442,9 @@ interface ScoreCellProps {
  * fil d'Ariane. Le clavier marche sans une ligne de code, un `fireEvent.change`
  * suffit à le tester, et sur téléphone c'est le système qui ouvre sa roulette.
  */
-function ScoreCell({ match, onValidate, compact }: ScoreCellProps) {
+function ScoreCell({ match, onValidate }: ScoreCellProps) {
     if (match.status === "conflict") {
-        return <ConflitCell match={match} onValidate={onValidate} compact={compact} />
+        return <ConflitCell match={match} onValidate={onValidate} />
     }
 
     const { libelle, classe } = etatDuScore(match)
@@ -384,7 +462,7 @@ function ScoreCell({ match, onValidate, compact }: ScoreCellProps) {
         : [{ value: "", label: libelle }, ...SCORE_OPTIONS.slice(1)]
 
     return (
-        <div className={`flex ${compact ? "" : "justify-end"}`}>
+        <div className="flex justify-end">
             <span
                 data-controle-score
                 className={`relative inline-flex h-6 w-[84px] items-center justify-between rounded-md border px-2 text-xs font-medium ${classe}`}
@@ -412,11 +490,10 @@ function ScoreCell({ match, onValidate, compact }: ScoreCellProps) {
  * annoncé deux scores différents, et aucun contrôle unique ne peut montrer les
  * deux valeurs en même temps. L'admin tranche entre elles.
  */
-function ConflitCell({ match, onValidate, compact }: ScoreCellProps) {
-    const alignClass = compact ? "" : "justify-end"
+function ConflitCell({ match, onValidate }: ScoreCellProps) {
     return (
         <div className="flex flex-col gap-1">
-            <div className={`flex ${alignClass}`}>
+            <div className="flex justify-end">
                 <Badge variant="unpaid" className="text-[10px] px-1.5 py-0">Conflit</Badge>
             </div>
             {([["P1", match.pending_score_p1], ["P2", match.pending_score_p2]] as const).map(

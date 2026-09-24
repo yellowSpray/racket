@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { TUILE, TUILE_RETRAIT } from "./tuile"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
@@ -41,8 +42,8 @@ export function PlayersStatusCard({ roundId, previousRoundId, className }: Playe
     )
 
     return (
-        <Card className={className}>
-            <CardHeader>
+        <Card className={`${TUILE} ${className ?? ""}`}>
+            <CardHeader className={TUILE_RETRAIT}>
                 <CardTitle className="flex items-center gap-2 text-sm">
                     <UserGroupIcon size={16} className="text-foreground" />
                     {SLIDES[slideIndex]}
@@ -75,7 +76,7 @@ export function PlayersStatusCard({ roundId, previousRoundId, className }: Playe
                 </CardTitle>
             </CardHeader>
 
-            <CardContent className="flex-1 min-h-0 px-6 pt-1">
+            <CardContent className={`flex-1 min-h-0 pt-1 ${TUILE_RETRAIT}`}>
                 {slideIndex === ATTENTE ? (
                     <ListeAttente />
                 ) : (

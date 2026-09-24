@@ -464,4 +464,153 @@ describe('MatchesCard', () => {
             expect(container.querySelector('.animate-ping')).toBeNull()
         })
     })
+
+    /*
+     * Sur telephone la liste n'est plus faite de cartes dans la carte. Le
+     * double cadre mangeait la largeur, les noms se coupaient, le score
+     * prenait une ligne a lui et l'on ne voyait que deux matchs et demi. Elle
+     * reprend la grammaire du bureau : l'heure en intertitre de creneau, les
+     * deux noms l'un sous l'autre, le score a droite.
+     */
+    describe('sur telephone', () => {
+        function creneaux() {
+            return makeDay({
+                matches: [
+                    makeMatch({ id: 'm1', match_time: '19:00:00', court_number: 'Terrain 1' }),
+                    makeMatch({ id: 'm2', match_time: '19:00:00', court_number: 'Terrain 2' }),
+                    makeMatch({ id: 'm3', match_time: '19:30:00', court_number: 'Terrain 1' }),
+                ],
+            })
+        }
+
+        function liste(container: HTMLElement) {
+            return container.querySelector('[data-liste-telephone]') as HTMLElement
+        }
+
+        it('ne vit que sous 768 px', () => {
+            mockUseMatchesByDay.mockReturnValue({ ...defaultReturn, days: [creneaux()] })
+            const { container } = render(<MatchesCard roundId="round1" />)
+            expect(liste(container).className).toContain('md:hidden')
+        })
+
+        it('ecrit l\'heure une fois par creneau, en intertitre', () => {
+            mockUseMatchesByDay.mockReturnValue({ ...defaultReturn, days: [creneaux()] })
+            const { container } = render(<MatchesCard roundId="round1" />)
+            const intertitres = [...liste(container).querySelectorAll('[data-creneau]')].map(e => e.textContent)
+            expect(intertitres).toEqual(['19:00', '19:30'])
+        })
+
+        it('range chaque match sous son creneau', () => {
+            mockUseMatchesByDay.mockReturnValue({ ...defaultReturn, days: [creneaux()] })
+            const { container } = render(<MatchesCard roundId="round1" />)
+            const groupes = [...liste(container).querySelectorAll('[data-groupe-creneau]')]
+            expect(groupes.map(g => g.querySelectorAll('[data-ligne-match]').length)).toEqual([2, 1])
+        })
+
+        it('pose les deux noms l\'un sous l\'autre, sans « vs »', () => {
+            mockUseMatchesByDay.mockReturnValue({ ...defaultReturn, days: [makeDay()] })
+            const { container } = render(<MatchesCard roundId="round1" />)
+            const ligne = liste(container).querySelector('[data-ligne-match]')!
+            const noms = [...ligne.querySelectorAll('[data-joueur]')]
+            expect(noms.map(n => n.textContent)).toEqual(['Alice Martin', 'Bob Dupont'])
+            for (const n of noms) expect(n.className).toContain('block')
+            expect(ligne.textContent).not.toContain('vs')
+        })
+
+        it('marque le vainqueur par la graisse', () => {
+            mockUseMatchesByDay.mockReturnValue({
+                ...defaultReturn,
+                days: [makeDay({ matches: [makeMatch({ status: 'done', winner_id: 'p2', score: '1-3' })] })],
+            })
+            const { container } = render(<MatchesCard roundId="round1" />)
+            const [p1, p2] = liste(container).querySelectorAll('[data-joueur]')
+            expect(p1.className).not.toContain('font-semibold')
+            expect(p2.className).toContain('font-semibold')
+        })
+
+        // La boxe et le terrain situent le match, ils n'annoncent rien.
+        it('situe le match en petit gris sous les noms', () => {
+            mockUseMatchesByDay.mockReturnValue({ ...defaultReturn, days: [creneaux()] })
+            const { container } = render(<MatchesCard roundId="round1" />)
+            const situation = liste(container).querySelector('[data-situation]')!
+            expect(situation.textContent).toBe('Box A · Terrain 1')
+            expect(situation.className).toContain('text-muted-foreground')
+            expect(situation.className).toContain('text-xs')
+        })
+
+        it('pose le score a droite des noms, sur la meme rangee', () => {
+            mockUseMatchesByDay.mockReturnValue({ ...defaultReturn, days: [makeDay()] })
+            const { container } = render(<MatchesCard roundId="round1" />)
+            const ligne = liste(container).querySelector('[data-ligne-match]')!
+            expect(ligne.className).toContain('flex')
+            expect(ligne.className).toContain('items-center')
+            expect(ligne.lastElementChild!.querySelector('[data-controle-score]')).not.toBeNull()
+        })
+
+        // Plus de cadre par match : un filet entre deux rangees du creneau.
+        it('separe les rangees par un filet, pas par un cadre', () => {
+            mockUseMatchesByDay.mockReturnValue({ ...defaultReturn, days: [creneaux()] })
+            const { container } = render(<MatchesCard roundId="round1" />)
+            const lignes = [...liste(container).querySelectorAll('[data-ligne-match]')]
+            for (const l of lignes) expect(l.className).not.toContain('rounded')
+            expect(lignes[0].className).toContain('border-b')
+            // La derniere d'un creneau laisse l'intertitre suivant faire le filet.
+            expect(lignes[1].className).not.toContain('border-b')
+        })
+
+        describe('l\'en-tete', () => {
+            it('abrege la date', () => {
+                mockUseMatchesByDay.mockReturnValue({
+                    ...defaultReturn,
+                    days: [makeDay({ isToday: false, date: '2026-04-18', label: 'samedi 18 avril' })],
+                })
+                render(<MatchesCard roundId="round1" />)
+                expect(screen.getByText('sam. 18 avr.').className).toContain('md:hidden')
+                expect(screen.getByText('samedi 18 avril').className).toContain('hidden')
+                expect(screen.getByText('samedi 18 avril').className).toContain('md:inline')
+            })
+
+            // « aujourd'hui » suffit : la date a cote ferait passer la ligne a deux.
+            it('dit aujourd\'hui a la place de la date', () => {
+                mockUseMatchesByDay.mockReturnValue({
+                    ...defaultReturn,
+                    days: [makeDay({ isToday: true, date: '2026-04-18', label: 'samedi 18 avril' })],
+                })
+                render(<MatchesCard roundId="round1" />)
+                expect(screen.queryByText('sam. 18 avr.')).not.toBeInTheDocument()
+                expect(screen.getByText("aujourd'hui")).toBeInTheDocument()
+            })
+
+            it('pousse la navigation de jour a droite du titre', () => {
+                mockUseMatchesByDay.mockReturnValue({ ...defaultReturn, days: [makeDay()] })
+                render(<MatchesCard roundId="round1" />)
+                expect(screen.getByRole('button', { name: 'Jour précédent' }).className).toContain('ml-auto')
+                expect(screen.getByRole('button', { name: 'Jour précédent' }).className).toContain('md:ml-0')
+            })
+
+            // Au lieu de flotter a droite d'une seconde ligne, ils demarrent sous le titre.
+            it('pose les tags sur une ligne a eux, calee a gauche', () => {
+                mockUseMatchesByDay.mockReturnValue({ ...defaultReturn, days: [makeDay()] })
+                const { container } = render(<MatchesCard roundId="round1" />)
+                const tags = container.querySelector('[data-tags-du-jour]')!
+                expect(tags.className).toContain('basis-full')
+                expect(tags.className).toContain('md:basis-auto')
+                expect(tags.className).toContain('md:ml-auto')
+                expect(tags.className).not.toMatch(/(^| )ml-auto/)
+            })
+        })
+
+        // 16 px et non 24 : a 320, huit pixels de chaque cote, ce sont des noms entiers.
+        it('resserre le retrait de la carte', () => {
+            mockUseMatchesByDay.mockReturnValue({ ...defaultReturn, days: [makeDay()] })
+            const { container } = render(<MatchesCard roundId="round1" />)
+            expect(container.querySelector('[data-slot="card"]')!.className).toContain('py-4')
+            expect(container.querySelector('[data-slot="card"]')!.className).toContain('md:py-6')
+            for (const slot of ['card-header', 'card-content']) {
+                const c = container.querySelector(`[data-slot="${slot}"]`)!.className
+                expect(c).toContain('px-4')
+                expect(c).toContain('md:px-6')
+            }
+        })
+    })
 })

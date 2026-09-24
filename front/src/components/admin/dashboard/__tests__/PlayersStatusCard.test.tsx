@@ -217,4 +217,18 @@ describe('PlayersStatusCard', () => {
             expect(container.querySelector('[data-slot="card"]')!.className).not.toMatch(/\bpb-\d/)
         })
     })
+
+    // Le meme retrait que la tuile des matchs : elles defilent l'une apres l'autre.
+    it('resserre son retrait sur telephone, comme les deux autres tuiles', () => {
+        mockMovements = [makeMovement({ profileId: 'p1' })]
+        const { container } = poser()
+        const carte = container.querySelector('[data-slot="card"]')!.className
+        expect(carte).toContain('py-4')
+        expect(carte).toContain('md:py-6')
+        for (const slot of ['card-header', 'card-content']) {
+            const c = container.querySelector(`[data-slot="${slot}"]`)!.className
+            expect(c).toMatch(/(^| )px-4( |$)/)
+            expect(c).toContain('md:px-6')
+        }
+    })
 })
