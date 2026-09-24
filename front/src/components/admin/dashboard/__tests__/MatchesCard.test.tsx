@@ -19,6 +19,9 @@ vi.mock('@/lib/supabaseClient', () => ({
 import { useMatchesByDay } from '@/hooks/useMatchesByDay'
 
 const mockUseMatchesByDay = useMatchesByDay as ReturnType<typeof vi.fn>
+
+/** Le prefixe des classes d'une carte large, voir « selon la largeur de la carte ». */
+const LARGE = '@min-[39rem]/tuile:'
 const mockResolveScore = vi.fn()
 
 function makeMatch(overrides: Partial<DayMatch> = {}): DayMatch {
@@ -487,10 +490,10 @@ describe('MatchesCard', () => {
             return container.querySelector('[data-liste-telephone]') as HTMLElement
         }
 
-        it('ne vit que sous 768 px', () => {
+        it('ne vit que dans une carte etroite', () => {
             mockUseMatchesByDay.mockReturnValue({ ...defaultReturn, days: [creneaux()] })
             const { container } = render(<MatchesCard roundId="round1" />)
-            expect(liste(container).className).toContain('md:hidden')
+            expect(liste(container).className).toContain(`${LARGE}hidden`)
         })
 
         it('ecrit l\'heure une fois par creneau, en intertitre', () => {
@@ -565,9 +568,9 @@ describe('MatchesCard', () => {
                     days: [makeDay({ isToday: false, date: '2026-04-18', label: 'samedi 18 avril' })],
                 })
                 render(<MatchesCard roundId="round1" />)
-                expect(screen.getByText('sam. 18 avr.').className).toContain('md:hidden')
+                expect(screen.getByText('sam. 18 avr.').className).toContain(`${LARGE}hidden`)
                 expect(screen.getByText('samedi 18 avril').className).toContain('hidden')
-                expect(screen.getByText('samedi 18 avril').className).toContain('md:inline')
+                expect(screen.getByText('samedi 18 avril').className).toContain(`${LARGE}inline`)
             })
 
             // « aujourd'hui » suffit : la date a cote ferait passer la ligne a deux.
@@ -585,7 +588,7 @@ describe('MatchesCard', () => {
                 mockUseMatchesByDay.mockReturnValue({ ...defaultReturn, days: [makeDay()] })
                 render(<MatchesCard roundId="round1" />)
                 expect(screen.getByRole('button', { name: 'Jour précédent' }).className).toContain('ml-auto')
-                expect(screen.getByRole('button', { name: 'Jour précédent' }).className).toContain('md:ml-0')
+                expect(screen.getByRole('button', { name: 'Jour précédent' }).className).toContain(`${LARGE}ml-0`)
             })
 
             // Au lieu de flotter a droite d'une seconde ligne, ils demarrent sous le titre.
@@ -594,8 +597,8 @@ describe('MatchesCard', () => {
                 const { container } = render(<MatchesCard roundId="round1" />)
                 const tags = container.querySelector('[data-tags-du-jour]')!
                 expect(tags.className).toContain('basis-full')
-                expect(tags.className).toContain('md:basis-auto')
-                expect(tags.className).toContain('md:ml-auto')
+                expect(tags.className).toContain(`${LARGE}basis-auto`)
+                expect(tags.className).toContain(`${LARGE}ml-auto`)
                 expect(tags.className).not.toMatch(/(^| )ml-auto/)
             })
         })
@@ -611,6 +614,48 @@ describe('MatchesCard', () => {
                 expect(c).toContain('px-4')
                 expect(c).toContain('md:px-6')
             }
+        })
+    })
+
+    /*
+     * La carte choisit sa mise en page d'apres SA largeur, pas celle de
+     * l'ecran. A 1024 px le dashboard passe en deux colonnes et la carte tombe
+     * d'un coup de 905 a 377 px : le tableau, en pourcentages, donnait alors
+     * 28 px a la colonne des boxes pour un badge de 49, et tout se chevauchait
+     * jusque vers 1400. Une regle sur la largeur d'ecran ne pouvait pas le
+     * voir, la carte etant large a 1023 et etroite a 1024.
+     */
+    describe('selon la largeur de la carte', () => {
+        it('se declare conteneur', () => {
+            mockUseMatchesByDay.mockReturnValue({ ...defaultReturn, days: [makeDay()] })
+            const { container } = render(<MatchesCard roundId="round1" />)
+            expect(container.querySelector('[data-slot="card"]')!.className).toContain('@container/tuile')
+        })
+
+        it('ne montre le tableau que dans une carte large', () => {
+            mockUseMatchesByDay.mockReturnValue({ ...defaultReturn, days: [makeDay()] })
+            const { container } = render(<MatchesCard roundId="round1" />)
+            const tableau = container.querySelector('[data-tableau-matchs]')!
+            expect(tableau.className).toContain('hidden')
+            expect(tableau.className).toContain(`${LARGE}block`)
+        })
+
+        it('ne s\'appuie plus sur la largeur de l\'ecran', () => {
+            mockUseMatchesByDay.mockReturnValue({ ...defaultReturn, days: [makeDay()] })
+            const { container } = render(<MatchesCard roundId="round1" />)
+            expect(container.innerHTML).not.toMatch(/\bmd:(hidden|block|inline|ml-|basis-|gap-)/)
+        })
+
+        /*
+         * Des colonnes fixes pour ce qui a une taille fixe : une heure, un
+         * badge, un nom de terrain, le controle de score de 84 px. Seule la
+         * colonne du match s'etire.
+         */
+        it('donne une largeur fixe a tout sauf au match', () => {
+            mockUseMatchesByDay.mockReturnValue({ ...defaultReturn, days: [makeDay()] })
+            const { container } = render(<MatchesCard roundId="round1" />)
+            const cols = [...container.querySelectorAll('colgroup col')].map(c => c.className)
+            expect(cols).toEqual(['w-14', 'w-[72px]', '', 'w-20', 'w-[100px]'])
         })
     })
 })
