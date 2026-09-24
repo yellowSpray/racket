@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { TUILE, TUILE_RETRAIT } from "./tuile"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -31,8 +32,8 @@ export function UnpaidPaymentsCard({ clubId, className, onRelancer }: UnpaidPaym
     const { grouped, loading } = useUnpaidPayments(clubId)
 
     return (
-        <Card className={className}>
-            <CardHeader>
+        <Card className={`${TUILE} ${className ?? ""}`}>
+            <CardHeader className={TUILE_RETRAIT}>
                 <CardTitle className="flex items-center gap-2 text-sm">
                     <CreditCardIcon size={16} className="text-foreground" />
                     Paiements
@@ -57,7 +58,7 @@ export function UnpaidPaymentsCard({ clubId, className, onRelancer }: UnpaidPaym
                 </CardTitle>
             </CardHeader>
 
-            <CardContent className="flex-1 min-h-0 px-6 pt-1">
+            <CardContent className={`flex-1 min-h-0 pt-1 ${TUILE_RETRAIT}`}>
                 <UnpaidPaymentsFeed grouped={grouped} loading={loading} />
             </CardContent>
         </Card>
