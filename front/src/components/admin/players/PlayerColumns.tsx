@@ -81,14 +81,30 @@ export const columns = (): ColumnDef<PlayerType>[] => [
         header: "Status",
         enableGlobalFilter: false,
         meta: { className: "text-center" },
-        minSize: 100,
+        /*
+         * 145 et non 100 : les deux pastilles restent cote a cote, jamais
+         * l'une sous l'autre, donc la colonne doit tenir la paire la plus
+         * large. Mesure des quatre libelles possibles : member 62, inactive
+         * 59, l'ecart de 4 et les 16 px de retrait de la cellule, soit 141.
+         * Quatre pixels de marge au-dessus.
+         */
+        minSize: 145,
         cell: ({ row }) => {
             const membership = row.original.status.find(s => s === "member" || s === "visitor")
             const activity = row.original.status.find(s => s === "active" || s === "inactive")
+            /*
+             * Cote a cote, sur une seule ligne, et sans jamais se chevaucher.
+             *
+             * La grille de deux colonnes d'avant donnait a chaque pastille une
+             * case de la moitie de la colonne : une pastille plus large que sa
+             * case debordait sur sa voisine. En flex elles gardent leur
+             * largeur et se poussent, et c'est le plancher de la colonne,
+             * ci-dessus, qui garantit qu'elles tiennent toutes les deux.
+             */
             return (
-                <div className="grid grid-cols-2 justify-items-center">
-                    {membership ? <Badge variant={membership} className="col-span-1">{membership}</Badge> : null}
-                    {activity ? <Badge variant={activity} className="col-span-1">{activity}</Badge> : null}
+                <div className="flex items-center justify-center gap-1">
+                    {membership ? <Badge variant={membership}>{membership}</Badge> : null}
+                    {activity ? <Badge variant={activity}>{activity}</Badge> : null}
                 </div>
             )
         },
@@ -98,14 +114,25 @@ export const columns = (): ColumnDef<PlayerType>[] => [
         header: "Paiement",
         enableGlobalFilter: false,
         meta: { className: "text-center" },
-        minSize: 120,
+        /*
+         * 170 et non 120 : les pastilles restent sur une ligne, comme celles
+         * du statut. Mesure du cas le plus large, deux series visibles plus la
+         * pastille de repli : 30 + 56 + 56, les deux ecarts de 4, et les 16 px
+         * de retrait de la cellule, soit 166.
+         */
+        minSize: 170,
         cell: ({ row }) => {
             const { payments } = row.original
             if (!payments || payments.length === 0) return <span className="text-gray-400">-</span>
             const hidden = payments.slice(0, -2)
             const visible = payments.slice(-2)
             return (
-                <div className="flex flex-wrap gap-1 justify-center items-center">
+                /*
+                 * Sur une ligne, comme le statut : les series se lisent en
+                 * face les unes des autres d'une rangee a l'autre, ce qu'une
+                 * pastille qui passe a la ligne casse aussitot.
+                 */
+                <div className="flex items-center justify-center gap-1">
                     {hidden.length > 0 && (
                         <Tooltip>
                             <TooltipTrigger asChild>
