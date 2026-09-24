@@ -1,26 +1,19 @@
 import type { ComponentType } from "react"
 import { HashtagIcon, StarIcon, Download01Icon, CodeIcon } from "hugeicons-react"
 import { Button } from "@/components/ui/button"
+import { ACTION_DE_PAGE } from "@/lib/actionPage"
 
 /*
  * Les trois actions de l'ecran des tableaux, sur la ligne du titre.
  *
- * SUR TELEPHONE, LE PICTOGRAMME SEUL. Avec leurs libelles, meme compactees,
- * elles faisaient pres de 200 px et passaient sur une seconde ligne sous le
- * titre, calees a droite, detachees de lui. Carrees de 32 px, la hauteur des
- * pastilles du header, elles tiennent a trois dans 112 px et restent sur la
- * ligne du titre.
+ * Le gabarit vit dans `lib/actionPage` : il est partage avec la liste des
+ * joueurs, et une chaine de classes recopiee dans deux fichiers diverge au
+ * premier reglage fait dans un seul des deux.
  *
- * Le libelle ne disparait pas : `sr-only` le garde pour un lecteur d'ecran, et
- * le `title` le donne au survol. Au-dessus de 640 il revient a l'ecran.
- *
- * « Points » et « Scores » sont deux etats du meme bouton. Pictogramme seul,
- * seul le pictogramme les distingue : un diese pour les points, une etoile
- * pour les scores, et un `title` qui dit ce que le clic va faire.
+ * « Points » et « Scores » sont deux etats du meme bouton. Pictogramme seul sur
+ * telephone, seul le pictogramme les distingue : un diese pour les points, une
+ * etoile pour les scores, et un `title` qui dit ce que le clic va faire.
  */
-const ACTION =
-    "border size-8 px-0 has-[>svg]:px-0 " +
-    "sm:w-auto sm:px-3 sm:has-[>svg]:px-2.5"
 
 function Action({
     icone: Icone, libelle, infobulle, onClick,
@@ -31,7 +24,7 @@ function Action({
     onClick: () => void
 }) {
     return (
-        <Button variant="outline" size="sm" className={ACTION} onClick={onClick} title={infobulle}>
+        <Button variant="outline" size="sm" className={ACTION_DE_PAGE} onClick={onClick} title={infobulle}>
             <Icone size={16} strokeWidth={2} />
             <span data-libelle className="sr-only sm:not-sr-only">{libelle}</span>
         </Button>
