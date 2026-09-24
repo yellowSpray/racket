@@ -19,7 +19,14 @@ const Rootlayout = () => {
     <EventProvider>
     <HeaderSlotProvider>
       {!isAuth && <Header />}
-      <main className={`flex-1 flex flex-col min-h-0 w-full ${isApp ? '' : 'px-8'} ${isAuth ? 'pt-8' : ''}`}>
+      {/*
+        * Dans l'application, la page est bornee a la fenetre et ce sont ses
+        * zones qui defilent : d'ou `min-h-0`. Ailleurs elle grandit avec son
+        * contenu, sinon le pied de page passait par-dessus la fin d'un
+        * formulaire plus haut que l'ecran. Gouttiere de 16 px sur telephone,
+        * comme dans l'application.
+        */}
+      <main className={`flex-1 flex flex-col w-full ${isApp ? 'min-h-0' : 'px-4 sm:px-8'} ${isAuth ? 'pt-4 sm:pt-8' : ''}`}>
         <Outlet />
       </main>
       {showFooter && <Footer />}

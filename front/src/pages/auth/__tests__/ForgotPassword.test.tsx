@@ -98,4 +98,26 @@ describe('ForgotPassword', () => {
     fireEvent.click(screen.getByRole('button', { name: /retour/i }))
     expect(mockOnBack).toHaveBeenCalled()
   })
+
+  it('titre la page par un h1', () => {
+    render(<ForgotPassword onBack={mockOnBack} />)
+    expect(screen.getByRole('heading', { level: 1, name: 'Mot de passe oublié' })).toBeInTheDocument()
+  })
+
+  it('laisse le telephone remplir l\'email', () => {
+    render(<ForgotPassword onBack={mockOnBack} />)
+    expect(screen.getByLabelText('Email')).toHaveAttribute('autocomplete', 'email')
+  })
+
+  it('reprend la colonne et les hauteurs de la connexion', () => {
+    const { container } = render(<ForgotPassword onBack={mockOnBack} />)
+    expect(container.querySelector('[data-slot="card"]')!.className).toContain('max-w-[400px]')
+    expect(screen.getByLabelText('Email').className).toContain('h-11')
+    expect(screen.getByRole('button', { name: 'Envoyer le lien' }).className).toContain('h-11')
+  })
+
+  it('donne au lien de retour une zone de toucher de 44 px sous 1024 px', () => {
+    render(<ForgotPassword onBack={mockOnBack} />)
+    expect(screen.getByRole('button', { name: 'Retour à la connexion' }).className).toContain('max-lg:h-11')
+  })
 })

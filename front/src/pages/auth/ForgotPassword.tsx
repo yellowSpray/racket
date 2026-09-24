@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils"
+import { BOUTON_ACCES, CARTE_ACCES, CHAMP_ACCES, LIEN_ACCES, RETRAIT_ACCES, TITRE_ACCES } from "@/pages/auth/gabarit"
 import { Button } from "@/components/ui/button"
 import {
     Card,
@@ -49,20 +50,20 @@ export default function ForgotPassword({ className, onBack, ...props }: ForgotPa
 
     return (
         <div className={cn("flex flex-col items-center h-full", className)} {...props}>
-            <Card className="w-1/2 h-full shadow-none gap-6 justify-center border-none bg-transparent">
-                <CardHeader>
-                    <h3 className="leading-none font-semibold text-lg">Mot de passe oublié</h3>
+            <Card className={CARTE_ACCES}>
+                <CardHeader className={RETRAIT_ACCES}>
+                    <h1 className={TITRE_ACCES}>Mot de passe oublié</h1>
                     <CardDescription>
                         Entrez votre adresse email pour recevoir un lien de réinitialisation
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className={RETRAIT_ACCES}>
                     {sent ? (
                         <div className="space-y-4">
                             <p className="text-sm text-muted-foreground">
                                 Un email de réinitialisation a été envoyé à <strong>{email}</strong>. Vérifiez votre boîte de réception.
                             </p>
-                            <Button variant="link" onClick={onBack}>
+                            <Button variant="link" className={LIEN_ACCES} onClick={onBack}>
                                 Retour à la connexion
                             </Button>
                         </div>
@@ -72,10 +73,11 @@ export default function ForgotPassword({ className, onBack, ...props }: ForgotPa
                                 <Field>
                                     <FieldLabel htmlFor="email_forgot">Email</FieldLabel>
                                     <Input
+                                        className={CHAMP_ACCES}
                                         id="email_forgot"
                                         type="email"
                                         placeholder="email@example.com"
-                                        autoComplete="off"
+                                        autoComplete="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         disabled={loading}
@@ -83,12 +85,12 @@ export default function ForgotPassword({ className, onBack, ...props }: ForgotPa
                                     />
                                 </Field>
                                 <Field>
-                                    <Button type="submit" size="lg" disabled={loading}>
+                                    <Button type="submit" size="lg" className={BOUTON_ACCES} disabled={loading}>
                                         {loading ? "Envoi en cours..." : "Envoyer le lien"}
                                     </Button>
                                 </Field>
                                 <Field>
-                                    <Button variant="link" type="button" onClick={onBack}>
+                                    <Button variant="link" className={LIEN_ACCES} type="button" onClick={onBack}>
                                         Retour à la connexion
                                     </Button>
                                 </Field>

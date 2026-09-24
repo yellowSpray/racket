@@ -133,4 +133,67 @@ describe('Login', () => {
 
         expect(mockToggle).toHaveBeenCalledTimes(1)
     })
+
+    /*
+     * Le lien « S'inscrire » vit dans le formulaire. Sans `type="button"` il
+     * en etait le bouton d'envoi : le toucher tentait une connexion, et le
+     * navigateur affichait « Please fill out this field » sur un champ vide.
+     */
+    it('bascule vers l\'inscription sans envoyer le formulaire', () => {
+        render(<Login toggle={mockToggle} onForgotPassword={mockForgotPassword} />)
+        const lien = screen.getByRole('button', { name: "S'inscrire" })
+        expect(lien).toHaveAttribute('type', 'button')
+        fireEvent.click(lien)
+        expect(mockToggle).toHaveBeenCalledOnce()
+        expect(mockSignIn).not.toHaveBeenCalled()
+    })
+
+    // Le titre de la page, pas un intertitre de carte.
+    it('titre la page par un h1', () => {
+        render(<Login toggle={mockToggle} onForgotPassword={mockForgotPassword} />)
+        expect(screen.getByRole('heading', { level: 1, name: 'Connectez-vous' })).toBeInTheDocument()
+    })
+
+    /*
+     * Les gestionnaires de mots de passe du telephone ne remplissent que les
+     * champs qui disent ce qu'ils attendent. `off` les en empechait.
+     */
+    it('laisse le telephone remplir l\'email et le mot de passe', () => {
+        render(<Login toggle={mockToggle} onForgotPassword={mockForgotPassword} />)
+        expect(screen.getByLabelText('Email')).toHaveAttribute('autocomplete', 'email')
+        expect(screen.getByLabelText('Mot de passe')).toHaveAttribute('autocomplete', 'current-password')
+    })
+
+    it('donne aux champs et aux boutons une hauteur de doigt sous 1024 px', () => {
+        render(<Login toggle={mockToggle} onForgotPassword={mockForgotPassword} />)
+        for (const champ of [screen.getByLabelText('Email'), screen.getByLabelText('Mot de passe')]) {
+            expect(champ.className).toContain('h-11')
+            expect(champ.className).toContain('lg:h-9')
+        }
+        for (const nom of ['Se connecter', 'Continuer avec Google']) {
+            expect(screen.getByRole('button', { name: nom }).className).toContain('h-11')
+        }
+    })
+
+    // Une colonne de lecture, pas la moitie d'une moitie d'ecran.
+    it('borne le formulaire a 400 px', () => {
+        const { container } = render(<Login toggle={mockToggle} onForgotPassword={mockForgotPassword} />)
+        const carte = container.querySelector('[data-slot="card"]')!
+        expect(carte.className).toContain('w-full')
+        expect(carte.className).toContain('max-w-[400px]')
+        expect(carte.className).not.toContain('w-1/2')
+    })
+
+    /*
+     * Les liens textuels faisaient 20 px de haut, sous les 24 du minimum
+     * WCAG 2.2. Leur zone de toucher passe a 44 px, sans deplacer le texte.
+     */
+    it('donne aux liens une zone de toucher de 44 px sous 1024 px', () => {
+        render(<Login toggle={mockToggle} onForgotPassword={mockForgotPassword} />)
+        for (const nom of ['Mot de passe oublié ?', "S'inscrire"]) {
+            const c = screen.getByRole('button', { name: nom }).className
+            expect(c).toContain('max-lg:h-11')
+            expect(c).toContain('max-lg:-my-3')
+        }
+    })
 })

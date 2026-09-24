@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/stepper"
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { BOUTON_ACCES, CARTE_ACCES, CHAMP_ACCES, LIEN_ACCES, RETRAIT_ACCES, TITRE_ACCES } from "@/pages/auth/gabarit"
 import { supabase } from "@/lib/supabaseClient";
 import { useClubs } from "@/hooks/useClub";
 
@@ -139,14 +140,14 @@ export default function Register({
 
     return (
         <div className={cn("flex flex-col items-center h-full", className)} {...props}>
-            <Card className="w-1/2 h-full shadow-none gap-6 justify-center border-none bg-transparent">
-                <CardHeader>
-                    <h3 className="leading-none font-semibold text-lg">Créer un compte</h3>
+            <Card className={CARTE_ACCES}>
+                <CardHeader className={RETRAIT_ACCES}>
+                    <h1 className={TITRE_ACCES}>Créer un compte</h1>
                     <CardDescription>
                         Remplissez les informations ci-dessous pour créer votre compte
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className={RETRAIT_ACCES}>
                     <Stepper value={step} onValueChange={setStep} className="mb-7">
                         <StepperNav className="mb-4">
                             <StepperItem step={1}>
@@ -171,10 +172,11 @@ export default function Register({
                                         <Field>
                                             <FieldLabel htmlFor="first_name">Prénom</FieldLabel>
                                             <Input
+                                                className={CHAMP_ACCES}
                                                 id="first_name"
                                                 type="text"
                                                 placeholder="Jean"
-                                                autoComplete="off"
+                                                autoComplete="given-name"
                                                 value={firstName}
                                                 onChange={(e) => setFirstName(e.target.value)}
                                                 disabled={loading}
@@ -184,10 +186,11 @@ export default function Register({
                                         <Field>
                                             <FieldLabel htmlFor="last_name">Nom</FieldLabel>
                                             <Input
+                                                className={CHAMP_ACCES}
                                                 id="last_name"
                                                 type="text"
                                                 placeholder="Dupont"
-                                                autoComplete="off"
+                                                autoComplete="family-name"
                                                 value={lastName}
                                                 onChange={(e) => setLastName(e.target.value)}
                                                 disabled={loading}
@@ -198,10 +201,11 @@ export default function Register({
                                     <Field>
                                         <FieldLabel htmlFor="phone_number">Téléphone</FieldLabel>
                                         <Input
+                                            className={CHAMP_ACCES}
                                             id="phone_number"
                                             type="tel"
                                             placeholder="+3249XXXXXXX"
-                                            autoComplete="off"
+                                            autoComplete="tel"
                                             value={phoneNumber}
                                             onChange={(e) => setPhoneNumber(e.target.value)}
                                             disabled={loading}
@@ -217,7 +221,7 @@ export default function Register({
                                             onValueChange={setSelectedClub}
                                             disabled={loadingClubs}
                                         >
-                                            <SelectTrigger id="club-select">
+                                            <SelectTrigger id="club-select" className="w-full data-[size=default]:h-11 lg:data-[size=default]:h-9">
                                                 <SelectValue placeholder="Sélectionnez votre club" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -238,6 +242,7 @@ export default function Register({
                                         <Button
                                             type="button"
                                             size="lg"
+                                            className={BOUTON_ACCES}
                                             onClick={handleNext}
                                             disabled={loading}
                                         >
@@ -252,10 +257,11 @@ export default function Register({
                                     <Field>
                                         <FieldLabel htmlFor="email">Email</FieldLabel>
                                         <Input
+                                            className={CHAMP_ACCES}
                                             id="email"
                                             type="email"
                                             placeholder="email@example.com"
-                                            autoComplete="off"
+                                            autoComplete="email"
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
                                             disabled={loading}
@@ -265,9 +271,10 @@ export default function Register({
                                     <Field>
                                         <FieldLabel htmlFor="password">Mot de passe</FieldLabel>
                                         <Input
+                                            className={CHAMP_ACCES}
                                             id="password"
                                             type="password"
-                                            autoComplete="off"
+                                            autoComplete="new-password"
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
                                             disabled={loading}
@@ -277,9 +284,10 @@ export default function Register({
                                     <Field>
                                         <FieldLabel htmlFor="passwordConfirm">Confirmer le mot de passe</FieldLabel>
                                         <Input
+                                            className={CHAMP_ACCES}
                                             id="passwordConfirm"
                                             type="password"
-                                            autoComplete="off"
+                                            autoComplete="new-password"
                                             value={confirmPassword}
                                             onChange={(e) => setConfirmPassword(e.target.value)}
                                             disabled={loading}
@@ -291,6 +299,7 @@ export default function Register({
                                             type="button"
                                             variant="outline"
                                             size="lg"
+                                            className={BOUTON_ACCES}
                                             onClick={handleBack}
                                             disabled={loading}
                                         >
@@ -300,7 +309,7 @@ export default function Register({
                                             type="submit"
                                             size="lg"
                                             disabled={loading}
-                                            className="flex-1"
+                                            className={`${BOUTON_ACCES} flex-1`}
                                         >
                                             {loading ? 'Inscription...' : "S'inscrire"}
                                         </Button>
@@ -311,7 +320,7 @@ export default function Register({
                     </Stepper>
 
                     <FieldDescription className="text-center mt-14">
-                        Déjà un compte ? <Button variant="link" onClick={toggle}>Se connecter</Button>
+                        Déjà un compte ? <Button type="button" variant="link" className={LIEN_ACCES} onClick={toggle}>Se connecter</Button>
                     </FieldDescription>
                 </CardContent>
             </Card>

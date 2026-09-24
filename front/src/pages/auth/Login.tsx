@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils"
+import { BOUTON_ACCES, CARTE_ACCES, CHAMP_ACCES, LIEN_ACCES, RETRAIT_ACCES, TITRE_ACCES } from "@/pages/auth/gabarit"
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -64,24 +65,25 @@ export default function Login({className, toggle, onForgotPassword, ...props}: L
 
     return (
         <div className={cn("flex flex-col items-center h-full", className)} {...props}>
-            <Card className="w-1/2 h-full shadow-none gap-6 justify-center border-none bg-transparent">
-                <CardHeader>
-                    <h3 className="leading-none font-semibold text-lg">Connectez-vous</h3>
+            <Card className={CARTE_ACCES}>
+                <CardHeader className={RETRAIT_ACCES}>
+                    <h1 className={TITRE_ACCES}>Connectez-vous</h1>
                     <CardDescription>
                         Entrez vos identifiants pour accéder à votre compte
                     </CardDescription>
 
                 </CardHeader>
-                <CardContent>
+                <CardContent className={RETRAIT_ACCES}>
                     <form onSubmit={handleSubmit}>
                         <FieldGroup>
                             <Field>
                                 <FieldLabel htmlFor="email_login">Email</FieldLabel>
                                 <Input
+                                    className={CHAMP_ACCES}
                                     id="email_login"
                                     type="email"
                                     placeholder="email@example.com"
-                                    autoComplete="off"
+                                    autoComplete="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     disabled={loading}
@@ -94,16 +96,17 @@ export default function Login({className, toggle, onForgotPassword, ...props}: L
                                     <Button
                                         variant="link"
                                         type="button"
-                                        className="ml-auto"
+                                        className={`${LIEN_ACCES} ml-auto`}
                                         onClick={onForgotPassword}
                                     >
                                         Mot de passe oublié ?
                                     </Button>
                                 </div>
                                 <Input
+                                    className={CHAMP_ACCES}
                                     id="password_login"
                                     type="password"
-                                    autoComplete="off"
+                                    autoComplete="current-password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     disabled={loading}
@@ -114,6 +117,7 @@ export default function Login({className, toggle, onForgotPassword, ...props}: L
                                 <Button
                                     type="submit"
                                     size="lg"
+                                    className={BOUTON_ACCES}
                                     disabled={loading}
                                 >
                                     {loading ? 'Connexion...' : 'Se connecter'}
@@ -122,7 +126,7 @@ export default function Login({className, toggle, onForgotPassword, ...props}: L
                                     variant="outline"
                                     type="button"
                                     size="lg"
-                                    className="border-1 border-border"
+                                    className={`${BOUTON_ACCES} border-1 border-border`}
                                     disabled={loading}
                                 >
                                     Continuer avec Google
@@ -130,7 +134,7 @@ export default function Login({className, toggle, onForgotPassword, ...props}: L
                             </Field>
                             <Field>
                                 <FieldDescription className="text-center">
-                                    Pas encore de compte ? <Button variant="link" onClick={toggle}>S&apos;inscrire</Button>
+                                    Pas encore de compte ? <Button type="button" variant="link" className={LIEN_ACCES} onClick={toggle}>S&apos;inscrire</Button>
                                 </FieldDescription>
                             </Field>
                         </FieldGroup>
