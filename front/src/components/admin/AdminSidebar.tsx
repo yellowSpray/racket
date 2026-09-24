@@ -50,8 +50,8 @@ export function AdminSideBar() {
 /**
  * La même navigation, en onglets, pour le téléphone.
  *
- * Cinq onglets et non six : `Réglages` reste dans la page des réglages, que le
- * profil ouvre, et `Quitter` y descend aussi. Au-delà de cinq, chaque onglet
+ * Cinq onglets et non six : `Réglages` et `Quitter` passent dans le menu de
+ * l'avatar du header, voir `MenuDuCompte`. Au-delà de cinq, chaque onglet
  * passe sous les 44 px d'une cible tactile sur un écran de 320.
  */
 export function AdminTabs() {

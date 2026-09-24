@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Link, useLocation } from "react-router"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { AvatarDuCompte, MenuDuCompte } from "@/components/shared/MenuDuCompte"
 import { useAuth } from "@/contexts/AuthContext"
 import { useHeaderActionsRegister, useHeaderHasActions } from "@/contexts/HeaderSlotContext"
 import { AppBreadcrumb } from "@/components/shared/AppBreadcrumb"
@@ -34,7 +34,7 @@ import { GOUTTIERE, RAIL, RAIL_PADDING } from "@/layout/rail"
  * l'alignement serait perdu.
  */
 export default function Header() {
-    const { profile, isAuthenticated } = useAuth()
+    const { profile, isAuthenticated, signOut } = useAuth()
     const { pathname } = useLocation()
     const registerActionsSlot = useHeaderActionsRegister()
     const hasActions = useHeaderHasActions()
@@ -243,22 +243,23 @@ export default function Header() {
                             {/* Le rouge plein du systeme, celui de l'alerte. */}
                             <span className="absolute right-1 top-1 size-1.5 rounded-full border border-card bg-destructive" />
                         </Button>
+                        {/*
+                          * Deux avatars pour deux largeurs. Au-dessus de 640 un
+                          * lien vers le profil, la barre laterale portant deja
+                          * Reglages et Quitter. En dessous un menu, parce que
+                          * les onglets n'en tiennent que cinq et que ces deux
+                          * gestes n'avaient plus d'autre maison.
+                          */}
                         <Link
                             to={profile.role === "user" ? "/user/profile" : "/admin/profile"}
-                            className="flex shrink-0 items-center gap-2 rounded-full"
+                            className="hidden shrink-0 items-center gap-2 rounded-full sm:flex"
                         >
-                            <Avatar className="size-8">
-                                <AvatarImage
-                                    src={profile.avatar_url || undefined}
-                                    alt={`${profile.first_name} ${profile.last_name}`}
-                                />
-                                {/* Sans repli, un avatar absent laissait un trou dans la barre. */}
-                                <AvatarFallback className="bg-primary/30 text-[11px] font-semibold">
-                                    {`${profile.first_name?.[0] ?? ""}${profile.last_name?.[0] ?? ""}`.toUpperCase()}
-                                </AvatarFallback>
-                            </Avatar>
+                            <AvatarDuCompte profile={profile} />
                             <span className="sr-only">{`${profile.first_name} ${profile.last_name}`}</span>
                         </Link>
+                        <div data-compte-telephone className="flex sm:hidden">
+                            <MenuDuCompte profile={profile} onSignOut={signOut} />
+                        </div>
                     </>
                 ) : (
                     <Button asChild variant="default" size="sm">
