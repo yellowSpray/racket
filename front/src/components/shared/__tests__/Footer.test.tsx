@@ -7,9 +7,10 @@ describe('Footer', () => {
     render(<Footer />)
   })
 
+  // Le produit s'appelle Racket Fest, en deux mots, depuis septembre.
   it('displays the brand name', () => {
     render(<Footer />)
-    expect(screen.getByText('RacketFest')).toBeInTheDocument()
+    expect(screen.getByText('Racket Fest')).toBeInTheDocument()
   })
 
   it('displays the current year with copyright symbol', () => {
