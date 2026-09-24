@@ -11,9 +11,9 @@ import type { SidebarEntry } from "@/components/shared/SidebarNav"
  *
  * CINQ ONGLETS AU MAXIMUM. Au-delà, chaque onglet passe sous les 44 px que
  * demande une cible tactile sur un écran de 320. Les six entrées de l'admin ne
- * tiennent donc pas : `Réglages` et `Quitter` descendent dans la page profil,
- * que l'avatar du header ouvre déjà. Ce sont les deux gestes qu'on fait
- * rarement, et ils n'ont rien à voir avec la consultation quotidienne.
+ * tiennent donc pas : `Réglages` et `Quitter` passent dans le menu de l'avatar
+ * du header, voir `MenuDuCompte`. Ce sont les deux gestes qu'on fait rarement,
+ * et ils n'ont rien à voir avec la consultation quotidienne.
  *
  * `fixed` et non `sticky` : la barre ne doit pas se décoller quand le contenu
  * défile, et `DashboardLayout` réserve sa hauteur au bas du contenu. Le

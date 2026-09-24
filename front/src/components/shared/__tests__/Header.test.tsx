@@ -471,6 +471,27 @@ describe('Header', () => {
     expect(screen.getByText('Jean Dupont').closest('a')).toHaveAttribute('href', '/admin/profile')
   })
 
+  /*
+   * Sur telephone les onglets n'en tiennent que cinq : Reglages et Quitter
+   * passent derriere l'avatar. Au-dessus, la barre laterale les porte deja et
+   * l'avatar reste un simple lien vers le profil.
+   */
+  it('fait de l\'avatar un menu sur telephone seulement', () => {
+    connecte('admin')
+    render(<Header />)
+    const menu = screen.getByRole('button', { name: /menu du compte/i })
+    expect(menu.closest('[data-compte-telephone]')!.className).toContain('sm:hidden')
+    const lien = screen.getByText('Jean Dupont').closest('a')!
+    expect(lien.className).toContain('hidden')
+    expect(lien.className).toContain('sm:flex')
+  })
+
+  it('n\'offre pas le menu du compte a un visiteur anonyme', () => {
+    anonyme()
+    render(<Header />)
+    expect(screen.queryByRole('button', { name: /menu du compte/i })).not.toBeInTheDocument()
+  })
+
   it('links profile to correct route for user', () => {
     mockUseAuth.mockReturnValue({
       profile: { id: '2', role: 'user', first_name: 'Marie', last_name: 'Martin' },
