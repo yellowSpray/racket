@@ -23,3 +23,22 @@
  * produit le portent, celles dont le défaut a été mesuré.
  */
 export const BLOC_DEFILANT = "[&>[data-radix-scroll-area-viewport]>div]:!block"
+
+/**
+ * La barre de défilement masquée sur téléphone.
+ *
+ * Sous 640 px elle coûtait 12 px de large à ce qu'elle fait défiler : les 10
+ * de la barre elle-même, et le `pr-3` que `ScrollArea` pose sur son contenu
+ * dès qu'elle est visible. Sur les tableaux, ces 12 px allaient au facteur de
+ * réduction de `useFitToWidth`. On défile au doigt, la barre n'y sert à rien.
+ *
+ * Deux règles, parce que masquer la barre ne suffit pas : son `data-state`
+ * reste « visible » et le `:has()` de `components/ui` continue de poser le
+ * retrait. Le `!` l'emporte sur sa spécificité, sans éditer le composant.
+ *
+ * Au-dessus de 640 la barre revient : à la souris, c'est elle qui dit qu'il y
+ * a une suite.
+ */
+export const BARRE_MASQUEE_TELEPHONE =
+    "max-sm:[&>[data-slot=scroll-area-scrollbar]]:hidden " +
+    "max-sm:[&>[data-slot=scroll-area-viewport]>div]:!pr-0"
