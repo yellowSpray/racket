@@ -180,4 +180,60 @@ describe('AppBreadcrumb', () => {
         expect(nav().className).toContain('w-full')
         expect(nav().className).toContain('justify-between')
     })
+
+    /*
+     * Sous 366 px le fil n'a plus la place de ses trois segments. Le club part
+     * le premier : il n'y en a qu'un, et le bloc de marque le porte deja. Son
+     * separateur part avec lui, sinon le fil commencerait par un chevron.
+     */
+    describe('sous 366 px', () => {
+        const ETROIT = 'max-[366px]:hidden'
+
+        it('retire le nom du club', () => {
+            const { container } = setup()
+            expect(container.querySelector('[data-crumb-club]')!.className).toContain(ETROIT)
+        })
+
+        it('retire le separateur qui suit le club', () => {
+            const { container } = setup()
+            const [premier, second] = container.querySelectorAll('[data-crumb-separator]')
+            expect(premier.getAttribute('class')).toContain(ETROIT)
+            expect(second.getAttribute('class')).not.toContain(ETROIT)
+        })
+
+        it('garde l\'evenement et la serie', () => {
+            setup()
+            expect(screen.getByLabelText('Événement').closest('span')!.className).not.toContain(ETROIT)
+            expect(screen.getByLabelText('Série').closest('span')!.className).not.toContain(ETROIT)
+        })
+
+        /*
+         * Etales d'un bord a l'autre, deux segments se tournaient le dos avec
+         * un chevron perdu au milieu. Sans le club, ils se resserrent au
+         * centre de la barre.
+         */
+        it('resserre l\'evenement et la serie au centre de la seconde barre', () => {
+            const { container, rerender } = setup()
+            rerender(<AppBreadcrumb pleineLargeur />)
+            expect(container.querySelector('nav')!.className).toContain('max-[366px]:justify-center')
+        })
+
+        // Dans le header il reste cale sur le titre de la page.
+        it('ne centre rien dans le header', () => {
+            const { container } = setup()
+            expect(container.querySelector('nav')!.className).not.toContain('justify-center')
+        })
+
+        it('ne centre pas le club quand il est seul', () => {
+            mockUseEvent.mockReturnValue({ currentEvent: null, currentRound: null, events: [], setCurrentEvent: vi.fn(), setCurrentRound: vi.fn() })
+            const { container } = render(<AppBreadcrumb pleineLargeur />)
+            expect(container.querySelector('nav')!.className).not.toContain('justify-center')
+        })
+
+        // Sans evenement le club est seul : le retirer viderait la barre.
+        it('garde le club quand il est seul', () => {
+            const { container } = setup({ currentEvent: null, currentRound: null, events: [] })
+            expect(container.querySelector('[data-crumb-club]')!.className).not.toContain(ETROIT)
+        })
+    })
 })

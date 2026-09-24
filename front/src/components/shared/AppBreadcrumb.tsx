@@ -34,14 +34,14 @@ function RoundStatusDot({ round }: { round: EventRound | null | undefined }) {
  * échappent au réglage, et il se posait un cheveu trop haut. Le chevron se cale
  * au centre de la ligne et garde le même trait que les chevrons de sélection.
  */
-function Separateur() {
+function Separateur({ className = "" }: { className?: string }) {
     return (
         <ArrowRight01Icon
             data-crumb-separator
             aria-hidden
             size={13}
             strokeWidth={2}
-            className="mx-0.5 shrink-0 text-muted-foreground/60"
+            className={`mx-0.5 shrink-0 text-muted-foreground/60 ${className}`}
         />
     )
 }
@@ -126,20 +126,36 @@ export function AppBreadcrumb({ pleineLargeur = false }: { pleineLargeur?: boole
     const rounds = [...(currentEvent?.event_rounds ?? [])]
         .sort((a, b) => b.round_number - a.round_number)
 
+    /*
+     * SOUS 366 PX, LE CLUB S'EFFACE. Le fil a besoin de 336 px pour ses trois
+     * segments et n'en a que 288 sur un ecran de 320 une fois les gouttieres
+     * servies. Le club part le premier : il n'y en a qu'un, le bloc de marque
+     * le porte deja, et c'est le seul segment qui n'est pas un menu. Son
+     * separateur part avec lui, sinon le fil commencerait par un chevron.
+     *
+     * Seulement s'il a un evenement a cote de lui : seul, le retirer viderait
+     * la barre.
+     */
+    const siEtroit = currentEvent ? "max-[366px]:hidden" : ""
+
     return (
         /*
          * `pleineLargeur` : dans la seconde barre du telephone, le fil est seul
          * et occupe toute la largeur, ses trois segments repartis d'un bord a
          * l'autre. Dans le header il reste cale a gauche, contre le titre de la
          * page qui demarre sur la meme verticale.
+         *
+         * Sous 366 px le club s'efface et il ne reste que deux segments. Etales
+         * aux deux bords, ils se tournaient le dos avec un chevron perdu au
+         * milieu : ils se resserrent au centre.
          */
         <nav
             aria-label="Fil d'Ariane"
             className={`flex min-w-0 items-center text-sm ${
-                pleineLargeur ? "w-full justify-between" : ""
+                pleineLargeur ? `w-full justify-between ${currentEvent ? "max-[366px]:justify-center" : ""}` : ""
             }`}
         >
-            <span className="inline-flex min-w-0 items-center gap-2 pr-1.5 py-0.5">
+            <span data-crumb-club className={`inline-flex min-w-0 items-center gap-2 pr-1.5 py-0.5 ${siEtroit}`}>
                 <Home01Icon
                     data-crumb-icon="club"
                     size={14}
@@ -151,7 +167,7 @@ export function AppBreadcrumb({ pleineLargeur = false }: { pleineLargeur?: boole
 
             {currentEvent && (
                 <>
-                    <Separateur />
+                    <Separateur className={siEtroit} />
                     <Segment
                         ariaLabel="Événement"
                         value={currentEvent.id}
