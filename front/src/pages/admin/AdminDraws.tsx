@@ -9,33 +9,20 @@ import { useHeaderSlot } from "@/contexts/HeaderSlotContext"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 import { useNavigate } from "react-router"
-import { Settings01Icon, PencilEdit02Icon, HashtagIcon, StarIcon, Download01Icon, CodeIcon } from "hugeicons-react"
+import { Settings01Icon, PencilEdit02Icon } from "hugeicons-react"
 import { Button } from "@/components/ui/button"
 import { DrawTable } from "@/components/admin/draws/DrawTable"
 import { MatchScoreDialog } from "@/components/admin/draws/MatchScoreDialog"
 import { PlayerInfoDialog } from "@/components/admin/draws/PlayerInfoDialog"
 import { EmbedDrawsDialog } from "@/components/admin/draws/EmbedDrawsDialog"
+import { ActionsDesTableaux } from "@/components/admin/draws/ActionsDesTableaux"
 import { normalizeScoreForDb, computeWinnerId } from "@/lib/matchScore"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { sortPlayersByEarliestDates } from "@/lib/matchScheduler"
 import type { Match } from "@/types/match"
 import type { GroupPlayer } from "@/types/draw"
 import { exportTablesToPdfLazy } from "@/lib/exportPdfLazy"
-import { BLOC_DEFILANT } from "@/lib/scrollArea"
-
-/*
- * Les trois actions de la page, en version compacte sur telephone.
- *
- * A taille normale elles font 271 px a elles seules, plus que la colonne d'un
- * ecran de 375 une fois le titre servi : la ligne debordait de la fenetre. Sous
- * 640 elles perdent 1 px de hauteur sur 8, deux points de taille de texte et
- * leurs pictogrammes passent de 16 a 14.
- *
- * Elles gardent leurs libelles : « Points » et « Scores » sont deux etats du
- * meme bouton, et un pictogramme seul ne dirait pas lequel est en cours.
- */
-const ACTION = "border h-7 gap-1 px-2 text-xs has-[>svg]:px-2 [&_svg]:size-3.5 " +
-    "sm:h-8 sm:gap-1.5 sm:px-3 sm:text-sm sm:has-[>svg]:px-2.5 sm:[&_svg]:size-4"
+import { BLOC_DEFILANT, BARRE_MASQUEE_TELEPHONE } from "@/lib/scrollArea"
 
 export function AdminDraws () {
 
@@ -135,38 +122,13 @@ export function AdminDraws () {
         <>
             <h3 className="text-lg font-semibold">Tableaux</h3>
 
-            <div className="ml-auto flex shrink-0 items-center gap-2">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    className={ACTION}
-                    onClick={() => setDisplayMode(prev => prev === "score" ? "points" : "score")}
-                >
-                    {displayMode === "score" ? (
-                        <><HashtagIcon size={16} strokeWidth={2} />Points</>
-                    ) : (
-                        <><StarIcon size={16} strokeWidth={2} />Scores</>
-                    )}
-                </Button>
-
-                <Button
-                    variant="outline"
-                    size="sm"
-                    className={ACTION}
-                    onClick={() => setEmbedOpen(true)}
-                    title="Intégrer les tableaux sur un site"
-                >
-                    <CodeIcon size={16} strokeWidth={2} />
-                    Intégrer
-                </Button>
-
-                {groups.length > 0 && (
-                    <Button variant="outline" size="sm" className={ACTION} onClick={handleExportPdf}>
-                        <Download01Icon size={16} strokeWidth={2} />
-                        PDF
-                    </Button>
-                )}
-            </div>
+            <ActionsDesTableaux
+                displayMode={displayMode}
+                onToggleDisplay={() => setDisplayMode(prev => prev === "score" ? "points" : "score")}
+                onEmbed={() => setEmbedOpen(true)}
+                onExportPdf={handleExportPdf}
+                peutExporter={groups.length > 0}
+            />
         </>
     )
 
@@ -241,7 +203,7 @@ export function AdminDraws () {
                  * contenu de 413, donc rien a reduire.
                  */
                 <ScrollArea
-                    className={`flex-1 min-h-0 ${BLOC_DEFILANT}`}
+                    className={`flex-1 min-h-0 ${BLOC_DEFILANT} ${BARRE_MASQUEE_TELEPHONE}`}
                     type="auto"
                 >
                     {/*
