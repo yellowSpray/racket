@@ -26,7 +26,7 @@ function formatTime(matchTime: string): string {
     return m ? m[1] : matchTime
 }
 
-/** La date du téléphone : « sam. 18 avr. », là où le bureau écrit « samedi 18 avril ». */
+/** La date d'une carte étroite : « sam. 18 avr. », là où une carte large écrit « samedi 18 avril ». */
 function dateCourte(date: string): string {
     return new Date(`${date}T12:00:00`).toLocaleDateString("fr-FR", {
         weekday: "short", day: "numeric", month: "short",
@@ -69,11 +69,11 @@ function TagsDuJour({ day }: { day: MatchDay | undefined }) {
 
     return (
         /*
-         * Sur telephone les tags prennent une ligne a eux, calee a gauche sous
+         * Dans une carte etroite les tags prennent une ligne a eux, calee a gauche sous
          * le titre. Ils passaient deja a la ligne faute de place, mais pousses
          * a droite par leur `ml-auto` ils flottaient loin de tout.
          */
-        <span data-tags-du-jour className="flex shrink-0 basis-full items-center gap-2 md:ml-auto md:basis-auto">
+        <span data-tags-du-jour className="flex shrink-0 basis-full items-center gap-2 @min-[39rem]/tuile:ml-auto @min-[39rem]/tuile:basis-auto">
             <Badge variant="neutral" className="h-5 px-2 text-xs">
                 {pluriel(total, "match", "matchs")}
             </Badge>
@@ -145,8 +145,25 @@ export function MatchesCard({ roundId, className }: MatchesCardProps) {
 
     const currentDay = days[dayIndex]
 
+    /*
+     * LA CARTE SUIT SA PROPRE LARGEUR, PAS CELLE DE L'ECRAN.
+     *
+     * A 1024 px le dashboard passe en deux colonnes : la barre laterale se
+     * deploie, la colonne de droite prend ses 360 px, et la carte tombe d'un
+     * coup de 905 a 377 px. Une regle sur l'ecran ne pouvait pas le voir. Le
+     * tableau y gardait ses pourcentages, 28 px pour un badge de boxe de 49,
+     * et tout se chevauchait jusque vers 1400.
+     *
+     * Sous 624 px de carte (39rem), la liste par creneau et le titre sur deux
+     * lignes ; au-dessus, le tableau et le titre sur une. Mesure : la ligne de
+     * titre tient sur une ligne a partir de 624, le tableau a colonnes fixes
+     * aussi. Un seul seuil pour les deux, donc une seule bascule a expliquer.
+     *
+     * Nomme `tuile` : `CardHeader` est lui-meme un conteneur, et une requete
+     * sans nom interrogerait le plus proche, donc lui, pour le titre.
+     */
     return (
-        <Card className={`${TUILE} ${className ?? ""}`}>
+        <Card className={`@container/tuile ${TUILE} ${className ?? ""}`}>
             <CardHeader className={TUILE_RETRAIT}>
                 {/*
                   * `flex-wrap` : cette ligne porte le titre, la navigation de
@@ -155,29 +172,29 @@ export function MatchesCard({ roundId, className }: MatchesCardProps) {
                   * deborder la page de 113 px sur un telephone de 375. Les tags
                   * passent dessous quand la place manque.
                   */}
-                <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-3 text-sm md:gap-y-1">
+                <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-3 text-sm @min-[39rem]/tuile:gap-y-1">
                     <Calendar03Icon size={16} className="text-foreground shrink-0" />
                     <span className="font-semibold shrink-0">Matchs</span>
                     <button
                         onClick={() => setDayIndex(i => i - 1)}
                         disabled={dayIndex === 0 || days.length === 0}
-                        className="ml-auto p-0.5 rounded transition-colors hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed shrink-0 md:ml-0"
+                        className="ml-auto p-0.5 rounded transition-colors hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed shrink-0 @min-[39rem]/tuile:ml-0"
                         aria-label="Jour précédent"
                     >
                         <ArrowLeft01Icon size={14} />
                     </button>
                     {currentDay && (
                         <>
-                            <span className="hidden text-xs text-muted-foreground font-normal truncate md:inline">
+                            <span className="hidden text-xs text-muted-foreground font-normal truncate @min-[39rem]/tuile:inline">
                                 {currentDay.label}
                             </span>
                             {/*
-                              * Sur telephone, « aujourd'hui » remplace la date au
+                              * Carte etroite : « aujourd'hui » remplace la date au
                               * lieu de s'y ajouter : les deux ensemble faisaient
                               * passer la ligne du titre a deux.
                               */}
                             {!currentDay.isToday && (
-                                <span className="text-xs text-muted-foreground font-normal md:hidden">
+                                <span className="text-xs text-muted-foreground font-normal @min-[39rem]/tuile:hidden">
                                     {dateCourte(currentDay.date)}
                                 </span>
                             )}
@@ -227,15 +244,22 @@ function MatchesFeed({ day, onValidate }: MatchesFeedProps) {
         <div className="flex flex-col h-full min-h-0">
             <div className="flex-1 min-h-0">
                 <ScrollArea className={`h-full ${BLOC_DEFILANT}`} type="auto">
-                    {/* Desktop : tableau */}
-                    <div className="hidden md:block overflow-hidden">
+                    {/* Carte large : le tableau. */}
+                    <div data-tableau-matchs className="hidden @min-[39rem]/tuile:block overflow-hidden">
                         <Table className="table-fixed">
+                            {/*
+                              * Des largeurs fixes pour ce qui a une taille fixe :
+                              * une heure, un badge, un nom de terrain, le
+                              * controle de score de 84 px. En pourcentages, la
+                              * colonne des boxes descendait a 28 px pour un
+                              * badge de 49. Seul le match s'etire.
+                              */}
                             <colgroup>
-                                <col className="w-[8%]" />
-                                <col className="w-[9%]" />
-                                <col className="w-[42%]" />
-                                <col className="w-[8%]" />
-                                <col className="w-[33%]" />
+                                <col className="w-14" />
+                                <col className="w-[72px]" />
+                                <col />
+                                <col className="w-20" />
+                                <col className="w-[100px]" />
                             </colgroup>
                             <TableHeader>
                                 <TableRow>
@@ -337,7 +361,8 @@ function MatchTableRow({ match, isLastOfSlot, isFirstOfSlot, onValidate }: Match
 }
 
 /**
- * La liste du téléphone.
+ * La liste d'une carte étroite : le téléphone, et le bureau de 1024 à ~1270 px,
+ * où la carte ne fait plus que 377 à 620 px à côté de la colonne de droite.
  *
  * Elle ne met plus de cartes dans la carte. Le double cadre mangeait la
  * largeur, les noms se coupaient, le score prenait une ligne à lui et l'on ne
@@ -355,7 +380,7 @@ function ListeTelephone({ day, onValidate }: { day: MatchDay; onValidate: (match
     }
 
     return (
-        <div data-liste-telephone className="md:hidden">
+        <div data-liste-telephone className="@min-[39rem]/tuile:hidden">
             {creneaux.map(({ heure, matches }) => (
                 <div key={heure} data-groupe-creneau>
                     {/*
