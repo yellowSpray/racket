@@ -4,16 +4,10 @@ import { columns as playerColumns } from "@/components/admin/players/PlayerColum
 import { DataTable } from "@/components/admin/players/PlayerTable";
 import { usePlayers } from "@/contexts/PlayersContext";
 import { useEvent } from "@/contexts/EventContext";
-import { useHeaderSlot, useHeaderActions } from "@/contexts/HeaderSlotContext";
+import { useHeaderSlot } from "@/contexts/HeaderSlotContext";
 import type { PlayerType } from "@/types/player";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { FiltresJoueurs } from "@/components/admin/players/FiltresJoueurs";
+import { repondAuFiltre, type FiltreJoueurs as Filtre } from "@/lib/filtresJoueurs";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -26,16 +20,15 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search01Icon, Cancel01Icon } from "hugeicons-react";
+import { Delete02Icon } from "hugeicons-react";
+import { ACTION_DE_PAGE, ACTION_ROUGE, ACTION_VERTE } from "@/lib/actionPage";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export function AdminPlayers() {
 
     const { players, addPlayer, updatePlayer, deletePlayer, updatePaymentStatus, updateAbsences, loading, fetchPlayer } = usePlayers();
     const { currentRound } = useEvent();
-    const [statusFilter, setStatusFilter] = useState<string>("all")
-    const [searchFilter, setSearchFilter] = useState("")
+    const [statusFilter, setStatusFilter] = useState<Filtre>("all")
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [deleting, setDeleting] = useState(false)
     const [editPlayer, setEditPlayer] = useState<PlayerType | null>(null)
@@ -53,88 +46,92 @@ export function AdminPlayers() {
         fetchPlayer()
     }, [fetchPlayer])
 
-    const filteredPlayers = useMemo(() => {
-        if (statusFilter === "all") return players
-        return players.filter(player => {
-            if (!player.status || player.status.length === 0) return false
-            switch (statusFilter) {
-                case "active": return player.status.includes("active")
-                case "inactive": return player.status.includes("inactive")
-                case "member": return player.status.includes("member")
-                case "visitor": return player.status.includes("visitor")
-                default: return true
-            }
-        })
-    }, [players, statusFilter])
+    /*
+     * Une seule regle pour filtrer et pour compter, `repondAuFiltre` : deux
+     * regles jumelles finiraient par diverger, et une pastille qui annonce un
+     * nombre different de ce que la liste montre est pire que pas de nombre.
+     */
+    const filteredPlayers = useMemo(
+        () => players.filter(joueur => repondAuFiltre(joueur, statusFilter)),
+        [players, statusFilter],
+    )
 
+    /*
+     * LA LIGNE DE TITRE PORTE TOUT CE QUI AGIT SUR LA LISTE : les filtres,
+     * puis les actions poussees a droite. Le bouton d'ajout vivait dans le
+     * header, qui porte ce qui vaut pour toute l'application, pas ce qui vaut
+     * pour une page. La suppression le suit : deux actions de la meme liste a
+     * deux endroits differents auraient ete plus deroutantes qu'un
+     * deplacement.
+     *
+     * LA RECHERCHE DE LA PAGE EST RETIREE. Elle filtrait sur le nom, l'email et
+     * le telephone ; c'est desormais le champ du header qui s'en chargera, une
+     * fois qu'il aura un index global a interroger. D'ici la, cet ecran n'a
+     * plus de recherche du tout, et c'est une dette assumee, pas un oubli.
+     */
     const headerPortal = useHeaderSlot(
         <>
             <h3 className="text-lg font-semibold">Joueurs</h3>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                    <SelectValue placeholder="Filtre" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectGroup>
-                        <SelectItem value="all">Tous</SelectItem>
-                        <SelectItem value="active">Actif</SelectItem>
-                        <SelectItem value="inactive">Inactif</SelectItem>
-                        <SelectItem value="member">Membre</SelectItem>
-                        <SelectItem value="visitor">Non Membre</SelectItem>
-                    </SelectGroup>
-                </SelectContent>
-            </Select>
-            <span className="text-sm text-muted-foreground shrink-0">
-                {filteredPlayers.length} joueur{filteredPlayers.length > 1 ? "s" : ""}
-            </span>
-            <div className="relative flex-1 max-w-sm mx-auto">
-                <Search01Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                    value={searchFilter}
-                    onChange={(e) => setSearchFilter(e.target.value)}
-                    placeholder="Rechercher par nom, email ou téléphone..."
-                    className="pl-9 pr-9 rounded-full h-10"
-                />
-                {searchFilter && (
-                    <button
-                        onClick={() => setSearchFilter("")}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                        <Cancel01Icon className="h-4 w-4" />
-                    </button>
+
+            <FiltresJoueurs
+                joueurs={players}
+                valeur={statusFilter}
+                onChange={setStatusFilter}
+            />
+
+            {/* Pousse les actions sur le bord droit de la colonne. */}
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+                {selectedIds.length > 0 && (
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            {/*
+                              * Neutre au repos, rouge au survol : le rouge d'une
+                              * suppression n'a pas a crier tant que personne ne
+                              * l'a designee. Le nombre reste, lui, meme reduit
+                              * au pictogramme : un bouton qui ne dit pas combien
+                              * de lignes il emporte est un piege, et c'est la
+                              * seule action irreversible de la page.
+                              */}
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={deleting}
+                                aria-label={`Supprimer ${selectedIds.length} joueur${selectedIds.length > 1 ? "s" : ""}`}
+                                title="Supprimer la selection"
+                                className={`${ACTION_DE_PAGE} ${ACTION_ROUGE} w-auto gap-1 px-2 has-[>svg]:px-2`}
+                            >
+                                <Delete02Icon size={16} strokeWidth={2} />
+                                <span data-libelle className="sr-only sm:not-sr-only">Supprimer</span>
+                                <span className="tabular-nums">({selectedIds.length})</span>
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Supprimer {selectedIds.length} joueur{selectedIds.length > 1 ? "s" : ""} ?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Ces joueurs seront retirés de l'événement courant. Cette action est irréversible.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteSelected}>
+                                    Supprimer
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 )}
+                <EditPlayers
+                    mode="create"
+                    onSave={addPlayer}
+                    size="sm"
+                    variant="outline"
+                    className={`${ACTION_DE_PAGE} ${ACTION_VERTE}`}
+                />
             </div>
         </>
     )
 
-    const actionsPortal = useHeaderActions(
-        <>
-            {selectedIds.length > 0 && (
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm" disabled={deleting}>
-                            Supprimer ({selectedIds.length})
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Supprimer {selectedIds.length} joueur{selectedIds.length > 1 ? "s" : ""} ?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Ces joueurs seront retirés de l'événement courant. Cette action est irréversible.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Annuler</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDeleteSelected}>
-                                Supprimer
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            )}
-            <EditPlayers mode="create" onSave={addPlayer} size="lg" />
-        </>
-    )
 
     if (loading && players.length === 0) {
         return <PlayersSkeleton />
@@ -143,13 +140,16 @@ export function AdminPlayers() {
     return (
         <>
             {headerPortal}
-            {actionsPortal}
             <div className="flex flex-col h-full min-h-0">
+                {/*
+                  * Plus de `globalFilter` pose d'ici : la recherche de la page
+                  * est retiree, celle du header la remplacera quand elle aura
+                  * un index a interroger. `DataTable` garde sa prop, c'est par
+                  * elle que la recherche globale pilotera la liste.
+                  */}
                 <DataTable
                     columns={columns}
                     data={filteredPlayers as PlayerType[]}
-                    globalFilter={searchFilter}
-                    onGlobalFilterChange={setSearchFilter}
                     onSelectionChange={setSelectedIds}
                     onRowClick={(player) => setEditPlayer(player as PlayerType)}
                 />

@@ -46,6 +46,9 @@ interface EditPlayersProps {
     open?: boolean
     onOpenChange?: (open: boolean) => void
     size?: "sm" | "default" | "lg" | "icon"
+    /** Habillage du bouton d'ouverture, quand l'appelant le pose sur une ligne de titre. */
+    variant?: "default" | "outline"
+    className?: string
 }
 
 const initialFormData: Partial<PlayerType> = {
@@ -62,7 +65,7 @@ const initialFormData: Partial<PlayerType> = {
 
 const STEPS = [1, 2, 3]
 
-export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChange, onAbsencesChange, open: controlledOpen, onOpenChange, size = "sm" }: EditPlayersProps) {
+export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChange, onAbsencesChange, open: controlledOpen, onOpenChange, size = "sm", variant = "default", className }: EditPlayersProps) {
     const [currentStep, setCurrentStep] = useState<number>(1)
     const [internalOpen, setInternalOpen] = useState(false)
 
@@ -431,9 +434,23 @@ export function EditPlayers ({ mode = "edit", playerData, onSave, onPaymentChang
         <Dialog open={open} onOpenChange={setOpen}>
             {!isControlled && (
                 <DialogTrigger asChild>
-                    <Button variant="default" size={size}>
+                    {/*
+                      * Le libelle tombe sous 640 px : la ligne de titre y porte
+                      * deja le titre, le filtre et la recherche, et deux
+                      * boutons ecrits l'envoyaient a la ligne. `aria-label` le
+                      * garde pour un lecteur d'ecran, `title` pour la souris,
+                      * et le retrait se resserre puisqu'il n'entoure plus que
+                      * le pictogramme.
+                      */}
+                    <Button
+                        variant={variant}
+                        size={size}
+                        aria-label="Ajouter un joueur"
+                        title="Ajouter un joueur"
+                        className={className}
+                    >
                         <Add01Icon size="16" strokeWidth={2}/>
-                        Ajouter
+                        <span data-libelle className="sr-only sm:not-sr-only">Ajouter</span>
                     </Button>
                 </DialogTrigger>
             )}
