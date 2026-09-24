@@ -1,7 +1,8 @@
 import { flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type SortingState, type RowSelectionState } from "@tanstack/react-table";
 import type { ColumnDef, RowData } from "@tanstack/react-table";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { BLOC_DEFILANT } from "@/lib/scrollArea";
 import { ArrowUpDownIcon, ArrowUp01Icon, ArrowDown01Icon } from "hugeicons-react";
 import { useState } from "react";
 
@@ -55,7 +56,17 @@ export function DataTable<TData extends { id: string }, TValue>({
     })
 
     return (
-        <ScrollArea className="rounded-md border max-h-full" type="auto">
+        /*
+         * `BLOC_DEFILANT`, ET C'EST LUI QUI REND LA TABLE PARCOURABLE.
+         *
+         * Le composant `Table` pose deja son propre conteneur en
+         * `overflow-x-auto`. Mais sans ce correctif, l'enveloppe interne de
+         * Radix est en `display: table` et se dimensionne sur son contenu :
+         * ce conteneur faisait donc 1093 px au lieu de 329, il n'avait rien a
+         * borner, et les colonnes de droite etaient tout simplement
+         * inaccessibles. Aucun geste, ni molette ni doigt, ne les atteignait.
+         */
+        <ScrollArea className={`rounded-md border max-h-full ${BLOC_DEFILANT}`} type="auto">
             <Table className="w-full">
                 <TableHeader className="sticky top-0 z-10 bg-gray-100 border-b border-gray-200">
                     {table.getHeaderGroups().map((headerGroup) => (
