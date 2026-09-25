@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { BARRE_MASQUEE_TELEPHONE } from "@/lib/scrollArea"
+import { terrainsDesMatchs } from "@/lib/paginationTerrains"
 import { MatchCell } from "./MatchCell"
 import { calculateTimeSlots, validateMatchSlot, type PlayerConstraints } from "@/lib/matchScheduler"
 import { matchesPlayerSearch, normalizeSearch } from "@/lib/matchSearch"
@@ -52,6 +53,17 @@ interface MatchScheduleGridProps {
      * la série est le but.
      */
     date?: string | null
+    /**
+     * Les terrains que la table affiche.
+     *
+     * La page les choisit : elle seule connaît la largeur de sa colonne, et
+     * c'est sa ligne de titre qui porte les deux flèches. Omis, tous les
+     * terrains sont rendus, ce que fait l'assistant de création.
+     *
+     * La liste par terrain, elle, les montre toujours tous : elle empile, donc
+     * rien ne la contraint en largeur.
+     */
+    terrainsVisibles?: string[] | null
 }
 
 function formatDateLabel(dateStr: string): string {
@@ -191,6 +203,7 @@ function ListeParTerrain({
     )
 }
 
+
 export function MatchScheduleGrid({
     matches,
     event: _event,
@@ -202,6 +215,7 @@ export function MatchScheduleGrid({
     playerConstraints,
     searchQuery = "",
     date: dateChoisie = null,
+    terrainsVisibles = null,
 }: MatchScheduleGridProps) {
     const hasSearch = normalizeSearch(searchQuery).length > 0
     const dndEnabled = !!onMatchDrop
@@ -225,15 +239,12 @@ export function MatchScheduleGrid({
         )
     }, [round?.estimated_match_duration, round?.start_time, round?.end_time])
 
-    const courts = useMemo(() => {
-        const courtsSet = new Set<string>()
-        matches.forEach(m => {
-            if (m.court_number) courtsSet.add(m.court_number)
-        })
-        const sorted = Array.from(courtsSet).sort()
-        if (sorted.length > 0) return sorted
-        return Array.from({ length: round?.number_of_courts ?? 1 }, (_, i) => `Terrain ${i + 1}`)
-    }, [matches, round?.number_of_courts])
+    const courts = useMemo(
+        () => terrainsDesMatchs(matches, round?.number_of_courts ?? 1),
+        [matches, round?.number_of_courts],
+    )
+
+    const terrainsDeLaTable = terrainsVisibles ?? courts
 
     const { sortedDates, matchesByDate } = useMemo(() => {
         const byDate = new Map<string, Match[]>()
@@ -346,7 +357,7 @@ export function MatchScheduleGrid({
                                     pendingScores={pendingScores}
                                     onScoreChange={onScoreChange}
                                 />
-                                <div className="hidden overflow-x-auto border-gray-200 border-1 rounded-xl sm:block">
+                                <div className="hidden border-gray-200 border-1 rounded-xl sm:block">
                                     <Table>
                                         <TableHeader>
                                             {/*
@@ -358,7 +369,7 @@ export function MatchScheduleGrid({
                                               */}
                                             {!dateChoisie && (
                                                 <TableRow className="border-b border-gray-200">
-                                                    <TableHead colSpan={courts.length + 1} className="text-center text-[10px] font-semibold uppercase">
+                                                    <TableHead colSpan={terrainsDeLaTable.length + 1} className="text-center text-[10px] font-semibold uppercase">
                                                         {label}
                                                     </TableHead>
                                                 </TableRow>
@@ -367,7 +378,7 @@ export function MatchScheduleGrid({
                                                 <TableHead className="w-12 text-center font-bold text-xs border-r border-gray-200">
                                                     Heure
                                                 </TableHead>
-                                                {courts.map(court => (
+                                                {terrainsDeLaTable.map(court => (
                                                     <TableHead
                                                         key={court}
                                                         className="text-center font-bold min-w-[140px] border-r border-gray-200 last:border-r-0"
@@ -383,7 +394,7 @@ export function MatchScheduleGrid({
                                                     <TableCell className="text-center font-medium text-xs px-1 py-1 w-12">
                                                         {time}
                                                     </TableCell>
-                                                    {courts.map(court => {
+                                                    {terrainsDeLaTable.map(court => {
                                                         const m = findMatch(dayMatches, time, court)
                                                         return (
                                                             <TableCell
@@ -433,9 +444,6 @@ export function MatchScheduleGrid({
                                         </TableBody>
                                     </Table>
                                 </div>
-                                <p className="text-sm text-gray-500 mt-2">
-                                    {dayMatches.length} match{dayMatches.length > 1 ? 's' : ''} programmé{dayMatches.length > 1 ? 's' : ''}
-                                </p>
                             </div>
                         )
                     })}

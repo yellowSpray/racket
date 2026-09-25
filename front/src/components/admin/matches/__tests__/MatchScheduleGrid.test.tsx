@@ -90,19 +90,14 @@ describe('MatchScheduleGrid', () => {
     expect(screen.getByText(/mars/i)).toBeInTheDocument()
   })
 
-  it('displays match count text', () => {
+  /*
+   * Le compte sous la table a ete retire : la grille montre deja ses matchs,
+   * et cette ligne poussait le bas de page d'autant.
+   */
+  it('n\'ecrit plus le compte des matchs sous la table', () => {
     const matches = [makeMatch()]
     render(<MatchScheduleGrid matches={matches} event={makeEvent()} round={makeRound()} />)
-    expect(screen.getByText('1 match programmé')).toBeInTheDocument()
-  })
-
-  it('displays plural match count text for multiple matches', () => {
-    const matches = [
-      makeMatch({ id: 'm1', court_number: 'Terrain 1', match_time: '19:00:00' }),
-      makeMatch({ id: 'm2', court_number: 'Terrain 2', match_time: '19:00:00' }),
-    ]
-    render(<MatchScheduleGrid matches={matches} event={makeEvent()} round={makeRound()} />)
-    expect(screen.getByText('2 matchs programmés')).toBeInTheDocument()
+    expect(screen.queryByText(/match(s)? programmé/)).not.toBeInTheDocument()
   })
 
   it('displays court names from matches', () => {
@@ -232,6 +227,49 @@ describe('MatchScheduleGrid', () => {
     it('empile toutes les journees quand aucune n\'est demandee', () => {
       render(<MatchScheduleGrid matches={matches} event={makeEvent()} round={makeRound()} />)
       expect(screen.getAllByTestId('match-cell').length).toBeGreaterThanOrEqual(2)
+    })
+  })
+
+  /*
+   * La page choisit les terrains que la table affiche : elle seule connait la
+   * largeur de sa colonne, et ses deux fleches vivent sur la ligne du titre.
+   * La liste par terrain, elle, les montre tous, puisqu'elle empile.
+   */
+  describe('terrains visibles', () => {
+    const matches = [
+      makeMatch({ id: 'm1', court_number: 'Terrain 1' }),
+      makeMatch({ id: 'm2', court_number: 'Terrain 2' }),
+      makeMatch({ id: 'm3', court_number: 'Terrain 3' }),
+    ]
+
+    it('ne rend dans la table que les terrains demandes', () => {
+      render(
+        <MatchScheduleGrid
+          matches={matches}
+          event={makeEvent()}
+          round={makeRound({ number_of_courts: 3 })}
+          terrainsVisibles={['Terrain 1', 'Terrain 2']}
+        />
+      )
+      expect(dansLaTable().getByText('Terrain 1')).toBeInTheDocument()
+      expect(dansLaTable().queryByText('Terrain 3')).not.toBeInTheDocument()
+    })
+
+    it('garde tous les terrains dans la liste', () => {
+      render(
+        <MatchScheduleGrid
+          matches={matches}
+          event={makeEvent()}
+          round={makeRound({ number_of_courts: 3 })}
+          terrainsVisibles={['Terrain 1', 'Terrain 2']}
+        />
+      )
+      expect(dansLaListe().getByText('Terrain 3')).toBeInTheDocument()
+    })
+
+    it('les rend tous quand la page n\'en demande aucun', () => {
+      render(<MatchScheduleGrid matches={matches} event={makeEvent()} round={makeRound({ number_of_courts: 3 })} />)
+      expect(dansLaTable().getByText('Terrain 3')).toBeInTheDocument()
     })
   })
 })
