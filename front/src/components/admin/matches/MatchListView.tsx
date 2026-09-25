@@ -9,8 +9,10 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { BARRE_MASQUEE_TELEPHONE } from "@/lib/scrollArea"
 import { ArrowDown01Icon, ArrowUp01Icon } from "hugeicons-react"
 import { matchesPlayerSearch } from "@/lib/matchSearch"
+import { PastilleDeScore } from "./PastilleDeScore"
 
 interface MatchListViewProps {
     matches: Match[]
@@ -20,6 +22,8 @@ interface MatchListViewProps {
     pendingScores?: Map<string, string>
     onScoreChange?: (matchId: string, value: string) => void
     playerAbsences?: Map<string, string[]>
+    /** La journée affichée, choisie dans la barre de dates de la page. */
+    date?: string | null
 }
 
 const SCORE_OPTIONS = [
@@ -30,14 +34,6 @@ const SCORE_OPTIONS = [
     { value: "3", label: "3" },
     { value: "ABS", label: "ABS" },
 ]
-
-function formatDateLabel(dateStr: string): string {
-    const date = new Date(dateStr + "T12:00:00")
-    return date.toLocaleDateString('fr-FR', {
-        day: 'numeric',
-        month: 'short',
-    }).replace('.', '')
-}
 
 function formatTime(matchTime: string | null): string {
     if (!matchTime) return "-"
@@ -60,12 +56,20 @@ function buildRestrictionsMap(players: PlayerType[]): Map<string, { arrival: str
     return map
 }
 
-function RestrictionDisplay({ restrictions, playerId }: { restrictions: Map<string, { arrival: string; departure: string }>; playerId: string | undefined }) {
-    if (!playerId) return <span>-</span>
+/**
+ * Les heures d'arrivee et de depart d'un joueur.
+ *
+ * `muette` : dans la liste, une restriction absente n'ecrit rien. Le tiret est
+ * une reponse a une colonne qui pose la question ; sans colonne, il n'y a pas
+ * de question.
+ */
+function RestrictionDisplay({ restrictions, playerId, muette = false }: { restrictions: Map<string, { arrival: string; departure: string }>; playerId: string | undefined; muette?: boolean }) {
+    const rien = muette ? null : <span>-</span>
+    if (!playerId) return rien
     const r = restrictions.get(playerId)
-    if (!r || (!r.arrival && !r.departure)) return <span>-</span>
+    if (!r || (!r.arrival && !r.departure)) return rien
     return (
-        <span className="inline-flex items-center gap-1">
+        <span className={`inline-flex shrink-0 items-center gap-1 ${muette ? "text-xs text-muted-foreground" : ""}`}>
             {r.arrival && (
                 <span className="inline-flex items-center gap-0.5">
                     <ArrowDown01Icon className="h-3 w-3" />{r.arrival}
@@ -156,7 +160,90 @@ function ScoreDisplay({ match }: { match: Match }) {
     return <span className="font-semibold text-blue-600">{match.score}</span>
 }
 
-export function MatchListView({ matches, players, searchQuery = "", editMode, pendingScores, onScoreChange, playerAbsences }: MatchListViewProps) {
+
+/** Le tag d'un joueur annonce absent ce jour-la. */
+function TagAbsent() {
+    return <span className="shrink-0 rounded bg-amber-100 px-1 text-[10px] font-semibold text-amber-600">Abs</span>
+}
+
+/**
+ * Absent veut dire : annonce indisponible ce jour-la, et le match n'a pas
+ * encore de score. Une fois le score pose, l'absence est dans le resultat.
+ */
+function estAbsent(match: Match, playerId: string, absences?: Map<string, string[]>): boolean {
+    return !match.score && !!absences?.get(playerId)?.includes(match.match_date)
+}
+
+/**
+ * LA VUE PAR BOXE SUR TELEPHONE.
+ *
+ * Les huit colonnes de la table demandent 740 px pour que les deux noms
+ * gardent 150 px chacun ; la colonne de contenu n'en offre 753 qu'a partir de
+ * 1024 px d'ecran. En dessous, les noms se coupent, et en pourcentages ils se
+ * chevauchaient carrement.
+ *
+ * Les deux noms passent donc l'un sous l'autre, en entier, avec la restriction
+ * collee au joueur qu'elle concerne plutot que dans deux colonnes separees :
+ * « des 19:30 » sous un nom se lit, la meme information dans une colonne
+ * « Restr. » trois cases plus loin demande de compter les colonnes.
+ */
+function ListeParBoxe({
+    matchs, restrictions, editMode, pendingScores, onScoreChange, playerAbsences,
+}: {
+    matchs: Match[]
+    restrictions: Map<string, { arrival: string; departure: string }>
+    date?: string | null
+    editMode?: boolean
+    pendingScores?: Map<string, string>
+    onScoreChange?: (matchId: string, value: string) => void
+    playerAbsences?: Map<string, string[]>
+}) {
+    return (
+        <div data-liste-par-boxe className="lg:hidden">
+            {matchs.map((match, i) => {
+                const joueurs = [
+                    { id: match.player1_id, p: match.player1, gagnant: match.winner_id === match.player1_id },
+                    { id: match.player2_id, p: match.player2, gagnant: match.winner_id === match.player2_id },
+                ]
+                return (
+                    <div
+                        key={match.id}
+                        data-ligne-match
+                        className={`flex items-center gap-3 py-2.5 ${i === matchs.length - 1 ? "" : "border-b border-border"}`}
+                    >
+                        <div className="min-w-0 flex-1 text-sm leading-5">
+                            {joueurs.map(({ id, p, gagnant }) => (
+                                <span key={id} data-joueur className="flex min-w-0 items-center gap-1.5">
+                                    <span className={`truncate ${gagnant ? "font-semibold" : ""}`}>
+                                        {formatPlayerName(p)}
+                                    </span>
+                                    <RestrictionDisplay restrictions={restrictions} playerId={id} muette />
+                                    {estAbsent(match, id, playerAbsences) && <TagAbsent />}
+                                </span>
+                            ))}
+                            <span data-situation className="block truncate text-xs text-muted-foreground">
+                                {[formatTime(match.match_time), match.court_number].filter(Boolean).join(" \u00b7 ")}
+                            </span>
+                        </div>
+                        <div className="shrink-0">
+                            {editMode ? (
+                                <ScoreEditor
+                                    matchId={match.id}
+                                    scoreValue={pendingScores?.get(match.id)}
+                                    onScoreChange={onScoreChange}
+                                />
+                            ) : (
+                                <PastilleDeScore match={match} />
+                            )}
+                        </div>
+                    </div>
+                )
+            })}
+        </div>
+    )
+}
+
+export function MatchListView({ matches, players, searchQuery = "", editMode, pendingScores, onScoreChange, playerAbsences, date = null }: MatchListViewProps) {
     const restrictions = buildRestrictionsMap(players)
 
     // Meme regle de comparaison que la vue par terrain, pour que les deux vues
@@ -170,11 +257,12 @@ export function MatchListView({ matches, players, searchQuery = "", editMode, pe
         if (!matchesByDate.has(date)) matchesByDate.set(date, [])
         matchesByDate.get(date)!.push(match)
     }
-    const sortedDates = Array.from(matchesByDate.keys()).sort()
+    const toutesLesDates = Array.from(matchesByDate.keys()).sort()
+    const sortedDates = date ? toutesLesDates.filter(d => d === date) : toutesLesDates
 
     return (
         <div className="flex flex-col h-full min-h-0 overflow-hidden">
-            <ScrollArea className="flex-1 min-h-0" type="auto">
+            <ScrollArea className={`flex-1 min-h-0 ${BARRE_MASQUEE_TELEPHONE}`} type="auto">
                 <div className="space-y-6">
                     {sortedDates.map(date => {
                         const dayMatches = matchesByDate.get(date) || []
@@ -196,79 +284,113 @@ export function MatchListView({ matches, players, searchQuery = "", editMode, pe
                                             .sort((a, b) => (a.match_time || "").localeCompare(b.match_time || ""))
 
                                         return (
-                                            <div key={boxName} className="overflow-x-auto border border-gray-200 rounded-xl">
-                                                <Table className="table-fixed w-full">
-                                                    <colgroup><col className="w-[8%]" /><col className="w-[7%]" /><col className="w-[18%]" /><col className="w-[9%]" /><col className="w-[4%]" /><col className="w-[18%]" /><col className="w-[9%]" /><col className="w-[7%]" /><col className="w-[10%]" /><col className="w-[10%]" /></colgroup>
-                                                    <TableHeader>
-                                                        <TableRow className="border-b border-gray-200 bg-gray-100 font-bold text-xs">
-                                                            <TableHead className="font-bold text-center">Date</TableHead>
-                                                            <TableHead className="font-bold text-center">Box</TableHead>
-                                                            <TableHead className="font-bold">Joueur A</TableHead>
-                                                            <TableHead className="font-bold text-center">Restr.</TableHead>
-                                                            <TableHead className="font-bold text-center">vs</TableHead>
-                                                            <TableHead className="font-bold">Joueur B</TableHead>
-                                                            <TableHead className="font-bold text-center">Restr.</TableHead>
-                                                            <TableHead className="font-bold text-center">Heure</TableHead>
-                                                            <TableHead className="font-bold text-center">Terrain</TableHead>
-                                                            <TableHead className="font-bold text-center">Score</TableHead>
-                                                        </TableRow>
-                                                    </TableHeader>
-                                                    <TableBody>
-                                                        {boxMatches.map(match => {
-                                                            const isP1Winner = match.winner_id === match.player1_id
-                                                            const isP2Winner = match.winner_id === match.player2_id
-                                                            const p1Absent = !match.score && !!playerAbsences?.get(match.player1_id)?.includes(match.match_date)
-                                                            const p2Absent = !match.score && !!playerAbsences?.get(match.player2_id)?.includes(match.match_date)
+                                            <div key={boxName}>
+                                                {/*
+                                                  * LA BOXE EST UN INTERTITRE, PLUS UNE COLONNE. Elle
+                                                  * etait repetee a l'identique sur chaque rangee d'une
+                                                  * table qui ne contient qu'elle. La date a disparu
+                                                  * pour la meme raison : la page n'affiche qu'une
+                                                  * journee et sa barre la porte.
+                                                  */}
+                                                <div className="flex items-center gap-2 pb-1 pt-1 text-xs font-semibold text-muted-foreground">
+                                                    {boxName}
+                                                    <span aria-hidden className="h-px flex-1 bg-border" />
+                                                </div>
 
-                                                            return (
-                                                                <TableRow key={match.id} className={`border-b border-gray-200 last:border-b-0 ${p1Absent || p2Absent ? "bg-amber-50" : ""}`}>
-                                                                    <TableCell className="text-center text-sm">
-                                                                        {formatDateLabel(date)}
-                                                                    </TableCell>
-                                                                    <TableCell className="text-center text-sm font-medium">
-                                                                        {boxName}
-                                                                    </TableCell>
-                                                                    <TableCell className={isP1Winner ? "font-bold text-green-600" : ""}>
-                                                                        <span className="flex items-center gap-1.5">
-                                                                            {formatPlayerName(match.player1)}
-                                                                            {p1Absent && <span className="text-[10px] font-semibold text-amber-600 bg-amber-100 px-1 rounded">Abs</span>}
-                                                                        </span>
-                                                                    </TableCell>
-                                                                    <TableCell className="text-center text-xs text-gray-500">
-                                                                        <RestrictionDisplay restrictions={restrictions} playerId={match.player1_id} />
-                                                                    </TableCell>
-                                                                    <TableCell className="text-center text-gray-400">vs</TableCell>
-                                                                    <TableCell className={isP2Winner ? "font-bold text-green-600" : ""}>
-                                                                        <span className="flex items-center gap-1.5">
-                                                                            {formatPlayerName(match.player2)}
-                                                                            {p2Absent && <span className="text-[10px] font-semibold text-amber-600 bg-amber-100 px-1 rounded">Abs</span>}
-                                                                        </span>
-                                                                    </TableCell>
-                                                                    <TableCell className="text-center text-xs text-gray-500">
-                                                                        <RestrictionDisplay restrictions={restrictions} playerId={match.player2_id} />
-                                                                    </TableCell>
-                                                                    <TableCell className="text-center">
-                                                                        {formatTime(match.match_time)}
-                                                                    </TableCell>
-                                                                    <TableCell className="text-center">
-                                                                        {match.court_number || "-"}
-                                                                    </TableCell>
-                                                                    <TableCell className="text-center">
-                                                                        {editMode ? (
-                                                                            <ScoreEditor
-                                                                                matchId={match.id}
-                                                                                scoreValue={pendingScores?.get(match.id)}
-                                                                                onScoreChange={onScoreChange}
-                                                                            />
-                                                                        ) : (
-                                                                            <ScoreDisplay match={match} />
-                                                                        )}
-                                                                    </TableCell>
-                                                                </TableRow>
-                                                            )
-                                                        })}
-                                                    </TableBody>
-                                                </Table>
+                                                <ListeParBoxe
+                                                    matchs={boxMatches}
+                                                    restrictions={restrictions}
+                                                    date={date}
+                                                    editMode={editMode}
+                                                    pendingScores={pendingScores}
+                                                    onScoreChange={onScoreChange}
+                                                    playerAbsences={playerAbsences}
+                                                />
+
+                                                <div className="hidden overflow-x-auto rounded-xl border border-gray-200 lg:block">
+                                                    <Table className="table-fixed w-full">
+                                                        {/*
+                                                          * DES LARGEURS FIXES POUR CE QUI A UNE TAILLE
+                                                          * FIXE, une seule colonne elastique. En
+                                                          * pourcentages, un nom recevait 18 % de la
+                                                          * table, soit 59 px a 375 : les mots sortaient
+                                                          * de leur cellule et se chevauchaient, 224
+                                                          * debordements mesures. Meme lecon que le
+                                                          * tableau des matchs du tableau de bord.
+                                                          */}
+                                                        <colgroup>
+                                                            <col />
+                                                            <col className="w-[72px]" />
+                                                            <col className="w-[32px]" />
+                                                            <col />
+                                                            <col className="w-[72px]" />
+                                                            <col className="w-[64px]" />
+                                                            <col className="w-[96px]" />
+                                                            <col className="w-[104px]" />
+                                                        </colgroup>
+                                                        <TableHeader>
+                                                            <TableRow className="border-b border-gray-200 bg-gray-100 font-bold text-xs">
+                                                                <TableHead className="font-bold">Joueur A</TableHead>
+                                                                <TableHead className="font-bold text-center">Restr.</TableHead>
+                                                                <TableHead className="font-bold text-center">vs</TableHead>
+                                                                <TableHead className="font-bold">Joueur B</TableHead>
+                                                                <TableHead className="font-bold text-center">Restr.</TableHead>
+                                                                <TableHead className="font-bold text-center">Heure</TableHead>
+                                                                <TableHead className="font-bold text-center">Terrain</TableHead>
+                                                                <TableHead className="font-bold text-center">Score</TableHead>
+                                                            </TableRow>
+                                                        </TableHeader>
+                                                        <TableBody>
+                                                            {boxMatches.map(match => {
+                                                                const isP1Winner = match.winner_id === match.player1_id
+                                                                const isP2Winner = match.winner_id === match.player2_id
+                                                                const p1Absent = estAbsent(match, match.player1_id, playerAbsences)
+                                                                const p2Absent = estAbsent(match, match.player2_id, playerAbsences)
+
+                                                                return (
+                                                                    <TableRow key={match.id} className={`border-b border-gray-200 last:border-b-0 ${p1Absent || p2Absent ? "bg-amber-50" : ""}`}>
+                                                                        <TableCell className={isP1Winner ? "font-bold text-green-600" : ""}>
+                                                                            <span className="flex items-center gap-1.5">
+                                                                                <span className="truncate">{formatPlayerName(match.player1)}</span>
+                                                                                {p1Absent && <TagAbsent />}
+                                                                            </span>
+                                                                        </TableCell>
+                                                                        <TableCell className="text-center text-xs text-gray-500">
+                                                                            <RestrictionDisplay restrictions={restrictions} playerId={match.player1_id} />
+                                                                        </TableCell>
+                                                                        <TableCell className="text-center text-gray-400">vs</TableCell>
+                                                                        <TableCell className={isP2Winner ? "font-bold text-green-600" : ""}>
+                                                                            <span className="flex items-center gap-1.5">
+                                                                                <span className="truncate">{formatPlayerName(match.player2)}</span>
+                                                                                {p2Absent && <TagAbsent />}
+                                                                            </span>
+                                                                        </TableCell>
+                                                                        <TableCell className="text-center text-xs text-gray-500">
+                                                                            <RestrictionDisplay restrictions={restrictions} playerId={match.player2_id} />
+                                                                        </TableCell>
+                                                                        <TableCell className="text-center">
+                                                                            {formatTime(match.match_time)}
+                                                                        </TableCell>
+                                                                        <TableCell className="truncate text-center">
+                                                                            {match.court_number || "-"}
+                                                                        </TableCell>
+                                                                        <TableCell className="text-center">
+                                                                            {editMode ? (
+                                                                                <ScoreEditor
+                                                                                    matchId={match.id}
+                                                                                    scoreValue={pendingScores?.get(match.id)}
+                                                                                    onScoreChange={onScoreChange}
+                                                                                />
+                                                                            ) : (
+                                                                                <ScoreDisplay match={match} />
+                                                                            )}
+                                                                        </TableCell>
+                                                                    </TableRow>
+                                                                )
+                                                            })}
+                                                        </TableBody>
+                                                    </Table>
+                                                </div>
                                             </div>
                                         )
                                     })}
