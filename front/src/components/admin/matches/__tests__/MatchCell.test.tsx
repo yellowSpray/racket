@@ -39,9 +39,23 @@ describe('MatchCell', () => {
     expect(screen.getByText('Bob Dupont')).toBeInTheDocument()
   })
 
-  it('displays "vs" between players', () => {
+  /*
+   * Les deux noms sont empiles, dans la table comme dans la liste : cote a
+   * cote ils ne se coupaient qu'apres avoir ete comptes, et une cellule
+   * reclamait 292 px. Le « vs » part avec l'alignement, deux lignes
+   * superposees disent deja qu'elles s'opposent.
+   */
+  it('empile les deux noms et se passe du « vs »', () => {
     render(<MatchCell match={makeMatch()} />)
-    expect(screen.getByText('vs')).toBeInTheDocument()
+    const noms = [...document.querySelectorAll('[data-joueur]')]
+    expect(noms.map(n => n.textContent)).toEqual(['Alice Martin', 'Bob Dupont'])
+    for (const n of noms) expect(n.className).toContain('block')
+    expect(screen.queryByText('vs')).not.toBeInTheDocument()
+  })
+
+  it('marque d\'un tiret un match sans resultat', () => {
+    render(<MatchCell match={makeMatch()} />)
+    expect(screen.getByText('-')).toBeInTheDocument()
   })
 
   it('displays "?" when player1 is missing', () => {

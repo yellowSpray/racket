@@ -152,27 +152,40 @@ export function MatchCell({ match, editMode, scoreValue, onScoreChange, empile }
         )
     }
 
+    /*
+     * LES DEUX NOMS SONT EMPILÉS, dans la table comme dans la liste.
+     *
+     * Côte à côte, ils ne se coupaient qu'après avoir été comptés : une
+     * cellule réclamait 292 px, donc 924 px de table pour trois terrains, et
+     * la colonne de contenu n'en offre 1169 qu'à 1440 px d'écran. Empilés, la
+     * cellule tombe à 205, et trois terrains tiennent dès 768.
+     *
+     * Le « vs » part avec l'alignement : deux lignes superposées disent déjà
+     * qu'elles s'opposent. En saisie, les deux sélecteurs s'empilent de même,
+     * chacun sur la ligne du joueur qu'il note.
+     */
     return (
-        <div className="text-xs p-1.5 flex items-center justify-center gap-1 w-full min-w-0">
-            {/* Badge groupe */}
+        <div className="flex w-full min-w-0 items-center gap-1.5 p-1.5 text-xs">
             {groupName && (
-                <Badge variant="default" className="text-[10px] px-1 py-0 shrink-0">
+                <Badge variant="default" className="shrink-0 px-1 py-0 text-[10px]">
                     {groupName}
                 </Badge>
             )}
 
-            {/* Joueur 1 */}
-            <span className={`flex-1 min-w-0 truncate text-right ${isP1Winner ? 'font-bold text-green-600' : ''}`}>
-                {formatPlayerName(p1)}
-            </span>
+            <div className="min-w-0 flex-1 leading-4">
+                <span data-joueur className={`block truncate ${isP1Winner ? "font-bold text-green-600" : ""}`}>
+                    {formatPlayerName(p1)}
+                </span>
+                <span data-joueur className={`block truncate ${isP2Winner ? "font-bold text-green-600" : ""}`}>
+                    {formatPlayerName(p2)}
+                </span>
+            </div>
 
-            {/* Score, ou « vs » tant qu'il n'y a rien a montrer. */}
-            {controleDuScore ?? <span className="text-gray-400 shrink-0">vs</span>}
-
-            {/* Joueur 2 */}
-            <span className={`flex-1 min-w-0 truncate text-left ${isP2Winner ? 'font-bold text-green-600' : ''}`}>
-                {formatPlayerName(p2)}
-            </span>
+            {editMode ? (
+                <div className="flex shrink-0 flex-col gap-0.5">{controleDuScore}</div>
+            ) : (
+                controleDuScore ?? <span className="shrink-0 text-gray-400">-</span>
+            )}
         </div>
     )
 }
