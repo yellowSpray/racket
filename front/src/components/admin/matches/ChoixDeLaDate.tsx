@@ -18,13 +18,21 @@ import { dateVoisine } from "@/lib/datesDeJeu"
  *
  * Les flèches se désactivent au bout plutôt que de boucler : une flèche qui
  * ramène au premier jour fait croire qu'il en reste un.
+ *
+ * ELLE VIT SUR LA LIGNE DU TITRE À PARTIR DE 768 PX, et sur une ligne à elle
+ * en dessous. Sur un téléphone, titre, date et actions font 330 px des 343
+ * disponibles : la date y prend toute la largeur, ce qui donne des cibles
+ * confortables au doigt. Sur une tablette la place ne manque plus, et une
+ * rangée pour trois mots coûtait 48 px de hauteur aux matchs.
  */
 export function ChoixDeLaDate({
-    dates, valeur, onChange,
+    dates, valeur, onChange, className = "",
 }: {
     dates: string[]
     valeur: string | null
     onChange: (date: string) => void
+    /** La place de la barre dans la ligne du titre, decidee par la page. */
+    className?: string
 }) {
     if (!valeur || dates.length === 0) return null
 
@@ -32,7 +40,7 @@ export function ChoixDeLaDate({
     const suivante = dateVoisine(dates, valeur, 1)
 
     return (
-        <div data-choix-date className="flex items-center gap-2 py-2">
+        <div data-choix-date className={`flex items-center gap-2 ${className}`}>
             <Fleche
                 libelle="Journee precedente"
                 cible={precedente}
@@ -45,7 +53,7 @@ export function ChoixDeLaDate({
               * elle est seule sur sa ligne, et s'arrête à sa date au-delà : une
               * barre de 1300 px pour trois mots se lirait comme un champ.
               */}
-            <span className="relative flex h-8 flex-1 items-center justify-center rounded-full border border-border bg-card px-3 text-sm font-semibold transition-colors hover:bg-muted sm:flex-none sm:min-w-44">
+            <span className="relative flex h-8 flex-1 items-center justify-center rounded-full border border-border bg-card px-3 text-sm font-semibold transition-colors hover:bg-muted md:flex-none md:min-w-44">
                 {formatJournee(valeur)}
                 <select
                     data-liste-stylee
