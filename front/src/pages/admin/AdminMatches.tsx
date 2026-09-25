@@ -13,6 +13,14 @@ import { Button } from "@/components/ui/button"
 import { ActionsDesMatchs } from "@/components/admin/matches/ActionsDesMatchs"
 import { ChoixDeLaDate } from "@/components/admin/matches/ChoixDeLaDate"
 import { aujourdhuiLocal, dateParDefaut, datesDeJeu } from "@/lib/datesDeJeu"
+import { PaginationDesTerrains } from "@/components/admin/matches/PaginationDesTerrains"
+import {
+    pageValide,
+    terrainsDesMatchs,
+    terrainsParPage,
+    trancheDeTerrains,
+} from "@/lib/paginationTerrains"
+import { useLargeur } from "@/hooks/useLargeur"
 import { totalMatchCount, totalSlotCount, calculateTimeSlots, calculateDates } from "@/lib/matchScheduler"
 import { intervalToMinutes } from "@/lib/utils"
 import { parseScore } from "@/lib/rankingEngine"
@@ -56,6 +64,32 @@ export function AdminMatches() {
                 : dateParDefaut(dates, aujourdhuiLocal()),
         )
     }, [dates])
+
+    /*
+     * LES TERRAINS QUI TIENNENT DANS LA COLONNE, ET DEUX FLECHES POUR LE RESTE.
+     *
+     * Sept terrains reclament 1483 px et la colonne n'en offre 1169 a 1440 px
+     * d'ecran. Faire defiler la table emporterait sa colonne des heures, et la
+     * figer demanderait de passer en `border-separate`.
+     *
+     * Le calcul vit ici et non dans la grille parce que les deux fleches
+     * vivent sur la ligne du titre, avec la date et les actions. La largeur
+     * est celle de la colonne de contenu, mesuree, jamais deduite de la
+     * fenetre : la barre laterale lui prend 207 px a partir de 1024.
+     */
+    const [boiteContenu, largeurContenu] = useLargeur()
+    const [pageTerrains, setPageTerrains] = useState(0)
+
+    const terrains = useMemo(
+        () => terrainsDesMatchs(matches, currentRound?.number_of_courts ?? 1),
+        [matches, currentRound?.number_of_courts],
+    )
+
+    const terrainsParEcran = largeurContenu === 0
+        ? terrains.length
+        : terrainsParPage(largeurContenu, terrains.length)
+    const pageDesTerrains = pageValide(pageTerrains, terrains.length, terrainsParEcran)
+    const terrainsVisibles = trancheDeTerrains(terrains, pageDesTerrains, terrainsParEcran)
 
     const playerAbsences = useMemo(() => {
         const map = new Map<string, string[]>()
@@ -182,15 +216,48 @@ export function AdminMatches() {
         <>
             <h3 className="text-lg font-semibold">Matchs</h3>
 
-            <ActionsDesMatchs
-                vue={viewMode}
-                onBasculerVue={() => setViewMode(v => v === "grid" ? "list" : "grid")}
-                modeEdition={editMode}
-                onModifier={handleEnterEditMode}
-                onAnnuler={handleCancelEditMode}
-                onEnregistrer={handleSaveScores}
-                peutModifier={hasMatches}
+            {/*
+              * LA BARRE DE DATES EST SUR LA LIGNE DU TITRE DES 768 PX. En
+              * dessous elle passe seule sur une seconde ligne, `w-full`
+              * forcant le retour, et `order-last` la posant sous les actions
+              * plutot qu'entre elles et le titre.
+              */}
+            <ChoixDeLaDate
+                dates={dates}
+                valeur={dateChoisie}
+                onChange={setDateChoisie}
+                className="order-last w-full md:order-none md:w-auto"
             />
+
+            {/*
+              * LE BORD DROIT PORTE LES DEUX COMMANDES DE LA VUE : la page de
+              * terrains, puis les actions. Le titre et la date tiennent le
+              * bord gauche, ce qui laisse la respiration au milieu plutot
+              * qu'entre deux groupes de boutons.
+              *
+              * La pagination n'a de sens que sur la vue par terrain : la vue
+              * par boxe n'a pas de colonne a couper.
+              */}
+            <div className="ml-auto flex shrink-0 items-center gap-3">
+                {viewMode === "grid" && hasMatches && (
+                    <PaginationDesTerrains
+                        page={pageDesTerrains}
+                        parPage={terrainsParEcran}
+                        total={terrains.length}
+                        onChange={setPageTerrains}
+                    />
+                )}
+
+                <ActionsDesMatchs
+                    vue={viewMode}
+                    onBasculerVue={() => setViewMode(v => v === "grid" ? "list" : "grid")}
+                    modeEdition={editMode}
+                    onModifier={handleEnterEditMode}
+                    onAnnuler={handleCancelEditMode}
+                    onEnregistrer={handleSaveScores}
+                    peutModifier={hasMatches}
+                />
+            </div>
         </>
     )
 
@@ -272,24 +339,14 @@ export function AdminMatches() {
                     </div>
                 ) : (
                     <>
-                        {/*
-                          * La barre de dates est commune aux deux vues, et hors
-                          * de la zone defilante : changer de vue garde la
-                          * journee, et la journee reste lisible pendant qu'on
-                          * parcourt ses matchs.
-                          */}
-                        <ChoixDeLaDate
-                            dates={dates}
-                            valeur={dateChoisie}
-                            onChange={setDateChoisie}
-                        />
-                        <div className="mt-2 flex-1 min-h-0">
+                        <div ref={boiteContenu} className="flex-1 min-h-0">
                             {viewMode === "grid" ? (
                                 <MatchScheduleGrid
                                     matches={matches}
                                     event={currentEvent}
                                     round={currentRound}
                                     date={dateChoisie}
+                                    terrainsVisibles={terrainsVisibles}
                                     editMode={editMode}
                                     pendingScores={pendingScores}
                                     onScoreChange={handleScoreChange}
