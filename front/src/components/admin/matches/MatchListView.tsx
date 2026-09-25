@@ -69,7 +69,7 @@ function RestrictionDisplay({ restrictions, playerId, muette = false }: { restri
     const r = restrictions.get(playerId)
     if (!r || (!r.arrival && !r.departure)) return rien
     return (
-        <span className={`inline-flex shrink-0 items-center gap-1 ${muette ? "text-xs text-muted-foreground" : ""}`}>
+        <span className={`inline-flex shrink-0 items-center gap-1 ${muette ? "text-xs font-normal text-muted-foreground" : ""}`}>
             {r.arrival && (
                 <span className="inline-flex items-center gap-0.5">
                     <ArrowDown01Icon className="h-3 w-3" />{r.arrival}
@@ -175,6 +175,16 @@ function estAbsent(match: Match, playerId: string, absences?: Map<string, string
 }
 
 /**
+ * LA RESTRICTION VIT A COTE DU NOM QU'ELLE CONCERNE, dans les deux formes.
+ *
+ * Deux colonnes « Restr. » de 72 px ne tenaient pas : un joueur qui arrive
+ * tard ET part tot demande deux paires pictogramme-heure, soit 112 px, et le
+ * contenu sortait de sa cellule pour se poser sur la colonne Heure. Mesure sur
+ * capture : « 18:30 ^ 20:00 » recouvrait « 18:30 ».
+ *
+ * Collee au nom, elle se lit sans compter les colonnes, et les deux colonnes
+ * rendues, 144 px, vont aux noms.
+ *
  * LA VUE PAR BOXE SUR TELEPHONE.
  *
  * Les huit colonnes de la table demandent 740 px pour que les deux noms
@@ -320,10 +330,8 @@ export function MatchListView({ matches, players, searchQuery = "", editMode, pe
                                                           */}
                                                         <colgroup>
                                                             <col />
-                                                            <col className="w-[72px]" />
                                                             <col className="w-[32px]" />
                                                             <col />
-                                                            <col className="w-[72px]" />
                                                             <col className="w-[64px]" />
                                                             <col className="w-[96px]" />
                                                             <col className="w-[104px]" />
@@ -331,10 +339,8 @@ export function MatchListView({ matches, players, searchQuery = "", editMode, pe
                                                         <TableHeader>
                                                             <TableRow className="border-b border-gray-200 bg-gray-100 font-bold text-xs">
                                                                 <TableHead className="font-bold">Joueur A</TableHead>
-                                                                <TableHead className="font-bold text-center">Restr.</TableHead>
                                                                 <TableHead className="font-bold text-center">vs</TableHead>
                                                                 <TableHead className="font-bold">Joueur B</TableHead>
-                                                                <TableHead className="font-bold text-center">Restr.</TableHead>
                                                                 <TableHead className="font-bold text-center">Heure</TableHead>
                                                                 <TableHead className="font-bold text-center">Terrain</TableHead>
                                                                 <TableHead className="font-bold text-center">Score</TableHead>
@@ -350,23 +356,19 @@ export function MatchListView({ matches, players, searchQuery = "", editMode, pe
                                                                 return (
                                                                     <TableRow key={match.id} className={`border-b border-gray-200 last:border-b-0 ${p1Absent || p2Absent ? "bg-amber-50" : ""}`}>
                                                                         <TableCell className={isP1Winner ? "font-bold text-green-600" : ""}>
-                                                                            <span className="flex items-center gap-1.5">
+                                                                            <span className="flex min-w-0 items-center gap-1.5">
                                                                                 <span className="truncate">{formatPlayerName(match.player1)}</span>
+                                                                                <RestrictionDisplay restrictions={restrictions} playerId={match.player1_id} muette />
                                                                                 {p1Absent && <TagAbsent />}
                                                                             </span>
                                                                         </TableCell>
-                                                                        <TableCell className="text-center text-xs text-gray-500">
-                                                                            <RestrictionDisplay restrictions={restrictions} playerId={match.player1_id} />
-                                                                        </TableCell>
                                                                         <TableCell className="text-center text-gray-400">vs</TableCell>
                                                                         <TableCell className={isP2Winner ? "font-bold text-green-600" : ""}>
-                                                                            <span className="flex items-center gap-1.5">
+                                                                            <span className="flex min-w-0 items-center gap-1.5">
                                                                                 <span className="truncate">{formatPlayerName(match.player2)}</span>
+                                                                                <RestrictionDisplay restrictions={restrictions} playerId={match.player2_id} muette />
                                                                                 {p2Absent && <TagAbsent />}
                                                                             </span>
-                                                                        </TableCell>
-                                                                        <TableCell className="text-center text-xs text-gray-500">
-                                                                            <RestrictionDisplay restrictions={restrictions} playerId={match.player2_id} />
                                                                         </TableCell>
                                                                         <TableCell className="text-center">
                                                                             {formatTime(match.match_time)}

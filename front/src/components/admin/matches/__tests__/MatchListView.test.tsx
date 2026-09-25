@@ -69,4 +69,36 @@ describe('MatchListView', () => {
     expect(screen.getAllByText('Alice Martin').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Chloe Lefevre').length).toBeGreaterThan(0)
   })
+
+  /*
+   * Deux colonnes « Restr. » de 72 px ne tenaient pas un joueur qui arrive
+   * tard ET part tot : le contenu sortait de sa cellule et se posait sur la
+   * colonne Heure. La restriction vit desormais a cote du nom.
+   */
+  describe('restrictions', () => {
+    const contraint = [makeMatch({ id: 'm3', player1: alice, player2: bob })]
+    const joueurs = [
+      { id: 'p1', arrival: '18:30', departure: '20:00' },
+      { id: 'p2', arrival: '', departure: '' },
+    ] as unknown as React.ComponentProps<typeof MatchListView>['players']
+
+    it('n\'a plus de colonne Restr.', () => {
+      render(<MatchListView matches={contraint} players={joueurs} />)
+      expect(screen.queryByText('Restr.')).not.toBeInTheDocument()
+    })
+
+    it('ecrit l\'heure a cote du joueur qu\'elle concerne', () => {
+      render(<MatchListView matches={contraint} players={joueurs} />)
+      const cellule = dansLaTable().getByText('Alice Martin').closest('td')!
+      expect(cellule).toHaveTextContent('18:30')
+      expect(cellule).toHaveTextContent('20:00')
+    })
+
+    it('n\'ecrit rien pour un joueur sans restriction', () => {
+      render(<MatchListView matches={contraint} players={joueurs} />)
+      const cellule = dansLaTable().getByText('Bob Dupont').closest('td')!
+      expect(cellule).toHaveTextContent('Bob Dupont')
+      expect(cellule.textContent).toBe('Bob Dupont')
+    })
+  })
 })
