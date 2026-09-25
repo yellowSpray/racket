@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { describe, it, expect, vi, beforeAll } from 'vitest'
 import { MatchScheduleGrid } from '../MatchScheduleGrid'
 
@@ -58,6 +58,20 @@ const makeMatch = (overrides: Partial<Match> = {}): Match => ({
   ...overrides,
 })
 
+/*
+ * La grille rend deux choses : la table, a partir de 640 px, et la liste par
+ * terrain en dessous. jsdom n'applique aucune media query, donc les deux sont
+ * dans le document et chaque nom y parait deux fois. Les assertions se portent
+ * donc sur l'une ou sur l'autre, jamais sur le document entier.
+ */
+function dansLaTable() {
+  return within(document.querySelector('table')!)
+}
+
+function dansLaListe() {
+  return within(document.querySelector('[data-liste-par-terrain]')!)
+}
+
 describe('MatchScheduleGrid', () => {
   it('renders without crashing with empty matches', () => {
     render(<MatchScheduleGrid matches={[]} event={makeEvent()} round={makeRound()} />)
@@ -96,7 +110,7 @@ describe('MatchScheduleGrid', () => {
       makeMatch({ court_number: 'Court Central' }),
     ]
     render(<MatchScheduleGrid matches={matches} event={makeEvent()} round={makeRound()} />)
-    expect(screen.getByText('Court Central')).toBeInTheDocument()
+    expect(dansLaTable().getByText('Court Central')).toBeInTheDocument()
   })
 
   it('generates default court names when matches have no court_number', () => {
@@ -104,16 +118,16 @@ describe('MatchScheduleGrid', () => {
       makeMatch({ court_number: null }),
     ]
     render(<MatchScheduleGrid matches={matches} event={makeEvent()} round={makeRound({ number_of_courts: 2 })} />)
-    expect(screen.getByText('Terrain 1')).toBeInTheDocument()
-    expect(screen.getByText('Terrain 2')).toBeInTheDocument()
+    expect(dansLaTable().getByText('Terrain 1')).toBeInTheDocument()
+    expect(dansLaTable().getByText('Terrain 2')).toBeInTheDocument()
   })
 
   it('displays time slots from calculateTimeSlots', () => {
     const matches = [makeMatch()]
     render(<MatchScheduleGrid matches={matches} event={makeEvent()} round={makeRound()} />)
-    expect(screen.getByText('19:00')).toBeInTheDocument()
-    expect(screen.getByText('19:30')).toBeInTheDocument()
-    expect(screen.getByText('20:00')).toBeInTheDocument()
+    expect(dansLaTable().getByText('19:00')).toBeInTheDocument()
+    expect(dansLaTable().getByText('19:30')).toBeInTheDocument()
+    expect(dansLaTable().getByText('20:00')).toBeInTheDocument()
   })
 
   it('displays the "Heure" column header', () => {
@@ -127,7 +141,7 @@ describe('MatchScheduleGrid', () => {
       makeMatch({ match_time: '19:00:00', court_number: 'Terrain 1' }),
     ]
     render(<MatchScheduleGrid matches={matches} event={makeEvent()} round={makeRound()} />)
-    expect(screen.getByText('p1 vs p2')).toBeInTheDocument()
+    expect(dansLaTable().getByText('p1 vs p2')).toBeInTheDocument()
   })
 
   it('groups matches by date and renders multiple cards', () => {
@@ -162,7 +176,7 @@ describe('MatchScheduleGrid', () => {
       // La grille est un planning : masquer viderait des cases sans dire
       // si le creneau est libre ou simplement filtre.
       renderGrid('alice')
-      expect(screen.getAllByTestId('match-cell')).toHaveLength(2)
+      expect(dansLaTable().getAllByTestId('match-cell')).toHaveLength(2)
     })
 
     it('estompe les matchs qui ne correspondent pas', () => {
@@ -190,6 +204,34 @@ describe('MatchScheduleGrid', () => {
       renderGrid('LEFÈVRE')
       const highlighted = screen.getAllByTestId('match-slot').find(c => c.dataset.highlighted === 'true')
       expect(highlighted).toHaveTextContent('p3 vs p4')
+    })
+  })
+
+  /*
+   * L'ecran des matchs n'affiche qu'une journee a la fois et la choisit dans
+   * sa barre de dates. L'assistant de creation, lui, les empile toutes : on y
+   * deplace un match d'un jour a l'autre.
+   */
+  describe('journee choisie', () => {
+    const matches = [
+      makeMatch({ id: 'm1', match_date: '2026-03-01' }),
+      makeMatch({ id: 'm2', match_date: '2026-03-02' }),
+    ]
+
+    it('n\'affiche que la journee demandee', () => {
+      render(<MatchScheduleGrid matches={matches} event={makeEvent()} round={makeRound()} date="2026-03-02" />)
+      expect(dansLaTable().getAllByTestId('match-cell')).toHaveLength(1)
+      expect(dansLaListe().getAllByTestId('match-cell')).toHaveLength(1)
+    })
+
+    it('n\'ecrit pas la date dans la table, la page la porte deja', () => {
+      render(<MatchScheduleGrid matches={matches} event={makeEvent()} round={makeRound()} date="2026-03-02" />)
+      expect(screen.queryByText(/mars/i)).not.toBeInTheDocument()
+    })
+
+    it('empile toutes les journees quand aucune n\'est demandee', () => {
+      render(<MatchScheduleGrid matches={matches} event={makeEvent()} round={makeRound()} />)
+      expect(screen.getAllByTestId('match-cell').length).toBeGreaterThanOrEqual(2)
     })
   })
 })

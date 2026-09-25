@@ -21,6 +21,7 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { BARRE_MASQUEE_TELEPHONE } from "@/lib/scrollArea"
 import { MatchCell } from "./MatchCell"
 import { calculateTimeSlots, validateMatchSlot, type PlayerConstraints } from "@/lib/matchScheduler"
 import { matchesPlayerSearch, normalizeSearch } from "@/lib/matchSearch"
@@ -42,6 +43,15 @@ interface MatchScheduleGridProps {
      * libre ou simplement filtré.
      */
     searchQuery?: string
+    /**
+     * La journée affichée. L'écran des matchs n'en montre qu'une à la fois et
+     * la choisit dans sa barre de dates.
+     *
+     * Omise, la grille les empile toutes : c'est ce que fait l'assistant de
+     * création, où l'on déplace un match d'un jour à l'autre et où voir toute
+     * la série est le but.
+     */
+    date?: string | null
 }
 
 function formatDateLabel(dateStr: string): string {
@@ -115,6 +125,72 @@ function DroppableSlot({ id }: { id: string }) {
     )
 }
 
+
+/*
+ * LA VUE PAR TERRAIN SUR TELEPHONE.
+ *
+ * La table du planning reclame 924 px avec trois terrains, mesure : 48 px
+ * d'heures et 140 de plancher par terrain, plus ce que les cellules
+ * demandent. A 375 px on n'en voyait qu'une colonne, et la date, centree sur
+ * ces 924 px, tombait hors de l'ecran.
+ *
+ * Le terrain devient donc un intertitre et ses matchs se suivent dans l'ordre
+ * des heures. Toute la journee tient dans un seul defilement vertical, sans
+ * rien choisir ni ouvrir : « qui joue ou » se lit d'un coup d'oeil.
+ *
+ * LES CRENEAUX LIBRES NE SONT PAS ECRITS. Une soiree de six creneaux sur trois
+ * terrains donnerait dix-huit lignes dont onze diraient qu'il ne se passe
+ * rien. Ils restent visibles dans la table, au-dessus de 640 px, ou l'on
+ * reprogramme.
+ */
+function ListeParTerrain({
+    matchs, terrains, editMode, pendingScores, onScoreChange,
+}: {
+    matchs: Match[]
+    terrains: string[]
+    editMode?: boolean
+    pendingScores?: Map<string, string>
+    onScoreChange?: (matchId: string, value: string) => void
+}) {
+    const heure = (m: Match) => m.match_time?.match(/(\d{2}:\d{2})/)?.[1] ?? ""
+
+    return (
+        <div data-liste-par-terrain className="sm:hidden">
+            {terrains.map(terrain => {
+                const duTerrain = matchs
+                    .filter(m => (m.court_number ?? terrains[0]) === terrain)
+                    .sort((a, b) => heure(a).localeCompare(heure(b)))
+                if (duTerrain.length === 0) return null
+
+                return (
+                    <div key={terrain} data-groupe-terrain>
+                        <div className="flex items-center gap-2 pb-1 pt-3 text-xs font-semibold text-muted-foreground">
+                            {terrain}
+                            <span aria-hidden className="h-px flex-1 bg-border" />
+                        </div>
+                        {duTerrain.map((m, i) => (
+                            <div
+                                key={m.id}
+                                data-ligne-match
+                                className={`flex items-center gap-3 py-2.5 ${i === duTerrain.length - 1 ? "" : "border-b border-border"}`}
+                            >
+                                <span className="w-11 shrink-0 text-xs font-semibold tabular-nums">{heure(m)}</span>
+                                <MatchCell
+                                    match={m}
+                                    empile
+                                    editMode={editMode}
+                                    scoreValue={pendingScores?.get(m.id)}
+                                    onScoreChange={v => onScoreChange?.(m.id, v)}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                )
+            })}
+        </div>
+    )
+}
+
 export function MatchScheduleGrid({
     matches,
     event: _event,
@@ -125,6 +201,7 @@ export function MatchScheduleGrid({
     onMatchDrop,
     playerConstraints,
     searchQuery = "",
+    date: dateChoisie = null,
 }: MatchScheduleGridProps) {
     const hasSearch = normalizeSearch(searchQuery).length > 0
     const dndEnabled = !!onMatchDrop
@@ -165,8 +242,12 @@ export function MatchScheduleGrid({
             if (!byDate.has(date)) byDate.set(date, [])
             byDate.get(date)!.push(match)
         }
-        return { sortedDates: Array.from(byDate.keys()).sort(), matchesByDate: byDate }
-    }, [matches])
+        const toutes = Array.from(byDate.keys()).sort()
+        return {
+            sortedDates: dateChoisie ? toutes.filter(d => d === dateChoisie) : toutes,
+            matchesByDate: byDate,
+        }
+    }, [matches, dateChoisie])
 
     const findMatch = useCallback((dayMatches: Match[], time: string, court: string): Match | null => {
         return dayMatches.find(m => {
@@ -250,7 +331,7 @@ export function MatchScheduleGrid({
                     </div>
                 </div>
             )}
-            <ScrollArea className="flex-1 min-h-0" type="auto">
+            <ScrollArea className={`flex-1 min-h-0 ${BARRE_MASQUEE_TELEPHONE}`} type="auto">
                 <div className="space-y-6">
                     {sortedDates.map(date => {
                         const dayMatches = matchesByDate.get(date) || []
@@ -258,14 +339,30 @@ export function MatchScheduleGrid({
 
                         return (
                             <div key={date}>
-                                <div className="overflow-x-auto border-gray-200 border-1 rounded-xl">
+                                <ListeParTerrain
+                                    matchs={dayMatches}
+                                    terrains={courts}
+                                    editMode={editMode}
+                                    pendingScores={pendingScores}
+                                    onScoreChange={onScoreChange}
+                                />
+                                <div className="hidden overflow-x-auto border-gray-200 border-1 rounded-xl sm:block">
                                     <Table>
                                         <TableHeader>
-                                            <TableRow className="border-b border-gray-200">
-                                                <TableHead colSpan={courts.length + 1} className="text-center text-[10px] font-semibold uppercase">
-                                                    {label}
-                                                </TableHead>
-                                            </TableRow>
+                                            {/*
+                                              * La date ne s'ecrit dans la table que lorsque la grille
+                                              * les empile toutes. Quand la page n'en montre qu'une,
+                                              * la barre de dates la porte deja, et ce titre etait
+                                              * pire qu'un doublon : centre sur 924 px de table, il
+                                              * tombait hors de l'ecran sur un telephone.
+                                              */}
+                                            {!dateChoisie && (
+                                                <TableRow className="border-b border-gray-200">
+                                                    <TableHead colSpan={courts.length + 1} className="text-center text-[10px] font-semibold uppercase">
+                                                        {label}
+                                                    </TableHead>
+                                                </TableRow>
+                                            )}
                                             <TableRow className="border-b border-gray-200 bg-gray-100">
                                                 <TableHead className="w-12 text-center font-bold text-xs border-r border-gray-200">
                                                     Heure
