@@ -155,4 +155,35 @@ describe('MatchCell', () => {
     render(<MatchCell match={null} editMode scoreValue="" onScoreChange={() => {}} />)
     expect(screen.queryByLabelText('Score joueur 1')).not.toBeInTheDocument()
   })
+
+  /*
+   * Sur telephone, la cellule sert de rangee dans la liste par terrain. Les
+   * deux noms passent l'un sous l'autre, en entier : cote a cote ils
+   * donnaient « Nicolas Debuss… vs Thomas Vandenb… ».
+   */
+  describe('empilee', () => {
+    it('ecrit les deux noms en entier, l\'un sous l\'autre', () => {
+      render(<MatchCell match={makeMatch()} empile />)
+      const noms = [...document.querySelectorAll('[data-joueur]')]
+      expect(noms.map(n => n.textContent)).toEqual(['Alice Martin', 'Bob Dupont'])
+      for (const n of noms) expect(n.className).toContain('block')
+    })
+
+    it('n\'ecrit plus le « vs », les deux lignes le disent', () => {
+      render(<MatchCell match={makeMatch()} empile />)
+      expect(screen.queryByText('vs')).not.toBeInTheDocument()
+    })
+
+    it('garde la boxe et le score', () => {
+      render(<MatchCell match={makeMatch({ winner_id: 'p1', score: '3-1' })} empile />)
+      expect(screen.getByText('Group A')).toBeInTheDocument()
+      expect(screen.getByText('3-1')).toBeInTheDocument()
+    })
+
+    it('garde les deux selecteurs en mode edition', () => {
+      render(<MatchCell match={makeMatch()} empile editMode scoreValue="" onScoreChange={vi.fn()} />)
+      expect(screen.getByLabelText('Score joueur 1')).toBeInTheDocument()
+      expect(screen.getByLabelText('Score joueur 2')).toBeInTheDocument()
+    })
+  })
 })
