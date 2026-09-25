@@ -5,12 +5,14 @@ import { useEvent } from "@/contexts/EventContext"
 import { usePlayers } from "@/contexts/PlayersContext"
 import { useGroups } from "@/hooks/useGroups"
 import { useMatches } from "@/hooks/useMatches"
-import { useHeaderSlot, useHeaderActions } from "@/contexts/HeaderSlotContext"
+import { useHeaderSlot } from "@/contexts/HeaderSlotContext"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router"
-import { Calendar03Icon, Settings01Icon, PencilEdit01Icon, FloppyDiskIcon, Cancel01Icon, ListViewIcon, GridViewIcon, Search01Icon } from "hugeicons-react"
+import { Calendar03Icon, Settings01Icon } from "hugeicons-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { ActionsDesMatchs } from "@/components/admin/matches/ActionsDesMatchs"
+import { ChoixDeLaDate } from "@/components/admin/matches/ChoixDeLaDate"
+import { aujourdhuiLocal, dateParDefaut, datesDeJeu } from "@/lib/datesDeJeu"
 import { totalMatchCount, totalSlotCount, calculateTimeSlots, calculateDates } from "@/lib/matchScheduler"
 import { intervalToMinutes } from "@/lib/utils"
 import { parseScore } from "@/lib/rankingEngine"
@@ -25,7 +27,7 @@ export function AdminMatches() {
     const navigate = useNavigate()
 
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-    const [searchQuery, setSearchQuery] = useState("")
+    const [dateChoisie, setDateChoisie] = useState<string | null>(null)
     const [editMode, setEditMode] = useState(false)
     const [pendingScores, setPendingScores] = useState<Map<string, string>>(new Map())
     const [saving, setSaving] = useState(false)
@@ -37,6 +39,23 @@ export function AdminMatches() {
             fetchMatchesByRound(currentRound.id)
         }
     }, [currentRound, fetchGroupsByRound, fetchMatchesByRound])
+
+    /*
+     * LES DEUX VUES N'AFFICHENT QU'UNE JOURNEE, celle de la barre de dates.
+     *
+     * La journee retenue survit au changement de serie tant qu'elle existe
+     * encore, sinon on retombe sur la prochaine a jouer : changer de vue ne
+     * doit pas renvoyer au premier jour de la serie.
+     */
+    const dates = useMemo(() => datesDeJeu(matches), [matches])
+
+    useEffect(() => {
+        setDateChoisie(precedente =>
+            precedente && dates.includes(precedente)
+                ? precedente
+                : dateParDefaut(dates, aujourdhuiLocal()),
+        )
+    }, [dates])
 
     const playerAbsences = useMemo(() => {
         const map = new Map<string, string[]>()
@@ -144,56 +163,34 @@ export function AdminMatches() {
     const hasPlayers = groups.some(g => (g.players || []).length >= 2)
     const hasMatches = matches.length > 0
 
+    /*
+     * LA LIGNE DE TITRE PORTE LES ACTIONS DE LA PAGE, poussees a droite. Elles
+     * etaient dans le header, qui porte ce qui vaut pour toute l'application,
+     * pas ce qui vaut pour un ecran. Meme deplacement que sur les tableaux et
+     * sur les joueurs, et meme gabarit, `lib/actionPage`.
+     *
+     * LA RECHERCHE DE LA PAGE EST RETIREE, comme sur les joueurs. C'est le
+     * champ du header qui s'en chargera une fois qu'il aura un index global a
+     * interroger. D'ici la, cet ecran n'a plus de recherche du tout.
+     *
+     * Consequence a connaitre : `MatchScheduleGrid` et `MatchListView` gardent
+     * leur prop `searchQuery`, la premiere pour surligner, la seconde pour
+     * filtrer, mais plus personne ne la remplit. Le code est vivant et le
+     * chemin est mort ; il se rallumera en une ligne le jour de l'index.
+     */
     const headerPortal = useHeaderSlot(
         <>
             <h3 className="text-lg font-semibold">Matchs</h3>
-            {hasMatches && (
-                <div className="relative flex-1 max-w-sm mx-auto">
-                    <Search01Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Rechercher un joueur..."
-                        className="pl-9 pr-9 rounded-full h-10"
-                    />
-                    {searchQuery && (
-                        <button
-                            onClick={() => setSearchQuery("")}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                            <Cancel01Icon className="h-4 w-4" />
-                        </button>
-                    )}
-                </div>
-            )}
-        </>
-    )
 
-    const actionsPortal = useHeaderActions(
-        <>
-            {hasMatches && (
-                <Button variant="icon" size="icon" onClick={() => setViewMode(v => v === "grid" ? "list" : "grid")}>
-                    {viewMode === "grid" ? <ListViewIcon size="20" strokeWidth={2} /> : <GridViewIcon size="20" strokeWidth={2} />}
-                </Button>
-            )}
-            {editMode ? (
-                <>
-                    <Button variant="icon" size="icon" onClick={handleCancelEditMode}>
-                        <Cancel01Icon size="20" strokeWidth={2} />
-                    </Button>
-                    <Button size="lg" onClick={handleSaveScores}>
-                        <FloppyDiskIcon size="20" strokeWidth={2} />
-                        Enregistrer tout
-                    </Button>
-                </>
-            ) : (
-                hasMatches && (
-                    <Button size="lg" onClick={handleEnterEditMode}>
-                        <PencilEdit01Icon size="20" strokeWidth={2} />
-                        Modifier
-                    </Button>
-                )
-            )}
+            <ActionsDesMatchs
+                vue={viewMode}
+                onBasculerVue={() => setViewMode(v => v === "grid" ? "list" : "grid")}
+                modeEdition={editMode}
+                onModifier={handleEnterEditMode}
+                onAnnuler={handleCancelEditMode}
+                onEnregistrer={handleSaveScores}
+                peutModifier={hasMatches}
+            />
         </>
     )
 
@@ -205,7 +202,6 @@ export function AdminMatches() {
         return (
             <>
                 {headerPortal}
-                {actionsPortal}
                 <div className="h-full flex flex-col min-h-0">
                     <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-lg">
                         <Calendar03Icon className="h-12 w-12 text-gray-300" />
@@ -226,7 +222,6 @@ export function AdminMatches() {
     return (
         <>
             {headerPortal}
-            {actionsPortal}
             <div className="flex flex-col h-full min-h-0">
                 {error && (
                     <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
@@ -276,29 +271,42 @@ export function AdminMatches() {
                         </Button>
                     </div>
                 ) : (
-                    <div className="flex-1 min-h-0">
-                        {viewMode === "grid" ? (
-                            <MatchScheduleGrid
-                                matches={matches}
-                                event={currentEvent}
-                                round={currentRound}
-                                searchQuery={searchQuery}
-                                editMode={editMode}
-                                pendingScores={pendingScores}
-                                onScoreChange={handleScoreChange}
-                            />
-                        ) : (
-                            <MatchListView
-                                matches={matches}
-                                players={players}
-                                searchQuery={searchQuery}
-                                editMode={editMode}
-                                pendingScores={pendingScores}
-                                onScoreChange={handleScoreChange}
-                                playerAbsences={playerAbsences}
-                            />
-                        )}
-                    </div>
+                    <>
+                        {/*
+                          * La barre de dates est commune aux deux vues, et hors
+                          * de la zone defilante : changer de vue garde la
+                          * journee, et la journee reste lisible pendant qu'on
+                          * parcourt ses matchs.
+                          */}
+                        <ChoixDeLaDate
+                            dates={dates}
+                            valeur={dateChoisie}
+                            onChange={setDateChoisie}
+                        />
+                        <div className="mt-2 flex-1 min-h-0">
+                            {viewMode === "grid" ? (
+                                <MatchScheduleGrid
+                                    matches={matches}
+                                    event={currentEvent}
+                                    round={currentRound}
+                                    date={dateChoisie}
+                                    editMode={editMode}
+                                    pendingScores={pendingScores}
+                                    onScoreChange={handleScoreChange}
+                                />
+                            ) : (
+                                <MatchListView
+                                    matches={matches}
+                                    players={players}
+                                    date={dateChoisie}
+                                    editMode={editMode}
+                                    pendingScores={pendingScores}
+                                    onScoreChange={handleScoreChange}
+                                    playerAbsences={playerAbsences}
+                                />
+                            )}
+                        </div>
+                    </>
                 )}
             </div>
         </>
