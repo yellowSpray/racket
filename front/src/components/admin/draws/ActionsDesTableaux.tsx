@@ -50,7 +50,7 @@ export function ActionsDesTableaux({
             )}
             <Action icone={CodeIcon} libelle="Intégrer" infobulle="Intégrer les tableaux sur un site" onClick={onEmbed} />
             {peutExporter && (
-                <Action icone={Download01Icon} libelle="PDF" infobulle="Télécharger les tableaux en PDF" onClick={onExportPdf} />
+                <Action icone={Download01Icon} libelle="PDF" infobulle="Télécharger les tableaux en PDF, avec les numéros" onClick={onExportPdf} />
             )}
         </div>
     )

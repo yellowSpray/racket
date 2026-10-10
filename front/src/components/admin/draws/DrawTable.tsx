@@ -32,6 +32,13 @@ interface DrawTableProps {
      * sur les pages joueur.
      */
     onSelectPlayer?: (player: GroupPlayer) => void
+    /**
+     * Ecrit le numero de chaque joueur sous son nom. Reserve a l'admin, qui
+     * s'en sert pour joindre un joueur et l'emporte dans l'export PDF.
+     * Omis ailleurs : un numero n'a rien a faire sur une page joueur ni sur
+     * un site public.
+     */
+    afficherTelephone?: boolean
 }
 
 /**
@@ -66,7 +73,7 @@ function Pastille({ ton, children }: { ton: "gagne" | "perdu" | "absence" | "non
 // Dernier recours si l'appelant n'a pas encore resolu de bareme.
 const DEFAULT_SCORING: ScoringSource = { score_points: [...DEFAULT_SCORE_POINTS] }
 
-export function DrawTable({ group, matches = [], scoringRules, displayMode = "score", playerAbsences, playerMovements, onSelectMatch, onSelectPlayer }: DrawTableProps) {
+export function DrawTable({ group, matches = [], scoringRules, displayMode = "score", playerAbsences, playerMovements, onSelectMatch, onSelectPlayer, afficherTelephone = false }: DrawTableProps) {
 
     const players = useMemo(() => group.players || [], [group.players])
     const maxPlayers = group.max_players || 6
@@ -234,8 +241,8 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                      * ecran de bureau ou elle tenait. Au-dela
                                      * de 160 px le nom se tronque, lui seul.
                                      */
-                                    <div className="flex max-w-40 items-center px-2 py-0.5">
-                                        <span className="min-w-0 flex-1 truncate text-xs font-bold flex items-center gap-1">
+                                    <div className="flex max-w-40 flex-col justify-center px-2 py-0.5">
+                                        <span className="min-w-0 truncate text-xs font-bold flex items-center gap-1">
                                             {onSelectPlayer ? (
                                                 <span
                                                     role="button"
@@ -258,6 +265,23 @@ export function DrawTable({ group, matches = [], scoringRules, displayMode = "sc
                                                 <PlayerMovementBadge movement={playerMovements.get(player.id)!} />
                                             )}
                                         </span>
+                                        {/*
+                                          * Jamais tronque : un numero coupe ne
+                                          * sert a rien, c'est ce qui l'avait
+                                          * fait retirer une premiere fois. Il
+                                          * tient dans les 160 px du nom, et
+                                          * `useFitToWidth` reduit le tableau
+                                          * entier s'il manque de place.
+                                          *
+                                          * La ligne reste meme vide, pour que
+                                          * toutes les rangees aient la meme
+                                          * hauteur.
+                                          */}
+                                        {afficherTelephone && (
+                                            <span data-telephone className="whitespace-nowrap text-[10px] leading-tight font-normal tabular-nums text-muted-foreground">
+                                                {player.phone || " "}
+                                            </span>
+                                        )}
                                     </div>
                                 ) : (
                                     /* Une place libre ne s'annonce pas : la rangee

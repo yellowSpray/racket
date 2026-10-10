@@ -75,7 +75,7 @@ describe('ActionsDesTableaux', () => {
       setup()
       expect(screen.getByRole('button', { name: 'Points' })).toHaveAttribute('title', 'Afficher les points')
       expect(screen.getByRole('button', { name: 'Intégrer' })).toHaveAttribute('title', 'Intégrer les tableaux sur un site')
-      expect(screen.getByRole('button', { name: 'PDF' })).toHaveAttribute('title', 'Télécharger les tableaux en PDF')
+      expect(screen.getByRole('button', { name: 'PDF' })).toHaveAttribute('title', 'Télécharger les tableaux en PDF, avec les numéros')
     })
 
     /*

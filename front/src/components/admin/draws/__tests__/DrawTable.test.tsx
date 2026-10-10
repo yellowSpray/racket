@@ -249,6 +249,59 @@ describe('DrawTable', () => {
     expect(screen.queryByText('0622222222')).not.toBeInTheDocument()
   })
 
+  /*
+   * Cote admin, le numero revient sous le nom, sur demande de l'appelant.
+   * L'organisateur s'en sert pour joindre un joueur et l'exporte en PDF.
+   * Les pages joueur et l'integration publique ne le demandent pas.
+   */
+  describe('afficherTelephone', () => {
+    const players = [
+      makePlayer({ id: 'p1', first_name: 'Alice', last_name: 'Martin', phone: '0611111111' }),
+      makePlayer({ id: 'p2', first_name: 'Bob', last_name: 'Dupont', phone: '+32 470 12 34 56' }),
+    ]
+
+    it('affiche le numero de chaque joueur sous son nom', () => {
+      render(<DrawTable group={makeGroup({ players, max_players: 2 })} afficherTelephone />)
+      expect(screen.getByText('0611111111')).toBeInTheDocument()
+      expect(screen.getByText('+32 470 12 34 56')).toBeInTheDocument()
+    })
+
+    it('place le numero dans la cellule du nom, apres lui', () => {
+      const { container } = render(<DrawTable group={makeGroup({ players, max_players: 2 })} afficherTelephone />)
+      const cellule = container.querySelector('tbody tr td')!
+      expect(cellule.textContent).toBe('Alice Martin0611111111')
+    })
+
+    it('ne tronque jamais le numero', () => {
+      render(<DrawTable group={makeGroup({ players, max_players: 2 })} afficherTelephone />)
+      const numero = screen.getByText('0611111111')
+      expect(numero.className).not.toMatch(/truncate/)
+      expect(numero.className).toMatch(/whitespace-nowrap/)
+    })
+
+    it('laisse le numero hors du bouton qui ouvre la fiche', () => {
+      render(<DrawTable group={makeGroup({ players, max_players: 2 })} afficherTelephone onSelectPlayer={vi.fn()} />)
+      expect(screen.getByRole('button', { name: 'Alice Martin' })).toBeInTheDocument()
+    })
+
+    /*
+     * Un joueur sans numero garde sa seconde ligne, vide : sinon sa rangee
+     * serait moins haute que les autres et la grille se decalerait.
+     */
+    it('garde une ligne vide pour un joueur sans numero', () => {
+      const sansNumero = [makePlayer({ id: 'p1', first_name: 'Alice', last_name: 'Martin', phone: '' })]
+      const { container } = render(<DrawTable group={makeGroup({ players: sansNumero, max_players: 1 })} afficherTelephone />)
+      const ligne = container.querySelector('[data-telephone]')
+      expect(ligne).toBeInTheDocument()
+      expect(ligne!.textContent?.trim()).toBe('')
+    })
+
+    it('n\'ecrit rien sur une place libre', () => {
+      const { container } = render(<DrawTable group={makeGroup({ players: [], max_players: 2 })} afficherTelephone />)
+      expect(container.querySelector('[data-telephone]')).not.toBeInTheDocument()
+    })
+  })
+
   it('shows 0 in Total column for existing players', () => {
     const players = [makePlayer()]
     render(<DrawTable group={makeGroup({ players, max_players: 1 })} />)

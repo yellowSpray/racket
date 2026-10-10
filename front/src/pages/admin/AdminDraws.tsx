@@ -232,7 +232,7 @@ export function AdminDraws () {
                             const sortedGroup = sortPlayersByEarliestDates(group, groupMatches)
                             return (
                                 <div key={group.id}>
-                                    <DrawTable group={sortedGroup} matches={groupMatches} scoringRules={scoring} displayMode={displayMode} playerAbsences={playerAbsences} onSelectMatch={(match, rowPlayer, opponent) => setSelectedCell({ match, rowPlayer, opponent })} onSelectPlayer={setSelectedPlayer} />
+                                    <DrawTable group={sortedGroup} matches={groupMatches} scoringRules={scoring} displayMode={displayMode} playerAbsences={playerAbsences} onSelectMatch={(match, rowPlayer, opponent) => setSelectedCell({ match, rowPlayer, opponent })} onSelectPlayer={setSelectedPlayer} afficherTelephone />
                                 </div>
                             )
                         })}
