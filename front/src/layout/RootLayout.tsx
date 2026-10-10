@@ -3,6 +3,7 @@ import Header from '@/components/shared/Header'
 import Footer from "@/components/shared/Footer"
 import { HeaderSlotProvider } from "@/contexts/HeaderSlotProvider"
 import { EventProvider } from "@/contexts/EventContext"
+import { RechercheProvider } from "@/contexts/RechercheProvider"
 
 const Rootlayout = () => {
   const location = useLocation()
@@ -18,6 +19,7 @@ const Rootlayout = () => {
   return (
     <EventProvider>
     <HeaderSlotProvider>
+    <RechercheProvider>
       {!isAuth && <Header />}
       {/*
         * Dans l'application, la page est bornee a la fenetre et ce sont ses
@@ -30,6 +32,7 @@ const Rootlayout = () => {
         <Outlet />
       </main>
       {showFooter && <Footer />}
+    </RechercheProvider>
     </HeaderSlotProvider>
     </EventProvider>
   )

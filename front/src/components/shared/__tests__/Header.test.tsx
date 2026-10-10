@@ -1,5 +1,5 @@
 import { render, screen, within, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import Header from '../Header'
 
 const mockPathname = { value: '/admin' }
@@ -19,6 +19,11 @@ vi.mock('../AppBreadcrumb', () => ({
 const mockUseEvent = vi.fn()
 vi.mock('@/contexts/EventContext', () => ({
   useEvent: () => mockUseEvent(),
+}))
+
+const recherche = { valeur: '', setRecherche: vi.fn(), lancer: vi.fn() }
+vi.mock('@/contexts/RechercheContext', () => ({
+  useRecherche: () => ({ recherche: recherche.valeur, setRecherche: recherche.setRecherche, lancer: recherche.lancer }),
 }))
 
 const mockUseAuth = vi.fn()
@@ -499,5 +504,41 @@ describe('Header', () => {
     })
     render(<Header />)
     expect(screen.getByText('Marie Martin').closest('a')).toHaveAttribute('href', '/user/profile')
+  })
+
+  /*
+   * Le champ n'est plus inerte : il ecrit dans le contexte de recherche, que
+   * la page affichee lit pour filtrer. Les deux formes, deployee et repliee,
+   * sont le meme champ et partagent donc la meme valeur.
+   */
+  describe('la recherche agit', () => {
+    beforeEach(() => {
+      recherche.valeur = ''
+      recherche.setRecherche.mockClear()
+      recherche.lancer.mockClear()
+    })
+
+    it('affiche la recherche en cours dans les deux formes du champ', () => {
+      recherche.valeur = 'alice'
+      connecte()
+      render(<Header />)
+      expect((champDeploye() as HTMLInputElement).value).toBe('alice')
+      const replie = document.querySelector('[data-recherche-repliee] input') as HTMLInputElement
+      expect(replie.value).toBe('alice')
+    })
+
+    it('transmet la frappe au contexte', () => {
+      connecte()
+      render(<Header />)
+      fireEvent.change(champDeploye(), { target: { value: 'bob' } })
+      expect(recherche.setRecherche).toHaveBeenCalledWith('bob')
+    })
+
+    it('lance la recherche a Entree', () => {
+      connecte()
+      render(<Header />)
+      fireEvent.keyDown(champDeploye(), { key: 'Enter' })
+      expect(recherche.lancer).toHaveBeenCalled()
+    })
   })
 })

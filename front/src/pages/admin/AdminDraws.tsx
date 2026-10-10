@@ -6,6 +6,8 @@ import { useMatches } from "@/hooks/useMatches"
 import { useEffectiveRules } from "@/hooks/useEffectiveRules"
 import { usePlayers } from "@/contexts/PlayersContext"
 import { useHeaderSlot } from "@/contexts/HeaderSlotContext"
+import { useRechercheDeLaPage } from "@/contexts/RechercheContext"
+import { groupesAvecJoueur } from "@/lib/recherche"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 import { useNavigate } from "react-router"
@@ -30,6 +32,10 @@ export function AdminDraws () {
     const { profile } = useAuth()
     const { groups, loading, fetchGroupsByRound } = useGroups()
     const { matches, fetchMatchesByRound, updateMatchResults, error: matchError } = useMatches()
+
+    // La recherche du header ne garde que les tableaux ou joue le joueur cherche.
+    const recherche = useRechercheDeLaPage()
+    const groupesAffiches = useMemo(() => groupesAvecJoueur(groups, recherche), [groups, recherche])
 
     // Saisie du score depuis une case du tableau
     const [selectedCell, setSelectedCell] = useState<{ match: Match; rowPlayer: GroupPlayer; opponent: GroupPlayer } | null>(null)
@@ -188,6 +194,13 @@ export function AdminDraws () {
                         Aller aux paramètres
                     </Button>
                 </div>
+            ) : groupesAffiches.length === 0 ? (
+                <div className="text-center py-12 border-2 border-dashed rounded-lg">
+                    <h3 className="text-lg font-semibold">Aucun joueur ne correspond à « {recherche.trim()} »</h3>
+                    <p className="text-muted-foreground mt-2">
+                        La recherche porte sur les joueurs des tableaux de cette série.
+                    </p>
+                </div>
             ) : (
                 /*
                  * `display: block` impose au conteneur interne de Radix.
@@ -227,7 +240,7 @@ export function AdminDraws () {
                       * centree : voir `DashboardLayout`.
                       */}
                     <div ref={tablesRef} className="grid justify-center gap-6 [grid-template-columns:repeat(auto-fill,minmax(min(100%,519px),532px))]">
-                        {groups.map(group => {
+                        {groupesAffiches.map(group => {
                             const groupMatches = matches.filter(m => m.group_id === group.id)
                             const sortedGroup = sortPlayersByEarliestDates(group, groupMatches)
                             return (

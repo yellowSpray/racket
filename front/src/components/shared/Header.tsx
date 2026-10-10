@@ -7,6 +7,7 @@ import { useHeaderActionsRegister, useHeaderHasActions } from "@/contexts/Header
 import { AppBreadcrumb } from "@/components/shared/AppBreadcrumb"
 import { EventInviteLink } from "@/components/admin/settings/EventInviteLink"
 import { useEvent } from "@/contexts/EventContext"
+import { useRecherche } from "@/contexts/RechercheContext"
 import { useInviteLink } from "@/hooks/useInviteLink"
 import { Notification03Icon, Search01Icon } from "hugeicons-react"
 import { GOUTTIERE, RAIL, RAIL_PADDING } from "@/layout/rail"
@@ -40,6 +41,7 @@ export default function Header() {
     const hasActions = useHeaderHasActions()
     const { currentEvent } = useEvent()
     const { getInviteUrl } = useInviteLink()
+    const { recherche, setRecherche, lancer } = useRecherche()
 
     const dansLApplication = pathname.startsWith("/admin") || pathname.startsWith("/user")
 
@@ -118,10 +120,11 @@ export default function Header() {
 
                 {isAuthenticated && (
                     /*
-                     * La recherche est en place mais encore inerte : il n'y a pas
-                     * d'index global à interroger. Aucun raccourci n'est capté non
-                     * plus, `Ctrl+F` appartient au navigateur tant que ce champ ne
-                     * fait rien.
+                     * La recherche filtre la page affichee : le champ ecrit dans
+                     * `RechercheContext`, la page lit et filtre ce qu'elle montre.
+                     * Sur une page qui ne cherche rien, Entree emmene vers les
+                     * joueurs. Aucun raccourci n'est capte : `Ctrl+F` reste au
+                     * navigateur.
                      *
                      * ELLE SE RETRACTE EN QUATRE TEMPS, parce qu'elle est de loin
                      * le plus gros objet du header : 336 px, davantage que le fil
@@ -157,6 +160,9 @@ export default function Header() {
                                 type="search"
                                 aria-label="Rechercher un joueur, un match"
                                 placeholder=" "
+                                value={recherche}
+                                onChange={e => setRecherche(e.target.value)}
+                                onKeyDown={e => { if (e.key === "Enter") lancer() }}
                                 className="peer h-8 w-48 rounded-full border border-border bg-accent pl-9 pr-3 text-sm focus-visible:border-ring focus-visible:outline-none xl:w-64 2xl:w-84 2xl:pr-16"
                             />
                             <span
@@ -219,7 +225,12 @@ export default function Header() {
                                     onBlur={() => setRechercheOuverte(false)}
                                     /* `blur` et non l'etat : sinon le foyer reste
                                        dans un champ devenu invisible. */
-                                    onKeyDown={e => { if (e.key === "Escape") e.currentTarget.blur() }}
+                                    value={recherche}
+                                    onChange={e => setRecherche(e.target.value)}
+                                    onKeyDown={e => {
+                                        if (e.key === "Escape") e.currentTarget.blur()
+                                        if (e.key === "Enter") lancer()
+                                    }}
                                     className={`h-8 w-full rounded-full bg-transparent pl-9 pr-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none ${
                                         rechercheOuverte ? "" : "pointer-events-none opacity-0"
                                     }`}

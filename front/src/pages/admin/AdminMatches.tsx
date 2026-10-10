@@ -6,6 +6,7 @@ import { usePlayers } from "@/contexts/PlayersContext"
 import { useGroups } from "@/hooks/useGroups"
 import { useMatches } from "@/hooks/useMatches"
 import { useHeaderSlot } from "@/contexts/HeaderSlotContext"
+import { useRechercheDeLaPage } from "@/contexts/RechercheContext"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router"
 import { Calendar03Icon, Settings01Icon } from "hugeicons-react"
@@ -33,6 +34,7 @@ export function AdminMatches() {
     const { groups, fetchGroupsByRound } = useGroups()
     const { matches, loading, error, fetchMatchesByRound, updateMatchResults } = useMatches()
     const navigate = useNavigate()
+    const recherche = useRechercheDeLaPage()
 
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
     const [dateChoisie, setDateChoisie] = useState<string | null>(null)
@@ -203,14 +205,10 @@ export function AdminMatches() {
      * pas ce qui vaut pour un ecran. Meme deplacement que sur les tableaux et
      * sur les joueurs, et meme gabarit, `lib/actionPage`.
      *
-     * LA RECHERCHE DE LA PAGE EST RETIREE, comme sur les joueurs. C'est le
-     * champ du header qui s'en chargera une fois qu'il aura un index global a
-     * interroger. D'ici la, cet ecran n'a plus de recherche du tout.
-     *
-     * Consequence a connaitre : `MatchScheduleGrid` et `MatchListView` gardent
-     * leur prop `searchQuery`, la premiere pour surligner, la seconde pour
-     * filtrer, mais plus personne ne la remplit. Le code est vivant et le
-     * chemin est mort ; il se rallumera en une ligne le jour de l'index.
+     * LA RECHERCHE EST CELLE DU HEADER, par `useRechercheDeLaPage`, passee
+     * aux deux vues par leur prop `searchQuery` : la vue par terrain surligne
+     * les matchs du joueur cherche, la vue par boxe ne garde qu'eux. Les deux
+     * restent sur la journee choisie.
      */
     const headerPortal = useHeaderSlot(
         <>
@@ -347,6 +345,7 @@ export function AdminMatches() {
                                     round={currentRound}
                                     date={dateChoisie}
                                     terrainsVisibles={terrainsVisibles}
+                                    searchQuery={recherche}
                                     editMode={editMode}
                                     pendingScores={pendingScores}
                                     onScoreChange={handleScoreChange}
@@ -356,6 +355,7 @@ export function AdminMatches() {
                                     matches={matches}
                                     players={players}
                                     date={dateChoisie}
+                                    searchQuery={recherche}
                                     editMode={editMode}
                                     pendingScores={pendingScores}
                                     onScoreChange={handleScoreChange}

@@ -3,14 +3,19 @@ import { EventsManager } from "@/components/admin/settings/EventsManager"
 import { SettingsManager } from "@/components/admin/settings/SettingsManager"
 import { UsersManager } from "@/components/admin/settings/UsersManager"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { UserAdd01Icon, Search01Icon, Cancel01Icon } from "hugeicons-react"
+import { UserAdd01Icon } from "hugeicons-react"
 import { useHeaderSlot, useHeaderActions } from "@/contexts/HeaderSlotContext"
+import { useRechercheDeLaPage } from "@/contexts/RechercheContext"
 
 export function AdminSettings () {
     const [activeTab, setActiveTab] = useState("manage")
-    const [usersSearch, setUsersSearch] = useState("")
+    /*
+     * La recherche du header filtre l'onglet affiche : les evenements sous
+     * Gestion, les membres sous Utilisateurs. Les utilisateurs avaient leur
+     * propre champ dans la ligne de titre, soit deux recherches a l'ecran.
+     */
+    const recherche = useRechercheDeLaPage()
     const [usersInviteOpen, setUsersInviteOpen] = useState(false)
 
     const headerPortal = useHeaderSlot(
@@ -20,25 +25,6 @@ export function AdminSettings () {
               * l'affiche a quelques pixels de la, dans son premier segment.
               */}
             <h3 className="text-lg font-semibold">Paramètres</h3>
-            {activeTab === "users" && (
-                <div className="relative flex-1 max-w-sm mx-auto">
-                    <Search01Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        value={usersSearch}
-                        onChange={(e) => setUsersSearch(e.target.value)}
-                        placeholder="Rechercher par nom ou email..."
-                        className="pl-9 pr-9 rounded-full h-10"
-                    />
-                    {usersSearch && (
-                        <button
-                            onClick={() => setUsersSearch("")}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                            <Cancel01Icon className="h-4 w-4" />
-                        </button>
-                    )}
-                </div>
-            )}
         </>
     )
 
@@ -65,7 +51,7 @@ export function AdminSettings () {
             {actionsPortal}
             <div className="flex-1 min-h-0 overflow-hidden rounded-md">
                 <TabsContent value="manage" className="h-full">
-                    <EventsManager />
+                    <EventsManager recherche={recherche} />
                 </TabsContent>
                 {/* Les onglets Evenements et Mon club ne contenaient que des
                     reglages de club : ils sont reunis ici. */}
@@ -74,8 +60,7 @@ export function AdminSettings () {
                 </TabsContent>
                 <TabsContent value="users" className="h-full">
                     <UsersManager
-                        globalFilter={usersSearch}
-                        onGlobalFilterChange={setUsersSearch}
+                        globalFilter={recherche}
                         inviteOpen={usersInviteOpen}
                         onInviteOpenChange={setUsersInviteOpen}
                     />

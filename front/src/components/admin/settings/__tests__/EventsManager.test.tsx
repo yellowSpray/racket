@@ -28,9 +28,9 @@ const round = {
 }
 const event = { id: 'e1', club_id: 'c1', event_name: 'Interclub', event_rounds: [round] }
 
-function setup(events = [event], loading = false) {
+function setup(events = [event], loading = false, recherche = '') {
     mockUseEvent.mockReturnValue({ events, loading, fetchEvents: vi.fn() })
-    return render(<EventsManager />)
+    return render(<EventsManager recherche={recherche} />)
 }
 
 describe('EventsManager', () => {
@@ -65,5 +65,21 @@ describe('EventsManager', () => {
     it('affiche l\'etat vide quand aucun evenement n\'existe', () => {
         setup([])
         expect(screen.getByText('Aucun événement')).toBeInTheDocument()
+    })
+
+    describe('recherche', () => {
+        const mixed = { id: 'e2', club_id: 'c1', event_name: 'Mixed Été', event_rounds: [] }
+
+        it('ne garde que les evenements dont le nom correspond', () => {
+            setup([event, mixed], false, 'ete')
+            expect(screen.getByText('Mixed Été')).toBeInTheDocument()
+            expect(screen.queryByText('Interclub')).not.toBeInTheDocument()
+        })
+
+        it('le dit quand aucun evenement ne correspond, sans pretendre qu\'il n\'y en a aucun', () => {
+            setup([event], false, 'zorro')
+            expect(screen.getByText(/Aucun événement ne correspond à « zorro »/)).toBeInTheDocument()
+            expect(screen.queryByText('Aucun événement')).not.toBeInTheDocument()
+        })
     })
 })

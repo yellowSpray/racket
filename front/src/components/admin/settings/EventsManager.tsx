@@ -1,4 +1,5 @@
 import { EventsSkeleton } from "@/components/shared/skeletons/SettingsSkeleton"
+import { texteRepond } from "@/lib/recherche"
 import { useEvent } from "@/contexts/EventContext"
 import { supabase } from "@/lib/supabaseClient"
 import type { Event, EventRound } from "@/types/event"
@@ -219,8 +220,13 @@ function RoundRow({ round: r, deletingRoundId, onEdit, onDelete }: RoundRowProps
 
 // — Composant principal
 
-export function EventsManager() {
+/**
+ * @param recherche Celle du header : ne garde que les evenements dont le nom
+ *   correspond. Vide, tout est affiche.
+ */
+export function EventsManager({ recherche = "" }: { recherche?: string } = {}) {
     const { events, loading, fetchEvents } = useEvent()
+    const evenementsAffiches = events.filter(e => texteRepond(e.event_name, recherche))
     const navigate = useNavigate()
     const { getInviteUrl } = useInviteLink()
 
@@ -285,7 +291,15 @@ export function EventsManager() {
                 </div>
             ) : (
                 <>
-                    {events.map((event) => {
+                    {/* Il y a des evenements, la recherche n'en garde aucun :
+                        le dire, sans l'etat « Aucun evenement » qui inviterait
+                        a en creer un. */}
+                    {evenementsAffiches.length === 0 && (
+                        <p className="py-12 text-center text-muted-foreground">
+                            Aucun événement ne correspond à « {recherche.trim()} »
+                        </p>
+                    )}
+                    {evenementsAffiches.map((event) => {
                         const rounds = event.event_rounds ?? []
                         const nextRoundNumber = rounds.length > 0
                             ? Math.max(...rounds.map(r => r.round_number)) + 1

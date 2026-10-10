@@ -8,6 +8,8 @@ import { useHeaderSlot } from "@/contexts/HeaderSlotContext";
 import type { PlayerType } from "@/types/player";
 import { FiltresJoueurs } from "@/components/admin/players/FiltresJoueurs";
 import { repondAuFiltre, type FiltreJoueurs as Filtre } from "@/lib/filtresJoueurs";
+import { joueurRepond } from "@/lib/recherche";
+import { useRechercheDeLaPage } from "@/contexts/RechercheContext";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -28,6 +30,7 @@ export function AdminPlayers() {
 
     const { players, addPlayer, updatePlayer, deletePlayer, updatePaymentStatus, updateAbsences, loading, fetchPlayer } = usePlayers();
     const { currentRound } = useEvent();
+    const recherche = useRechercheDeLaPage();
     const [statusFilter, setStatusFilter] = useState<Filtre>("all")
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [deleting, setDeleting] = useState(false)
@@ -52,8 +55,8 @@ export function AdminPlayers() {
      * nombre different de ce que la liste montre est pire que pas de nombre.
      */
     const filteredPlayers = useMemo(
-        () => players.filter(joueur => repondAuFiltre(joueur, statusFilter)),
-        [players, statusFilter],
+        () => players.filter(joueur => repondAuFiltre(joueur, statusFilter) && joueurRepond(joueur, recherche)),
+        [players, statusFilter, recherche],
     )
 
     /*
@@ -64,10 +67,8 @@ export function AdminPlayers() {
      * deux endroits differents auraient ete plus deroutantes qu'un
      * deplacement.
      *
-     * LA RECHERCHE DE LA PAGE EST RETIREE. Elle filtrait sur le nom, l'email et
-     * le telephone ; c'est desormais le champ du header qui s'en chargera, une
-     * fois qu'il aura un index global a interroger. D'ici la, cet ecran n'a
-     * plus de recherche du tout, et c'est une dette assumee, pas un oubli.
+     * LA RECHERCHE EST CELLE DU HEADER, par `useRechercheDeLaPage`. Elle
+     * filtre sur le nom, l'email et le telephone, voir `lib/recherche`.
      */
     const headerPortal = useHeaderSlot(
         <>
@@ -142,10 +143,8 @@ export function AdminPlayers() {
             {headerPortal}
             <div className="flex flex-col h-full min-h-0">
                 {/*
-                  * Plus de `globalFilter` pose d'ici : la recherche de la page
-                  * est retiree, celle du header la remplacera quand elle aura
-                  * un index a interroger. `DataTable` garde sa prop, c'est par
-                  * elle que la recherche globale pilotera la liste.
+                  * La recherche du header est deja appliquee a `filteredPlayers` :
+                  * pas de `globalFilter` ici, une seule regle filtre la liste.
                   */}
                 <DataTable
                     columns={columns}

@@ -9,6 +9,7 @@ vi.mock('react-router', () => ({
 vi.mock('@/components/shared/Header', () => ({ default: () => <header /> }))
 vi.mock('@/components/shared/Footer', () => ({ default: () => <footer /> }))
 vi.mock('@/contexts/EventContext', () => ({ EventProvider: ({ children }: { children: React.ReactNode }) => <>{children}</> }))
+vi.mock('@/contexts/RechercheProvider', () => ({ RechercheProvider: ({ children }: { children: React.ReactNode }) => <>{children}</> }))
 vi.mock('@/contexts/HeaderSlotProvider', () => ({ HeaderSlotProvider: ({ children }: { children: React.ReactNode }) => <>{children}</> }))
 
 import RootLayout from '../RootLayout'
