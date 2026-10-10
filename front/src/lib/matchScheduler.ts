@@ -328,7 +328,8 @@ export function generateRoundRobinPairings(
     return result
 }
 
-// Greedy assignment placing players with absence constraints at positions that have a bye on their absent date.
+// Places players with absence constraints at positions that have a bye on their absent date,
+// moving as few players as possible away from the order chosen by the admin.
 export function optimizePlayerOrderForAbsences<T extends { id: string }>(
     players: T[],
     template: number[][],
@@ -351,22 +352,44 @@ export function optimizePlayerOrderForAbsences<T extends { id: string }>(
         )
     })
 
-    const assignedPlayers = new Set<number>()
-    const assignedPositions = new Set<number>()
-    const result = new Array<T>(n)
+    /*
+     * Recherche exhaustive, avec elagage. L'ancienne version etait gloutonne
+     * et servait les joueurs dans l'ordre de la liste : ceux sans contrainte
+     * prenaient les places en premier, et un absent arrive en dernier trouvait
+     * sa seule bonne position deja prise.
+     *
+     * Une box compte sept joueurs au plus (les gabarits s'arretent la), soit
+     * 5 040 ordres : on peut tous les considerer. On retient le moins de matchs
+     * joues un jour d'absence, puis, a egalite, le moins de joueurs deplaces :
+     * l'ordre choisi par l'admin reste intact partout ou il ne gene pas.
+     */
+    let best: number[] = players.map((_, i) => i)
+    let bestCost = best.reduce((sum, pi, pos) => sum + costMatrix[pi][pos], 0)
+    let bestMoved = 0
+    if (bestCost === 0) return players
 
-    const triples = players
-        .flatMap((_, pi) => Array.from({ length: n }, (__, pos) => ({ playerIdx: pi, pos, cost: costMatrix[pi][pos] })))
-        .sort((a, b) => a.cost - b.cost || a.playerIdx - b.playerIdx)
+    const current = new Array<number>(n)
+    const used = new Array<boolean>(n).fill(false)
 
-    for (const { playerIdx, pos } of triples) {
-        if (assignedPlayers.has(playerIdx) || assignedPositions.has(pos)) continue
-        result[pos] = players[playerIdx]
-        assignedPlayers.add(playerIdx)
-        assignedPositions.add(pos)
+    const search = (pos: number, cost: number, moved: number) => {
+        if (cost > bestCost || (cost === bestCost && moved >= bestMoved)) return
+        if (pos === n) {
+            best = [...current]
+            bestCost = cost
+            bestMoved = moved
+            return
+        }
+        for (let pi = 0; pi < n; pi++) {
+            if (used[pi]) continue
+            used[pi] = true
+            current[pos] = pi
+            search(pos + 1, cost + costMatrix[pi][pos], moved + (pi === pos ? 0 : 1))
+            used[pi] = false
+        }
     }
+    search(0, 0, 0)
 
-    return result
+    return best.map(pi => players[pi])
 }
 
 // --- Date mapping ---

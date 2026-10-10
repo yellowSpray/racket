@@ -11,6 +11,8 @@ import {
   totalMatchCount,
   totalSlotCount,
   validateMatchSlot,
+  optimizePlayerOrderForAbsences,
+  SCHEDULE_TEMPLATES,
   type PlayerConstraints,
   type DatePlan,
 } from '@/lib/matchScheduler'
@@ -807,5 +809,88 @@ describe('validateMatchSlot', () => {
     const result = validateMatchSlot('p1', 'p2', '2026-03-01', '19:00', constraints, 30)
     expect(result.valid).toBe(true)
     expect(result.warnings).toHaveLength(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// optimizePlayerOrderForAbsences
+// ---------------------------------------------------------------------------
+
+/*
+ * Dans une box, la position d'un joueur fixe ses dates de jeu (voir
+ * SCHEDULE_TEMPLATES). Un joueur absent un jour doit donc occuper une position
+ * qui ne joue pas ce jour-la, quand il en existe une.
+ *
+ * L'ancienne version servait les joueurs dans l'ordre de la liste : ceux sans
+ * contrainte prenaient les places en premier, et un absent arrive en dernier
+ * trouvait sa seule bonne position deja prise. Cas reel : Patrice Ngalle,
+ * absent le 12 octobre, place quand meme ce jour-la.
+ */
+describe('optimizePlayerOrderForAbsences', () => {
+  const dates = ['2026-10-12', '2026-10-19', '2026-10-26', '2026-11-02', '2026-11-09']
+  const t5 = SCHEDULE_TEMPLATES[5]
+
+  const joueLe = (template: number[][], pos: number, dateIdx: number) =>
+    template[pos].some((d, j) => j !== pos && d === dateIdx)
+
+  const ids = (players: { id: string }[]) => players.map(p => p.id)
+
+  it('libere un absent quelle que soit sa place de depart', () => {
+    for (let depart = 0; depart < 5; depart++) {
+      const players = ['A', 'B', 'C', 'D', 'E'].map(id => ({ id }))
+      players[depart] = { id: 'PATRICE' }
+      const result = optimizePlayerOrderForAbsences(players, t5, dates, new Map([['PATRICE', ['2026-10-12']]]))
+      const pos = result.findIndex(p => p.id === 'PATRICE')
+      expect(joueLe(t5, pos, 0), `depart en position ${depart}`).toBe(false)
+    }
+  })
+
+  it('ne deplace que ce qui est necessaire', () => {
+    // Le jour de repos du 12/10 est en position 3 : un seul echange suffit.
+    const players = ['A', 'B', 'C', 'D', 'PATRICE'].map(id => ({ id }))
+    const result = optimizePlayerOrderForAbsences(players, t5, dates, new Map([['PATRICE', ['2026-10-12']]]))
+    expect(ids(result)).toEqual(['A', 'B', 'C', 'PATRICE', 'D'])
+  })
+
+  it('garde l\'ordre de l\'admin quand il convient deja', () => {
+    const players = ['A', 'B', 'C', 'PATRICE', 'E'].map(id => ({ id }))
+    const result = optimizePlayerOrderForAbsences(players, t5, dates, new Map([['PATRICE', ['2026-10-12']]]))
+    expect(ids(result)).toEqual(['A', 'B', 'C', 'PATRICE', 'E'])
+  })
+
+  it('libere deux absents qui ne visent pas le meme jour', () => {
+    const players = ['X', 'Y', 'C', 'D', 'E'].map(id => ({ id }))
+    const absences = new Map([['X', ['2026-10-12']], ['Y', ['2026-10-19']]])
+    const result = optimizePlayerOrderForAbsences(players, t5, dates, absences)
+    expect(joueLe(t5, result.findIndex(p => p.id === 'X'), 0)).toBe(false)
+    expect(joueLe(t5, result.findIndex(p => p.id === 'Y'), 1)).toBe(false)
+  })
+
+  it('ne touche a rien sans absence sur les dates de la serie', () => {
+    const players = ['A', 'B', 'C', 'D', 'E'].map(id => ({ id }))
+    const result = optimizePlayerOrderForAbsences(players, t5, dates, new Map([['A', ['2026-12-25']]]))
+    expect(ids(result)).toEqual(['A', 'B', 'C', 'D', 'E'])
+  })
+
+  /*
+   * Box paire : chaque position joue a chaque date, aucun ordre ne libere
+   * personne. L'ordre de l'admin reste alors tel quel.
+   */
+  it('laisse l\'ordre intact dans une box paire, ou personne ne peut etre libere', () => {
+    const players = ['A', 'B', 'C', 'PATRICE'].map(id => ({ id }))
+    const result = optimizePlayerOrderForAbsences(players, SCHEDULE_TEMPLATES[4], dates.slice(0, 3), new Map([['PATRICE', ['2026-10-12']]]))
+    expect(ids(result)).toEqual(['A', 'B', 'C', 'PATRICE'])
+  })
+
+  it('reste exact sur une box de sept', () => {
+    const dates7 = ['d0', 'd1', 'd2', 'd3', 'd4', 'd5', 'd6']
+    const t7 = SCHEDULE_TEMPLATES[7]
+    const players = ['A', 'B', 'C', 'D', 'E', 'F', 'G'].map(id => ({ id }))
+    const absences = new Map([['G', ['d0']], ['F', ['d1']], ['E', ['d2']]])
+    const result = optimizePlayerOrderForAbsences(players, t7, dates7, absences)
+    expect(joueLe(t7, result.findIndex(p => p.id === 'G'), 0)).toBe(false)
+    expect(joueLe(t7, result.findIndex(p => p.id === 'F'), 1)).toBe(false)
+    expect(joueLe(t7, result.findIndex(p => p.id === 'E'), 2)).toBe(false)
+    expect(new Set(ids(result)).size).toBe(7)
   })
 })
