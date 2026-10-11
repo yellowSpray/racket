@@ -1,5 +1,6 @@
 import html2canvas from "html2canvas-pro"
 import { jsPDF } from "jspdf"
+import { attendreStyles } from "./attendreStyles"
 
 /**
  * Exporte tous les éléments [data-draw-table] du container vers un PDF A4 paysage, un tableau par page.
@@ -42,13 +43,17 @@ export async function exportTablesToPdf(container: HTMLElement, filename: string
                 useCORS: true,
                 logging: false,
                 backgroundColor: "#ffffff",
-                onclone: (clonedDoc) => {
+                // html2canvas attend cette promesse avant de dessiner
+                onclone: async (clonedDoc) => {
                     // Injecte les variables CSS de :root pour que Tailwind 4 résolve correctement ses couleurs
                     const rootStyle = getComputedStyle(document.documentElement)
                     const cssVars = Array.from(rootStyle).filter(p => p.startsWith('--'))
                     const style = clonedDoc.createElement('style')
                     style.textContent = `:root { ${cssVars.map(v => `${v}: ${rootStyle.getPropertyValue(v).trim()}`).join('; ')} }`
                     clonedDoc.head.appendChild(style)
+
+                    // Sans cette attente, une capture pouvait sortir sans CSS (voir attendreStyles)
+                    await attendreStyles(clonedDoc)
                 },
             })
             console.log(`[exportPdf] Tableau ${i + 1}/${tables.length} — canvas ${canvas.width}×${canvas.height}px`)
